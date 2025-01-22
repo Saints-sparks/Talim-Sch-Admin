@@ -10,7 +10,7 @@ type PageIndicatorContextType = {
 const PageIndicatorContext = createContext<PageIndicatorContextType | undefined>(undefined);
 
 export const PageIndicatorProvider = ({ children }: { children: ReactNode }) => {
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState<number>(0); 
 
   return (
     <PageIndicatorContext.Provider value={{ currentPage, setCurrentPage }}>

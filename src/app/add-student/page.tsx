@@ -51,7 +51,7 @@ export default function AddStudent() {
   return (
     <div className="p-6 space-y-1 bg-[F8F8F8]">
         
-     <Header user={"Administrator"} tent={"Add Student"} />
+     <Header />
 
       {/* Main Content */}
       <main className="flex-1">

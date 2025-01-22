@@ -1,46 +1,60 @@
-// components/Header.tsx
-import React, { useEffect, useState } from 'react';
-import { FaCalendarAlt } from 'react-icons/fa';
-import { HiOutlineBell } from "react-icons/hi";
+"use client";
 
-// Define the prop type for the greeting
-interface HeaderProps {
-  user: string;
-  tent: string; // Make sure tent is included in the type
-}
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import { AiOutlineSearch } from "react-icons/ai"; // Search Icon
+import { BsCalendar2Date } from "react-icons/bs"; // Calendar Icon
 
-const Header: React.FC<HeaderProps> = ({ user, tent }) => { 
-    const [currentDate, setCurrentDate] = useState('');
-    
-    useEffect(() => {
-  const date = new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+const Header = () => {
+  const [currentDate, setCurrentDate] = useState("");
+  const router = useRouter(); // Router for navigation
+
+  useEffect(() => {
+    const date = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
     setCurrentDate(date);
-    }, []);
-  
+  }, []);
 
   return (
-    <header className="flex justify-between items-center bg-white py-4 px-3 mt-[-15px] shadow-md">
-      {/* Greeting Section */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-800 flex items-center">
-          {user} 
-        </h1>
-        <p className="text-sm text-gray-600">{tent}</p> {/* Display tent here */}
+    <div className="flex justify-between items-center mb-8">
+      {/* Search Bar with Search Icon */}
+      <div className="relative w-1/3">
+        <AiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search"
+          className="w-full pl-10 p-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+        />
       </div>
 
-      {/* Date and Notification Section */}
+      {/* Icons and Profile Section */}
       <div className="flex items-center space-x-6">
-        <div className='flex items-center space-x-2 text-gray-500'>
-          <span className="text-sm text-gray-500">{currentDate}</span>
-          <FaCalendarAlt className="text-lg" />
+        {/* Calendar Icon with Current Date */}
+        <div className="flex items-center space-x-2 text-gray-500">
+          <BsCalendar2Date className="w-5 h-5" />
+          <span>{currentDate}</span>
         </div>
-        <HiOutlineBell className="text-xl text-gray-500 cursor-pointer hover:text-gray-700" />
+
+        {/* Notification Icon */}
+        <div className="relative cursor-pointer">
+          <IoMdNotificationsOutline className="w-6 h-6 text-gray-500" />
+          {/* Optional Notification Badge */}
+          <span className="absolute top-0 right-0 block w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+        </div>
+
+        {/* Profile Picture */}
+        <img
+          src="../../img/teacher.jpg"
+          alt="Profile"
+          className="w-10 h-10 rounded-full cursor-pointer"
+          onClick={() => router.push("/profile")} // Navigate to the profile page
+        />
       </div>
-    </header>
+    </div>
   );
 };
 

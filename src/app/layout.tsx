@@ -40,7 +40,7 @@ export default function RootLayout({
   const pathname = usePathname(); // Get current route
 
   // Define routes where the sidebar should be hidden
-  const noSidebarRoutes = ["/"]; // Add any other routes as needed
+  const noSidebarRoutes = ["/", "/step1", "/step2"]; // Add any other routes as needed
   const showSidebar = !noSidebarRoutes.includes(pathname); // Determine if sidebar should be shown
 
   return (

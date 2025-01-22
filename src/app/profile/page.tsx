@@ -11,7 +11,7 @@ export default function Profile() {
 
   return (
     <div className="p-6 space-y-1">
-      <Header user="Administrator" tent="Student Profile" />
+      <Header />
 
       {/* Main Content */}
       <div className="p-5">
@@ -21,7 +21,7 @@ export default function Profile() {
             {/* Student Info */}
             <div className="flex items-center space-x-4">
               <Image
-                src="/img/profile.jpg" // Replace with actual path
+                src="/img/teacher.jpg" // Replace with actual path
                 alt="Student"
                 width={100}
                 height={100}
@@ -48,7 +48,7 @@ export default function Profile() {
               } rounded-md transition duration-300 hover:text-gray-800`}
               onClick={() => setActiveTab('personal')}
             >
-              Personal Information
+              School information and Contact details
             </button>
             <button
               className={`pb-2 px-4 ${
@@ -58,7 +58,7 @@ export default function Profile() {
               } rounded-md transition duration-300 hover:text-gray-800`}
               onClick={() => setActiveTab('academic')}
             >
-              Academic Information
+             Administrator details
             </button>
             <button
               className={`pb-2 px-4 ${

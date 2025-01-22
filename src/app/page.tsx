@@ -23,13 +23,7 @@ export default function Home() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    router.push('/dashboard');  // Redirect to /dashboard page
-  };
-
-  const handleDotClick = (index: number) => {
-    setCurrentPage(index);
-    const routes = ['/', '/email-verification', '/signup'];
-    router.push(routes[index]);
+    router.push('/step1');  // Redirect to /dashboard page
   };
 
   // Sync current page indicator with pathname changes
@@ -89,18 +83,7 @@ export default function Home() {
             </button>
           </form>
 
-          {/* Page Indicator */}
-          <div className="flex justify-center mt-4">
-            {[...Array(3)].map((_, index) => (
-              <span
-                key={index}
-                onClick={() => handleDotClick(index)}
-                className={`h-2 w-2 mx-1 rounded-full cursor-pointer ${
-                  currentPage === index ? 'bg-indigo-500' : 'bg-gray-300'
-                }`}
-              ></span>
-            ))}
-          </div>
+  
         </div>
       </div>
 
