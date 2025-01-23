@@ -32,7 +32,7 @@ A modern web application built with [Next.js](https://nextjs.org/), featuring se
 - **Tailwind CSS** (Utility-first CSS framework)
 - **TypeScript** (Optional: remove if not used)
 - **Docker** (Optional: if containerized deployment is enabled)
-- **MariaDB** / **MongoDB** (Optional: replace with your preferred database)
+ **MongoDB** (Optional: replace with your preferred database)
 - **Azure** or **AWS** for hosting (Optional: replace with your hosting solution)
 
 ---
@@ -48,8 +48,8 @@ Ensure you have the following installed:
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/your-nextjs-app.git
-   cd your-nextjs-app
+   git clone https://github.com/Saints-sparks/Talim-Sch-Admin
+   cd app directory
 Install dependencies:
 
 bash
