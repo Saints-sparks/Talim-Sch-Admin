@@ -239,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
           className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
             isActive("/settings") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
-          onClick={() => handleNavigate("/profile")}
+          onClick={() => handleNavigate("/settings")}
         >
           <FiSettings className="text-xl" />
           <span>Settings</span>

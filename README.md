@@ -52,9 +52,6 @@ Ensure you have the following installed:
    cd app directory
 Install dependencies:
 
-bash
-Copy
-Edit
 npm install
 # or
 yarn install
