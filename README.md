@@ -48,7 +48,7 @@ Ensure you have the following installed:
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Saints-sparks/Talim-Sch-Admin
+   git clone https://github.com/Saints-sparks/Talim-Sch-Admin.git
    cd app directory
 Install dependencies:
 
