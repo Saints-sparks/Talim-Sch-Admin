@@ -114,7 +114,7 @@ export default function Home() {
       <div className="w-1/2 flex items-center justify-center bg-gray-200">
         <div className="w-full h-full relative">
           <Image
-            src="/img/signup.png"
+            src="/img/home.png"
             alt="High School"
             layout="fill"
             objectFit="cover"
