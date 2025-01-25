@@ -29,12 +29,12 @@ export default function Home() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    router.push('/step1');  // Redirect to /dashboard page
+    router.push('/account-section-1');  // Redirect to /dashboard page
   };
 
   // Sync current page indicator with pathname changes
   useEffect(() => {
-    const routes = ['/', '/step1', '/step2'];
+    const routes = ['/', '/account-section-1', '/account-section-2'];
     const pageIndex = routes.indexOf(pathname); // Determine the current page index
     if (pageIndex !== -1) {
       setCurrentPage(pageIndex);

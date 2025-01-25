@@ -3,11 +3,71 @@
 import Image from 'next/image';
 import Header from '@/components/Header';
 import React, { useState } from 'react';
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
-type Tab = 'personal' | 'academic' | 'behavior' | 'achievements';
+type Tab = 'personal' | 'academic' ;
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<Tab>('personal');
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  };
+
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setConfirmPassword(e.target.value);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  interface FormData {
+    schoolName: string;
+    schoolPrefix: string;
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    logo: string;
+  }
+  
+
+    const handleInputChange = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = e.target;
+      setFormData({ ...formData, [name]: value });
+    };
+  const [formData, setFormData] = useState<FormData>({
+    schoolName: '',
+    schoolPrefix: '',
+    street: '',
+    city: '',
+    state: '',
+    country: '',
+    logo: "/img/teacher.jpg",
+  });
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFormData({
+        ...formData,
+        // logo: e.target.files[0],
+      });
+    }
+  };
 
   return (
     <div className="p-6 space-y-1">
@@ -17,26 +77,7 @@ export default function Profile() {
       <div className="p-5">
         {/* Profile Card */}
         <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between mb-5">
-            {/* Student Info */}
-            <div className="flex items-center space-x-4">
-              <Image
-                src="/img/teacher.jpg" // Replace with actual path
-                alt="Student"
-                width={100}
-                height={100}
-                className="rounded-full"
-              />
-              <div>
-                <h2 className="text-lg font-semibold">Emeka Adewale</h2>
-                <p className="text-gray-500">Status: Online</p>
-                <p className="text-gray-500">Class: S3</p>
-              </div>
-            </div>
-            <button className="bg-[#154473] text-white px-4 py-2 rounded-md">
-              Message
-            </button>
-          </div>
+          
 
           {/* Tabs */}
           <div className="flex space-x-4 border-b border-gray-200 mb-5 px-4 py-3 rounded-lg bg-white">
@@ -60,168 +101,258 @@ export default function Profile() {
             >
              Administrator details
             </button>
-            <button
-              className={`pb-2 px-4 ${
-                activeTab === 'behavior'
-                  ? 'text-[#154473] border-b-2 border-[#154473] font-semibold'
-                  : 'text-gray-500 hover:bg-gray-100 '
-              } rounded-md transition duration-300 hover:text-gray-800`}
-              onClick={() => setActiveTab('behavior')}
-            >
-              Behavior/Engagement Data
-            </button>
-            <button
-              className={`pb-2 px-4 ${
-                activeTab === 'achievements'
-                  ? 'text-[#154473] border-b-2 border-[#154473] font-semibold'
-                  : 'text-gray-500 hover:bg-gray-100  '
-              } rounded-md transition duration-300 hover:text-gray-800`}
-              onClick={() => setActiveTab('achievements')}
-            >
-              Achievements
-            </button>
+         
           </div>
 
           {/* Details Section */}
           <div className="grid md:grid-cols-1 gap-6 px-4">
             {activeTab === 'personal' && (
 
-            <div className="grid md:grid-cols-2 gap-10 px-4">
+            <div>
 
                 {/* Student Details - Right */}
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Student Details</h3>
-            <table className="w-full border-collapse border-spacing-0 text-left bg-white rounded-lg overflow-hidden">
-                <tbody>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Full Name
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">
-                    Emeka Adewale
-                    </td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Class/Grade Level
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">S3</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Student ID
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">
-                    12345678
-                    </td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Date of Birth
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">
-                    January 1, 2005
-                    </td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Gender
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">
-                    Female
-                    </td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">
-                    Phone Number
-                    </td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">
-                    +234 701 246 5678
-                    </td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 text-gray-700">Email Address</td>
-                    <td className="px-4 py-3 font-medium">emeka.adewale@gmail.com</td>
-                </tr>
-                </tbody>
-            </table>
+            <div className="bg-gray-50 p-6  rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
+            <h2 className="text-2xl font-semibold mb-6">School Information & Contact Details</h2>
+              {/* <div className="flex items-center space-x-4 mb-6"> */}
+                <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
+                  {formData.logo ? (
+                    <img
+                      src={"/img/teacher.jpg"}
+                      alt="School Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>Logo</span>
+                  )}
+                </div>
+                <label className="cursor-pointer">
+                  <span className="text-blue-500 underline">Upload Photo</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 font-medium">School Name</label>
+                  <input
+                    type="text"
+                    name="schoolName"
+                    value={formData.schoolName}
+                    onChange={handleInputChange}
+                    placeholder="Enter your school name"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">School Prefix</label>
+                  <input
+                    type="text"
+                    name="schoolPrefix"
+                    value={formData.schoolPrefix}
+                    onChange={handleInputChange}
+                    placeholder="e.g SHS"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">Street</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={formData.street}
+                    onChange={handleInputChange}
+                    placeholder="Enter your school street name"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">City</label>
+                  <select
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  >
+                    <option value="">Choose your city</option>
+                    <option value="City1">City1</option>
+                    <option value="City2">City2</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">State</label>
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  >
+                    <option value="">Choose your state</option>
+                    <option value="State1">State1</option>
+                    <option value="State2">State2</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">Country</label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  >
+                    <option value="">Choose your country</option>
+                    <option value="Country1">Country1</option>
+                    <option value="Country2">Country2</option>
+                  </select>
+                </div>
+              {/* </div> */}
+              </div>
             </div>
-
-            {/* Guardian/Parent Details - Left */}
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Guardian/Parent Details</h3>
-            <table className="w-full border-collapse border-spacing-0 text-left bg-white rounded-lg overflow-hidden">
-                <tbody>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Father's Name</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">Mr. Adewale Johnson</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Father's Contact</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">+234 906 234 6789</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Mother's Name</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">Mrs. Ngozi Adewale</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Mother's Contact</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">+234 812 456 6789</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Guardian's Name</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">Mrs. Amaka Okafor</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 border-b border-gray-200 text-gray-700">Guardian's Contact</td>
-                    <td className="px-4 py-3 border-b border-gray-200 font-medium">+234 705 567 6543</td>
-                </tr>
-                <tr>
-                    <td className="px-4 py-3 text-gray-700">Guardian's Email</td>
-                    <td className="px-4 py-3 font-medium">amakadokafor@gmail.com</td>
-                </tr>
-                </tbody>
-            </table>
-            </div>
-
-
-            </div>
-
-        
-                
-
-
             )}
 
             {activeTab === 'academic' && (
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  Academic Information
-                </h3>
-                <p>Subjects Enrolled: Mathematics, English, Biology</p>
-                <p>Average Grade: A</p>
+
+              {/* Academic Details - Right */}
+            <div className="bg-gray-50 p-6  rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
+            <h2 className="text-2xl font-semibold mb-6">Academic Details</h2>
+              {/* <div className="flex items-center space-x-4 mb-6"> */}
+                <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
+                  {formData.logo ? (
+                    <img
+                      src={"/img/teacher.jpg"}
+                      alt="School Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>Logo</span>
+                  )}
+                </div>
+                <label className="cursor-pointer">
+                  <span className="text-blue-500 underline">Upload Photo</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 font-medium">Admin Name</label>
+                  <input
+                    type="text"
+                    name="schoolName"
+                    value={formData.schoolName}
+                    onChange={handleInputChange}
+                    placeholder="Enter your school name"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">Admin Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    // value={}
+                    onChange={handleInputChange}
+                    placeholder="example@example.com"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-medium">Phone Number</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    // value={}
+                    onChange={handleInputChange}
+                    placeholder="Enter phone number"
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                {/* Password Field */}
+          <div className="mb-4 relative">
+            <label
+              htmlFor="password"
+              className="block mb-1 font-medium"
+            >
+              Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              value={password}
+              onChange={handlePasswordChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-600"
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+
+          {/* Confirm Password Field */}
+          <div className="mb-4 relative">
+            <label
+              htmlFor="confirm-password"
+              className="block mb-1 font-medium"
+            >
+              Confirm Password
+            </label>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirm-password"
+              name="confirm-password"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              placeholder="Confirm your password"
+            />
+            <button
+              type="button"
+              onClick={toggleConfirmPasswordVisibility}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-600"
+            >
+              {showConfirmPassword ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+          
+
+              
+              </div>
+              {/* </div> */}
               </div>
             )}
 
-            {activeTab === 'behavior' && (
-              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  Behavior/Engagement Data
-                </h3>
-                <p>Attendance: 95%</p>
-                <p>Disciplinary Notes: None</p>
-              </div>
-            )}
 
-            {activeTab === 'achievements' && (
-              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg transition-shadow duration-300">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  Achievements
-                </h3>
-                <p>Top Scorer in Mathematics Competition</p>
-                <p>Sports Captain: Basketball Team</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
