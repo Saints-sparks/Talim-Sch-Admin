@@ -1,6 +1,7 @@
 'use client'
 
 import React, {useState} from "react";
+import Header from "@/components/Header";
 
 const AddSubject = () => {
 
@@ -13,6 +14,7 @@ const AddSubject = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
+      <Header/>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Add New Subject</h1>
       </div>

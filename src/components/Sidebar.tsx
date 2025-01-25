@@ -4,15 +4,13 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import {
   HiHome,
-  HiOutlineCalendar,
   HiOutlineBookOpen,
-  HiOutlineArchive,
   HiOutlineUsers,
   HiOutlineChartBar,
   HiOutlineClipboardList,
   HiOutlineUser
 } from "react-icons/hi";
-import { FaBook } from "react-icons/fa";
+import { FaBook, FaRegCommentDots } from "react-icons/fa";
 import { AiOutlinePlus } from "react-icons/ai";
 import { HiOutlineChatAlt2 } from "react-icons/hi";
 import Image from 'next/image';
@@ -47,12 +45,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
 
   return (
     <div
-      className={`bg-white text-gray-800 w-64 h-full flex flex-col justify-between ${className}`}
+      className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}
     >
 
       {/* Main Menu */}
-      <div className="border-t-2">      
-      <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2">
+      <div className="border-t-2 rounded-md">      
+      <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2 rounded-md">
       <Image src="/icons/talim.svg" alt="School" width={44.29} height={43.23} />
         <span className="text-2xl font-semibold">Talim</span>
       </div>
@@ -70,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
 
 
         <div
-          className={`p-4 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/dashboard") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
          onClick={() => handleNavigate("/dashboard")} // Navigate to the Dashboard page
@@ -82,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
         {/* Manage & Track */}
         <div>
           <div
-              className={`p-4 flex items-center gap-4 cursor-pointer ${
+              className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
                 isActive("/classes") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
               }`}
             onClick={() => setIsManageTrackOpen(!isManageTrackOpen)}
@@ -92,50 +90,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
               <HiOutlineBookOpen className="text-xl" />
               <span>Classes</span>
             </div>
-            {isManageTrackOpen ? <FiChevronDown /> : <FiChevronRight />}
           </div>
-          {isManageTrackOpen && (
-            <div className="pl-8">
-            
-              <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer"
-                onClick={() => setIsStudentsOpen(!isStudentsOpen)}
-              >
-                <FaBook className="text-lg" />
-                <span>Subject</span>
-                {isStudentsOpen ? <FiChevronDown /> : <FiChevronRight />}
-              </div>
-              {isStudentsOpen && (
-                <div className="pl-6">
-                  <div
-                    className="p-3 flex items-center gap-2 hover:bg-gray-200 cursor-pointer rounded-lg"
-                    onClick={() => handleNavigate("/subject/add-subject")}
-                  >
-                    {/* Add Icon */}
-                    <AiOutlinePlus size={20} color="#154473" />
-                    {/* Text */}
-                    <span className="text-gray-700 font-medium">Add Subject</span>
-                  </div>
-            
-                </div>
-              )}
-              <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer"
-                onClick={() => handleNavigate("/subject/subject-profile")}
-              >
-                <HiOutlineChartBar className="text-lg" />
-                <span>Subject Profile</span>
-              </div>
-             
-            </div>
-          )}
         </div>
-
 
 
         <div>
           <div
-              className={`p-3 flex items-center gap-4 cursor-pointer ${
+              className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
                 isActive("/users") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
               }`}
             onClick={() => setIsUserTabOpen(!isUserTabOpen)}
@@ -150,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
           {isUserTabOpen && (
             <div className="pl-8">
               <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer"
+                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
                 onClick={() => handleNavigate("/users/students/")}
               >
                 <HiOutlineUser className="text-lg" />
@@ -158,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
               </div>
              
               <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer"
+                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
                 onClick={() => handleNavigate("/users/teachers")}
               >
                 <HiOutlineUser className="text-lg" />
@@ -175,7 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
 
 
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/timetable") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
           onClick={() => handleNavigate("/timetable")}
@@ -186,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
 
 
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/announcements") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
           onClick={() => handleNavigate("/announcements")}
@@ -197,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
 
 
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/notifications") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
           onClick={() => handleNavigate("/notifications")}
@@ -206,17 +167,17 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
           <span>Notifications</span>
         </div>
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/messages") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
           // onClick={() => handleNavigate("/messages")}
         >
-          <HiOutlineUser className="text-xl" />
+          <FaRegCommentDots className="text-xl" />
           <span>Messages</span>
         </div>
 
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
             isActive("/request-leave") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
           }`}
           onClick={() => handleNavigate("/request-leave")}
@@ -226,8 +187,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
         </div>
 
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
-            isActive("/complaints") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+            isActive("/complaints") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
           }`}
           onClick={() => handleNavigate("/complaints")}
         >
@@ -236,8 +197,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
           <span>Complaints</span>
         </div>
         <div
-          className={`p-3 hover:bg-gray-200 flex items-center gap-4 cursor-pointer ${
-            isActive("/settings") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md${
+            isActive("/settings") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
           }`}
           onClick={() => handleNavigate("/settings")}
         >
@@ -250,15 +211,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
      
 
       {/* Profile Section */}
-      <div className="p-4 bg-gray-200 flex items-center justify-between">
- {/* Admin Info */}
- <div className="flex items-center gap-4">
-        <FaUserCircle className="text-3xl text-gray-600" />
-        <div>
-          <div className="font-semibold">Logout</div>
-          <div className="text-sm text-gray-600">account</div>
-        </div>
-      </div>
+      <div className="p-4 bg-white flex items-center justify-between rounded-md hover:bg-gray-200">
+      {/* Admin Info */}
+      <div className="flex items-center gap-4 rounded-md">
+              <FaUserCircle className="text-3xl text-gray-600" />
+              <div className="rounded-md">
+                <div className="font-semibold">Logout</div>
+                <div className="text-sm text-gray-600">account</div>
+              </div>
+            </div>
 
       {/* Logout Icon */}
       <button
