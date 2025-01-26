@@ -50,6 +50,7 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
     if (currentPage === 0) {
       return (
         <div className="space-y-6">
+          
           <div className="flex gap-6">
             <input
               type="text"

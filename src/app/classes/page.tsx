@@ -64,15 +64,16 @@ export default function Classes() {
 
         {/* Classes Table */}
         <section className="bg-white shadow rounded p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Classes</h3>
-            <button
-              className="font-bold text-[#154473]"
-              onClick={toggleModal}
-            >
-              + Add
-            </button>
-          </div>
+        <div className="flex items-center gap-x-4 mb-4">
+          <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
+          <button
+            className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
+            onClick={toggleModal}
+          >
+            + Add
+          </button>
+        </div>
+
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b">

@@ -114,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
                 className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
                 onClick={() => handleNavigate("/users/students/")}
               >
-                <HiOutlineUser className="text-lg" />
+                {/* <HiOutlineUser className="text-lg" /> */}
                 <span>Students</span>
               </div>
              
@@ -122,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
                 className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
                 onClick={() => handleNavigate("/users/teachers")}
               >
-                <HiOutlineUser className="text-lg" />
+                {/* <HiOutlineUser className="text-lg" /> */}
                 <span>Teachers</span>
               </div>
              

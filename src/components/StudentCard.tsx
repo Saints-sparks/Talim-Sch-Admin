@@ -20,8 +20,8 @@ const StudentCard: React.FC<StudentCardProps> = ({ student }) => (
     <h3 className="text-center text-lg font-semibold">{student.name}</h3>
     <p className="text-center text-gray-500">{student.classLevel}</p> 
     <div className="flex justify-around mt-4">
-      <button className="px-4 py-1 bg-[#154473]  text-white rounded">Email</button>
-      <button className="px-4 py-1 bg-gray-200 text-gray-700 rounded">Chat</button>
+      {/* <button className="px-4 py-1 bg-[#154473]  text-white rounded">Email</button> */}
+      <button className="px-4 py-1 bg-gray-200 text-gray-700 rounded">View Profile</button>
     </div>
   </div>
 )
