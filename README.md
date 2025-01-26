@@ -60,8 +60,7 @@ Create a .env.local file in the root directory and define the required environme
 Run the development server:
 
 bash
-Copy
-Edit
+
 npm run dev
 # or
 yarn dev
