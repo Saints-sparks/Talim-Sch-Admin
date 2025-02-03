@@ -103,7 +103,7 @@ export default function Step2() {
           <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
             {formData.profilePhoto ? (
               <img
-                src={"/img/talim.jpg"}
+                src={"/img/teacher.jpg"}
                 alt="Admin Profile"
                 className="w-full h-full object-cover"
               />

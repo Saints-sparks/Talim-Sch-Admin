@@ -52,19 +52,19 @@ Ensure you have the following installed:
    cd app directory
 Install dependencies:
 
-**npm install**
+npm install
 # or
-**yarn install**
-
-Proceed to environment varibles
+yarn install
 Create a .env.local file in the root directory and define the required environment variables (see Environment Variables).
 
 Run the development server:
-bash
 
-**npm run dev**
+bash
+Copy
+Edit
+npm run dev
 # or
-**yarn dev**
+yarn dev
 Open http://localhost:3000 in your browser to view the app.
 
 Folder Structure

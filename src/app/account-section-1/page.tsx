@@ -31,7 +31,7 @@ export default function Step1() {
     city: '',
     state: '',
     country: '',
-    logo: "/img/talim.jpg",
+    logo: "/icons/tree.svg",
   });
 
 
@@ -103,7 +103,7 @@ export default function Step1() {
           <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
             {formData.logo ? (
               <img
-                src={"/img/talim.png"}
+                src={"/img/teacher.jpg"}
                 alt="School Logo"
                 className="w-full h-full object-cover"
               />
