@@ -1,11 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { usePageIndicator } from '../context/PageIndicatorContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import {useRouter, usePathname} from 'next/navigation'
-import {useNavigationHelpers} from '../../utils/useNavigationHelpers'
+import { useRouter, usePathname } from 'next/navigation';
+import { useNavigationHelpers } from '../../utils/useNavigationHelpers';
 
 interface FormData {
   schoolName: string;
@@ -19,10 +17,9 @@ interface FormData {
 
 export default function Step1() {
   const { currentPage, setCurrentPage } = usePageIndicator();
-  const router = useRouter()
-  const pathname = usePathname()
-
-  const {goBack} = useNavigationHelpers();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { goBack } = useNavigationHelpers();
 
   const [formData, setFormData] = useState<FormData>({
     schoolName: '',
@@ -34,15 +31,11 @@ export default function Step1() {
     logo: "/icons/tree.svg",
   });
 
-
   const handleDotClick = (index: number) => {
     setCurrentPage(index);
-  
-    const routes = ['/account-section-1', '/account-section-2']; 
+    const routes = ['/account-section-1', '/account-section-2'];
     router.push(routes[index]);
   };
-
-
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -61,13 +54,10 @@ export default function Step1() {
     }
   };
 
-
   const handleNext = (e: any) => {
     e.preventDefault();
     router.push('/account-section-2');
   };
- 
-
 
   useEffect(() => {
     const routeToPageMap: Record<string, number> = {
@@ -77,33 +67,34 @@ export default function Step1() {
     setCurrentPage(routeToPageMap[pathname] || 0);
   }, [pathname, setCurrentPage]);
 
-
   return (
-    <div className="flex w-screen bg-gray-100">
+    <div className="flex w-screen bg-white">
 
-     
+      {/* Left Sidebar */}
       <div className="w-64 bg-white text-white flex flex-col p-6">
-        {/* Page Indicator */}
         <div className="flex justify-center mt-auto">
-        {[...Array(2)].map((_, index) => (
-          <span
-            key={index}
-            onClick={() => handleDotClick(index)} // Add click handler
-            className={`h-2 w-2 mx-1 rounded-full cursor-pointer ${
-              currentPage === index ? 'bg-[#123961]' : 'bg-gray-300'
-            }`}
-          ></span>
-        ))}
+          {[...Array(2)].map((_, index) => (
+            <span
+              key={index}
+              onClick={() => handleDotClick(index)}
+              className={`h-2 w-2 mx-1 rounded-full cursor-pointer ${
+                currentPage === index ? 'bg-[#123961]' : 'bg-gray-300'
+              }`}
+            ></span>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded shadow-md w-full w-screen h-auto min-h-[90vh]">
+      {/* Main Content */}
+      <div className="bg-white p-8 rounded shadow-md w-full sm:w-[80%] min-h-[90vh] mx-auto">
         <h2 className="text-2xl font-semibold mb-6">School Information & Contact Details</h2>
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
+
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-x-4 sm:space-y-0 mb-6">
+          {/* Profile Image */}
+          <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-white">
             {formData.logo ? (
               <img
-                src={"/img/teacher.jpg"}
+                src={"/icons/tree.svg"}
                 alt="School Logo"
                 className="w-full h-full object-cover"
               />
@@ -111,8 +102,12 @@ export default function Step1() {
               <span>Logo</span>
             )}
           </div>
+
+          {/* Upload Button */}
           <label className="cursor-pointer">
-            <span className="text-blue-500 underline">Upload Photo</span>
+            <span className="text-[#123961] px-4 py-2 bg-gray-300 border-2 border-[#123961] rounded-lg">
+              Upload Photo
+            </span>
             <input
               type="file"
               className="hidden"
@@ -122,7 +117,8 @@ export default function Step1() {
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Input Fields */}
+        <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block mb-1 font-medium">School Name</label>
             <input
@@ -131,7 +127,7 @@ export default function Step1() {
               value={formData.schoolName}
               onChange={handleInputChange}
               placeholder="Enter your school name"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
 
@@ -143,7 +139,7 @@ export default function Step1() {
               value={formData.schoolPrefix}
               onChange={handleInputChange}
               placeholder="e.g SHS"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
 
@@ -155,7 +151,7 @@ export default function Step1() {
               value={formData.street}
               onChange={handleInputChange}
               placeholder="Enter your school street name"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
 
@@ -165,7 +161,7 @@ export default function Step1() {
               name="city"
               value={formData.city}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             >
               <option value="">Choose your city</option>
               <option value="City1">City1</option>
@@ -179,7 +175,7 @@ export default function Step1() {
               name="state"
               value={formData.state}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             >
               <option value="">Choose your state</option>
               <option value="State1">State1</option>
@@ -193,7 +189,7 @@ export default function Step1() {
               name="country"
               value={formData.country}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             >
               <option value="">Choose your country</option>
               <option value="Country1">Country1</option>
@@ -202,26 +198,22 @@ export default function Step1() {
           </div>
         </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-end space-x-4 mt-8">
-        <button
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-          onClick={goBack}
-        >
-          Go Back
-        </button>
-        <button
-          className="px-4 py-2 bg-[#123961] text-white rounded hover:bg-blue-600"
-          onClick={handleNext}
-        >
-          Next
-        </button>
-      </div>
-
-
-
+        {/* Navigation Buttons */}
+        <div className="flex justify-end space-x-4 mt-8">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+            onClick={goBack}
+          >
+            Go Back
+          </button>
+          <button
+            className="px-4 py-2 bg-[#123961] text-white rounded-lg hover:bg-blue-600"
+            onClick={handleNext}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
-     
   );
 }
