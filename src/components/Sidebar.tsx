@@ -15,7 +15,6 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { HiOutlineChatAlt2 } from "react-icons/hi";
 import Image from 'next/image';
 
-
 import { MdOutlineMessage, MdOutlineNotifications } from "react-icons/md";
 import { FaUserCircle } from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
@@ -23,12 +22,11 @@ import { FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
 import { HiOutlineSpeakerphone, HiOutlineClipboard } from "react-icons/hi";
 import { AiOutlineCalendar } from "react-icons/ai";
 
-
 type SidebarProps = {
   className?: string; // Make className optional
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ className}) => {
+const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const [isManageTrackOpen, setIsManageTrackOpen] = useState(false);
   const [isUserTabOpen, setIsUserTabOpen] = useState(false);
   const [isStudentsOpen, setIsStudentsOpen] = useState(false); 
@@ -47,201 +45,183 @@ const Sidebar: React.FC<SidebarProps> = ({ className}) => {
     <div
       className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}
     >
+      {/* Scrollable Main Menu */}
+      <div className="overflow-y-auto flex-1">
+        <div className="border-t-2 rounded-md">      
+          <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2 rounded-md">
+            <Image src="/icons/talim.svg" alt="School" width={44.29} height={43.23} />
+            <span className="text-2xl font-semibold">Talim</span>
+          </div>
 
-      {/* Main Menu */}
-      <div className="border-t-2 rounded-md">      
-      <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2 rounded-md">
-      <Image src="/icons/talim.svg" alt="School" width={44.29} height={43.23} />
-        <span className="text-2xl font-semibold">Talim</span>
-      </div>
+          <div className="mb-4 border-b border-2 border-solid border-[#F1F1F1] -mx-4"></div>
 
+          {/* School Selector */}
+          <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
+            <Image src="/img/unity.png" alt="School" width={40} height={40} />
+            <span className="ml-2 font-medium text-base text-gray-700">Unity Secondary S...</span>
+          </div>
 
-        <div className="mb-4 border-b border-2 border-solid border-[#F1F1F1] -mx-4"></div>
-
-        {/* School Selector */}
-        <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
-          <Image src="/img/unity.png" alt="School" width={40} height={40} />
-          <span className="ml-2 font-medium text-base text-gray-700">Unity Secondary S...</span>
-        </div>
-
-
-
-
-        <div
-          className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/dashboard") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-         onClick={() => handleNavigate("/dashboard")} // Navigate to the Dashboard page
-        >
-          <HiHome className="text-xl" />
-          <span>Dashboard</span>
-        </div>
-
-        {/* Manage & Track */}
-        <div>
           <div
+            className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/dashboard") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+            onClick={() => handleNavigate("/dashboard")}
+          >
+            <HiHome className="text-xl" />
+            <span>Dashboard</span>
+          </div>
+
+          {/* Manage & Track */}
+          <div>
+            <div
               className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
                 isActive("/classes") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
               }`}
-            onClick={() => setIsManageTrackOpen(!isManageTrackOpen)}
-          >
-            <div className="flex items-center gap-4"
-             onClick={() => handleNavigate("/classes")} >
-              <HiOutlineBookOpen className="text-xl" />
-              <span>Classes</span>
+              onClick={() => setIsManageTrackOpen(!isManageTrackOpen)}
+            >
+              <div className="flex items-center gap-4"
+                onClick={() => handleNavigate("/classes")} >
+                <HiOutlineBookOpen className="text-xl" />
+                <span>Classes</span>
+              </div>
             </div>
           </div>
-        </div>
 
-
-        <div>
-          <div
+          <div>
+            <div
               className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
                 isActive("/users") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
               }`}
-            onClick={() => setIsUserTabOpen(!isUserTabOpen)}
-          >
-            <div className="flex items-center gap-4"
-             onClick={() => handleNavigate("/users")} >
-              <HiOutlineUsers className="text-xl" />
-              <span>Users</span>
+              onClick={() => setIsUserTabOpen(!isUserTabOpen)}
+            >
+              <div className="flex items-center gap-4"
+                onClick={() => handleNavigate("/users")} >
+                <HiOutlineUsers className="text-xl" />
+                <span>Users</span>
+              </div>
+              {isUserTabOpen ? <FiChevronDown /> : <FiChevronRight />}
             </div>
-            {isUserTabOpen ? <FiChevronDown /> : <FiChevronRight />}
+            {isUserTabOpen && (
+              <div className="pl-8">
+                <div
+                  className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
+                  onClick={() => handleNavigate("/users/students/")}
+                >
+                  <span>Students</span>
+                </div>
+                <div
+                  className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
+                  onClick={() => handleNavigate("/users/teachers")}
+                >
+                  <span>Teachers</span>
+                </div>
+              </div>
+            )}
           </div>
-          {isUserTabOpen && (
-            <div className="pl-8">
-              <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
-                onClick={() => handleNavigate("/users/students/")}
-              >
-                {/* <HiOutlineUser className="text-lg" /> */}
-                <span>Students</span>
-              </div>
-             
-              <div
-                className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
-                onClick={() => handleNavigate("/users/teachers")}
-              >
-                {/* <HiOutlineUser className="text-lg" /> */}
-                <span>Teachers</span>
-              </div>
-             
-            </div>
-          )}
-        </div>
 
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/timetable") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+            onClick={() => handleNavigate("/timetable")}
+          >
+            <AiOutlineCalendar className="text-xl" />
+            <span>Timetable</span>
+          </div>
 
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/announcements") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+            onClick={() => handleNavigate("/announcements")}
+          >
+            <HiOutlineSpeakerphone className="text-xl" />
+            <span>Announcements</span>
+          </div>
 
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/notifications") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+            onClick={() => handleNavigate("/notifications")}
+          >
+            <MdOutlineNotifications className="text-xl" />
+            <span>Notifications</span>
+          </div>
 
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/messages") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+          >
+            <FaRegCommentDots className="text-xl" />
+            <span>Messages</span>
+          </div>
 
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/request-leave") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
+            }`}
+            onClick={() => handleNavigate("/request-leave")}
+          >
+            <HiOutlineClipboard className="text-xl" />
+            <span>Request Leave</span>
+          </div>
 
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/timetable") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-          onClick={() => handleNavigate("/timetable")}
-        >
-          <AiOutlineCalendar className="text-xl" />
-          <span>Timetable</span>
-        </div>
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/complaints") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
+            }`}
+            onClick={() => handleNavigate("/complaints")}
+          >
+            <HiOutlineChatAlt2 className="text-xl" />
+            <span>Complaints</span>
+          </div>
 
-
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/announcements") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-          onClick={() => handleNavigate("/announcements")}
-        >
-          <HiOutlineSpeakerphone className="text-xl" />
-          <span>Announcements</span>
-        </div>
-
-
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/notifications") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-          onClick={() => handleNavigate("/notifications")}
-        >
-          <MdOutlineNotifications className="text-xl" />
-          <span>Notifications</span>
-        </div>
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/messages") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-          // onClick={() => handleNavigate("/messages")}
-        >
-          <FaRegCommentDots className="text-xl" />
-          <span>Messages</span>
-        </div>
-
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/request-leave") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-          }`}
-          onClick={() => handleNavigate("/request-leave")}
-        >
-          <HiOutlineClipboard className="text-xl" />
-          <span>Request Leave</span>
-        </div>
-
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-            isActive("/complaints") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
-          }`}
-          onClick={() => handleNavigate("/complaints")}
-        >
-          <HiOutlineChatAlt2 className="text-xl" />
-         
-          <span>Complaints</span>
-        </div>
-        <div
-          className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md${
-            isActive("/settings") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
-          }`}
-          onClick={() => handleNavigate("/settings")}
-        >
-          <FiSettings className="text-xl" />
-          <span>Settings</span>
+          <div
+            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
+              isActive("/settings") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
+            }`}
+            onClick={() => handleNavigate("/settings")}
+          >
+            <FiSettings className="text-xl" />
+            <span>Settings</span>
+          </div>
         </div>
       </div>
 
-       
-     
-
       {/* Profile Section */}
       <div className="p-4 bg-white flex items-center justify-between rounded-md hover:bg-gray-200">
-      {/* Admin Info */}
-      <div className="flex items-center gap-4 rounded-md">
-              <FaUserCircle className="text-3xl text-gray-600" />
-              <div className="rounded-md">
-                <div className="font-semibold">Logout</div>
-                <div className="text-sm text-gray-600">account</div>
-              </div>
-            </div>
+        {/* Admin Info */}
+        <div className="flex items-center gap-4 rounded-md">
+          <FaUserCircle className="text-3xl text-gray-600" />
+          <div className="rounded-md">
+            <div className="font-semibold">Logout</div>
+            <div className="text-sm text-gray-600">account</div>
+          </div>
+        </div>
 
-      {/* Logout Icon */}
-      <button
-        className="text-gray-600 hover:text-gray-800 transition"
-        onClick={() => handleNavigate("/")}
-        aria-label="Logout"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-6 h-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+        {/* Logout Icon */}
+        <button
+          className="text-gray-600 hover:text-gray-800 transition"
+          onClick={() => handleNavigate("/")}
+          aria-label="Logout"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 3v9m6.364-5.364a9 9 0 11-12.728 0"
-          />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 3v9m6.364-5.364a9 9 0 11-12.728 0"
+            />
+          </svg>
+        </button>
       </div>
     </div>
   );

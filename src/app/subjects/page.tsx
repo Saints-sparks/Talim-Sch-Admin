@@ -2,14 +2,26 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-
-import { HiPlus, HiTrash } from "react-icons/hi";
+import { FiEdit, FiTrash, FiEye } from 'react-icons/fi';
+import { HiPlus } from 'react-icons/hi';
 import Header from "@/components/Header";
 
 const Subjects: React.FC = () => {
   const router = useRouter();
 
   const handleNavigate = (path: string) => {
+    console.log(`Navigating to: ${path}`); // Debugging statement
+    router.push(path); // Navigate to the specified path
+  };
+  const handleEdit = (path: string) => {
+    console.log(`Navigating to: ${path}`); // Debugging statement
+    router.push(path); // Navigate to the specified path
+  };
+  const handleDelete = (path: string) => {
+    console.log(`Navigating to: ${path}`); // Debugging statement
+    router.push(path); // Navigate to the specified path
+  };
+  const handleView = (path: string) => {
     console.log(`Navigating to: ${path}`); // Debugging statement
     router.push(path); // Navigate to the specified path
   };
@@ -28,7 +40,7 @@ const Subjects: React.FC = () => {
   return (
     <div className="p-6 space-y-1 bg-[#F8F8F8]">
       {/* Header */}
-      <Header user={"Administrator"} tent={"Subject Management"} />
+      <Header />
 
       {/* Add Subject Button */}
       <div className="flex justify-between items-center mb-6 p-6">
@@ -66,8 +78,24 @@ const Subjects: React.FC = () => {
                 <td className="px-6 py-3 text-gray-800 text-sm">{subject.enrolled}</td>
                 <td className="px-6 py-3 text-gray-800 text-sm">{subject.date}</td>
                 <td className="px-6 py-3">
-                  <button className="text-red-500 hover:text-red-700">
-                    <HiTrash className="w-5 h-5" />
+                
+                  <button
+                  className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                  onClick={() => handleView("subject")}
+                  >
+                  <FiEye className="text-xl" />
+                  </button>
+                  <button
+                  className="ml-2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  onClick={() => handleEdit('edit')}
+                  >
+                  <FiEdit className="text-xl" />
+                  </button>
+                  <button
+                  className="ml-2 text-red-500 hover:text-red-700 transition-colors duration-200"
+                  onClick={() => handleDelete("delete")}
+                  >
+                  <FiTrash className="text-xl" />
                   </button>
                 </td>
               </tr>

@@ -6,7 +6,6 @@ import { usePageIndicator } from "@/app/context/PageIndicatorContext";
 
 const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = ({ onClose, onNext }) => {
   const router = useRouter();
-  // const { currentPage, setCurrentPage } = usePageIndicator();
   const [currentPage, setCurrentPage] = useState<number>(0); 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -50,7 +49,6 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
     if (currentPage === 0) {
       return (
         <div className="space-y-6">
-          
           <div className="flex gap-6">
             <input
               type="text"
@@ -152,8 +150,6 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
             />
           </div>
 
-
-
           <div>
             <label className="block mb-1 font-medium">Relationship to Student</label>
             <select
@@ -195,54 +191,50 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
               <option value="English">English</option>
             </select>
           </div> 
-
         </div>
       );
     }
-
 
     if (currentPage === 3) {
       return (
         <div className="space-y-6">
           <div className="flex gap-6">
+            <div className="flex-1">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Subject to Teach
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled selected>
+                  Select Subject
+                </option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="English">English</option>
+              </select>
+            </div>
 
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Subject to Teach
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Subject
-              </option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="English">English</option>
-            </select>
-          </div>
-
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Assign Teacher To Class
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Class
-              </option>
-              <option value="JSS 1">JSS 1</option>
-              <option value="JSS 2">JSS 2</option>
-              <option value="JSS 3">JSS 3</option>
-              <option value="SS 1">SS 1</option>
-
-            </select>
-          </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Assign Teacher To Class
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled selected>
+                  Select Class
+                </option>
+                <option value="JSS 1">JSS 1</option>
+                <option value="JSS 2">JSS 2</option>
+                <option value="JSS 3">JSS 3</option>
+                <option value="SS 1">SS 1</option>
+              </select>
+            </div>
           </div>   
 
           <div className="flex-1">
             <label className="block text-gray-700 font-semibold mb-2">
-             Class Teacher Assignment
+              Class Teacher Assignment
             </label>
             <select
               className="w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -253,67 +245,55 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
               <option value="Mr James Saunders">Mr James Saunders</option>
               <option value="Mrs Lilian Ayo">Mrs Lilian Ayo</option>
               <option value="Miss Deborah Chuka">Miss Deborah Chuka</option>
-
             </select>
           </div>
         </div>
       );
     }
 
-    
     if (currentPage === 4) {
       return (
         <div className="space-y-6">
           <div className="flex gap-6">
+            <div className="flex-1">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Availability
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled selected>
+                  Available Days
+                </option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+              </select>
+            </div>
 
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Availability
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Available Days
-              </option>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-            </select>
-          </div>
-
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Arrival Time (Optional)
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Time
-              </option>
-              <option value="8:00 AM">8:00 AM</option>
-              <option value="8:30 AM">8:30 AM</option>
-              <option value="9:00 AM">9:00 AM</option>
-
-
-            </select>
-          </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Arrival Time (Optional)
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled selected>
+                  Select Time
+                </option>
+                <option value="8:00 AM">8:00 AM</option>
+                <option value="8:30 AM">8:30 AM</option>
+                <option value="9:00 AM">9:00 AM</option>
+              </select>
+            </div>
           </div>   
-
-       </div>
+        </div>
       );
     }
-
-
-    
   };
 
-
-
-  
   return (
     <div
       id="modal-overlay"
@@ -331,7 +311,7 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
           </button>
         </div>
         <p className="text-base text-gray-600">
-         Step {currentPage + 1}: 
+          Step {currentPage + 1}: 
           {currentPage === 0 ? " Student Personal Details" :
           currentPage === 1 ? " Parent/Guardian Information" :
           currentPage === 2 ? " Academic Information" :
@@ -349,17 +329,25 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
             >
               Back
             </button>
-            <button
-              onClick={() => setCurrentPage((prev: number) => prev + 1)}
-              className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
-              disabled={currentPage === 2}
-            >
-              Next
-            </button>
+            {currentPage === 4 ? (
+              <button
+                onClick={handleSubmit}
+                className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+              >
+                Save
+              </button>
+            ) : (
+              <button
+                onClick={() => setCurrentPage((prev: number) => prev + 1)}
+                className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+              >
+                Next
+              </button>
+            )}
           </div>
 
           <div className="flex justify-center mt-4">
-            {[0, 1, 2].map((page) => (
+            {[0, 1, 2, 3, 4].map((page) => (
               <div
                 key={page}
                 className={`h-2 w-2 mx-1 rounded-full ${
@@ -368,23 +356,6 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
               ></div>
             ))}
           </div>
-
-          {currentPage === 2 && (
-            <div className="flex justify-between items-center mt-6">
-              <button
-                onClick={handleSubmit}
-                className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
-              >
-                Save
-              </button>
-              <button
-                onClick={onClose}
-                className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

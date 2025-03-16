@@ -1,66 +1,146 @@
-'use client'
+'use client';
 
-import React, {useState} from "react";
+import React, { useState, FormEvent, ChangeEvent } from "react";
 import Header from "@/components/Header";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { Flip } from "react-toastify";
 
-const AddSubject = () => {
+interface FormData {
+  className: string;
+  classCapacity: string;
+  classDescription: string;
+  assignedTeacher: string;
+  courses: string[];
+}
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-  
-    const toggleModal = () => {
-      setIsModalOpen(!isModalOpen);
-    };
-  
+const AddSubject: React.FC = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [buttonLoader, setButtonLoader] = useState<boolean>(false);
+  const [formData, setFormData] = useState<FormData>({
+    className: "",
+    classCapacity: "",
+    classDescription: "",
+    assignedTeacher: "",
+    courses: [],
+  });
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setButtonLoader(true);
+
+    try {
+      const response = await axios.post(`${baseUrl}/subjects-courses/courses`, formData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      toast.success("Subject added successfully", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Flip,
+      });
+
+      setButtonLoader(false);
+    } catch (error: any) {
+      console.log("Error: " + error)
+      setButtonLoader(false);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Flip,
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header/>
-      
-        <h1 className="text-2xl font-semibold text-gray-800">Add New Subject</h1>
-     
+      <Header />
+
+      <h1 className="text-2xl font-semibold text-gray-800">Add New Subject</h1>
 
       {/* Form */}
       <div className="bg-white shadow-md rounded-lg p-6">
-        <form>
-        <div className="mb-4 flex gap-4">
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter class name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4 flex gap-4">
+            <div className="flex-1">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Class Name
+              </label>
+              <input
+                type="text"
+                name="className"
+                placeholder="Enter class name"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.className}
+                onChange={handleChange}
+              />
+            </div>
 
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class Capacity (Optional)
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Choose your class capacity
-              </option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mb-4 relative">
+            <div className="mb-4">
           <label className="block text-gray-700 font-semibold mb-2">
-            Class Description (Optional)
+            Class Capacity (Optional)
           </label>
-          <textarea
-            placeholder="Provide additional notes about the class."
+          <select
+            name="classCapacity"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-          ></textarea>
+            value={formData.classCapacity} // Controlled by state
+            onChange={handleChange}
+          >
+            <option value="" disabled>
+              Choose your class capacity
+            </option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+          </select>
         </div>
+          </div>
+
+          <div className="mb-4 relative">
+            <label className="block text-gray-700 font-semibold mb-2">
+              Class Description (Optional)
+            </label>
+            <textarea
+              name="classDescription"
+              placeholder="Provide additional notes about the class."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={4}
+              value={formData.classDescription}
+              onChange={handleChange}
+            ></textarea>
+          </div>
 
           {/* Assign Teacher */}
           <div className="mb-4">
@@ -68,9 +148,12 @@ const AddSubject = () => {
               Assign Teacher
             </label>
             <select
+              name="assignedTeacher"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.assignedTeacher}
+              onChange={handleChange}
             >
-              <option value="" disabled selected>
+              <option value="" disabled>
                 Select a teacher
               </option>
               <option value="teacher-1">Mr. John Adewale</option>
@@ -98,7 +181,7 @@ const AddSubject = () => {
                 SCI101
               </span>
             </div>
-          
+
             <div className="flex flex-wrap gap-5 py-5">
               <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
                 MTH112
@@ -152,14 +235,15 @@ const AddSubject = () => {
             <button
               type="submit"
               className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
+              disabled={buttonLoader}
             >
-              Save
+              {buttonLoader ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
       </div>
-
-
+    
+ 
 
 
 
