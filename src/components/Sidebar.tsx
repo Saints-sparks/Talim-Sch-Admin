@@ -1,45 +1,47 @@
-"use client"; 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation"; 
-import { usePathname } from "next/navigation";
+"use client";
+import React, { useState, useCallback, memo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   HiHome,
   HiOutlineBookOpen,
   HiOutlineUsers,
-  HiOutlineChartBar,
-  HiOutlineClipboardList,
-  HiOutlineUser
+  HiOutlineSpeakerphone,
+  HiOutlineClipboard,
+  HiOutlineChatAlt2,
 } from "react-icons/hi";
-import { FaBook, FaRegCommentDots } from "react-icons/fa";
-import { AiOutlinePlus } from "react-icons/ai";
-import { HiOutlineChatAlt2 } from "react-icons/hi";
-import Image from 'next/image';
-
-import { MdOutlineMessage, MdOutlineNotifications } from "react-icons/md";
-import { FaUserCircle } from "react-icons/fa";
-import { FiSettings } from "react-icons/fi";
-import { FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
-import { HiOutlineSpeakerphone, HiOutlineClipboard } from "react-icons/hi";
-import { AiOutlineCalendar } from "react-icons/ai";
+import { FaRegCommentDots, FaUserCircle } from "react-icons/fa";
+import { AiOutlineCalendar, AiOutlinePlus } from "react-icons/ai";
+import { MdOutlineNotifications } from "react-icons/md";
+import { FiSettings, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
+import Image from "next/image";
 
 type SidebarProps = {
-  className?: string; // Make className optional
+  className?: string;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-  const [isManageTrackOpen, setIsManageTrackOpen] = useState(false);
+const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [isUserTabOpen, setIsUserTabOpen] = useState(false);
-  const [isStudentsOpen, setIsStudentsOpen] = useState(false); 
-  const pathname = usePathname(); 
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
-  const router = useRouter(); 
+  const handleNavigate = useCallback(
+    (path: string) => {
+      console.log(`Navigating to: ${path}`);
+      router.push(path);
+    },
+    [router]
+  );
 
-  const handleNavigate = (path: string) => {
-    console.log(`Navigating to: ${path}`); 
-    router.push(path); 
-  };
+  const handleLogout = useCallback(() => {
+  // Clear user data from localStorage or sessionStorage
+  localStorage.removeItem("accessToken"); // Example: Remove the user token
+  localStorage.removeItem("refreshToken"); // Example: Remove user-related data
+
+  // Redirect to the login page or home page
+  router.push("/"); // Replace "/login" with your login page route
+}, [router]);
 
   return (
     <div
@@ -47,9 +49,16 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     >
       {/* Scrollable Main Menu */}
       <div className="overflow-y-auto flex-1">
-        <div className="border-t-2 rounded-md">      
+        <div className="border-t-2 rounded-md">
+          {/* Logo Section */}
           <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2 rounded-md">
-            <Image src="/icons/talim.svg" alt="School" width={44.29} height={43.23} />
+            <Image
+              src="/icons/talim.svg"
+              alt="School Logo"
+              width={44.29}
+              height={43.23}
+              priority
+            />
             <span className="text-2xl font-semibold">Talim</span>
           </div>
 
@@ -57,136 +66,72 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
           {/* School Selector */}
           <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
-            <Image src="/img/unity.png" alt="School" width={40} height={40} />
-            <span className="ml-2 font-medium text-base text-gray-700">Unity Secondary S...</span>
+            <Image
+              src="/img/unity.png"
+              alt="School"
+              width={40}
+              height={40}
+              loading="lazy"
+            />
+            <span className="ml-2 font-medium text-base text-gray-700">
+              Unity Secondary S...
+            </span>
           </div>
 
-          <div
-            className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/dashboard") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-            onClick={() => handleNavigate("/dashboard")}
-          >
-            <HiHome className="text-xl" />
-            <span>Dashboard</span>
-          </div>
-
-          {/* Manage & Track */}
-          <div>
-            <div
-              className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
-                isActive("/classes") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-              }`}
-              onClick={() => setIsManageTrackOpen(!isManageTrackOpen)}
-            >
-              <div className="flex items-center gap-4"
-                onClick={() => handleNavigate("/classes")} >
-                <HiOutlineBookOpen className="text-xl" />
-                <span>Classes</span>
+          {/* Menu Items */}
+          {[
+            { path: "/dashboard", icon: <HiHome className="text-xl" />, label: "Dashboard" },
+            { path: "/classes", icon: <HiOutlineBookOpen className="text-xl" />, label: "Classes" },
+            {
+              path: "/users",
+              icon: <HiOutlineUsers className="text-xl" />,
+              label: "Users",
+              subItems: [
+                { path: "/users/students", label: "Students" },
+                { path: "/users/teachers", label: "Teachers" },
+              ],
+            },
+            { path: "/timetable", icon: <AiOutlineCalendar className="text-xl" />, label: "Timetable" },
+            { path: "/announcements", icon: <HiOutlineSpeakerphone className="text-xl" />, label: "Announcements" },
+            { path: "/notifications", icon: <MdOutlineNotifications className="text-xl" />, label: "Notifications" },
+            { path: "/messages", icon: <FaRegCommentDots className="text-xl" />, label: "Messages" },
+            { path: "/request-leave", icon: <HiOutlineClipboard className="text-xl" />, label: "Request Leave" },
+            { path: "/complaints", icon: <HiOutlineChatAlt2 className="text-xl" />, label: "Complaints" },
+            { path: "/settings", icon: <FiSettings className="text-xl" />, label: "Settings" },
+          ].map((item) => (
+            <React.Fragment key={item.path}>
+              <div
+                className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
+                  isActive(item.path) ? "bg-gray-300 text-gray-900 font-bold" : "hover:bg-gray-200 hover:text-gray-800"
+                }`}
+                onClick={() => {
+                  if (item.subItems) {
+                    setIsUserTabOpen((prev) => !prev);
+                  } else {
+                    handleNavigate(item.path);
+                  }
+                }}
+                aria-expanded={item.subItems ? isUserTabOpen : undefined}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {item.subItems && (isUserTabOpen ? <FiChevronDown /> : <FiChevronRight />)}
               </div>
-            </div>
-          </div>
-
-          <div>
-            <div
-              className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
-                isActive("/users") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-              }`}
-              onClick={() => setIsUserTabOpen(!isUserTabOpen)}
-            >
-              <div className="flex items-center gap-4"
-                onClick={() => handleNavigate("/users")} >
-                <HiOutlineUsers className="text-xl" />
-                <span>Users</span>
-              </div>
-              {isUserTabOpen ? <FiChevronDown /> : <FiChevronRight />}
-            </div>
-            {isUserTabOpen && (
-              <div className="pl-8">
-                <div
-                  className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
-                  onClick={() => handleNavigate("/users/students/")}
-                >
-                  <span>Students</span>
+              {item.subItems && isUserTabOpen && (
+                <div className="pl-8">
+                  {item.subItems.map((subItem) => (
+                    <div
+                      key={subItem.path}
+                      className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
+                      onClick={() => handleNavigate(subItem.path)}
+                    >
+                      <span>{subItem.label}</span>
+                    </div>
+                  ))}
                 </div>
-                <div
-                  className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
-                  onClick={() => handleNavigate("/users/teachers")}
-                >
-                  <span>Teachers</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/timetable") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-            onClick={() => handleNavigate("/timetable")}
-          >
-            <AiOutlineCalendar className="text-xl" />
-            <span>Timetable</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/announcements") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-            onClick={() => handleNavigate("/announcements")}
-          >
-            <HiOutlineSpeakerphone className="text-xl" />
-            <span>Announcements</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/notifications") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-            onClick={() => handleNavigate("/notifications")}
-          >
-            <MdOutlineNotifications className="text-xl" />
-            <span>Notifications</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/messages") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-          >
-            <FaRegCommentDots className="text-xl" />
-            <span>Messages</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/request-leave") ? "bg-gray-300 text-gray-900 bold" : "hover:bg-gray-200 hover:text-gray-800"
-            }`}
-            onClick={() => handleNavigate("/request-leave")}
-          >
-            <HiOutlineClipboard className="text-xl" />
-            <span>Request Leave</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/complaints") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
-            }`}
-            onClick={() => handleNavigate("/complaints")}
-          >
-            <HiOutlineChatAlt2 className="text-xl" />
-            <span>Complaints</span>
-          </div>
-
-          <div
-            className={`p-5 hover:bg-gray-200 flex items-center gap-4 cursor-pointer rounded-md ${
-              isActive("/settings") ? "bg-gray-300 text-gray-900 bold rounded-md" : "hover:bg-gray-200 hover:text-gray-800 rounded-md"
-            }`}
-            onClick={() => handleNavigate("/settings")}
-          >
-            <FiSettings className="text-xl" />
-            <span>Settings</span>
-          </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
@@ -204,27 +149,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         {/* Logout Icon */}
         <button
           className="text-gray-600 hover:text-gray-800 transition"
-          onClick={() => handleNavigate("/")}
+          onClick={() => handleLogout()}
           aria-label="Logout"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 3v9m6.364-5.364a9 9 0 11-12.728 0"
-            />
-          </svg>
+          <FiLogOut className="w-6 h-6" />
         </button>
       </div>
     </div>
   );
-};
+});
 
+Sidebar.displayName = "Sidebar"; // Add display name for better debugging
 export default Sidebar;

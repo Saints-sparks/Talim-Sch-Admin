@@ -1,15 +1,19 @@
-'use client'
+"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePageIndicator } from "@/app/context/PageIndicatorContext";
+import { ToastContainer, toast, Flip } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = ({ onClose, onNext }) => {
+const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState<number>(0); 
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const [studentId, setStudentId] = useState<string | null>(null); // Store the student's ID
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    fullName: "",
     parentName: "",
     phoneNumber: "",
     email: "",
@@ -24,19 +28,141 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
     specialization: "",
     certification: "",
     achievements: "",
+    teacher: "",
+    availability: "",
+    arrivalTime: "",
+
   });
+
+  const handleSubmit = async () => {
+    try {
+      let endpoint = "";
+      let method = "POST";
+      let body = {};
+
+      switch (currentPage) {
+        case 0:
+          // Step 1: Create the student
+          endpoint = `${baseUrl}/students`;
+          method = "POST";
+          body = {
+            fullName: formData.fullName,
+            phoneNumber: formData.phoneNumber,
+            email: formData.email,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+          };
+          break;
+
+        case 1:
+          // Step 2: Add parent/guardian information
+          endpoint = `${baseUrl}/students/${studentId}/parent`;
+          method = "POST";
+          body = {
+            parentName: formData.parentName,
+            phoneNumber: formData.phoneNumber,
+            emailAddress: formData.emailAddress,
+            relationship: formData.relationship,
+          };
+          break;
+
+        case 2:
+          // Step 3: Add academic information
+          endpoint = `${baseUrl}/students/${studentId}/academic`;
+          method = "POST";
+          body = {
+            class: formData.class,
+            subject: formData.subject,
+          };
+          break;
+
+        case 3:
+          // Step 4: Assign teacher to class and subject
+          endpoint = `${baseUrl}/students/${studentId}/assign-teacher`;
+          method = "POST";
+          body = {
+            class: formData.class,
+            subject: formData.subject,
+            teacher: formData.teacher,
+          };
+          break;
+
+        case 4:
+          // Step 5: Set teacher availability
+          endpoint = `${baseUrl}/students/${studentId}/availability`;
+          method = "POST";
+          body = {
+            availability: formData.availability,
+            arrivalTime: formData.arrivalTime,
+          };
+          break;
+
+        default:
+          throw new Error("Invalid step");
+      }
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save step ${currentPage + 1}`);
+      }
+
+      const data = await response.json();
+
+      if (currentPage === 0) {
+        // Save the student's ID after the first step
+        setStudentId(data.id);
+      }
+
+      toast.success(`Step ${currentPage + 1} saved successfully`, {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Flip,
+      });
+
+      if (currentPage === 4) {
+        // Final step: Close the modal and redirect
+        onClose();
+        router.push("/teacher-profile");
+      } else {
+        // Move to the next step
+        setCurrentPage((prev) => prev + 1);
+      }
+    } catch (error) {
+      
+      console.error(`Error saving step ${currentPage + 1}:`, error);
+      toast.error(`Failed to save step ${currentPage + 1}`, {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Flip,
+      });
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-  };
-
-  const handleSubmit = () => {
-    console.log("Form Data:", formData);
-    onClose(); // Close the modal after saving
-    router.push('/teacher-profile')
   };
 
   const handleOutsideClick = (e: React.MouseEvent) => {
@@ -46,251 +172,261 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
   };
 
   const renderPageContent = () => {
-    if (currentPage === 0) {
-      return (
-        <div className="space-y-6">
-          <div className="flex gap-6">
-            <input
-              type="text"
-              name="firstName"
-              placeholder="Enter first name"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.firstName}
-              onChange={handleInputChange}
-            />
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Enter last name"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.lastName}
-              onChange={handleInputChange}
-            />
-          </div>
+    switch (currentPage) {
+      case 0:
+        return (
+          <div className="space-y-6">
+            <ToastContainer />
+            <div className="flex gap-6">
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Enter first name"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.firstName}
+                onChange={handleInputChange}
+              />
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Enter last name"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.lastName}
+                onChange={handleInputChange}
+              />
+            </div>
 
-          <div className="flex gap-6">
-            <input
-              type="tel"
-              name="phoneNumber"
-              placeholder="+234XXXXXXX"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="example@gmail.com"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-          </div>
+            <div className="flex gap-6">
+              <input
+                type="tel"
+                name="phoneNumber"
+                placeholder="+234XXXXXXX"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="example@gmail.com"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
+            </div>
 
-          <div className="flex gap-6">
-            <input
-              type="date"
-              name="dateOfBirth"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange}
-            />
-            <select
-              name="gender"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.gender}
-              onChange={handleInputChange}
-            >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
-        </div>
-      );
-    }
-
-    if (currentPage === 1) {
-      return (
-        <div className="space-y-6">
-           <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-1 font-medium">Full Name</label>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.parentName}
-              onChange={handleInputChange}
-              placeholder="Enter your full name"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium">Phone Number</label>
-            <input
-              type="number"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              placeholder="Enter your phone number"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium">Email Address</label>
-            <input
-              type="email"
-              name="emailAddress"
-              value={formData.emailAddress}
-              onChange={handleInputChange}
-              placeholder="Enter your email address"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-medium">Relationship to Student</label>
-            <select
-              name="country"
-              value={formData.relationship}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            >
-              <option value="">Select Gender</option>
-              <option value="Father">Father</option>
-              <option value="Mother">Mother</option>
-            </select>
-          </div>
-        </div>
-        </div>
-      );
-    }
-
-    if (currentPage === 2) {
-      return (
-        <div className="space-y-6">
-          <div className="flex gap-6">
-            <input
-              type="text"
-              name="class"
-              placeholder="Enter Class"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.class}
-              onChange={handleInputChange}
-            />
-            <select
-              name="subject"
-              className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              value={formData.subject}
-              onChange={handleInputChange}
-            >
-              <option value="">Select Subject</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="English">English</option>
-            </select>
-          </div> 
-        </div>
-      );
-    }
-
-    if (currentPage === 3) {
-      return (
-        <div className="space-y-6">
-          <div className="flex gap-6">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-2">
-                Subject to Teach
-              </label>
+            <div className="flex gap-6">
+              <input
+                type="date"
+                name="dateOfBirth"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+              />
               <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                name="gender"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.gender}
+                onChange={handleInputChange}
               >
-                <option value="" disabled selected>
-                  Select Subject
-                </option>
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+          </div>
+        );
+
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-1 font-medium">Full Name</label>
+                <input
+                  type="text"
+                  name="parentName"
+                  value={formData.parentName}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium">Phone Number</label>
+                <input
+                  type="number"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  placeholder="Enter your phone number"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium">Email Address</label>
+                <input
+                  type="email"
+                  name="emailAddress"
+                  value={formData.emailAddress}
+                  onChange={handleInputChange}
+                  placeholder="Enter your email address"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium">Relationship to Student</label>
+                <select
+                  name="relationship"
+                  value={formData.relationship}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                >
+                  <option value="">Select Relationship</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="flex gap-6">
+              <input
+                type="text"
+                name="class"
+                placeholder="Enter Class"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.class}
+                onChange={handleInputChange}
+              />
+              <select
+                name="subject"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                value={formData.subject}
+                onChange={handleInputChange}
+              >
+                <option value="">Select Subject</option>
                 <option value="Mathematics">Mathematics</option>
                 <option value="English">English</option>
               </select>
             </div>
-
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-2">
-                Assign Teacher To Class
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled selected>
-                  Select Class
-                </option>
-                <option value="JSS 1">JSS 1</option>
-                <option value="JSS 2">JSS 2</option>
-                <option value="JSS 3">JSS 3</option>
-                <option value="SS 1">SS 1</option>
-              </select>
-            </div>
-          </div>   
-
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class Teacher Assignment
-            </label>
-            <select
-              className="w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Teacher
-              </option>
-              <option value="Mr James Saunders">Mr James Saunders</option>
-              <option value="Mrs Lilian Ayo">Mrs Lilian Ayo</option>
-              <option value="Miss Deborah Chuka">Miss Deborah Chuka</option>
-            </select>
           </div>
-        </div>
-      );
-    }
+        );
 
-    if (currentPage === 4) {
-      return (
-        <div className="space-y-6">
-          <div className="flex gap-6">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-2">
-                Availability
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled selected>
-                  Available Days
-                </option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-              </select>
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="flex gap-6">
+              <div className="flex-1">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Subject to Teach
+                </label>
+                <select
+                  name="subject"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                >
+                  <option value="" disabled>
+                    Select Subject
+                  </option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English">English</option>
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Assign Teacher To Class
+                </label>
+                <select
+                  name="class"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.class}
+                  onChange={handleInputChange}
+                >
+                  <option value="" disabled>
+                    Select Class
+                  </option>
+                  <option value="JSS 1">JSS 1</option>
+                  <option value="JSS 2">JSS 2</option>
+                  <option value="JSS 3">JSS 3</option>
+                  <option value="SS 1">SS 1</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex-1">
               <label className="block text-gray-700 font-semibold mb-2">
-                Arrival Time (Optional)
+                Class Teacher Assignment
               </label>
               <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                name="teacher"
+                className="w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="" disabled selected>
-                  Select Time
+                <option value="" disabled>
+                  Select Teacher
                 </option>
-                <option value="8:00 AM">8:00 AM</option>
-                <option value="8:30 AM">8:30 AM</option>
-                <option value="9:00 AM">9:00 AM</option>
+                <option value="Mr James Saunders">Mr James Saunders</option>
+                <option value="Mrs Lilian Ayo">Mrs Lilian Ayo</option>
+                <option value="Miss Deborah Chuka">Miss Deborah Chuka</option>
               </select>
             </div>
-          </div>   
-        </div>
-      );
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="flex gap-6">
+              <div className="flex-1">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Availability
+                </label>
+                <select
+                  name="availability"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>
+                    Available Days
+                  </option>
+                  <option value="Monday">Monday</option>
+                  <option value="Tuesday">Tuesday</option>
+                  <option value="Wednesday">Wednesday</option>
+                  <option value="Thursday">Thursday</option>
+                  <option value="Friday">Friday</option>
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Arrival Time (Optional)
+                </label>
+                <select
+                  name="arrivalTime"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>
+                    Select Time
+                  </option>
+                  <option value="8:00 AM">8:00 AM</option>
+                  <option value="8:30 AM">8:30 AM</option>
+                  <option value="9:00 AM">9:00 AM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -311,12 +447,16 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
           </button>
         </div>
         <p className="text-base text-gray-600">
-          Step {currentPage + 1}: 
-          {currentPage === 0 ? " Student Personal Details" :
-          currentPage === 1 ? " Parent/Guardian Information" :
-          currentPage === 2 ? " Academic Information" :
-          currentPage === 3 ? " Assign Teacher to a class & a subject" :
-          " Set Teacher Availability"}        
+          Step {currentPage + 1}:{" "}
+          {currentPage === 0
+            ? " Student Personal Details"
+            : currentPage === 1
+            ? " Parent/Guardian Information"
+            : currentPage === 2
+            ? " Academic Information"
+            : currentPage === 3
+            ? " Assign Teacher to a class & a subject"
+            : " Set Teacher Availability"}
         </p>
         {renderPageContent()}
 
@@ -329,21 +469,12 @@ const AddStudentModal: React.FC<{ onClose: () => void, onNext: () => void; }> = 
             >
               Back
             </button>
-            {currentPage === 4 ? (
-              <button
-                onClick={handleSubmit}
-                className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
-              >
-                Save
-              </button>
-            ) : (
-              <button
-                onClick={() => setCurrentPage((prev: number) => prev + 1)}
-                className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
-              >
-                Next
-              </button>
-            )}
+            <button
+              onClick={handleSubmit}
+              className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+            >
+              {currentPage === 4 ? "Save" : "Next"}
+            </button>
           </div>
 
           <div className="flex justify-center mt-4">

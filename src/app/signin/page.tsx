@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify'; // Import toast from react-toastify
 
 export default function SignIn() {
   const router = useRouter();
@@ -11,12 +12,14 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // Loading state
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 
-  const handleEmailChange = (e: any) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
 
-  const handlePasswordChange = (e: any) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
   };
 
@@ -24,9 +27,50 @@ export default function SignIn() {
     setShowPassword(!showPassword);
   };
 
-  const handleFormSubmit = (e: any) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push('/signup');
+
+    // Set loading to true when the form is submitted
+    setLoading(true);
+
+    try {
+      // Prepare the request body
+      const requestBody = {
+        email,
+        password,
+        deviceToken: '123456', // Replace with actual device token
+        platform: 'web', // Replace with actual platform (e.g., 'web', 'ios', 'android')
+      };
+
+      // Send login request to the backend
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Display success toast
+        toast.success('Login successful! Redirecting...');
+        // Redirect to dashboard or home page on successful login
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000); // Delay redirect to allow toast to be seen
+      } else {
+        // Display error toast
+        toast.error(data.message || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      // Display error toast
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      // Reset loading state
+      setLoading(false);
+    }
   };
 
   return (
@@ -102,9 +146,10 @@ export default function SignIn() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-[60%] bg-[#154473] text-white py-2 px-3 rounded-lg shadow-lg hover:bg-[#123961] focus:outline-none focus:ring focus:ring-[#5A7EA6] mx-auto"
+              disabled={loading} // Disable the button when loading
+              className="w-[60%] bg-[#154473] text-white py-2 px-3 rounded-lg shadow-lg hover:bg-[#123961] focus:outline-none focus:ring focus:ring-[#5A7EA6] mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'} {/* Change button text based on loading state */}
             </button>
           </form>
         </div>
