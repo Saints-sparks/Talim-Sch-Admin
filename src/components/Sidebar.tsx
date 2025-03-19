@@ -14,6 +14,7 @@ import { AiOutlineCalendar, AiOutlinePlus } from "react-icons/ai";
 import { MdOutlineNotifications } from "react-icons/md";
 import { FiSettings, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
+import { useLoading } from '@/hooks/useLoading';
 
 type SidebarProps = {
   className?: string;
@@ -23,25 +24,27 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [isUserTabOpen, setIsUserTabOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { startLoading, stopLoading } = useLoading();
 
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
   const handleNavigate = useCallback(
     (path: string) => {
+      startLoading();
       console.log(`Navigating to: ${path}`);
       router.push(path);
     },
-    [router]
+    [router, startLoading]
   );
 
   const handleLogout = useCallback(() => {
-  // Clear user data from localStorage or sessionStorage
-  localStorage.removeItem("accessToken"); // Example: Remove the user token
-  localStorage.removeItem("refreshToken"); // Example: Remove user-related data
+    // Clear user data from localStorage or sessionStorage
+    localStorage.removeItem("accessToken"); // Example: Remove the user token
+    localStorage.removeItem("refreshToken"); // Example: Remove user-related data
 
-  // Redirect to the login page or home page
-  router.push("/"); // Replace "/login" with your login page route
-}, [router]);
+    // Redirect to the login page or home page
+    router.push("/"); // Replace "/login" with your login page route
+  }, [router]);
 
   return (
     <div

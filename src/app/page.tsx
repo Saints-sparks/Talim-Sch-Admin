@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify'; // Import toast from react-toastify
+import { authService } from './services/auth.service';
+import nookies from 'nookies'
 
 export default function SignIn() {
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function SignIn() {
     // Set loading to true when the form is submitted
     setLoading(true);
 
+    console.log('Login request:', { email, password });
     try {
       // Prepare the request body
       const requestBody = {
@@ -43,32 +46,30 @@ export default function SignIn() {
       };
 
       // Send login request to the backend
-      const response = await fetch(`${baseUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await authService.login(requestBody);
 
-      const data = await response.json();
+      nookies.set(null, 'access_token', response.access_token, {
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: '/',
+      })
+      nookies.set(null, 'refresh_token', response.refresh_token, {
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/',
+      })
 
-      if (response.ok) {
-        // Store tokens in localStorage or sessionStorage
-        localStorage.setItem('accessToken', data.access_token); // Store access token
-        localStorage.setItem('refreshToken', data.refresh_token); // Store refresh token
+      // Get user info
+      const userInfo = await authService.introspectToken(response.access_token)
 
-        // Display success toast
-        toast.success('Login successful! Redirecting...');
+      // Store user info in localStorage
+      localStorage.setItem('user', JSON.stringify(userInfo.user))
+      localStorage.setItem('accessToken', response.access_token); // Store access token
+      localStorage.setItem('refreshToken', response.refresh_token)
+      toast.success('Login successful! Redirecting...');
 
-        // Redirect to dashboard or home page on successful login
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000); // Delay redirect to allow toast to be seen
-      } else {
-        // Display error toast
-        toast.error(data.message || 'Login failed. Please try again.');
-      }
+      // Redirect to dashboard or home page on successful login
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000); // Delay redirect to allow toast to be seen
     } catch (err) {
       // Display error toast
       toast.error('An error occurred. Please try again.');
@@ -79,7 +80,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white-400">
       {/* Left Section */}
       <div className="w-1/2 flex flex-col justify-center items-center px-8">
         <div className="w-[70%] bg-white shadow-lg rounded-lg p-8">

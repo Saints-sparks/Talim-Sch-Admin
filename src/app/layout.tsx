@@ -11,6 +11,7 @@ import classNames from "classnames"; // Import classnames
 import { ToastContainer, toast } from "react-toastify"; // Import ToastContainer and toast
 import "react-toastify/dist/ReactToastify.css"; // Import the CSS for react-toastify
 import { useEffect } from "react"; // Import useEffect for side effects
+import LoadingProvider from '@/providers/LoadingProvider';
 
 // Local Fonts
 const geistSans = localFont({
@@ -67,35 +68,37 @@ export default function RootLayout({
   }, [pathname, router, noSidebarRoutes]);
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
-      >
-        <PageIndicatorProvider>
-          {/* Main layout structure */}
-          <div className="flex">
-            {showSidebar && (
-              <Sidebar className="fixed left-0 top-0 h-full w-64 bg-black" />
-            )}
-            <main className={classNames("flex-1 p-4", { "ml-64": showSidebar })}>
-              {children}
-            </main>
-          </div>
-          {/* Add ToastContainer here */}
-          <ToastContainer
-            position="top-center"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
-        </PageIndicatorProvider>
-      </body>
-    </html>
+    <LoadingProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
+        >
+          <PageIndicatorProvider>
+            {/* Main layout structure */}
+            <div className="flex">
+              {showSidebar && (
+                <Sidebar className="fixed left-0 top-0 h-full w-64 bg-black" />
+              )}
+              <main className={classNames("flex-1 p-4", { "ml-64": showSidebar })}>
+                {children}
+              </main>
+            </div>
+            {/* Add ToastContainer here */}
+            <ToastContainer
+              position="top-center"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+          </PageIndicatorProvider>
+        </body>
+      </html>
+    </LoadingProvider>
   );
 }
