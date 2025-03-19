@@ -71,7 +71,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       } else {
         if (!userId) throw new Error('User ID not found');
         const profileData = {
-          userId,
+          userId: userId!, // Ensure userId is properly passed to createStudentProfile
           classId: formData.classId,
           gradeLevel: formData.gradeLevel,
           parentContact: formData.parentContact
