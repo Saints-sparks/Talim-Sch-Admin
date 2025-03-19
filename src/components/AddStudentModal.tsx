@@ -18,21 +18,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
-
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const classes = await getClasses();
-        setClasses(classes);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-        toast.error('Failed to load classes');
-      }
-    };
-
-    fetchClasses();
-  }, []);
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -49,10 +34,31 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   });
 
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const schoolId = getSchoolId();
+      if (!schoolId) {
+        toast.error('School ID is required');
+        return;
+      }
+  
+      try {
+        const classes = await getClasses(); // Ensure this function accepts schoolId
+        setClasses(classes);
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        toast.error('Failed to load classes');
+      }
+    };
+  
+    fetchClasses();
+  }, []);
+
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
       const schoolId = getSchoolId();
+      
       if (!schoolId) throw new Error('School ID not found');
 
       if (currentStep === 0) {
@@ -116,7 +122,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="email"
                 name="email"
                 placeholder="Enter email"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.email}
                 onChange={handleInputChange}
               />
@@ -124,7 +130,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="password"
                 name="password"
                 placeholder="Enter password"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.password}
                 onChange={handleInputChange}
               />
@@ -135,7 +141,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="text"
                 name="firstName"
                 placeholder="Enter first name"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.firstName}
                 onChange={handleInputChange}
               />
@@ -143,7 +149,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="text"
                 name="lastName"
                 placeholder="Enter last name"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.lastName}
                 onChange={handleInputChange}
               />
@@ -154,7 +160,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="tel"
                 name="phoneNumber"
                 placeholder="+234XXXXXXX"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.phoneNumber}
                 onChange={handleInputChange}
               />
@@ -168,7 +174,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="flex gap-6">
               <select
                 name="classId"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.classId}
                 onChange={handleInputChange}
               >
@@ -183,7 +189,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 type="text"
                 name="gradeLevel"
                 placeholder="Enter grade level"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
                 value={formData.gradeLevel}
                 onChange={handleInputChange}
               />
@@ -198,7 +204,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   value={formData.parentContact.fullName}
                   onChange={handleParentContactChange}
                   placeholder="Enter parent full name"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
                 />
               </div>
 
@@ -210,7 +216,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   value={formData.parentContact.phoneNumber}
                   onChange={handleParentContactChange}
                   placeholder="Enter parent phone number"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
                 />
               </div>
 
@@ -222,7 +228,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   value={formData.parentContact.email}
                   onChange={handleParentContactChange}
                   placeholder="Enter parent email address"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
                 />
               </div>
 
@@ -232,11 +238,12 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   name="relationship"
                   value={formData.parentContact.relationship}
                   onChange={handleParentContactChange}
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
                 >
                   <option value="">Select Relationship</option>
-                  <option value="Father">Father</option>
-                  <option value="Mother">Mother</option>
+                  <option value="FATHER">Father</option>
+                  <option value="MOTHER">Mother</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
             </div>

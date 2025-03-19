@@ -13,7 +13,7 @@ import { FaRegCommentDots, FaUserCircle } from "react-icons/fa";
 import { AiOutlineCalendar, AiOutlinePlus } from "react-icons/ai";
 import { MdOutlineNotifications } from "react-icons/md";
 import { FiSettings, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
-import Image from "next/image";
+import Image from "next/legacy/image";
 import { useLoading } from '@/hooks/useLoading';
 import LoadingModal from './LoadingModal';
 
@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   }, [pathname, stopLoading]);
 
   return (
-    <div className={`bg-[#F8FAFC] text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}>
+    <div className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}>
       <LoadingModal isLoading={isLoading} />
       <div className="overflow-y-auto flex-1 p-4">
         <div className="border-t-2 rounded-md">

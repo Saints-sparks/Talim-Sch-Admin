@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import Header from '@/components/Header';
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";

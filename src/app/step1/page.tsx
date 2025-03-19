@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import { useState, useEffect } from 'react';
 import { usePageIndicator } from '../context/PageIndicatorContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';

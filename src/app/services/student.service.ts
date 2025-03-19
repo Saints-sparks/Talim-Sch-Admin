@@ -52,6 +52,8 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
     body: JSON.stringify(payload),
   });
@@ -64,7 +66,7 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
 };
 
 export const getClasses = async (): Promise<Class[]> => {
-  const response = await fetch(API_ENDPOINTS.CLASSES, {
+  const response = await fetch(API_ENDPOINTS.GET_CLASSES, {
     method: 'GET',
     headers: {
       'accept': 'application/json',

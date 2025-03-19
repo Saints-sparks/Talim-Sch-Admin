@@ -36,6 +36,25 @@ export const getClasses = async (): Promise<Class[]> => {
 };
 
 export const getSchoolId = (): string | null => {
-  const user = getLocalStorageItem('user');
-  return user?.schoolId ?? null;
+  const user: any = getLocalStorageItem('user');
+  if (!user) return null;
+
+  try {
+    // Log the original schoolId
+    console.log('Original schoolId:', user.schoolId);
+
+    // Extract the _id directly using a regular expression
+    const match = user.schoolId.match(/_id: new ObjectId\('([^']+)'\)/);
+    if (!match) {
+      console.error('Failed to extract schoolId: No match found');
+      return null;
+    }
+
+    const schoolId = match[1];
+    console.log('Extracted schoolId:', schoolId);
+    return schoolId;
+  } catch (error) {
+    console.error('Failed to extract schoolId:', error);
+    return null;
+  }
 };
