@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   HiHome,
@@ -15,6 +15,7 @@ import { MdOutlineNotifications } from "react-icons/md";
 import { FiSettings, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
 import { useLoading } from '@/hooks/useLoading';
+import LoadingModal from './LoadingModal';
 
 type SidebarProps = {
   className?: string;
@@ -24,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [isUserTabOpen, setIsUserTabOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { startLoading, stopLoading } = useLoading();
+  const { isLoading, startLoading, stopLoading } = useLoading();
 
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
@@ -46,10 +47,15 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
     router.push("/"); // Replace "/login" with your login page route
   }, [router]);
 
+  useEffect(() => {
+    stopLoading();
+  }, [pathname, stopLoading]);
+
   return (
     <div
       className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}
     >
+      <LoadingModal isLoading={isLoading} />
       {/* Scrollable Main Menu */}
       <div className="overflow-y-auto flex-1">
         <div className="border-t-2 rounded-md">
