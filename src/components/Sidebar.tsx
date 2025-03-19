@@ -21,7 +21,41 @@ type SidebarProps = {
   className?: string;
 };
 
+interface MenuItem {
+  path: string;
+  icon: React.ReactNode;
+  label: string;
+  subItems?: { path: string; label: string }[];
+}
+
+const menuSections = [
+  {
+    title: 'School Management',
+    items: [
+      { path: '/dashboard', icon: <HiHome className="text-xl" />, label: 'Dashboard' },
+      { path: '/classes', icon: <HiOutlineBookOpen className="text-xl" />, label: 'Classes' },
+      {
+        path: '/users',
+        icon: <HiOutlineUsers className="text-xl" />,
+        label: 'Users',
+        subItems: [
+          { path: '/users/students', label: 'Students' },
+          { path: '/users/teachers', label: 'Teachers' }
+        ]
+      }
+    ]
+  },
+  {
+    title: 'Communication',
+    items: [
+      { path: '/announcements', icon: <HiOutlineSpeakerphone className="text-xl" />, label: 'Announcements' },
+      { path: '/messages', icon: <FaRegCommentDots className="text-xl" />, label: 'Messages' }
+    ]
+  }
+];
+
 const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [isUserTabOpen, setIsUserTabOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -47,99 +81,60 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
     router.push("/"); // Replace "/login" with your login page route
   }, [router]);
 
+  const toggleSection = useCallback((title: string) => {
+    setOpenSections(prev => ({ ...prev, [title]: !prev[title] }));
+  }, []);
+
   useEffect(() => {
     stopLoading();
   }, [pathname, stopLoading]);
 
   return (
-    <div
-      className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}
-    >
+    <div className={`bg-[#F8FAFC] text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}>
       <LoadingModal isLoading={isLoading} />
-      {/* Scrollable Main Menu */}
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-y-auto flex-1 p-4">
         <div className="border-t-2 rounded-md">
-          {/* Logo Section */}
-          <div className="py-10 mx-5 flex items-center justify-right gap-4 cursor-pointer border-b-2 rounded-md">
-            <Image
-              src="/icons/talim.svg"
-              alt="School Logo"
-              width={44.29}
-              height={43.23}
-              priority
-            />
-            <span className="text-2xl font-semibold">Talim</span>
+          <div className="py-6 mx-2 flex items-center gap-4 cursor-pointer border-b-2 rounded-md">
+            <Image src="/icons/talim.svg" alt="School Logo" width={44} height={43} priority />
+            <span className="text-2xl font-semibold text-gray-900">Talim</span>
           </div>
 
-          <div className="mb-4 border-b border-2 border-solid border-[#F1F1F1] -mx-4"></div>
-
-          {/* School Selector */}
-          <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
-            <Image
-              src="/img/unity.png"
-              alt="School"
-              width={40}
-              height={40}
-              loading="lazy"
-            />
-            <span className="ml-2 font-medium text-base text-gray-700">
-              Unity Secondary S...
-            </span>
-          </div>
-
-          {/* Menu Items */}
-          {[
-            { path: "/dashboard", icon: <HiHome className="text-xl" />, label: "Dashboard" },
-            { path: "/classes", icon: <HiOutlineBookOpen className="text-xl" />, label: "Classes" },
-            {
-              path: "/users",
-              icon: <HiOutlineUsers className="text-xl" />,
-              label: "Users",
-              subItems: [
-                { path: "/users/students", label: "Students" },
-                { path: "/users/teachers", label: "Teachers" },
-              ],
-            },
-            { path: "/timetable", icon: <AiOutlineCalendar className="text-xl" />, label: "Timetable" },
-            { path: "/announcements", icon: <HiOutlineSpeakerphone className="text-xl" />, label: "Announcements" },
-            { path: "/notifications", icon: <MdOutlineNotifications className="text-xl" />, label: "Notifications" },
-            { path: "/messages", icon: <FaRegCommentDots className="text-xl" />, label: "Messages" },
-            { path: "/request-leave", icon: <HiOutlineClipboard className="text-xl" />, label: "Request Leave" },
-            { path: "/complaints", icon: <HiOutlineChatAlt2 className="text-xl" />, label: "Complaints" },
-            { path: "/settings", icon: <FiSettings className="text-xl" />, label: "Settings" },
-          ].map((item) => (
-            <React.Fragment key={item.path}>
+          {menuSections.map(section => (
+            <div key={section.title} className="mt-4">
               <div
-                className={`p-5 flex items-center gap-4 cursor-pointer rounded-md ${
-                  isActive(item.path) ? "bg-gray-300 text-gray-900 font-bold" : "hover:bg-gray-200 hover:text-gray-800"
-                }`}
-                onClick={() => {
-                  if (item.subItems) {
-                    setIsUserTabOpen((prev) => !prev);
-                  } else {
-                    handleNavigate(item.path);
-                  }
-                }}
-                aria-expanded={item.subItems ? isUserTabOpen : undefined}
+                className="flex items-center justify-between p-2 text-gray-700 font-medium cursor-pointer"
+                onClick={() => toggleSection(section.title)}
               >
-                {item.icon}
-                <span>{item.label}</span>
-                {item.subItems && (isUserTabOpen ? <FiChevronDown /> : <FiChevronRight />)}
+                <span>{section.title}</span>
+                {openSections[section.title] ? <FiChevronDown /> : <FiChevronRight />}
               </div>
-              {item.subItems && isUserTabOpen && (
-                <div className="pl-8">
-                  {item.subItems.map((subItem) => (
-                    <div
-                      key={subItem.path}
-                      className="p-3 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
-                      onClick={() => handleNavigate(subItem.path)}
-                    >
-                      <span>{subItem.label}</span>
+              {openSections[section.title] && section.items.map(item => (
+                <React.Fragment key={item.path}>
+                  <div
+                    className={`p-3 flex items-center gap-4 cursor-pointer rounded-md ${
+                      isActive(item.path) ? 'bg-[#154473] text-white' : 'hover:bg-gray-200'
+                    }`}
+                    onClick={() => handleNavigate(item.path)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.subItems && openSections[section.title] && (
+                    <div className="pl-8">
+                      {item.subItems.map(subItem => (
+                        <div
+                          key={subItem.path}
+                          className="p-2 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
+                          onClick={() => handleNavigate(subItem.path)}
+                        >
+                          <span>{subItem.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </React.Fragment>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           ))}
         </div>
       </div>

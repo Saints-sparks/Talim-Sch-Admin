@@ -10,19 +10,29 @@ export interface Class {
 }
 
 export const getClasses = async (): Promise<Class[]> => {
+  const token = getLocalStorageItem('accessToken');
+  if (!token) {
+    throw new Error('No access token found');
+  }
+
   const response = await fetch(API_ENDPOINTS.GET_CLASSES, {
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      'Authorization': `Bearer ${token}`
     }
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch classes');
+    throw new Error(`Failed to fetch classes: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  if (!Array.isArray(data)) {
+    throw new Error('Invalid response format: expected array of classes');
+  }
+
+  return data;
 };
 
 export const getSchoolId = (): string | null => {
