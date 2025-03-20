@@ -90,9 +90,13 @@ export default function Classes() {
                   <td className="py-2 px-4">{item.capacity}</td>
                   <td className="py-2 px-4">{item.subjects}</td>
                   <td className="py-2 px-4">
-                    <button className="px-3 py-1 bg-[#154473] text-white rounded hover:bg-blue-600">
-                      View
-                    </button>
+                  <a
+                    href={`/classes/add-class`} // Replace with your actual URL
+                    className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
+                  >
+                    View
+                  </a>
+
                     <button className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700">
                       <FiEdit className="text-xl" />
                     </button>
