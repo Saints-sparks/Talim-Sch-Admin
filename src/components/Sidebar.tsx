@@ -8,6 +8,10 @@ import {
   HiOutlineSpeakerphone,
   HiOutlineClipboard,
   HiOutlineChatAlt2,
+  HiOutlineCalendar,
+  HiOutlineExclamationCircle,
+  HiOutlineTicket,
+  HiOutlineCog
 } from "react-icons/hi";
 import { FaRegCommentDots, FaUserCircle } from "react-icons/fa";
 import { AiOutlineCalendar, AiOutlinePlus } from "react-icons/ai";
@@ -46,10 +50,24 @@ const menuSections = [
     ]
   },
   {
+    title: 'Academic',
+    items: [
+      { path: '/timetable', icon: <HiOutlineCalendar className="text-xl" />, label: 'Timetable' },
+      { path: '/complaints', icon: <HiOutlineExclamationCircle className="text-xl" />, label: 'Complaints' },
+      { path: '/leave-requests', icon: <HiOutlineTicket className="text-xl" />, label: 'Leave Requests' }
+    ]
+  },
+  {
     title: 'Communication',
     items: [
       { path: '/announcements', icon: <HiOutlineSpeakerphone className="text-xl" />, label: 'Announcements' },
-      { path: '/messages', icon: <FaRegCommentDots className="text-xl" />, label: 'Messages' }
+      { path: '/messages', icon: <HiOutlineChatAlt2 className="text-xl" />, label: 'Messages' }
+    ]
+  },
+  {
+    title: 'System',
+    items: [
+      { path: '/settings', icon: <HiOutlineCog className="text-xl" />, label: 'Settings' }
     ]
   }
 ];
