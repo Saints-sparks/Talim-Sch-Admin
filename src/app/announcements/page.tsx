@@ -1,85 +1,156 @@
 "use client";
 
-// components/Announcement.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import Header from "@/components/Header";
+import { createAnnouncement, AnnouncementResponse, getAnnouncementsBySender, CreateAnnouncementResponse } from "../services/announcement.service";
+import { toast } from "react-toastify";
+import { getLocalStorageItem } from '../lib/localStorage';
 
-const announcements = [
-  {
-    id: 1,
-    author: "MR. Adeyemo Isaac",
-    date: "26th April 2024, 09:00 pm",
-    profilePhoto: "/img/teacher.jpg",
-    announcementImage: "/img/announcement.jpg",
-    message: `Dear Students, Teachers, and Parents,
-    
-    We are pleased to inform you that the Mid-Term Examinations for Greenfield International Secondary School will begin on Monday, 15th January 2024, and conclude on Friday, 19th January 2024.
-    
-    All students are required to be present in school and prepared for their respective exams. Detailed examination timetables have been attached for your convenience. Please ensure punctuality and adherence to the school rules during the examination period.
-    
-    Should you have any questions or require clarification, feel free to contact the school administration.
-    
-    Thank you for your cooperation.`,
-    reactions: { likes: 99, comments: 10 },
-  },
-  {
-    id: 2,
-    author: "MR. Adeyemo Isaac",
-    date: "26th April 2024, 09:00 pm",
-    profilePhoto: "/img/teacher.jpg",
-    announcementImage: "/img/announcement1.jpg",
-    message: `Dear Students, Teachers, and Parents,
-    
-    We are pleased to inform you that the Mid-Term Examinations for Greenfield International Secondary School will begin on Monday, 15th January 2024, and conclude on Friday, 19th January 2024.
-    
-    All students are required to be present in school and prepared for their respective exams. Detailed examination timetables have been attached for your convenience. Please ensure punctuality and adherence to the school rules during the examination period.
-    
-    Should you have any questions or require clarification, feel free to contact the school administration.
-    
-    Thank you for your cooperation.`,
-    reactions: { likes: 99, comments: 10 },
-  },
-];
+interface Announcement {
+  title: string;
+  message: string;
+  attachment?: string;
+}
 
 const Announcement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newAnnouncement, setNewAnnouncement] = useState({
-    author: "",
+  const [newAnnouncement, setNewAnnouncement] = useState<Announcement>({
+    title: "",
     message: "",
-    photo: null as File | null,
-    video: null as File | null,
+    attachment: undefined,
+  });
+  const [announcements, setAnnouncements] = useState<CreateAnnouncementResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    lastPage: 1
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewAnnouncement((prev) => ({ ...prev, [name]: value }));
-  };
+  const fetchAnnouncements = async () => {
+    try {
+      const userId = getLocalStorageItem('user')?.userId;
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      setNewAnnouncement((prev) => ({ ...prev, [name]: files[0] }));
+      const response = await getAnnouncementsBySender(userId, pagination.page, pagination.limit);
+      setAnnouncements(response.data || []);
+      setPagination(prev => ({
+        ...prev,
+        total: response.meta.total,
+        lastPage: response.meta.lastPage
+      }));
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+      toast.error("Failed to fetch announcements. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [pagination.page, pagination.limit]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.lastPage) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAnnouncement.author || !newAnnouncement.message) {
-      alert("All fields are required");
+
+    if (!newAnnouncement.title || !newAnnouncement.message) {
+      toast.error("All fields are required");
       return;
     }
 
-    console.log("New Announcement:", newAnnouncement);
-    setIsModalOpen(false);
-    setNewAnnouncement({ author: "", message: "", photo: null, video: null }); // Reset form
+    try {
+      const attachmentUrl = 'https://res.cloudinary.com/iknowsaint/image/upload/v1741563890/images/xglmcp793rhnbjgn1gnz.jpg';
+      const announcementData = {
+        title: newAnnouncement.title,
+        message: newAnnouncement.message,
+        attachment: attachmentUrl,
+      };
+
+      const response = await createAnnouncement(announcementData);
+      if (!response) {
+        throw new Error('Failed to create announcement');
+      }
+
+      console.log("Announcement created:");
+      toast.success('Announcement created successfully!');
+
+      // Refresh the announcements list
+      fetchAnnouncements();
+      setNewAnnouncement({ title: "", message: "", attachment: undefined });
+    } catch (error: any) {
+      console.error("Error creating announcement:", error);
+      toast.error("Failed to create announcement. Please try again.", error.message);
+    } finally {
+      setIsModalOpen(false);
+    }
+  };
+
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const renderPagination = () => {
+    const pages = [];
+    for (let i = 1; i <= pagination.lastPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 mx-1 rounded ${
+            pagination.page === i
+              ? 'bg-[#154473] text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex justify-center space-x-2 mt-4">
+        <button
+          onClick={() => handlePageChange(pagination.page - 1)}
+          disabled={pagination.page === 1}
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+        >
+          Previous
+        </button>
+        {pages}
+        <button
+          onClick={() => handlePageChange(pagination.page + 1)}
+          disabled={pagination.page === pagination.lastPage}
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+        >
+          Next
+        </button>
+      </div>
+    );
   };
 
   return (
     <div className="p-6 bg-gray-100">
-      {/* Header */}
       <Header />
+      
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Announcement</h1>
+        <h1 className="text-2xl font-semibold">Announcements</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
@@ -88,156 +159,97 @@ const Announcement: React.FC = () => {
         </button>
       </div>
 
-      {/* Announcement List */}
-      <div className="space-y-6">
-        {announcements.map((announcement) => (
-          <div
-            key={announcement.id}
-            className="bg-white p-6 rounded-md shadow-md flex flex-col gap-4"
-          >
-            <div className="flex gap-4">
-              {/* Profile Photo */}
-              <img
-                src={announcement.profilePhoto}
-                alt={announcement.author}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-
-              {/* Announcement Content */}
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold">{announcement.author}</h2>
-                    <p className="text-sm text-gray-500">{announcement.date}</p>
-                  </div>
-                  <div className="text-gray-400 cursor-pointer">•••</div>
-                </div>
-                <p className="mt-4 text-gray-700 whitespace-pre-line">{announcement.message}</p>
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[200px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#154473]" />
+        </div>
+      ) : (
+        <>
+          <div className="space-y-6">
+            {announcements.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <p>No announcements available</p>
               </div>
-            </div>
-
-            {/* Announcement Image */}
-            {announcement.announcementImage && (
-              <img
-                src={announcement.announcementImage}
-                alt="Announcement"
-                className="w-full h-auto rounded-md object-cover"
-              />
+            ) : (
+              announcements.map((announcement) => (
+                <div key={announcement.id} className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-1">{announcement.title}</h2>
+                      <p className="text-sm text-gray-500">
+                        {formatDateTime(announcement.createdAt)}
+                      </p>
+                    </div>
+                    {announcement.attachment && (
+                      <a
+                        href={announcement.attachment}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        View Attachment
+                      </a>
+                    )}
+                  </div>
+                  <div className="prose max-w-none mb-4">
+                    <p>{announcement.message}</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <button className="text-blue-500 hover:text-blue-700">👍</button>
+                    <button className="text-red-500 hover:text-red-700">❤️</button>
+                    <button className="text-gray-500 hover:text-gray-700">👎</button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        ))}
-      </div>
+          {renderPagination()}
+        </>
+      )}
 
-      {/* Modal */}
       {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-          onClick={() => setIsModalOpen(false)} // Close modal on overlay click
-        >
-          {/* Prevent modal close on click inside */}
-          <div
-            className="bg-white rounded-lg w-1/2 shadow-lg"
-            onClick={(e) => e.stopPropagation()} // Stop propagation to prevent closing
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-700">Create Announcement</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-              {/* Author Input */}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Create Announcement</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label
-                  htmlFor="author"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Author
-                </label>
+                <label className="block text-sm font-medium mb-1">Title</label>
                 <input
                   type="text"
-                  id="author"
-                  name="author"
-                  value={newAnnouncement.author}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your name"
+                  name="title"
+                  value={newAnnouncement.title}
+                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
                 />
               </div>
-
-              {/* Message Input */}
               <div>
-                <label
-                  htmlFor="message"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Message
-                </label>
+                <label className="block text-sm font-medium mb-1">Message</label>
                 <textarea
-                  id="message"
                   name="message"
                   value={newAnnouncement.message}
-                  onChange={handleInputChange}
-                  rows={6}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Write your announcement"
-                ></textarea>
-              </div>
-
-              {/* Photo Input */}
-              <div>
-                <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-                  Photo
-                </label>
-                <input
-                  type="file"
-                  id="photo"
-                  name="photo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-500"
+                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, message: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md"
+                  rows={4}
+                  required
                 />
               </div>
-
-              {/* Video Input */}
-              <div>
-                <label htmlFor="video" className="block text-sm font-medium text-gray-700">
-                  Video
-                </label>
-                <input
-                  type="file"
-                  id="video"
-                  name="video"
-                  accept="video/*"
-                  onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-500"
-                />
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
+                >
+                  Create
+                </button>
               </div>
             </form>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 mr-2"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
-              >
-                Post Announcement
-              </button>
-            </div>
           </div>
         </div>
       )}

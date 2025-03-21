@@ -52,7 +52,7 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'accept': 'application/json',
+      'Accept': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
     body: JSON.stringify(payload),

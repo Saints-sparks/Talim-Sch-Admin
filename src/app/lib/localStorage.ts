@@ -1,5 +1,13 @@
 type LocalStorageItem = {
   schoolId: string;
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  phoneNumber: string;
+  isActive: boolean;
+  isEmailVerified: boolean;
   // Add other user properties as needed
 };
 
