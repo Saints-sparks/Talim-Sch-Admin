@@ -8,7 +8,7 @@ import { getLocalStorageItem } from '../lib/localStorage';
 
 interface Announcement {
   title: string;
-  message: string;
+  content: string;
   attachment?: string;
 }
 
@@ -16,7 +16,7 @@ const Announcement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAnnouncement, setNewAnnouncement] = useState<Announcement>({
     title: "",
-    message: "",
+    content: "",
     attachment: undefined,
   });
   const [announcements, setAnnouncements] = useState<CreateAnnouncementResponse[]>([]);
@@ -63,7 +63,7 @@ const Announcement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newAnnouncement.title || !newAnnouncement.message) {
+    if (!newAnnouncement.title || !newAnnouncement.content) {
       toast.error("All fields are required");
       return;
     }
@@ -72,7 +72,7 @@ const Announcement: React.FC = () => {
       const attachmentUrl = 'https://res.cloudinary.com/iknowsaint/image/upload/v1741563890/images/xglmcp793rhnbjgn1gnz.jpg';
       const announcementData = {
         title: newAnnouncement.title,
-        message: newAnnouncement.message,
+        content: newAnnouncement.content,
         attachment: attachmentUrl,
       };
 
@@ -86,7 +86,7 @@ const Announcement: React.FC = () => {
 
       // Refresh the announcements list
       fetchAnnouncements();
-      setNewAnnouncement({ title: "", message: "", attachment: undefined });
+      setNewAnnouncement({ title: "", content: "", attachment: undefined });
     } catch (error: any) {
       console.error("Error creating announcement:", error);
       toast.error("Failed to create announcement. Please try again.", error.message);
@@ -192,7 +192,7 @@ const Announcement: React.FC = () => {
                     )}
                   </div>
                   <div className="prose max-w-none mb-4">
-                    <p>{announcement.message}</p>
+                    <p>{announcement.content}</p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <button className="text-blue-500 hover:text-blue-700">👍</button>
@@ -224,11 +224,11 @@ const Announcement: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Message</label>
+                <label className="block text-sm font-medium mb-1">Content</label>
                 <textarea
-                  name="message"
-                  value={newAnnouncement.message}
-                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, message: e.target.value }))}
+                  name="content"
+                  value={newAnnouncement.content}
+                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, content: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-md"
                   rows={4}
                   required

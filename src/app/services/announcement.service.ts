@@ -12,9 +12,9 @@ export interface Announcement {
    */
   title: string;
   /**
-   * Message of the announcement
+   * Content of the announcement
    */
-  message: string;
+  content: string;
   /**
    * Attachment URL of the announcement (optional)
    */
@@ -34,9 +34,9 @@ export interface CreateAnnouncementResponse {
    */
   title: string;
   /**
-   * Message of the announcement
+   * Content of the announcement
    */
-  message: string;
+  content: string;
   /**
    * Attachment URL of the announcement (optional)
    */
