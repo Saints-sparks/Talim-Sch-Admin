@@ -65,7 +65,7 @@ const AddCourse: React.FC = () => {
     setButtonLoader(true);
   
     // Retrieve the authorization token from local storage
-    const authToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImM0YjQ3OTg4Y2FiZTcyNmM4YWFmMTVmNzI3NTIyYWFjIn0.e30.gjp6igt86ICabaiVz-xW1V3yftof4XPO3Zw6d421M8Knad4e7gENgvtuvHB1ZRR_5XJVz_NBMZgJsiMWQOA2mQ';
+    const authToken = localStorage.getItem('accessToken');
   
     if (!authToken) {
       toast.error("Authorization token not found. Please log in again.", {

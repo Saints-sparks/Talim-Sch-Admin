@@ -23,8 +23,8 @@ export interface AcademicYearResponse {
   year: string;
   startDate: string;
   endDate: string;
-  isCurrent: boolean;
   schoolId: string;
+  isCurrent: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,43 +41,7 @@ export interface TermResponse {
   updatedAt: string;
 }
 
-export interface AcademicYearMeta {
-  total: number;
-  page: number;
-  lastPage: number;
-  limit: number;
-}
-
-export interface TermMeta {
-  total: number;
-  page: number;
-  lastPage: number;
-  limit: number;
-}
-
-export interface AcademicYearsResponse {
-  data: AcademicYearResponse[];
-  meta: AcademicYearMeta;
-}
-
-export interface TermsResponse {
-  data: TermResponse[];
-  meta: TermMeta;
-}
-
-const getSchoolId = () => {
-  const schoolId = getLocalStorageItem('user')?.schoolId;
-
-  if (!schoolId) {
-    throw new Error('School ID not found');
-  }
-
-  return schoolId;
-};
-
 export const createAcademicYear = async (academicYear: AcademicYear): Promise<AcademicYearResponse> => {
-  
-
   try {
     const response = await fetch(`${API_ENDPOINTS.CREATE_ACADEMIC_YEAR}`, {
       method: 'POST',
@@ -85,9 +49,7 @@ export const createAcademicYear = async (academicYear: AcademicYear): Promise<Ac
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
-      body: JSON.stringify({
-        ...academicYear,
-      }),
+      body: JSON.stringify(academicYear),
     });
 
     if (!response.ok) {
@@ -104,43 +66,7 @@ export const createAcademicYear = async (academicYear: AcademicYear): Promise<Ac
   }
 };
 
-export const getAcademicYears = async (): Promise<AcademicYearsResponse> => {
-  const token = localStorage.getItem('accessToken');
-
-  // if (!token) {
-  //   throw new Error('User not authenticated');
-  // }
-
-  try {
-    const response = await fetch(`${API_ENDPOINTS.GET_ACADEMIC_YEARS}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch academic years');
-    }
-
-    const data: AcademicYearsResponse = await response.json();
-    return data;
-  } catch (error) {
-    toast.error('Failed to fetch academic years. Please try again.');
-    throw error;
-  }
-};
-
 export const createTerm = async (term: Term): Promise<TermResponse> => {
-  const userData = getLocalStorageItem('user') as User | null;
-  if (!userData?.schoolId) {
-    throw new Error('School ID not found');
-  }
-
-  const schoolId = userData.schoolId._id.toString();
-
   try {
     const response = await fetch(`${API_ENDPOINTS.CREATE_TERM}`, {
       method: 'POST',
@@ -148,10 +74,7 @@ export const createTerm = async (term: Term): Promise<TermResponse> => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
-      body: JSON.stringify({
-        ...term,
-        schoolId
-      }),
+      body: JSON.stringify(term),
     });
 
     if (!response.ok) {
@@ -168,31 +91,46 @@ export const createTerm = async (term: Term): Promise<TermResponse> => {
   }
 };
 
-export const getTerms = async (): Promise<TermsResponse> => {
-  const token = localStorage.getItem('accessToken');
+export const getAcademicYears = async (): Promise<AcademicYearResponse[]> => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.GET_ACADEMIC_YEARS}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    });
 
-  if (!token) {
-    throw new Error('User not authenticated');
+    if (!response.ok) {
+      throw new Error('Failed to fetch academic years');
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error fetching academic years:', error);
+    throw error;
   }
+};
 
+export const getTerms = async (): Promise<TermResponse[]> => {
   try {
     const response = await fetch(`${API_ENDPOINTS.GET_TERMS}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch terms');
+      throw new Error('Failed to fetch terms');
     }
 
-    const data: TermsResponse = await response.json();
-    return data;
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    toast.error('Failed to fetch terms. Please try again.');
+    console.error('Error fetching terms:', error);
     throw error;
   }
 };

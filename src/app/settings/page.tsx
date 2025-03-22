@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { useRouter } from "next/navigation";
-import { createAcademicYear, createTerm, getAcademicYears } from "@/app/services/academic.service";
+import { AcademicYearResponse, TermResponse, createAcademicYear, createTerm, getAcademicYears, getTerms } from "@/app/services/academic.service";
 import { toast } from "react-toastify";
 import { getLocalStorageItem, User } from "../lib/localStorage";
 import { getSchoolId } from "../services/school.service";
@@ -28,33 +28,58 @@ interface Term {
 const Settings: React.FC = () => {
   const [isAcademicYearModalOpen, setIsAcademicYearModalOpen] = useState(false);
   const [isTermModalOpen, setIsTermModalOpen] = useState(false);
-  const [academicYearForm, setAcademicYearForm] = useState({
+  const [academicYearForm, setAcademicYearForm] = useState<AcademicYear>({
     year: "",
     startDate: "",
     endDate: "",
     isCurrent: false,
+    schoolId: ""
   });
-  const [termForm, setTermForm] = useState({
+  const [termForm, setTermForm] = useState<Term>({
     name: "",
     startDate: "",
     endDate: "",
+    academicYearId: "",
     isCurrent: false,
-    academicYearId: ""
+    schoolId: ""
   });
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
+  const [academicYears, setAcademicYears] = useState<AcademicYearResponse[]>([]);
+  const [terms, setTerms] = useState<TermResponse[]>([]);
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     fetchAcademicYears();
+    fetchTerms();
   }, []);
 
   const fetchAcademicYears = async () => {
     try {
       const response = await getAcademicYears();
-      setAcademicYears(response.data);
+      console.log("academicYears", response);
+      setAcademicYears(response || []);
     } catch (error) {
+      console.error('Error fetching academic years:', error);
       toast.error("Failed to fetch academic years");
+      setAcademicYears([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTerms = async () => {
+    try {
+      const response = await getTerms();
+      console.log("terms", response);
+      setTerms(response || []);
+    } catch (error) {
+      console.error('Error fetching terms:', error);
+      toast.error("Failed to fetch terms");
+      setTerms([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,16 +87,8 @@ const Settings: React.FC = () => {
     console.log("academicYearForm", academicYearForm);
     e.preventDefault();
     try {
-      // const userData = getLocalStorageItem('user') as User | null;
-      // if (!userData?.schoolId) {
-      //   throw new Error('School ID not found');
-      // }
-
-      // const schoolId = userData.schoolId._id.toString();
-
       const academicYearData = {
         ...academicYearForm,
-      //  schoolId: ""
       };
       console.log("academicYearData", academicYearData);
 
@@ -83,7 +100,8 @@ const Settings: React.FC = () => {
         year: "",
         startDate: "",
         endDate: "",
-        isCurrent: false
+        isCurrent: false,
+        schoolId: ""
       });
       setIsAcademicYearModalOpen(false);
       fetchAcademicYears();
@@ -102,13 +120,6 @@ const Settings: React.FC = () => {
         return;
       }
 
-      // const userData = getLocalStorageItem('user') as User | null;
-      // if (!userData?.schoolId) {
-      //   throw new Error('School ID not found');
-      // }
-
-      // const schoolId = userData.schoolId._id.toString();
-
       const termData = {
         ...termForm,
         academicYearId: selectedAcademicYear
@@ -123,7 +134,8 @@ const Settings: React.FC = () => {
         startDate: "",
         endDate: "",
         isCurrent: false,
-        academicYearId: ""
+        academicYearId: "",
+        schoolId: ""
       });
       setSelectedAcademicYear("");
       setIsTermModalOpen(false);
@@ -156,6 +168,83 @@ const Settings: React.FC = () => {
             className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
           >
             Create Term
+          </button>
+        </div>
+      </div>
+
+      {/* Academic Year and Term Selection */}
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          {/* Academic Year */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-2">Academic Year</label>
+            <select
+              value={selectedAcademicYear}
+              onChange={(e) => setSelectedAcademicYear(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              disabled={loading}
+            >
+              <option value="">Select Academic Year</option>
+              {academicYears.map((year) => (
+                <option
+                  key={year.id}
+                  value={year.id}
+                  className={year.isCurrent ? 'font-bold' : ''}
+                >
+                  {year.year} {year.isCurrent ? '(Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Term */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-2">Term</label>
+            <select
+              value={selectedTerm}
+              onChange={(e) => setSelectedTerm(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              disabled={loading}
+            >
+              <option value="">Select Term</option>
+              {terms.map((term) => (
+                <option
+                  key={term.id}
+                  value={term.id}
+                  className={term.isCurrent ? 'font-bold' : ''}
+                >
+                  {term.name} {term.isCurrent ? '(Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Current Selection */}
+        <div className="mb-6 py-5">
+          <p className="text-gray-700 font-medium">
+            Current Academic Year: <span className="font-semibold">{academicYears.find(y => y.isCurrent)?.year || 'Not set'}</span>
+          </p>
+          <p className="text-gray-700 font-medium py-5">
+            Current Term: <span className="font-semibold">{terms.find(t => t.isCurrent)?.name || 'Not set'}</span>
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex gap-4 py-5">
+          <button
+            type="button"
+            className="px-6 py-4 bg-[#154473] text-white font-semibold rounded-lg hover:bg-blue-600"
+            disabled={loading}
+          >
+            Save Changes
+          </button>
+          <button
+            type="button"
+            className="px-6 py-4 bg-gray-500 text-gray-700 font-semibold rounded-lg hover:bg-red-600 text-white"
+            disabled={loading}
+          >
+            Cancel
           </button>
         </div>
       </div>
@@ -275,7 +364,7 @@ const Settings: React.FC = () => {
                 >
                   <option value="">Select Academic Year</option>
                   {academicYears.map((year) => (
-                    <option key={year.year} value={year.year}>
+                    <option key={year.id} value={year.id}>
                       {year.year}
                     </option>
                   ))}
@@ -311,97 +400,6 @@ const Settings: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Rest of the existing content */}
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <form>
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            {/* Academic Year */}
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Academic Year</label>
-              <select
-                name="year"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              >
-                <option>Select Academic Year</option>
-                <option value="2024/2025">2024/2025 (Current)</option>
-                <option value="2025/2026">2025/2026</option>
-                <option value="2026/2027">2026/2027</option>
-              </select>
-            </div>
-
-            {/* Select Term */}
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Select Term</label>
-              <select
-                name="term"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              >
-                <option>Select Term</option>
-                <option value="1st Term">1st Term (Current)</option>
-                <option value="2nd Term">2nd Term</option>
-                <option value="3rd Term">3rd Term</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            {/* Current Academic Year */}
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Current Academic Year</label>
-              <select
-                name="year"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              >
-                <option>Select Current Academic Year</option>
-                <option value="2024/2025">2024/2025 (Current)</option>
-                <option value="2025/2026">2025/2026</option>
-                <option value="2026/2027">2026/2027</option>
-              </select>
-            </div>
-
-            {/* Current Select Term */}
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Current Select Term</label>
-              <select
-                name="term"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
-              >
-                <option>Select Current Term</option>
-                <option value="1st Term">1st Term (Current)</option>
-                <option value="2nd Term">2nd Term</option>
-                <option value="3rd Term">3rd Term</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Current Selection */}
-          <div className="mb-6 py-5">
-            <p className="text-gray-700 font-medium">
-              Current Academic Year: <span className="font-semibold py-5">2023/2024</span>
-            </p>
-            <p className="text-gray-700 font-medium py-5">
-              Current Term: <span className="font-semibold">1st Term</span>
-            </p>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-4 py-5">
-            <button
-              type="button"
-              className="px-6 py-4 bg-[#154473] text-white font-semibold rounded-lg hover:bg-blue-600"
-            >
-              Save Changes
-            </button>
-            <button
-              type="button"
-              className="px-6 py-4 bg-gray-500 text-gray-700 font-semibold rounded-lg hover:bg-red-600 text-white"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };
