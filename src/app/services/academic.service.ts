@@ -16,10 +16,11 @@ export interface Term {
   endDate: string;
   isCurrent: boolean;
   academicYearId: string;
+  schoolId: string;
 }
 
 export interface AcademicYearResponse {
-  id: string;
+  _id: string;
   year: string;
   startDate: string;
   endDate: string;
@@ -30,7 +31,7 @@ export interface AcademicYearResponse {
 }
 
 export interface TermResponse {
-  id: string;
+  _id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -41,52 +42,75 @@ export interface TermResponse {
   updatedAt: string;
 }
 
+const formatDate = (date: string): string => {
+  const d = new Date(date);
+  return d.toISOString();
+};
+
 export const createAcademicYear = async (academicYear: AcademicYear): Promise<AcademicYearResponse> => {
   try {
+    const formattedData = {
+      ...academicYear,
+      // startDate: formatDate(academicYear.startDate),
+      // endDate: formatDate(academicYear.endDate)
+    };
+
     const response = await fetch(`${API_ENDPOINTS.CREATE_ACADEMIC_YEAR}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
       },
-      body: JSON.stringify(academicYear),
+      body: JSON.stringify(formattedData)
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create academic year');
+      throw new Error('Failed to create academic year');
     }
 
-    const data: AcademicYearResponse = await response.json();
-    toast.success('Academic year created successfully');
-    return data;
+    return await response.json();
   } catch (error) {
-    toast.error('Failed to create academic year. Please try again.');
+    console.error('Error creating academic year:', error);
     throw error;
   }
 };
 
-export const createTerm = async (term: Term): Promise<TermResponse> => {
+export const createTerm = async (data: Omit<Term, 'schoolId'>): Promise<TermResponse> => {
   try {
     const response = await fetch(`${API_ENDPOINTS.CREATE_TERM}`, {
       method: 'POST',
-      headers: {  
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
       },
-      body: JSON.stringify(term),
+      body: JSON.stringify({
+        ...data,
+        academicYearId: data.academicYearId, // Ensure academicYearId is properly included
+        name: data.name.trim(), // Trim any whitespace from name
+        startDate: data.startDate,
+        endDate: data.endDate,
+        isCurrent: data.isCurrent
+      })
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create term');
+      throw new Error('Failed to create term');
     }
 
-    const data: TermResponse = await response.json();
-    toast.success('Term created successfully');
-    return data;
+    const result = await response.json();
+    return {
+      _id: result._id,
+      name: result.name,
+      startDate: result.startDate,
+      endDate: result.endDate,
+      academicYearId: result.academicYearId,
+      isCurrent: result.isCurrent,
+      schoolId: result.schoolId,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt
+    };
   } catch (error) {
-    toast.error('Failed to create term. Please try again.');
+    console.error('Error creating term:', error);
     throw error;
   }
 };
@@ -128,9 +152,30 @@ export const getTerms = async (): Promise<TermResponse[]> => {
     }
 
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data.terms) ? data.terms : [];
   } catch (error) {
     console.error('Error fetching terms:', error);
+    throw error;
+  }
+};
+
+export const setCurrentTerm = async (termId: string): Promise<void> => {
+  try {
+    const url = API_ENDPOINTS.SET_CURRENT_TERM.replace(':termId', termId);
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to set current term');
+    }
+  } catch (error) {
+    console.error('Error setting current term:', error);
     throw error;
   }
 };

@@ -22,7 +22,8 @@ export const API_URLS = {
     CREATE_ACADEMIC_YEAR: '/academic-year-term/academic-year',
     GET_ACADEMIC_YEARS: '/academic-year-term/academic-year/school',
     CREATE_TERM: '/academic-year-term/term',
-    GET_TERMS: '/academic-year-term/term/school'
+    GET_TERMS: '/academic-year-term/term/school',
+    SET_CURRENT_TERM: '/academic-year-term/term/:termId/set-current',
   },
   TIMETABLE: {
     CREATE_TIMETABLE_ENTRY: '/timetable/entry',
@@ -47,6 +48,7 @@ export const API_ENDPOINTS = {
   GET_ACADEMIC_YEARS: `${API_BASE_URL}${API_URLS.ACADEMIC.GET_ACADEMIC_YEARS}`,
   CREATE_TERM: `${API_BASE_URL}${API_URLS.ACADEMIC.CREATE_TERM}`,
   GET_TERMS: `${API_BASE_URL}${API_URLS.ACADEMIC.GET_TERMS}`,
+  SET_CURRENT_TERM: `${API_BASE_URL}${API_URLS.ACADEMIC.SET_CURRENT_TERM}`,
   CREATE_TIMETABLE_ENTRY: `${API_BASE_URL}${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE: `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE}`,
   GET_TIMETABLE_BY_DAY: `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY}`,

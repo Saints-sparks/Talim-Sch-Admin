@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { useRouter } from "next/navigation";
-import { AcademicYearResponse, TermResponse, createAcademicYear, createTerm, getAcademicYears, getTerms } from "@/app/services/academic.service";
+import { AcademicYearResponse, TermResponse, createAcademicYear, createTerm, getAcademicYears, getTerms, setCurrentTerm } from "@/app/services/academic.service";
 import { toast } from "react-toastify";
 import { getLocalStorageItem, User } from "../lib/localStorage";
-import { getSchoolId } from "../services/school.service";
 
 interface AcademicYear {
   year: string;
@@ -24,6 +23,11 @@ interface Term {
   isCurrent: boolean;
   schoolId: string;
 }
+
+const formatDate = (date: string): string => {
+  const d = new Date(date);
+  return d.toISOString();
+};
 
 const Settings: React.FC = () => {
   const [isAcademicYearModalOpen, setIsAcademicYearModalOpen] = useState(false);
@@ -49,6 +53,15 @@ const Settings: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const getSchoolId = (): string => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      return userData.schoolId._id;
+    }
+    return '';
+  };
 
   useEffect(() => {
     fetchAcademicYears();
@@ -84,18 +97,18 @@ const Settings: React.FC = () => {
   };
 
   const handleAcademicYearSubmit = async (e: React.FormEvent) => {
-    console.log("academicYearForm", academicYearForm);
     e.preventDefault();
     try {
       const academicYearData = {
-        ...academicYearForm,
+        year: academicYearForm.year,
+        startDate: formatDate(academicYearForm.startDate),
+        endDate: formatDate(academicYearForm.endDate),
+        isCurrent: academicYearForm.isCurrent,
+        schoolId: getSchoolId()
       };
-      console.log("academicYearData", academicYearData);
 
-      await createAcademicYear({
-        ...academicYearData,
-      });
-      toast.success("Academic year created successfully");
+      await createAcademicYear(academicYearData);
+      
       setAcademicYearForm({
         year: "",
         startDate: "",
@@ -105,30 +118,44 @@ const Settings: React.FC = () => {
       });
       setIsAcademicYearModalOpen(false);
       fetchAcademicYears();
+      toast.success('Academic year created successfully');
     } catch (error) {
-      toast.error("Failed to create academic year. Please try again.");
-      console.error(error);
+      console.error('Error creating academic year:', error);
+      toast.error('Failed to create academic year. Please try again.');
     }
   };
 
   const handleTermSubmit = async (e: React.FormEvent) => {
-    console.log("termForm", termForm);
     e.preventDefault();
     try {
       if (!selectedAcademicYear) {
-        toast.error("Please select an academic year");
+        toast.error('Please select an academic year');
+        return;
+      }
+
+      if (!termForm.name.trim()) {
+        toast.error('Please enter a term name');
+        return;
+      }
+
+      // Find the academic year object to get the ID
+      const selectedAcademicYearObj = academicYears.find(year => year.year === selectedAcademicYear);
+      console.log("selectedAcademicYearObj", selectedAcademicYearObj);
+      if (!selectedAcademicYearObj?._id) {
+        toast.error('Selected academic year not found');
         return;
       }
 
       const termData = {
-        ...termForm,
-        academicYearId: selectedAcademicYear
+        name: termForm.name.trim(),
+        startDate: termForm.startDate,
+        endDate: termForm.endDate,
+        academicYearId: selectedAcademicYearObj?._id, // Use _id from the selected academic year
+        isCurrent: termForm.isCurrent
       };
 
-      await createTerm({
-        ...termData,
-      });
-      toast.success("Term created successfully");
+      await createTerm(termData);
+      
       setTermForm({
         name: "",
         startDate: "",
@@ -139,9 +166,27 @@ const Settings: React.FC = () => {
       });
       setSelectedAcademicYear("");
       setIsTermModalOpen(false);
+      fetchTerms();
+      toast.success('Term created successfully');
     } catch (error) {
-      toast.error("Failed to create term. Please try again.");
-      console.error(error);
+      console.error('Error creating term:', error);
+      toast.error('Failed to create term. Please try again.');
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!selectedTerm) {
+        toast.error('Please select a term to set as current');
+        return;
+      }
+
+      await setCurrentTerm(selectedTerm);
+      toast.success('Current term updated successfully');
+      fetchTerms();
+    } catch (error) {
+      console.error('Error setting current term:', error);
+      toast.error('Failed to update current term. Please try again.');
     }
   };
 
@@ -187,8 +232,8 @@ const Settings: React.FC = () => {
               <option value="">Select Academic Year</option>
               {academicYears.map((year) => (
                 <option
-                  key={year.id}
-                  value={year.id}
+                  key={year._id}
+                  value={year.year}
                   className={year.isCurrent ? 'font-bold' : ''}
                 >
                   {year.year} {year.isCurrent ? '(Current)' : ''}
@@ -209,8 +254,8 @@ const Settings: React.FC = () => {
               <option value="">Select Term</option>
               {terms.map((term) => (
                 <option
-                  key={term.id}
-                  value={term.id}
+                  key={term._id}
+                  value={term._id}
                   className={term.isCurrent ? 'font-bold' : ''}
                 >
                   {term.name} {term.isCurrent ? '(Current)' : ''}
@@ -233,9 +278,10 @@ const Settings: React.FC = () => {
         {/* Buttons */}
         <div className="flex gap-4 py-5">
           <button
+            onClick={handleSave}
             type="button"
             className="px-6 py-4 bg-[#154473] text-white font-semibold rounded-lg hover:bg-blue-600"
-            disabled={loading}
+            disabled={loading || !selectedTerm}
           >
             Save Changes
           </button>
@@ -243,6 +289,10 @@ const Settings: React.FC = () => {
             type="button"
             className="px-6 py-4 bg-gray-500 text-gray-700 font-semibold rounded-lg hover:bg-red-600 text-white"
             disabled={loading}
+            onClick={() => {
+              setSelectedAcademicYear('');
+              setSelectedTerm('');
+            }}
           >
             Cancel
           </button>
@@ -364,7 +414,7 @@ const Settings: React.FC = () => {
                 >
                   <option value="">Select Academic Year</option>
                   {academicYears.map((year) => (
-                    <option key={year.id} value={year.id}>
+                    <option key={year._id} value={year.year}>
                       {year.year}
                     </option>
                   ))}
