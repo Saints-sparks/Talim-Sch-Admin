@@ -195,22 +195,22 @@ const Settings: React.FC = () => {
       <Header />
       
       {/* Page Title */}
-      <h1 className="text-2xl font-semibold mb-6">Academic Settings</h1>
-      <p>Manage Academic year and term settings across the platform</p>
+      <h1 className="text-2xl font-semibold mb-6 text-gray-800">Academic Settings</h1>
+      <p className="text-gray-600">Manage Academic year and term settings across the platform</p>
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Academic Settings</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Academic Settings</h2>
         <div className="flex gap-4">
           <button
             onClick={() => setIsAcademicYearModalOpen(true)}
-            className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition text-gray-800"
           >
             Create Academic Year
           </button>
           <button
             onClick={() => setIsTermModalOpen(true)}
-            className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition text-gray-800"
           >
             Create Term
           </button>
@@ -222,11 +222,11 @@ const Settings: React.FC = () => {
         <div className="grid grid-cols-2 gap-6 mb-6">
           {/* Academic Year */}
           <div>
-            <label className="block text-gray-700 font-semibold mb-2">Academic Year</label>
+            <label className="block text-gray-700 font-semibold mb-2 text-gray-800">Academic Year</label>
             <select
               value={selectedAcademicYear}
               onChange={(e) => setSelectedAcademicYear(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-800"
               disabled={loading}
             >
               <option value="">Select Academic Year</option>

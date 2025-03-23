@@ -129,7 +129,7 @@ const Announcement: React.FC = () => {
         <button
           onClick={() => handlePageChange(pagination.page - 1)}
           disabled={pagination.page === 1}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-gray-800"
         >
           Previous
         </button>
@@ -137,7 +137,7 @@ const Announcement: React.FC = () => {
         <button
           onClick={() => handlePageChange(pagination.page + 1)}
           disabled={pagination.page === pagination.lastPage}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-gray-800"
         >
           Next
         </button>
@@ -150,10 +150,10 @@ const Announcement: React.FC = () => {
       <Header />
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Announcements</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition text-gray-800"
         >
           Create Announcement
         </button>
@@ -172,10 +172,10 @@ const Announcement: React.FC = () => {
               </div>
             ) : (
               announcements.map((announcement) => (
-                <div key={announcement.id} className="bg-white rounded-lg shadow-md p-6">
+                <div key={announcement.id} className="bg-white rounded-lg shadow-md p-6 ">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h2 className="text-xl font-semibold mb-1">{announcement.title}</h2>
+                      <h2 className="text-xl font-semibold mb-1 text-gray-800">{announcement.title}</h2>
                       <p className="text-sm text-gray-500">
                         {formatDateTime(announcement.createdAt)}
                       </p>
@@ -191,7 +191,7 @@ const Announcement: React.FC = () => {
                       </a>
                     )}
                   </div>
-                  <div className="prose max-w-none mb-4">
+                  <div className="prose max-w-none mb-4 text-gray-800">
                     <p>{announcement.content}</p>
                   </div>
                   <div className="flex items-center space-x-4">
