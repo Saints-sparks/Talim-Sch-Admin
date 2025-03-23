@@ -1,37 +1,58 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { FiEdit, FiTrash } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { registerStudent, createStudentProfile, getClasses } from '../services/student.service';
+import { getSchoolId } from '../services/school.service';
+import {toast} from 'react-toastify'
+
+interface Class {
+  _id: string;
+  name: string;
+  schoolId: string;
+  classDescription: string;
+  classCapacity: string;
+}
 
 export default function Classes() {
   const router = useRouter();
-  const [classes] = useState([
-    { name: "Grade 1", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 2", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 3", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 4", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 5", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 6", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 7", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 8", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 9", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 10", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 11", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 12", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 13", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 14", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 15", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 16", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 17", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 18", capacity: "40/50", subjects: "Mathematics, Science..." },
-    { name: "Grade 19", capacity: "40/50", subjects: "Mathematics, Science..." },
-  ]);
+  // const [classes] = useState([
+  //   { name: "Grade 1", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 2", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 3", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 4", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 5", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 6", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 7", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 8", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 9", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 10", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 11", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 12", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 13", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 14", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 15", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 16", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 17", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 18", capacity: "40/50", subjects: "Mathematics, Science..." },
+  //   { name: "Grade 19", capacity: "40/50", subjects: "Mathematics, Science..." },
+  // ]);
+
+    const [formData, setFormData] = useState({
+      name: "",
+      classDescription: "",
+      classCapacity: "",
+    });
+  
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+    const [isLoading, setIsLoading] = useState(false);
+      const [userId, setUserId] = useState<string | null>(null);
+      const [classes, setClasses] = useState<Class[]>([]);
 
   const totalPages = Math.ceil(classes.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -55,6 +76,76 @@ export default function Classes() {
   const navigateToAddSubject = () => {
     router.push("/add-subject"); 
   };
+
+  const handleInputChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+
+
+   useEffect(() => {
+      const fetchClasses = async () => {
+        const schoolId = getSchoolId();
+        if (!schoolId) {
+          toast.error('School ID is required');
+          return;
+        }
+    
+        try {
+          const classes = await getClasses(); // Ensure this function accepts schoolId
+          setClasses(classes);
+          console.log("Classes: "+ classes)
+        } catch (error) {
+          console.error('Error fetching classes:', error);
+          toast.error('Failed to load classes');
+        }
+      };
+    
+      fetchClasses();
+    }, []);
+  
+    const handleSubmit = async () => {
+      setIsLoading(true);
+      try {
+        const schoolId = getSchoolId(); // Assuming this function retrieves the schoolId
+    
+        const classData = {
+          name: formData.name,
+          schoolId: schoolId,
+          classDescription: formData.classDescription,
+          classCapacity: formData.classCapacity,
+        };
+    
+        // Make the POST request to the backend
+        const response = await fetch('http://localhost:5000/classes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Include the access token
+          },
+          body: JSON.stringify(classData),
+        });
+    
+        if (!response.ok) {
+          toast.error("Failed to create class")
+          throw new Error('Failed to create class');
+        }
+    
+        const data = await response.json();
+        console.log('Class created successfully:', data);
+        toast.success('Class created successfully!');
+      } catch (error) {
+        console.error('Error:', error);
+        toast.error('An error occurred. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -87,8 +178,8 @@ export default function Classes() {
               {displayedClasses.map((item, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50">
                   <td className="py-2 px-4">{item.name}</td>
-                  <td className="py-2 px-4">{item.capacity}</td>
-                  <td className="py-2 px-4">{item.subjects}</td>
+                   <td className="py-2 px-4">{item.classCapacity}</td>
+                  <td className="py-2 px-4">{item.classDescription}</td> 
                   <td className="py-2 px-4">
                   <a
                     href={`/classes/add-class`} // Replace with your actual URL
@@ -162,26 +253,33 @@ export default function Classes() {
       </div>
 
       {/* Modal Body */}
-      <form className="flex-grow">
+      <form className="flex-grow" onSubmit={handleSubmit}>
         <div className="mb-4 flex gap-4">
           <div className="flex-1">
             <label className="block text-gray-700 font-semibold mb-2">
               Class Name
             </label>
             <input
-              type="text"
-              placeholder="Enter class name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            type="text"
+            name="name"
+            placeholder="Enter class name"
+            value={formData.name}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
           </div>
 
           <div className="flex-1">
             <label className="block text-gray-700 font-semibold mb-2">
               Class Capacity (Optional)
             </label>
+
             <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+            name="classCapacity"
+            value={formData.classCapacity}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
               <option value="" disabled selected>
                 Choose your class capacity
               </option>
@@ -197,13 +295,16 @@ export default function Classes() {
             Class Description (Optional)
           </label>
           <textarea
+            name="classDescription"
             placeholder="Provide additional notes about the class."
+            value={formData.classDescription}
+            onChange={handleInputChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
           ></textarea>
 
           {/* Saving Indicator */}
-          <div className="absolute right-2 bottom-3 flex items-center gap-2 text-gray-600">
+          {/* <div className="absolute right-2 bottom-3 flex items-center gap-2 text-gray-600">
             <svg
               className="animate-spin h-5 w-5 text-blue-500"
               xmlns="http://www.w3.org/2000/svg"
@@ -225,10 +326,10 @@ export default function Classes() {
               ></path>
             </svg>
             <span>Saving</span>
-          </div>
+          </div> */}
         </div>
 
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <button
             type="button"
             onClick={navigateToAddSubject}
@@ -236,8 +337,8 @@ export default function Classes() {
           >
             Add New Subjects
           </button>
-        </div>
-      </form>
+        </div> */}
+     
 
       {/* Modal Footer */}
       <div className="flex justify-end gap-4 mt-auto">
@@ -254,6 +355,7 @@ export default function Classes() {
           Create
         </button>
       </div>
+      </form>
     </div>
   </div>
 )}

@@ -16,18 +16,18 @@ interface DashboardCardProps {
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon, trend }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+  <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
     <div className="flex items-center justify-between">
       <div>
-        <h3 className="text-lg font-medium text-gray-600">{title}</h3>
-        <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+        <h3 className="text-sm sm:text-lg font-medium text-gray-600">{title}</h3>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2">{value}</p>
       </div>
-      <div className="p-3 bg-[#154473] rounded-full text-white">
+      <div className="p-2 sm:p-3 bg-[#154473] rounded-full text-white">
         {icon}
       </div>
     </div>
     {trend && (
-      <div className="mt-4 text-sm text-gray-500">
+      <div className="mt-2 sm:mt-4 text-xs sm:text-sm text-gray-500">
         <span>{trend}</span>
       </div>
     )}
@@ -106,17 +106,17 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex h-screen bg-white-400">
+    <div className="flex flex-col sm:flex-row h-screen bg-white-400">
       {/* Left Section */}
-      <div className="w-1/2 flex flex-col justify-center items-center px-8">
-        <div className="w-[70%] bg-white shadow-lg rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
+      <div className="w-full sm:w-1/2 flex flex-col justify-center items-center px-4 sm:px-8 py-8 sm:py-0">
+        <div className="w-full sm:w-[70%] bg-white shadow-lg rounded-lg p-6 sm:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 text-center">
             Welcome Back!
           </h1>
-          <p className="text-sm text-gray-600 mb-6 text-center">
+          <p className="text-xs sm:text-sm text-gray-600 mb-6 text-center">
             Sign in to begin your learning journey.
           </p>
-          <form className="flex flex-col space-y-6" onSubmit={handleFormSubmit}>
+          <form className="flex flex-col space-y-4 sm:space-y-6" onSubmit={handleFormSubmit}>
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -179,7 +179,7 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={loading} // Disable the button when loading
-              className="w-[60%] bg-[#154473] text-white py-2 px-3 rounded-lg shadow-lg hover:bg-[#123961] focus:outline-none focus:ring focus:ring-[#5A7EA6] mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-[60%] bg-[#154473] text-white py-2 px-3 rounded-lg shadow-lg hover:bg-[#123961] focus:outline-none focus:ring focus:ring-[#5A7EA6] mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign In'} {/* Change button text based on loading state */}
             </button>
@@ -188,7 +188,7 @@ export default function SignIn() {
       </div>
 
       {/* Right Section */}
-      <div className="w-1/2 flex items-center justify-center bg-gray-200">
+      <div className="w-full sm:w-1/2 flex items-center justify-center bg-gray-200">
         <div className="w-full h-full relative">
           <Image
             src="/img/signup.png"
@@ -204,8 +204,8 @@ export default function SignIn() {
 
 export function Dashboard() {
   return (
-    <div className="p-6 bg-[#F8FAFC] min-h-screen">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="p-4 sm:p-6 bg-[#F8FAFC] min-h-screen">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <DashboardCard
           title="Total Students"
           value="1,234"
@@ -229,13 +229,13 @@ export function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-4">Recent Activity</h2>
           {/* Activity content */}
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-4">Quick Actions</h2>
           {/* Quick actions content */}
         </div>
       </div>
