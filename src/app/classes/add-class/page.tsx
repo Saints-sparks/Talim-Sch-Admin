@@ -95,7 +95,7 @@ const AddSubject: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <div className="mb-4 flex gap-4">
             <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-2">
+              <label className="block text-gray-700 font-semibold mb-2 text-gray-800">
                 Class Name
               </label>
               <input
@@ -109,7 +109,7 @@ const AddSubject: React.FC = () => {
             </div>
 
             <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
+          <label className="block text-gray-700 font-semibold mb-2 text-gray-800">
             Class Capacity (Optional)
           </label>
           <select
@@ -129,7 +129,7 @@ const AddSubject: React.FC = () => {
           </div>
 
           <div className="mb-4 relative">
-            <label className="block text-gray-700 font-semibold mb-2">
+            <label className="block text-gray-700 font-semibold mb-2 text-gray-800">
               Class Description (Optional)
             </label>
             <textarea
@@ -144,7 +144,7 @@ const AddSubject: React.FC = () => {
 
           {/* Assign Teacher */}
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="block text-gray-700 font-medium mb-2 text-gray-800">
               Assign Teacher
             </label>
             <select
@@ -156,15 +156,15 @@ const AddSubject: React.FC = () => {
               <option value="" disabled>
                 Select a teacher
               </option>
-              <option value="teacher-1">Mr. John Adewale</option>
-              <option value="teacher-2">Ms. Sarah Akinola</option>
-              <option value="teacher-3">Dr. Peter Okonkwo</option>
+              <option value="teacher-1" className="text-gray-800">Mr. John Adewale</option>
+              <option value="teacher-2" className="text-gray-800">Ms. Sarah Akinola</option>
+              <option value="teacher-3" className="text-gray-800">Dr. Peter Okonkwo</option>
             </select>
           </div>
 
           {/* Courses Section */}
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="block text-gray-700 font-medium mb-2 text-gray-800">
               Courses
             </label>
             <div className="flex flex-wrap gap-5">
@@ -282,7 +282,7 @@ const AddSubject: React.FC = () => {
       <form className="flex-grow">
         <div className="mb-4 flex gap-4">
           <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
+            <label className="block text-gray-700 font-semibold mb-2 text-gray-800">
               Subject Name
             </label>
             <input
@@ -306,7 +306,7 @@ const AddSubject: React.FC = () => {
 
           {/* Assign Teacher */}
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="block text-gray-700 font-medium mb-2 text-gray-800">
               Assign Teacher
             </label>
             <select
@@ -321,7 +321,7 @@ const AddSubject: React.FC = () => {
             </select>
           </div>
         <div className="mb-4 relative">
-          <label className="block text-gray-700 font-semibold mb-2">
+          <label className="block text-gray-700 font-semibold mb-2 text-gray-800">
             Subject Description (Optional)
           </label>
           <textarea
@@ -342,7 +342,7 @@ const AddSubject: React.FC = () => {
         </button>
         <button
           type="submit"
-          className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
+          className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 text-gray-800"
         >
           Create
         </button>
