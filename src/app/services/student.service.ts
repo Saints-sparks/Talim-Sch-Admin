@@ -24,12 +24,15 @@ interface CreateStudentProfilePayload {
 }
 
 export interface Class {
-  _id: string;
+  _id?: string;  
   name: string;
-  schoolId: string;
-  classTeacherId: string;
-  assignedCourses: string[];
+  schoolId?: string; 
+  classCapacity: string;
+  classDescription: string;
+  classTeacherId?: string;  
+  assignedCourses?: string[];  
 }
+
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
   const response = await fetch(API_ENDPOINTS.REGISTER, {
@@ -76,6 +79,59 @@ export const getClasses = async (): Promise<Class[]> => {
 
   if (!response.ok) {
     throw new Error('Failed to fetch classes');
+  }
+
+  return response.json();
+};
+
+
+export const createClass = async (payload: Class) => {
+  const response = await fetch(API_ENDPOINTS.CREATE_CLASS, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('Class creation failed');
+  }
+
+  return response.json();
+};
+
+export const editClass = async (payload: Class) => {
+  const response = await fetch(API_ENDPOINTS.EDIT_CLASS, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('Class creation failed');
+  }
+
+  return response.json();
+};
+
+export const getClass = async (classId: string) => {
+  const response = await fetch(`${API_ENDPOINTS.GET_CLASS}/${classId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Error fetching class details');
   }
 
   return response.json();
