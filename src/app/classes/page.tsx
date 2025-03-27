@@ -4,18 +4,10 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { FiEdit, FiTrash } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import { registerStudent, createStudentProfile, getClasses, createClass } from '../services/student.service';
+import { registerStudent, createStudentProfile, getClasses, createClass, Class } from '../services/student.service';
 import { getSchoolId } from '../services/school.service';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-interface Class {
-  _id: string;
-  name: string;
-  schoolId: string;
-  classDescription: string;
-  classCapacity: string;
-}
 
 export default function Classes() {
   const router = useRouter();
