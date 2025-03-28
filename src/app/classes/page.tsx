@@ -19,6 +19,7 @@ export default function Classes() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
 
@@ -87,53 +88,40 @@ export default function Classes() {
     fetchClasses();
   }, []);
 
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    // Validate form data
-    if (!formData.name) {
-      toast.error('Class name is required');
-      setIsLoading(false);
-      return;
-    }
-  
     try {
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        toast.error('School ID is required');
-        setIsLoading(false);
-        return;
-      }
-  
+      setIsCreating(true);
+      
+      // Create class
       const classData = {
         name: formData.name,
+        classCapacity: parseInt(formData.classCapacity),
         classDescription: formData.classDescription,
-        classCapacity: formData.classCapacity,
+        schoolId: getSchoolId()!,
+        assignedCourses: []
       };
-  
-      const response = await createClass(classData);
-      
-      if (!response.ok) {
-        const errorData = await response;
-        throw new Error(errorData.message || 'Failed to create class');
 
+      await createClass(classData);
+      
+      toast.success("Class created successfully!");
+      setIsModalOpen(false);
+      setFormData({
+        name: "",
+        classDescription: "",
+        classCapacity: ""
+      });
+      const classes = await getClasses();
+      setClasses(classes);
+    } catch (error) {
+      console.error("Error creating class:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
       }
-  
-      const data = await response.json();
-      
-      // Update local state with new class
-      setClasses(prev => [...prev, data]);
-      
-      toast.success('Class created successfully!');
-      toggleModal();
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Failed to create class. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsCreating(false);
     }
   };
 
@@ -239,14 +227,14 @@ export default function Classes() {
               <button
                 className="text-gray-500 hover:text-gray-700 text-2xl"
                 onClick={toggleModal}
-                disabled={isLoading}
+                disabled={isCreating}
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleCreateClass}>
               <div className="mb-4 flex gap-4">
                 <div className="flex-1">
                   <label className="block text-gray-700 font-semibold mb-2">
@@ -304,16 +292,16 @@ export default function Classes() {
                   type="button"
                   className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                   onClick={toggleModal}
-                  disabled={isLoading}
+                  disabled={isCreating}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                  disabled={isLoading}
+                  disabled={isCreating}
                 >
-                  {isLoading ? (
+                  {isCreating ? (
                     <>
                       <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

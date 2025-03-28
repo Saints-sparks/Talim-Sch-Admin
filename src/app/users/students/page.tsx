@@ -1,41 +1,53 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import StudentCard from '@/components/StudentCard';
+import { studentService, Student } from '@/app/services/student.service';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 import Header from '@/components/Header';
 import AddStudentModal from '@/components/AddStudentModal';
 import { FaSearch } from 'react-icons/fa';
 
-interface Student {
-  id: number;
-  name: string;
-  grade: string;
-  imageUrl: string;
-}
-
 const StudentPage: React.FC = () => {
-  const router = useRouter()
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  const fetchStudents = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await studentService.getStudents();
+      setStudents(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch students');
+      toast.error('Failed to fetch students');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewProfile = (studentId: string) => {
+    router.push(`/users/students/${studentId}`);
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-
   const teachersPerPage = 9; // Number of cards per page
-  const teachers: Student[] = Array.from({ length: 100 }, (_, index) => ({
-    id: index + 1,
-    name: `Mr. Emeka Adewale ${index + 1}`,
-    grade: `Grade ${((index % 6) + 1).toString()}`,
-    imageUrl: '/img/student.jpg', 
-  }));
-
-  // Filter teachers based on the search term
-  const filteredTeachers = teachers.filter((teacher) =>
-    teacher.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTeachers = students.filter((teacher) =>
+    `${teacher.userId.firstName} ${teacher.userId.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination logic
@@ -46,8 +58,8 @@ const StudentPage: React.FC = () => {
     startIndex + teachersPerPage
   );
 
-  const toggleMenu = (id: number) => {
-    setMenuOpen((prev) => (prev === id ? null : id));
+  const toggleMenu = (studentId: string) => {
+    setMenuOpen(menuOpen === studentId ? null : studentId);
   };
 
   return (
@@ -103,7 +115,7 @@ const StudentPage: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50">
           <div className="bg-white h-full w-1/2 rounded-l-lg shadow-lg p-6">
-            <AddStudentModal onNext={toggleModal} onClose={toggleModal} />
+            <AddStudentModal onClose={toggleModal} />
           </div>
         </div>
       )}
@@ -111,43 +123,66 @@ const StudentPage: React.FC = () => {
     
 
       {/* Cards Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {currentTeachers.map((student) => (
-          <div
-            key={student.id}
-            className="p-4 border border-gray-200 rounded shadow-sm bg-white relative"
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={fetchStudents}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            <img
-              src={student.imageUrl}
-              alt={student.name}
-              className="w-16 h-16 rounded-full mx-auto mb-2"
-            />
-            <h3 className="text-center text-lg font-semibold">{student.name}</h3>
-            <p className="text-center text-gray-500">{student.grade}</p>
-            <button className="px-4 py-1 mt-4 text-[#154473] bg-white rounded mx-auto block">
-              View Profile
-            </button>
-            <div className="absolute top-2 right-2">
+            Try Again
+          </button>
+        </div>
+      ) : students.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">No students found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {currentTeachers.map((student) => (
+            <div
+              key={student._id}
+              className="p-4 border border-gray-200 rounded shadow-sm bg-white relative"
+            >
+              <img
+                src={student.userId.userAvatar || '/default-avatar.png'}
+                alt={`${student.userId.firstName} ${student.userId.lastName}`}
+                className="w-16 h-16 rounded-full mx-auto mb-2"
+              />
+              <h3 className="text-center text-lg font-semibold">{`${student.userId.firstName} ${student.userId.lastName}`}</h3>
+              <p className="text-center text-gray-500">{student.classId.name}</p>
               <button
-                className="text-gray-600 hover:text-gray-800"
-                onClick={() => toggleMenu(student.id)}
+                className="px-4 py-1 mt-4 text-[#154473] bg-white rounded mx-auto block"
+                onClick={() => handleViewProfile(student._id)}
               >
-                &#x22EE; {/* 3-dot menu */}
+                View Profile
               </button>
-              {menuOpen === student.id && (
-                <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg">
-                  <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
-                    Edit
-                  </button>
-                  <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100">
-                    Delete
-                  </button>
-                </div>
-              )}
+              <div className="absolute top-2 right-2">
+                <button
+                  className="text-gray-600 hover:text-gray-800"
+                  onClick={() => toggleMenu(student._id)}
+                >
+                  &#x22EE; {/* 3-dot menu */}
+                </button>
+                {menuOpen === student._id && (
+                  <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg">
+                    <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                      Edit
+                    </button>
+                    <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100">
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination Section */}
       <div className="flex justify-between items-center mt-6">
