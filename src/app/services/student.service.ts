@@ -200,5 +200,30 @@ export const studentService = {
     } catch (error) {
       throw error;
     }
+  },
+  async getStudentsByClass(classId: string, page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
+    // const userId = getLocalStorageItem('user')?.userId;
+
+    // if (!userId) {
+    //   throw new Error('User not authenticated');
+    // }
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS_BY_CLASS.replace(':classId', classId)}?page=${page}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch students');
+      }
+
+      const data: GetStudentsResponse = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

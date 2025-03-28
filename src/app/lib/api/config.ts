@@ -18,7 +18,8 @@ export const API_URLS = {
     GET_STUDENTS: '/users/students',
     CREATE_STUDENT: '/users/students',
     UPDATE_STUDENT: '/users/students/:studentId',
-    DELETE_STUDENT: '/users/students/:studentId'
+    DELETE_STUDENT: '/users/students/:studentId',
+    GET_STUDENTS_BY_CLASS: '/students/by-class/:classId',
   },
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: '/notifications/announcements',
@@ -78,5 +79,6 @@ export const API_ENDPOINTS = {
   GET_STUDENTS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS}`,
   CREATE_STUDENT_NEW: `${API_BASE_URL}${API_URLS.STUDENTS.CREATE_STUDENT}`,
   UPDATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.UPDATE_STUDENT}`,
-  DELETE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT}`
+  DELETE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT}`,
+  GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
 } as const;
