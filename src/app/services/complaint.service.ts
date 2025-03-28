@@ -1,18 +1,47 @@
 import { API_ENDPOINTS } from '../lib/api/config';
 
-interface Complaint {
-  ticket: string;
+interface User {
+  _id: string;
   userId: string;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  schoolId: string;
+  isTwoFactorEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  refreshToken: string;
+  devices: any[];
+  id: string;
+}
+
+export interface Complaint {
+  _id: string;
+  ticket: string;
+  userId: User;
   subject: string;
   description: string;
-  status: string;
   attachment?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 interface CreateComplaintInput {
   subject: string;
   description: string;
   attachment?: string;
+}
+
+interface GetComplaintsResponse {
+  complaints: Complaint[];
+  error?: string;
 }
 
 const getLocalStorageItem = (key: string) => {
@@ -41,7 +70,7 @@ export const complaintService = {
         body: JSON.stringify({
           ...complaint,
           ticket: ticketId,
-          status: 'Pending'
+          status: 'Pending',
         })
       });
 

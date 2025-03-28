@@ -37,7 +37,7 @@ export const API_URLS = {
   },
   COMPLAINTS: {
     CREATE_COMPLAINT: '/complaints',
-    GET_COMPLAINTS: '/complaints',
+    GET_COMPLAINTS: '/complaints/by-user',
     GET_COMPLAINT_BY_TICKET: '/complaints/:ticket'
   }
 };
