@@ -64,18 +64,18 @@ const Dashboard = () => {
         <main className="flex-grow p-8 overflow-y-auto">
           {/* Header */}
           <Header />
-          <h1 className="font-semibold text-3xl py-5 px-5">Class Overview</h1>
+          <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">Class Overview</h1>
 
           {/* Class Overview Cards */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Card 1: Total Classes */}
             <div className="bg-white p-6 shadow rounded-2xl flex flex-col items-center">
-              <h3 className="text-4xl font-semibold">15</h3>
+              <h3 className="text-4xl font-semibold text-gray-800">15</h3>
               <HiOutlineBookOpen className="text-4xl text-[#154473]" />
-              <p className="text-gray-500">Total Number of Classes</p>
+              <p className="text-gray-500 text-gray-800">Total Number of Classes</p>
               <div
                 onClick={() => toggleExpand(1)}
-                className="flex items-center text-blue-500 mt-4 cursor-pointer"
+                className="flex items-center text-blue-500 mt-4 cursor-pointer text-gray-800"
               >
                 {expandedCards.includes(1) ? (
                   <FiChevronDown className="text-xl" />
@@ -87,8 +87,8 @@ const Dashboard = () => {
                 </span>
               </div>
               {expandedCards.includes(1) && (
-                <div className="mt-4 text-gray-700">
-                  <p>Here you can add detailed information about the total number of classes.</p>
+                <div className="mt-4 text-gray-700 text-gray-800">
+                  <p className="text-gray-800">Here you can add detailed information about the total number of classes.</p>
                   <ul className="list-disc ml-6">
                     <li>Class A: 5 sessions</li>
                     <li>Class B: 6 sessions</li>
@@ -100,25 +100,25 @@ const Dashboard = () => {
 
             {/* Card 2: Total Students */}
             <div className="bg-white p-6 shadow rounded-2xl flex flex-col items-center">
-              <h3 className="text-4xl font-semibold">520</h3>
+              <h3 className="text-4xl font-semibold text-gray-800">520</h3>
               <IoPeopleOutline className="text-4xl text-[#154473]" />
-              <p className="text-gray-500">Total Number of Students</p>
+              <p className="text-gray-500 text-gray-800">Total Number of Students</p>
               <div
                 onClick={() => toggleExpand(2)}
-                className="flex items-center text-blue-500 mt-4 cursor-pointer"
+                className="flex items-center text-blue-500 mt-4 cursor-pointer text-gray-800"
               >
                 {expandedCards.includes(2) ? (
                   <FiChevronDown className="text-xl" />
                 ) : (
                   <FiChevronRight className="text-xl" />
                 )}
-                <span className="ml-2 font-bold text-[#154473] hover:text-blue-700 transition-colors duration-200">
+                <span className="ml-2 font-bold text-[#154473] hover:text-blue-700 transition-colors duration-200 text-gray-800">
                   {expandedCards.includes(2) ? 'See less' : 'See more'}
                 </span>
               </div>
               {expandedCards.includes(2) && (
-                <div className="mt-4 text-gray-700">
-                  <p>Here you can add detailed information about the total number of students.</p>
+                <div className="mt-4 text-gray-700 text-gray-800">
+                  <p className="text-gray-800">Here you can add detailed information about the total number of students.</p>
                   <ul className="list-disc ml-6">
                     <li>Grade 1: 100 students</li>
                     <li>Grade 2: 150 students</li>
@@ -130,12 +130,12 @@ const Dashboard = () => {
 
             {/* Card 3: Total Subjects */}
             <div className="bg-white p-6 shadow rounded-2xl flex flex-col items-center">
-              <h3 className="text-4xl font-semibold">234</h3>
+              <h3 className="text-4xl font-semibold text-gray-800">234</h3>
               <HiOutlineClipboard className="text-4xl text-[#154473]" />
-              <p className="text-gray-500">Total Number of Subjects</p>
+              <p className="text-gray-500 text-gray-800">Total Number of Subjects</p>
               <div
                 onClick={() => toggleExpand(3)}
-                className="flex items-center text-blue-500 mt-4 cursor-pointer"
+                className="flex items-center text-blue-500 mt-4 cursor-pointer text-gray-800"
               >
                 {expandedCards.includes(3) ? (
                   <FiChevronDown className="text-xl" />
@@ -172,7 +172,7 @@ const Dashboard = () => {
           {/* Classes Table */}
           <section className="bg-white shadow rounded p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Classes</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Classes</h3>
               <button
                 className="flex items-center font-bold text-[#154473] hover:text-blue-500 transition duration-200"
                 onClick={handleAddClass}
@@ -183,18 +183,18 @@ const Dashboard = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-4">Class Name</th>
-                  <th className="text-left py-2 px-4">Capacity</th>
-                  <th className="text-left py-2 px-4">Subjects Assigned</th>
-                  <th className="text-left py-2 px-4">Actions</th>
+                  <th className="text-left py-2 px-4 text-gray-800">Class Name</th>
+                  <th className="text-left py-2 px-4 text-gray-800">Capacity</th>
+                  <th className="text-left py-2 px-4 text-gray-800">Subjects Assigned</th>
+                  <th className="text-left py-2 px-4 text-gray-800">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {classes.map((item, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50 transition-colors duration-200">
-                    <td className="py-2 px-4">{item.name}</td>
-                    <td className="py-2 px-4">{item.capacity}</td>
-                    <td className="py-2 px-4">{item.subjects}</td>
+                    <td className="py-2 px-4 text-gray-800">{item.name}</td>
+                    <td className="py-2 px-4 text-gray-800">{item.capacity}</td>
+                    <td className="py-2 px-4 text-gray-800">{item.subjects}</td>
                     <td className="py-2 px-4 flex items-center">
                       <button
                         className="px-3 py-1 bg-[#154473] text-white rounded hover:bg-blue-600"

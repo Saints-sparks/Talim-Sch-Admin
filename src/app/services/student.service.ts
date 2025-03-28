@@ -1,5 +1,51 @@
-import { getLocalStorageItem } from '../lib/localStorage';
 import { API_ENDPOINTS } from '../lib/api/config';
+
+interface User {
+  _id: string;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  userAvatar?: string;
+}
+
+export interface Class {
+  _id?: string;
+  name: string;
+  schoolId: string;
+  classCapacity: number;
+  classDescription: string;
+  assignedCourses: string[];
+}
+
+interface ParentContact {
+  _id: string;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  relationship: string;
+}
+
+export interface Student {
+  _id: string;
+  userId: User;
+  classId: Class;
+  gradeLevel: string;
+  parentId: string;
+  parentContact: ParentContact;
+  isActive: boolean;
+}
+
+interface GetStudentsResponse {
+  data: Student[];
+  meta: {
+    total: number;
+    page: number;
+    lastPage: number;
+    limit: number;
+  };
+}
 
 interface RegisterStudentPayload {
   email: string;
@@ -23,16 +69,10 @@ interface CreateStudentProfilePayload {
   };
 }
 
-export interface Class {
-  _id?: string;  
-  name: string;
-  schoolId?: string; 
-  classCapacity: string;
-  classDescription: string;
-  classTeacherId?: string;  
-  assignedCourses?: string[];  
-}
-
+const getLocalStorageItem = (key: string) => {
+  const item = localStorage.getItem(key);
+  return item ? JSON.parse(item) : null;
+};
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
   const response = await fetch(API_ENDPOINTS.REGISTER, {
@@ -83,7 +123,6 @@ export const getClasses = async (): Promise<Class[]> => {
 
   return response.json();
 };
-
 
 export const createClass = async (payload: Class) => {
   const response = await fetch(API_ENDPOINTS.CREATE_CLASS, {
@@ -137,4 +176,30 @@ export const getClass = async (classId: any) => {
   return response.json();
 };
 
+export const studentService = {
+  async getStudents(page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
+    const userId = getLocalStorageItem('user')?.userId;
 
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch students');
+      }
+
+      const data: GetStudentsResponse = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+};
