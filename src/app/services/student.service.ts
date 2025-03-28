@@ -141,20 +141,19 @@ export const createClass = async (payload: Class) => {
 
   return response.json();
 };
-
-export const editClass = async (payload: Class) => {
-  const response = await fetch(API_ENDPOINTS.EDIT_CLASS, {
-    method: 'POST',
+export const editClass = async (classId: string, data: any) => {
+  const response = await fetch(`${API_ENDPOINTS.EDIT_CLASS}/${classId}`, {
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data)
   });
 
   if (!response.ok) {
-    throw new Error('Class creation failed');
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update class');
   }
 
   return response.json();
