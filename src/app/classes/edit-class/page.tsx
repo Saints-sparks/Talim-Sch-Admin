@@ -5,7 +5,8 @@ import Header from "@/components/Header";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Flip } from "react-toastify";
-
+import { useRouter, useParams } from "next/navigation";
+import {getClass, editClass} from '../../services/student.service'
 interface FormData {
   className: string;
   classCapacity: string;
@@ -16,6 +17,8 @@ interface FormData {
 
 const AddSubject: React.FC = () => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+  const params = useParams();
+  const classId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [buttonLoader, setButtonLoader] = useState<boolean>(false);
@@ -44,43 +47,17 @@ const AddSubject: React.FC = () => {
     setButtonLoader(true);
 
     try {
-      const response = await axios.post(`${baseUrl}/subjects-courses/courses`, formData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await getClass(classId)
 
-      toast.success("Subject added successfully", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
-
-      setButtonLoader(false);
-    } catch (error: any) {
-      console.log("Error: " + error)
-      setButtonLoader(false);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Something went wrong. Please try again.";
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      console.log("Response: " +response)
+      
+    } catch (error) {
+      console.log(error)
+      
     }
+
+  
+    
   };
 
   return (

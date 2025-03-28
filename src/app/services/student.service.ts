@@ -121,7 +121,7 @@ export const editClass = async (payload: Class) => {
   return response.json();
 };
 
-export const getClass = async (classId: string) => {
+export const getClass = async (classId: any) => {
   const response = await fetch(`${API_ENDPOINTS.GET_CLASS}/${classId}`, {
     method: 'GET',
     headers: {
@@ -136,3 +136,5 @@ export const getClass = async (classId: string) => {
 
   return response.json();
 };
+
+

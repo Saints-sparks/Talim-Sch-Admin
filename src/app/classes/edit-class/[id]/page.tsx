@@ -5,8 +5,8 @@ import Header from "@/components/Header";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Flip } from "react-toastify";
-import { useParams } from "next/navigation";
-
+import { useRouter, useParams } from "next/navigation";
+import {getClass, editClass} from '../../../services/student.service'
 interface FormData {
   className: string;
   classCapacity: string;
@@ -15,10 +15,9 @@ interface FormData {
   courses: string[];
 }
 
-const EditClass: React.FC = () => {
+const AddSubject: React.FC = () => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
-  const params = useParams()
-
+  const params = useParams();
   const classId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -48,46 +47,15 @@ const EditClass: React.FC = () => {
     setButtonLoader(true);
 
     try {
-      const response = await axios.post(`${baseUrl}/subjects-courses/courses`, formData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await getClass(classId)
 
-      toast.success("Subject added successfully", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
-
-      setButtonLoader(false);
-    } catch (error: any) {
-      console.log("Error: " + error)
-      setButtonLoader(false);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Something went wrong. Please try again.";
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
-    }
+      console.log("Response: " +response)
+      
+    } catch (error) {
+      console.log("Error: " +error)
+      
+    }   
   };
-
-  console.log("Class Id: " + classId)
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -355,7 +323,7 @@ const EditClass: React.FC = () => {
   );
 };
 
-export default EditClass;
+export default AddSubject;
 
 
 
@@ -365,3 +333,59 @@ export default EditClass;
 
 
 
+
+
+
+
+
+
+
+// // app/manage-track/curriculum/classes/create/page.tsx
+// import React from "react";
+
+// const CreateClassPage: React.FC = () => {
+//   return (
+//     <div className="px-6 py-8">
+//       <h1 className="text-2xl font-semibold text-gray-800">Create New Class</h1>
+//       <form className="mt-6 space-y-4">
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700">Class Title</label>
+//           <input
+//             type="text"
+//             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+//             placeholder="Enter class title"
+//           />
+//         </div>
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700">Subject</label>
+//           <input
+//             type="text"
+//             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+//             placeholder="Enter subject"
+//           />
+//         </div>
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700">Duration</label>
+//           <input
+//             type="text"
+//             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+//             placeholder="Enter class duration"
+//           />
+//         </div>
+//         <div>
+//           <label className="block text-sm font-medium text-gray-700">Time</label>
+//           <input
+//             type="text"
+//             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+//             placeholder="Enter class time"
+//           />
+//         </div>
+//         <div>
+//           <button className="bg-blue-600 text-white px-4 py-2 rounded-md">Create Class</button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+// export default CreateClassPage;
