@@ -24,11 +24,11 @@ export const API_URLS = {
   TEACHERS: {
     GET_TEACHER: '/users/teachers',
     GET_TEACHERS: '/users/teachers',
-    CREATE_TEACHER: '/teachers',
+    CREATE_TEACHER: '/teachers/',
     UPDATE_TEACHER: '/users/teachers/:userId',
     DELETE_TEACHER: '/users/teachers/:userId',
     DEACTIVATE_TEACHER: '/users/teachers/:userId',
-    REGISTER_TEACHER: '/users/teachers/:userId'
+    REGISTER_TEACHER: '/teachers/:userId'
   },
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: '/notifications/announcements',

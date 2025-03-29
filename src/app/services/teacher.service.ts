@@ -90,7 +90,7 @@ const getLocalStorageItem = (key: string) => {
 };
 
 export const registerTeacher = async (payload: RegisterTeacherPayload) => {
-  const response = await fetch(API_ENDPOINTS.REGISTER_TEACHER, {
+  const response = await fetch(API_ENDPOINTS.REGISTER, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -106,25 +106,32 @@ export const registerTeacher = async (payload: RegisterTeacherPayload) => {
   return response.json();
 };
 
-export const createTeacherProfile = async (payload: CreateTeacherProfilePayload) => {
-  const response = await fetch(API_ENDPOINTS.CREATE_TEACHER.replace('', payload.userId), {
+
+export const createTeacherProfile = async (userId: string, payload: CreateTeacherProfilePayload) => {
+  if (!userId) {
+    throw new Error('User ID is required to create teacher profile');
+  }
+
+  const response = await fetch(`${API_ENDPOINTS.CREATE_TEACHER}${userId}`, {
     method: 'POST',
     headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Teacher profile creation failed');
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.message || 
+      errorData?.error || 
+      'Profile creation failed'
+    );
   }
 
   return response.json();
 };
-
 export const teacherService = {
   async getTeachers(page: number = 1, limit: number = 10): Promise<GetTeachersResponse> {
     const userId = getLocalStorageItem('user')?.userId;
