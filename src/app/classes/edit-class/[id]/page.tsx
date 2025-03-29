@@ -8,6 +8,7 @@ import { getClass, editClass } from '../../../services/student.service';
 import { getSchoolId } from '../../../services/school.service';
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import Link from 'next/link'
 
 interface FormData {
   name: string;
@@ -103,6 +104,10 @@ const EditClass: React.FC = () => {
     }
   };
 
+  const handleAddCourse = () => {
+    router.push('/courses')
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -167,6 +172,8 @@ const EditClass: React.FC = () => {
                 <option value="50">50 students</option>
               </select>
             </div>
+
+
           </div>
 
           <div className="space-y-2">
@@ -182,6 +189,16 @@ const EditClass: React.FC = () => {
               value={formData.classDescription}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="flex items-center gap-x-4 mb-4">
+            <h1 className="text-2xl font-semibold text-gray-800">Add Course</h1>
+            <Link 
+              href="/courses" 
+              className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
+            >
+              + Add
+            </Link>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-200">
