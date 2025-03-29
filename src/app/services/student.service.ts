@@ -30,7 +30,7 @@ interface ParentContact {
 export interface Student {
   _id: string;
   userId: User;
-  classId: Class;
+  classId?: Class;
   gradeLevel: string;
   parentId: string;
   parentContact: ParentContact;
@@ -141,6 +141,8 @@ export const createClass = async (payload: Class) => {
 
   return response.json();
 };
+
+
 export const editClass = async (classId: string, data: any) => {
   const response = await fetch(`${API_ENDPOINTS.EDIT_CLASS}/${classId}`, {
     method: 'PUT',
@@ -202,3 +204,7 @@ export const studentService = {
     }
   }
 };
+
+
+
+

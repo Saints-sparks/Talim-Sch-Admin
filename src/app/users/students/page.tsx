@@ -154,7 +154,7 @@ const StudentPage: React.FC = () => {
                 className="w-16 h-16 rounded-full mx-auto mb-2"
               />
               <h3 className="text-center text-lg font-semibold">{`${student.userId.firstName} ${student.userId.lastName}`}</h3>
-              <p className="text-center text-gray-500">{student.classId.name}</p>
+              {/* <p className="text-center text-gray-500">{student.classId.name}</p> */}
               <button
                 className="px-4 py-1 mt-4 text-[#154473] bg-white rounded mx-auto block"
                 onClick={() => handleViewProfile(student._id)}

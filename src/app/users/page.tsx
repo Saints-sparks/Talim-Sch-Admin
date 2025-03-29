@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import TeacherGrid from "@/components/TeacherGrid";
+import { createTeacherProfile, Teacher } from "../services/teacher.service";
 import AddTeacherModal from "@/components/AddTeacherModal";
 
-const Users = () => {
+
+const TeachersPage = () => {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -49,4 +51,4 @@ const Users = () => {
   );
 };
 
-export default Users;
+export default TeachersPage;
