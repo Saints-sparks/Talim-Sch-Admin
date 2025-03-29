@@ -140,7 +140,7 @@ export const getAnnouncementsBySender = async (senderId: string, page: number = 
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER.replace(':senderId', senderId).replace(':page', page.toString()).replace(':limit', limit.toString())}`, {
+    const response = await fetch(API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId, page, limit), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

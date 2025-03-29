@@ -187,7 +187,7 @@ export default function Classes() {
           {/* Pagination Controls */}
           <div className="flex justify-between items-center mt-4">
             <button
-              className={`px-3 py-1 border rounded ${
+              className={`px-3 py-1 border rounded bg-[#154473] text-white rounded ${
                 currentPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-blue-500 hover:bg-gray-100"
               }`}
               onClick={handlePrevPage}
@@ -195,11 +195,11 @@ export default function Classes() {
             >
               &lt; Previous
             </button>
-            <span>
+            <span className="text-gray-500">
               Page {currentPage} of {totalPages}
             </span>
             <button
-              className={`px-3 py-1 border rounded ${
+              className={`px-3 py-1 border rounded  bg-[#154473] text-white rounded ${
                 currentPage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-blue-500 hover:bg-gray-100"
               }`}
               onClick={handleNextPage}

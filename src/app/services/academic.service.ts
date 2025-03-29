@@ -161,7 +161,7 @@ export const getTerms = async (): Promise<TermResponse[]> => {
 
 export const setCurrentTerm = async (termId: string): Promise<void> => {
   try {
-    const url = API_ENDPOINTS.SET_CURRENT_TERM.replace(':termId', termId);
+    const url = API_ENDPOINTS.SET_CURRENT_TERM(termId);
     
     const response = await fetch(url, {
       method: 'PUT',
