@@ -6,7 +6,12 @@ import { IoMdNotificationsOutline } from "react-icons/io";
 import { AiOutlineSearch } from "react-icons/ai"; // Search Icon
 import { BsCalendar2Date } from "react-icons/bs"; // Calendar Icon
 
-const Header = () => {
+interface HeaderProps {
+  user: string;
+  title: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ user, title }) => {
   const [currentDate, setCurrentDate] = useState("");
   const router = useRouter(); // Router for navigation
 
@@ -21,6 +26,11 @@ const Header = () => {
 
   return (
     <div className="flex justify-between items-center mb-8">
+      <div className="flex items-center space-x-4">
+        <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+        <span className="text-gray-500">{user}</span>
+      </div>
+
       {/* Search Bar with Search Icon */}
       <div className="relative w-1/3">
         <AiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />

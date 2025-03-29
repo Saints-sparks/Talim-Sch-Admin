@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from './api/urls';
+import { API_BASE_URL } from '../lib/api/config';
 import { getLocalStorageItem } from '../lib/localStorage';
 import { toast } from 'react-toastify';
 
@@ -50,23 +50,22 @@ export const getSettings = async (): Promise<SettingsResponse> => {
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.GET_SETTINGS}`, {
+    const response = await fetch(`${API_BASE_URL}/settings`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       }
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch settings');
+      throw new Error('Failed to fetch settings');
     }
 
-    const data: SettingsResponse = await response.json();
+    const data = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to fetch settings. Please try again.');
+    console.error('Error fetching settings:', error);
     throw error;
   }
 };
@@ -79,24 +78,23 @@ export const updateSchoolSettings = async (settings: Partial<SchoolSettings>): P
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.UPDATE_SCHOOL_SETTINGS}`, {
+    const response = await fetch(`${API_BASE_URL}/settings/school`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(settings)
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update school settings');
+      throw new Error('Failed to update school settings');
     }
 
-    const data: SchoolSettings = await response.json();
+    const data = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to update school settings. Please try again.');
+    console.error('Error updating school settings:', error);
     throw error;
   }
 };
@@ -109,24 +107,23 @@ export const updateUserSettings = async (settings: Partial<UserSettings>): Promi
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.UPDATE_USER_SETTINGS}`, {
+    const response = await fetch(`${API_BASE_URL}/settings/user`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(settings)
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update user settings');
+      throw new Error('Failed to update user settings');
     }
 
-    const data: UserSettings = await response.json();
+    const data = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to update user settings. Please try again.');
+    console.error('Error updating user settings:', error);
     throw error;
   }
 };
@@ -139,26 +136,25 @@ export const uploadSchoolLogo = async (file: File): Promise<string> => {
   }
 
   const formData = new FormData();
-  formData.append('logo', file);
+  formData.append('file', file);
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.UPLOAD_SCHOOL_LOGO}`, {
+    const response = await fetch(`${API_BASE_URL}/settings/logo`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
-      body: formData,
+      body: formData
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to upload logo');
+      throw new Error('Failed to upload logo');
     }
 
     const data = await response.json();
     return data.url;
   } catch (error) {
-    toast.error('Failed to upload logo. Please try again.');
+    console.error('Error uploading logo:', error);
     throw error;
   }
 };

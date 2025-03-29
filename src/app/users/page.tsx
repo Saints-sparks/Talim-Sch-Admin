@@ -4,11 +4,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import TeacherGrid from "@/components/TeacherGrid";
-import { createTeacherProfile, Teacher } from "../services/teacher.service";
 import AddTeacherModal from "@/components/AddTeacherModal";
 
-
-const TeachersPage = () => {
+const Users = () => {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,7 +22,7 @@ const TeachersPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header />
+      <Header user="Administrator" title="Teachers" />
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Teachers</h1>
@@ -51,4 +49,4 @@ const TeachersPage = () => {
   );
 };
 
-export default TeachersPage;
+export default Users;

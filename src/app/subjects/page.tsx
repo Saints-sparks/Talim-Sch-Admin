@@ -40,7 +40,7 @@ const Subjects: React.FC = () => {
   return (
     <div className="p-6 space-y-1 bg-[#F8F8F8]">
       {/* Header */}
-      <Header />
+      <Header user="Administrator" title="Subjects" />
 
       {/* Add Subject Button */}
       <div className="flex justify-between items-center mb-6 p-6">

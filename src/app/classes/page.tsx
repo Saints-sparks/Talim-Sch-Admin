@@ -128,7 +128,7 @@ export default function Classes() {
   return (
     <div className="flex h-screen bg-gray-100">
       <main className="flex-grow p-8">
-        <Header />
+        <Header user="Administrator" title="Classes" />
         <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">Class Overview</h1>
 
         {/* Classes Table */}
@@ -146,18 +146,18 @@ export default function Classes() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2 px-4">Class Name</th>
-                <th className="text-left py-2 px-4">Capacity</th>
-                <th className="text-left py-2 px-4">Subjects Assigned</th>
-                <th className="text-left py-2 px-4">Actions</th>
+                <th className="text-left py-2 px-4  text-gray-800">Class Name</th>
+                <th className="text-left py-2 px-4 text-gray-800">Capacity</th>
+                <th className="text-left py-2 px-4 text-gray-800">Subjects Assigned</th>
+                <th className="text-left py-2 px-4 text-gray-800">Actions</th>
               </tr>
             </thead>
             <tbody>
               {displayedClasses.map((item, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4">{item.name}</td>
-                   <td className="py-2 px-4">{item.classCapacity}</td>
-                  <td className="py-2 px-4">{item.classDescription}</td> 
+                  <td className="py-2 px-4 text-gray-800">{item.name}</td>
+                   <td className="py-2 px-4 text-gray-800">{item.classCapacity}</td>
+                  <td className="py-2 px-4 text-gray-800">{item.classDescription}</td> 
                   <td className="py-2 px-4">
                   <a
                     href={`/classes/view-class/${item._id}`} // Replace with your actual URL

@@ -111,7 +111,8 @@ const EditClass: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header />
+        <Header user="Administrator" title="Edit Class" />
+
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -121,7 +122,7 @@ const EditClass: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Header />
+      <Header user="Administrator" title="Edit Class" />
 
       <div className="flex items-center mb-8">
         <button

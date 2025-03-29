@@ -62,7 +62,7 @@ export default function Step1() {
 
 
       <div className="bg-gray-100 p-8 rounded shadow-md w-full h-auto min-h-[90vh]">
-      <Header/>
+      <Header user="Administrator" title="Teacher Profile" />
         <h2 className="text-2xl font-semibold mb-6">Personal Details</h2>
         <div className="flex items-center space-x-4 mb-6">
           <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
