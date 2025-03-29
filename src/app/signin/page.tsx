@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify'; // Import toast from react-toastify
 import { authService } from '../services/auth.service';
 import nookies from 'nookies'
+import { setLocalStorageItem } from '../../app/utils/localStorage';
 
 export default function SignIn() {
   const router = useRouter();
@@ -59,10 +60,11 @@ export default function SignIn() {
       // Get user info
       const userInfo = await authService.introspectToken(response.access_token)
 
-      // Store user info in localStorage
+      // Store user info in localStorage and cookies
       localStorage.setItem('user', JSON.stringify(userInfo.user))
       localStorage.setItem('accessToken', response.access_token); // Store access token
       localStorage.setItem('refreshToken', response.refresh_token)
+
       toast.success('Login successful! Redirecting...');
 
       // Redirect to dashboard or home page on successful login

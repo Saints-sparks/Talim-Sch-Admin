@@ -61,7 +61,7 @@ export default function SignIn() {
     // Set loading to true when the form is submitted
     setLoading(true);
 
-    console.log('Login request:', { email, password });
+    //console.log('Login request:', { email, password });
     try {
       // Prepare the request body
       const requestBody = {
@@ -95,7 +95,7 @@ export default function SignIn() {
       // Redirect to dashboard or home page on successful login
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000); // Delay redirect to allow toast to be seen
+      }, 1000); // Delay redirect to allow toast to be seen
     } catch (err) {
       // Display error toast
       toast.error('An error occurred. Please try again.');
