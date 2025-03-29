@@ -93,7 +93,7 @@ const StudentPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Section */}
-      <Header/>
+      <Header user="Administrator" title="Students" />
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-x-4 mb-4">

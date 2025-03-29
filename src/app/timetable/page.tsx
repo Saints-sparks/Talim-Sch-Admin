@@ -41,7 +41,7 @@ const Timetable = () => {
   return (
     <div className="px-4">
       <div className="mx-auto bg-[#F8F8F8] rounded-lg p-6">
-        <Header/>
+        <Header user="Administrator" title="Timetable" />
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold">Timetable</h1>
           <button

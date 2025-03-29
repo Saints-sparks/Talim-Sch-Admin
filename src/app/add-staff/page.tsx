@@ -51,7 +51,7 @@ export default function AddStaff() {
   return (
     <div className="p-6 space-y-1 bg-[F8F8F8]">
         
-     <Header user={"Administrator"} tent={"Add Student"} />
+     <Header user={"Administrator"} title={"Add Student"} />
 
       {/* Main Content */}
       <main className="flex-1">

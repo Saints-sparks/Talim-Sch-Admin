@@ -4,13 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ToastContainer, toast, Flip } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { registerStudent, createStudentProfile, getClasses } from '../app/services/student.service';
+import { registerStudent, createStudentProfile, getClasses, Class } from '../app/services/student.service';
 import { getSchoolId } from '../app/services/school.service';
-
-interface Class {
-  _id: string;
-  name: string;
-}
 
 const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const router = useRouter();

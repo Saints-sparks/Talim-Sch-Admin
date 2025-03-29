@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from './api/urls';
+import { API_BASE_URL } from '../lib/api/config';
 import { getLocalStorageItem } from '../lib/localStorage';
 import { toast } from 'react-toastify';
 
@@ -47,7 +47,7 @@ export const createLeaveRequest = async (leave: LeaveRequest): Promise<LeaveResp
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.CREATE_LEAVE_REQUEST}`, {
+    const response = await fetch(`${API_BASE_URL}/leave/requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ export const getLeaveRequests = async (page: number = 1, limit: number = 10): Pr
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.GET_LEAVE_REQUESTS}?page=${page}&limit=${limit}`, {
+    const response = await fetch(`${API_BASE_URL}/leave/requests?page=${page}&limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ export const getLeaveRequestById = async (leaveId: string): Promise<LeaveRespons
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.GET_LEAVE_REQUEST_BY_ID.replace(':leaveId', leaveId)}`, {
+    const response = await fetch(`${API_BASE_URL}/leave/requests/${leaveId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export const updateLeaveRequestStatus = async (leaveId: string, status: string):
   }
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.UPDATE_LEAVE_REQUEST_STATUS.replace(':leaveId', leaveId)}`, {
+    const response = await fetch(`${API_BASE_URL}/leave/requests/${leaveId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

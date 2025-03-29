@@ -27,7 +27,7 @@ const SubjectProfile: NextPage = () => {
       <main className="flex-grow p-6">
         
       {/* Page Header */}
-      <Header/>
+      <Header user="Administrator" title="Subject Profile" />
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4"> Subject Profile</h2>
 

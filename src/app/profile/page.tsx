@@ -71,7 +71,7 @@ export default function Profile() {
 
   return (
     <div className="p-6 space-y-1">
-      <Header />
+      <Header user="Administrator" title="Profile" />
 
       {/* Main Content */}
       <div className="p-5">
