@@ -203,6 +203,36 @@ export const studentService = {
       throw error;
     }
   },
+
+
+   async getStudentById(studentId: string): Promise<Student> {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        // Handle 404 specifically
+        if (response.status === 404) {
+          throw new Error('Student not found');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch student details');
+      }
+
+      return await response.json();
+
+    console.log("Response: " +response)
+    } catch (error) {
+      console.error('Error fetching student:', error);
+      throw error;
+    }
+  },
+  
   async getStudentsByClass(classId: string, page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
     // const userId = getLocalStorageItem('user')?.userId;
 
