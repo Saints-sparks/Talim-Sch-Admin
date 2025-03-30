@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+export const API_BASE_URL = 'http://localhost:5000';
 
 export const API_URLS = {
   AUTH: {
@@ -22,6 +22,15 @@ export const API_URLS = {
     UPDATE_STUDENT: '/users/students/:studentId',
     DELETE_STUDENT: '/users/students/:studentId',
     GET_STUDENTS_BY_CLASS: '/students/by-class/:classId',
+  },
+  TEACHERS: {
+    GET_TEACHER: '/users/teachers',
+    GET_TEACHERS: '/users/teachers',
+    CREATE_TEACHER: '/teachers/',
+    UPDATE_TEACHER: '/users/teachers/:userId',
+    DELETE_TEACHER: '/users/teachers/:userId',
+    DEACTIVATE_TEACHER: '/users/teachers/:userId',
+    REGISTER_TEACHER: '/teachers/:userId'
   },
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: '/notifications/announcements',
@@ -81,7 +90,14 @@ export const API_ENDPOINTS = {
   GET_COMPLAINT_BY_TICKET: (ticket: string) => `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINT_BY_TICKET.replace(':ticket', ticket)}`,
   GET_STUDENTS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS}`,
   CREATE_STUDENT_NEW: `${API_BASE_URL}${API_URLS.STUDENTS.CREATE_STUDENT}`,
-  UPDATE_STUDENT: (studentId: string) => `${API_BASE_URL}${API_URLS.STUDENTS.UPDATE_STUDENT.replace(':studentId', studentId)}`,
-  DELETE_STUDENT: (studentId: string) => `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT.replace(':studentId', studentId)}`,
-  GET_STUDENTS_BY_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(':classId', classId)}`,
+  UPDATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.UPDATE_STUDENT}`,
+  DELETE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT}`,
+  
+  CREATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.CREATE_TEACHER}`,
+  GET_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER}`,
+  GET_TEACHERS: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHERS}`,
+  REGISTER_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.REGISTER_TEACHER}`,
+  UPDATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER}`,
+  DEACTIVATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.DEACTIVATE_TEACHER}`,
+  GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
 } as const;

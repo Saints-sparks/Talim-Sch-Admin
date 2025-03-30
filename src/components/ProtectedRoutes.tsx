@@ -4,25 +4,15 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLocalStorageItem } from '../app/utils/localStorage';
-import { parse } from 'cookie';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   
-  // Get tokens from localStorage
-  const localStorageUser = getLocalStorageItem('user');
-  const localStorageAccessToken = getLocalStorageItem('accessToken');
-
-  // Get tokens from cookies
-  const cookies = document.cookie;
-  const parsedCookies = parse(cookies);
-  const cookieUser = parsedCookies.user ? JSON.parse(parsedCookies.user) : null;
-  const cookieAccessToken = parsedCookies.access_token;
+  const user = getLocalStorageItem('user');
+  const accessToken = localStorage.getItem('accessToken');
 
   // Check if user is authenticated
-  const isAuthenticated = 
-    (localStorageUser && localStorageAccessToken) || 
-    (cookieUser && cookieAccessToken);
+  const isAuthenticated = !!user && !!accessToken;
 
   useEffect(() => {
     if (!isAuthenticated) {
