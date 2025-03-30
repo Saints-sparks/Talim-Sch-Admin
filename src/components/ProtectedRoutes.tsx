@@ -9,7 +9,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   
   const user = getLocalStorageItem('user');
-  const accessToken = localStorage.getItem('accessToken');
+  const accessToken = getLocalStorageItem('accessToken');
 
   // Check if user is authenticated
   const isAuthenticated = !!user && !!accessToken;

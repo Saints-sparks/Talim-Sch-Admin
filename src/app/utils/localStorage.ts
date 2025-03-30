@@ -1,5 +1,11 @@
+'use client';
+
+import { parse, serialize } from 'cookie';
+
+const isBrowser = typeof window !== 'undefined';
+
 export const getLocalStorageItem = (key: string): any | null => {
-  if (typeof window === 'undefined') return null;
+  if (!isBrowser) return null;
 
   try {
     // Try to get from localStorage first
@@ -32,7 +38,7 @@ export const getLocalStorageItem = (key: string): any | null => {
 };
 
 export const setLocalStorageItem = (key: string, value: any) => {
-  if (typeof window === 'undefined') return;
+  if (!isBrowser) return;
 
   try {
     // If value is a string that looks like a JWT, store directly

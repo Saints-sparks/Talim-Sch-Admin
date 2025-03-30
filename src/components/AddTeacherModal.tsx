@@ -28,7 +28,10 @@ const EMPLOYMENT_ROLES = [
   "Academic",
 ] as const;
 
-const AddTeacherModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const AddTeacherModal: React.FC<{
+  onClose: () => void;
+  onSuccess?: () => Promise<void>;
+}> = ({ onClose, onSuccess }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -130,7 +133,7 @@ const AddTeacherModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         await createTeacherProfile(userId, profileData);
         toast.success("Teacher Profile created successfully");
         router.push('/users/teachers');
-    
+        if (onSuccess) await onSuccess();
 
       }
  

@@ -170,7 +170,7 @@ const TeacherProfile = () => {
 
                 <h3 className="text-lg font-semibold mt-6 mb-2">Assigned Classes</h3>
                 <div className="space-y-2">
-                  {teacher.assignedClasses.length > 0 ? (
+                  {teacher.assignedClasses && teacher.assignedClasses.length > 0 ? (
                     teacher.assignedClasses.map((classItem) => (
                       <div key={classItem._id} className="bg-gray-50 p-2 rounded">
                         {classItem.name}

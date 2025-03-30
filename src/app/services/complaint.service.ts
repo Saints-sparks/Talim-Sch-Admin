@@ -121,7 +121,7 @@ export const complaintService = {
 
     try {
       const response = await fetch(
-        API_ENDPOINTS.GET_COMPLAINT_BY_TICKET.replace(':ticket', ticket),
+        API_ENDPOINTS.GET_COMPLAINT_BY_TICKET(ticket),
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
