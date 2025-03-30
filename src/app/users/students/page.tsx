@@ -182,7 +182,7 @@ const StudentPage: React.FC = () => {
                 className="w-16 h-16 rounded-full mx-auto mb-2 text-gray-500"
               />
               <h3 className="text-center text-lg font-semibold text-[#154473]">{`${student.userId.firstName} ${student.userId.lastName}`}</h3>
-              <p className="text-center text-black">{student.classId.name}</p>
+              <p className="text-center text-black">{student._id}</p>
               <button
                 className="px-4 py-1 mt-4 text-[#154473] bg-[#154473] rounded mx-auto block hover:bg-blue-100"
                 onClick={() => handleViewProfile(student._id)}

@@ -132,6 +132,8 @@ export const createTeacherProfile = async (userId: string, payload: CreateTeache
 
   return response.json();
 };
+
+
 export const teacherService = {
   async getTeachers(page: number = 1, limit: number = 10): Promise<GetTeachersResponse> {
     const userId = getLocalStorageItem('user')?.userId;

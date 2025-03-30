@@ -17,11 +17,20 @@ export const API_URLS = {
     CREATE: '/students'
   },
   STUDENTS: {
+    GET_STUDENT: '/students',
     GET_STUDENTS: '/users/students',
     CREATE_STUDENT: '/users/students',
     UPDATE_STUDENT: '/users/students/:studentId',
     DELETE_STUDENT: '/users/students/:studentId',
     GET_STUDENTS_BY_CLASS: '/students/by-class/:classId',
+  },
+  COURSES: {
+    CREATE_COURSE: '/subjects-courses/courses',
+    GET_COURSE: '/courses',
+    GET_COURSES: '/courses',
+    UPDATE_COURSE: '/courses',
+    DELETE_COURSE: '',
+    GET_COURSE_BY_ID: ''
   },
   TEACHERS: {
     GET_TEACHER: '/users/teachers',
@@ -100,4 +109,14 @@ export const API_ENDPOINTS = {
   UPDATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER}`,
   DEACTIVATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.DEACTIVATE_TEACHER}`,
   GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
+  GET_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENT}`,
+
+
+  CREATE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.CREATE_COURSE}`,
+  GET_COURSES: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES}`,
+  UPDATE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.UPDATE_COURSE}`,
+  DELETE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.DELETE_COURSE}`,
+  GET_COURSE_BY_ID: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSE_BY_ID}`,
+
+
 } as const;
