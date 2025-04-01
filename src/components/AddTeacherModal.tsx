@@ -55,11 +55,11 @@ const AddTeacherModal: React.FC<{
     // Step 2: Employment details
     employmentType: "Fulltime",
     employmentRole: "Academic",
-    availabilityDays: [] as string[],
+    availabilityDays: [],
     availableTime: "",
     isFormTeacher: false,
-    assignedClasses: [] as string[],
-    assignedCourses: [] as string[],
+    assignedClasses: [],
+    assignedCourses: []
   });
 
   useEffect(() => {
@@ -378,9 +378,10 @@ const AddTeacherModal: React.FC<{
                 </label>
                 <select
                   name="assignedClasses"
+                  multiple
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.assignedClasses[0] || ""}
-                  onChange={handleInputChange}
+                  value={formData.assignedClasses}
+                  onChange={handleMultiSelectChange}
                 >
                   <option value="">Select Class</option>
                   {classes.map((classItem) => (
