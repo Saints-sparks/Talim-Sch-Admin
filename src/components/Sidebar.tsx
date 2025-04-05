@@ -68,9 +68,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [isMobile, setIsMobile] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
   const { isCollapsed, toggleCollapse } = useSidebar();
-
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   const checkIfMobile = useCallback(() => {
@@ -126,15 +124,15 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
       )}
 
       {/* Sidebar Container */}
-      <div
-        className={`
-          ${isMobile ? "fixed left-0 top-0 z-50" : "sticky top-0 z-30"}
-          ${isMobile && !isOpen ? "-translate-x-full" : "translate-x-0"}
-          ${isCollapsed && !isMobile ? "w-20" : "w-64"}
-          h-screen bg-white text-gray-800 shadow-lg transition-all duration-300 ease-in-out flex flex-col justify-between
-          ${className}
-        `}
-      >
+      <div 
+      className={`
+        ${isMobile ? 'fixed left-0 top-0 z-[60]' : 'sticky top-0 z-30'} 
+        ${isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'}
+        ${isCollapsed ? 'w-20' : 'w-64'} 
+        transform flex flex-col justify-between min-h-screen bg-white text-gray-700 shadow-lg
+        transition-all duration-300 ease-in-out
+      `}
+    >
         {/* Sidebar Content */}
         <div className={`overflow-y-auto flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
           {/* Header */}
