@@ -41,9 +41,8 @@ const Timetable = () => {
   return (
     <div className="px-4">
       <div className="mx-auto bg-[#F8F8F8] rounded-lg p-6">
-        <Header user="Administrator" title="Timetable" />
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold">Timetable</h1>
+          <h1 className="text-2xl font-medium text-gray-800">Timetable</h1>
           <button
               className="font-bold text-[#154473]"
               onClick={toggleModal}
@@ -54,7 +53,7 @@ const Timetable = () => {
         </div>
         <p className="text-gray-500 mb-6">Stay on Track with Your Class Schedule!</p>
 
-        <div className="overflow-x-auto border border-gray-300 rounded-t-3xl max-h-[510px] 2xl:max-h-[800px] overflow-y-scroll">
+        <div className="overflow-x-auto border border-gray-300 text-gray-700 rounded-t-3xl max-h-[510px] 2xl:max-h-[800px] overflow-y-scroll">
           <div className="grid sticky top-0 z-30" style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}>
             <div className="font-semibold text-center bg-[#FFFFFF] py-6">Time</div>
             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day, index) => (
@@ -201,7 +200,7 @@ const Timetable = () => {
               Class 
             </label>
             <select
-              className="w-1/3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/3 px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled selected>
                 Select class
@@ -216,7 +215,7 @@ const Timetable = () => {
               Subject 
             </label>
             <select
-              className="w-1/3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/3 px-4 py-3 border text-gray-700 bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled selected>
                 Select Subject
@@ -228,19 +227,19 @@ const Timetable = () => {
             <div>
 
             <div className="flex-1">
-            <label className="block mb-1 font-medium">Date</label>
+            <label className="block mb-1 font-medium text-gray-700">Date</label>
               <input
                 type="date"
                 name="date"
                 placeholder="Select date"
-                className="w-1/3 px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                className="w-1/3 px-3 py-2 text-gray-700 border rounded focus:outline-none focus:ring focus:ring-blue-300"
               />
 
             <label className="block text-gray-700 font-semibold mb-2">
               Start Time 
             </label>
             <select
-              className="w-1/3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/3 px-4 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled selected>
                 Select Time
@@ -258,7 +257,7 @@ const Timetable = () => {
               End Time
             </label>
             <select
-              className="w-1/3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/3 px-4 py-3 border bg-white border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled selected>
                 Select Time
@@ -295,10 +294,6 @@ const Timetable = () => {
     </div>
   </div>
 )}
-
-
-
-
     </div>
   );
 };

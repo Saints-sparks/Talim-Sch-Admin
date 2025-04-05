@@ -1,46 +1,37 @@
-"use client";
 import React, { useState, useCallback, memo, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import {
-  HiHome,
-  HiOutlineBookOpen,
-  HiOutlineUsers,
-  HiOutlineSpeakerphone,
-  HiOutlineClipboard,
-  HiOutlineChatAlt2,
-  HiOutlineCalendar,
-  HiOutlineExclamationCircle,
-  HiOutlineTicket,
-  HiOutlineCog
-} from "react-icons/hi";
-import { FaRegCommentDots, FaUserCircle } from "react-icons/fa";
-import { AiOutlineCalendar, AiOutlinePlus } from "react-icons/ai";
-import { MdOutlineNotifications } from "react-icons/md";
-import { FiSettings, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
-import Image from "next/legacy/image";
-import { useLoading } from '@/hooks/useLoading';
-import LoadingModal from './LoadingModal';
+  Home,
+  BookOpen,
+  Users,
+  Speaker,
+  ClipboardList,
+  MessageSquare,
+  Calendar,
+  AlertCircle,
+  Ticket,
+  Settings,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Menu,
+  CircleUser
+} from "lucide-react";
+import { useSidebar } from "@/context/SidebarContext";
 
 type SidebarProps = {
   className?: string;
 };
 
-interface MenuItem {
-  path: string;
-  icon: React.ReactNode;
-  label: string;
-  subItems?: { path: string; label: string }[];
-}
-
 const menuSections = [
   {
     title: 'School Management',
     items: [
-      { path: '/dashboard', icon: <HiHome className="text-xl" />, label: 'Dashboard' },
-      { path: '/classes', icon: <HiOutlineBookOpen className="text-xl" />, label: 'Classes' },
+      { path: '/dashboard', icon: <Home className="w-5 h-5" />, label: 'Dashboard' },
+      { path: '/classes', icon: <BookOpen className="w-5 h-5" />, label: 'Classes' },
       {
         path: '/users',
-        icon: <HiOutlineUsers className="text-xl" />,
+        icon: <Users className="w-5 h-5" />,
         label: 'Users',
         subItems: [
           { path: '/users/students', label: 'Students' },
@@ -52,97 +43,166 @@ const menuSections = [
   {
     title: 'Academic',
     items: [
-      { path: '/timetable', icon: <HiOutlineCalendar className="text-xl" />, label: 'Timetable' },
-      { path: '/complaints', icon: <HiOutlineExclamationCircle className="text-xl" />, label: 'Complaints' },
-      { path: '/leave-requests', icon: <HiOutlineTicket className="text-xl" />, label: 'Leave Requests' }
+      { path: '/timetable', icon: <Calendar className="w-5 h-5" />, label: 'Timetable' },
+      { path: '/complaints', icon: <AlertCircle className="w-5 h-5" />, label: 'Complaints' },
+      { path: '/leave-requests', icon: <Ticket className="w-5 h-5" />, label: 'Leave Requests' },
+      { path: '/curricula', icon: <ClipboardList className="w-5 h-5" />, label: 'Curricula' },
     ]
   },
   {
     title: 'Communication',
     items: [
-      { path: '/announcements', icon: <HiOutlineSpeakerphone className="text-xl" />, label: 'Announcements' },
-      { path: '/messages', icon: <HiOutlineChatAlt2 className="text-xl" />, label: 'Messages' }
+      { path: '/announcements', icon: <Speaker className="w-5 h-5" />, label: 'Announcements' },
+      { path: '/messages', icon: <MessageSquare className="w-5 h-5" />, label: 'Messages' }
     ]
   },
   {
     title: 'System',
     items: [
-      { path: '/settings', icon: <HiOutlineCog className="text-xl" />, label: 'Settings' }
+      { path: '/settings', icon: <Settings className="w-5 h-5" />, label: 'Settings' }
     ]
   }
 ];
 
 const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [isUserTabOpen, setIsUserTabOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-  const { isLoading, startLoading, stopLoading } = useLoading();
+  const [isMobile, setIsMobile] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const isActive = useCallback((path: string) => pathname === path, [pathname]);
+  const { isCollapsed, toggleCollapse } = useSidebar();
 
-  const handleNavigate = useCallback(
-    (path: string) => {
-      startLoading();
-      console.log(`Navigating to: ${path}`);
-      router.push(path);
-    },
-    [router, startLoading]
-  );
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  const checkIfMobile = useCallback(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
+  useEffect(() => {
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, [checkIfMobile]);
+
+  useEffect(() => {
+    if (isMobile) setIsOpen(false);
+  }, [currentPath, isMobile]);
+
+  const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
+
+  const handleNavigate = useCallback((path: string) => {
+    setCurrentPath(path);
+    window.history.pushState({}, '', path);
+    if (isMobile) setIsOpen(false);
+  }, [isMobile]);
 
   const handleLogout = useCallback(() => {
-    // Clear user data from localStorage or sessionStorage
-    localStorage.removeItem("accessToken"); // Example: Remove the user token
-    localStorage.removeItem("refreshToken"); // Example: Remove user-related data
-
-    // Redirect to the login page or home page
-    router.push("/"); // Replace "/login" with your login page route
-  }, [router]);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/";
+  }, []);
 
   const toggleSection = useCallback((title: string) => {
     setOpenSections(prev => ({ ...prev, [title]: !prev[title] }));
   }, []);
 
-  useEffect(() => {
-    stopLoading();
-  }, [pathname, stopLoading]);
-
   return (
-    <div className={`bg-white text-gray-800 w-64 h-screen flex flex-col justify-between ${className}`}>
-      <LoadingModal isLoading={isLoading} />
-      <div className="overflow-y-auto flex-1 p-4">
-        <div className="border-t-2 rounded-md">
-          <div className="py-6 mx-2 flex items-center gap-4 cursor-pointer border-b-2 rounded-md">
-            <Image src="/icons/talim.svg" alt="School Logo" width={44} height={43} priority />
-            <span className="text-2xl font-semibold text-gray-900">Talim</span>
+    <>
+      {/* Hamburger Button */}
+      {isMobile && !isOpen && (
+        <button
+          className="fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
+          onClick={() => setIsOpen(true)}
+        >
+          <Menu className="w-6 h-6 text-blue-900" />
+        </button>
+      )}
+
+      {/* Mobile Overlay */}
+      {isMobile && isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div
+        className={`
+          ${isMobile ? "fixed left-0 top-0 z-50" : "sticky top-0 z-30"}
+          ${isMobile && !isOpen ? "-translate-x-full" : "translate-x-0"}
+          ${isCollapsed && !isMobile ? "w-20" : "w-64"}
+          h-screen bg-white text-gray-800 shadow-lg transition-all duration-300 ease-in-out flex flex-col justify-between
+          ${className}
+        `}
+      >
+        {/* Sidebar Content */}
+        <div className={`overflow-y-auto flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+          {/* Header */}
+          <div className="flex items-center justify-between border-b pb-4 mb-4">
+            {!isCollapsed && (
+              <div className="flex items-center gap-4">
+                <img src="/icons/talim.svg" alt="Logo" className="w-11 h-11" />
+                <span className="text-2xl font-semibold text-gray-900">Talim</span>
+              </div>
+            )}
+            {!isMobile && (
+             <button
+             className="p-1 border rounded-md hover:bg-gray-100"
+             onClick={toggleCollapse}
+           >
+             <ChevronLeft
+               className={`w-5 h-5 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
+             />
+           </button>
+           
+            )}
+            {isMobile && isOpen && (
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="p-2 rounded-md border hover:bg-gray-100"
+              >
+                <ChevronRight className="w-5 h-5 text-blue-900" />
+              </button>
+            )}
           </div>
 
+          {/* Menu Sections */}
           {menuSections.map(section => (
             <div key={section.title} className="mt-4">
               <div
-                className="flex items-center justify-between p-2 text-gray-700 font-medium cursor-pointer"
+                className="flex items-center justify-between p-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-50 rounded-md"
                 onClick={() => toggleSection(section.title)}
               >
-                <span>{section.title}</span>
-                {openSections[section.title] ? <FiChevronDown /> : <FiChevronRight />}
+                {!isCollapsed && <span>{section.title}</span>}
+                {!isCollapsed && (
+                  openSections[section.title] 
+                    ? <ChevronDown className="w-4 h-4" /> 
+                    : <ChevronRight className="w-4 h-4" />
+                )}
               </div>
               {openSections[section.title] && section.items.map(item => (
                 <React.Fragment key={item.path}>
                   <div
-                    className={`p-3 flex items-center gap-4 cursor-pointer rounded-md ${
-                      isActive(item.path) ? 'bg-[#154473] text-white' : 'hover:bg-gray-200'
+                    className={`p-3 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
+                      isActive(item.path) 
+                        ? 'bg-blue-900 text-white' 
+                        : 'hover:bg-gray-100'
                     }`}
                     onClick={() => handleNavigate(item.path)}
                   >
                     {item.icon}
-                    <span>{item.label}</span>
+                    {!isCollapsed && <span>{item.label}</span>}
                   </div>
-                  {item.subItems && openSections[section.title] && (
+                  {item.subItems && openSections[section.title] && !isCollapsed && (
                     <div className="pl-8">
                       {item.subItems.map(subItem => (
                         <div
                           key={subItem.path}
-                          className="p-2 flex items-center gap-4 hover:bg-gray-200 cursor-pointer rounded-md"
+                          className={`p-2 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
+                            isActive(subItem.path) 
+                              ? 'bg-blue-900 text-white' 
+                              : 'hover:bg-gray-100'
+                          }`}
                           onClick={() => handleNavigate(subItem.path)}
                         >
                           <span>{subItem.label}</span>
@@ -155,31 +215,32 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Profile Section */}
-      <div className="p-4 bg-white flex items-center justify-between rounded-md hover:bg-gray-200">
-        {/* Admin Info */}
-        <div className="flex items-center gap-4 rounded-md">
-          <FaUserCircle className="text-3xl text-gray-600" />
-          <div className="rounded-md">
-            <div className="font-semibold">Logout</div>
-            <div className="text-sm text-gray-600">account</div>
-          </div>
-        </div>
-
-        {/* Logout Icon */}
-        <button
-          className="text-gray-600 hover:text-gray-800 transition"
-          onClick={() => handleLogout()}
-          aria-label="Logout"
+        {/* Footer (Logout) */}
+        <div 
+          className="p-4 border-t flex items-center justify-between hover:bg-gray-100 cursor-pointer"
+          onClick={handleLogout}
         >
-          <FiLogOut className="w-6 h-6" />
-        </button>
+          <div className="flex items-center gap-3">
+            <CircleUser className="w-6 h-6" />
+            {!isCollapsed && (
+              <div>
+                <div className="font-semibold">Logout</div>
+                <div className="text-sm text-gray-600">account</div>
+              </div>
+            )}
+          </div>
+          {!isCollapsed && (
+            <LogOut className="w-5 h-5 text-gray-600 hover:text-gray-800 transition-colors" />
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Mobile Spacer */}
+      {isMobile && <div className="h-16 md:hidden" />}
+    </>
   );
 });
 
-Sidebar.displayName = "Sidebar"; // Add display name for better debugging
+Sidebar.displayName = "Sidebar";
 export default Sidebar;
