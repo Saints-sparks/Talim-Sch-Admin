@@ -1,20 +1,21 @@
 "use client";
+
 import localFont from "next/font/local";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+import LoadingProvider from "@/providers/LoadingProvider";
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
-
-import { usePathname, useRouter } from "next/navigation"; // Import usePathname and useRouter for routing
-
-import { ToastContainer, toast } from "react-toastify"; // Import ToastContainer and toast
-import "react-toastify/dist/ReactToastify.css"; // Import the CSS for react-toastify
-import { useEffect } from "react"; // Import useEffect for side effects
-import LoadingProvider from '@/providers/LoadingProvider';
 import { SidebarProvider } from "@/context/SidebarContext";
-import LayoutShell from "@/components/LayoutShell";
 
+import AppLayout from "@/components/layouts/AppLayout";
+import AuthLayout from "@/components/layouts/AuthLayout";
 
-// Local Fonts
+// Font setup
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -27,7 +28,6 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Google Font: Poppins
 const poppins = Poppins({
   subsets: ["latin"],
   variable: "--font-poppins",
@@ -36,19 +36,18 @@ const poppins = Poppins({
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
   const noSidebarRoutes = ["/", "/account-section-1", "/account-section-2", "/signup", "/signin"];
-  const showSidebar = !noSidebarRoutes.includes(pathname);
+  const isAuthRoute = noSidebarRoutes.includes(pathname);
 
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
-
-    if (!accessToken && !noSidebarRoutes.includes(pathname)) {
+    if (!accessToken && !isAuthRoute) {
       toast.info("Your session has expired. Please log in again.", {
         position: "top-center",
         autoClose: 5000,
@@ -61,35 +60,26 @@ export default function RootLayout({
 
       router.push("/");
     }
-  }, [pathname, router, noSidebarRoutes]);
+  }, [pathname, router, isAuthRoute]);
 
   return (
     <LoadingProvider>
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
-      >
-        <SidebarProvider>
-          <PageIndicatorProvider>
-            <LayoutShell showSidebar={showSidebar}>
-              {children}
-            </LayoutShell>
-            <ToastContainer
-              position="top-center"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </PageIndicatorProvider>
-        </SidebarProvider>
-      </body>
-    </html>
-  </LoadingProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
+        >
+          <SidebarProvider>
+            <PageIndicatorProvider>
+              {isAuthRoute ? (
+                <AuthLayout>{children}</AuthLayout>
+              ) : (
+                <AppLayout>{children}</AppLayout>
+              )}
+              <ToastContainer />
+            </PageIndicatorProvider>
+          </SidebarProvider>
+        </body>
+      </html>
+    </LoadingProvider>
   );
 }
