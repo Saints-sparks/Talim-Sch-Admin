@@ -1,367 +1,235 @@
 'use client';
 
-import React, { useState, FormEvent, ChangeEvent } from "react";
+import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import Header from "@/components/Header";
-import axios from "axios";
+import { FiArrowLeft, FiUsers, FiBook } from "react-icons/fi";
+import { useRouter, useParams } from "next/navigation";
+import { getClass, editClass } from '../../../services/student.service';
+import { getSchoolId } from '../../../services/school.service';
 import { toast } from "react-toastify";
-import { Flip } from "react-toastify";
-import { useParams } from "next/navigation";
+import 'react-toastify/dist/ReactToastify.css';
+import Link from 'next/link'
 
 interface FormData {
-  className: string;
+  name: string;
   classCapacity: string;
   classDescription: string;
-  assignedTeacher: string;
-  courses: string[];
+  schoolId: string;
 }
 
 const EditClass: React.FC = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
-  const params = useParams()
-
+  const router = useRouter();
+  const params = useParams();
   const classId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [buttonLoader, setButtonLoader] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    className: "",
+    name: "",
     classCapacity: "",
     classDescription: "",
-    assignedTeacher: "",
-    courses: [],
+    schoolId: "",
   });
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
+  useEffect(() => {
+    const fetchClassData = async () => {
+      try {
+        if (!classId) {
+          toast.error("Class ID is required");
+          router.push("/classes");
+          return;
+        }
+
+        const data = await getClass(classId);
+        setFormData({
+          name: data.name,
+          classCapacity: data.classCapacity || "",
+          classDescription: data.classDescription || "",
+          schoolId: data.schoolId || "",
+        });
+      } catch (error) {
+        console.error("Error fetching class:", error);
+        toast.error("Failed to load class details");
+        router.push("/classes");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClassData();
+  }, [classId, router]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setButtonLoader(true);
+    setIsSubmitting(true);
 
     try {
-      const response = await axios.post(`${baseUrl}/subjects-courses/courses`, formData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      if (!classId) {
+        throw new Error("Class ID is missing");
+      }
+      const schoolId = getSchoolId();
+      if (!schoolId) {
+        toast.error('School ID is required');
+        return;
+      }
 
-      toast.success("Subject added successfully", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      const updateData = {
+        name: formData.name,
+        classCapacity: formData.classCapacity,
+        classDescription: formData.classDescription,
+        schoolId: schoolId
+      };
 
-      setButtonLoader(false);
+      const response = await editClass(classId, updateData);
+      
+      if (response) {
+        toast.success("Class updated successfully!");
+        router.push(`/classes/view-class/${classId}`);
+      } else {
+        throw new Error("Failed to update class");
+      }
     } catch (error: any) {
-      console.log("Error: " + error)
-      setButtonLoader(false);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Something went wrong. Please try again.";
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      console.error("Error updating class:", error);
+      toast.error(error.message || "Failed to update class");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  console.log("Class Id: " + classId)
+  const handleAddCourse = () => {
+    router.push('/courses')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <Header user="Administrator" title="Edit Class" />
+
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <Header />
+      <Header user="Administrator" title="Edit Class" />
 
-      <h1 className="text-2xl font-semibold text-gray-800">Edit Class</h1>
+      <div className="flex items-center mb-8">
+        <button
+          onClick={() => router.push(`/classes/view-class/${classId}`)}
+          className="mr-4 p-2 rounded-full hover:bg-gray-200 transition-colors duration-200"
+        >
+          <FiArrowLeft className="text-xl" />
+        </button>
+        <h1 className="text-2xl font-semibold text-gray-800">Edit Class</h1>
+      </div>
 
-      {/* Form */}
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4 flex gap-4">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-2">
-                Class Name
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-gray-700 font-medium mb-2 flex items-center">
+                <FiUsers className="mr-2 text-gray-600" />
+                Class Name *
               </label>
               <input
                 type="text"
-                name="className"
+                name="name"
                 placeholder="Enter class name"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.className}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                value={formData.name}
                 onChange={handleChange}
+                required
               />
             </div>
 
-            <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Class Capacity (Optional)
-          </label>
-          <select
-            name="classCapacity"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.classCapacity} // Controlled by state
-            onChange={handleChange}
-          >
-            <option value="" disabled>
-              Choose your class capacity
-            </option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="30">30</option>
-          </select>
-        </div>
+            <div className="space-y-2">
+              <label className="block text-gray-700 font-medium mb-2 flex items-center">
+                <FiUsers className="mr-2 text-gray-600" />
+                Class Capacity
+              </label>
+              <select
+                name="classCapacity"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200"
+                value={formData.classCapacity}
+                onChange={handleChange}
+              >
+                <option value="" className="text-gray-400">Select capacity</option>
+                <option value="10">10 students</option>
+                <option value="20">20 students</option>
+                <option value="30">30 students</option>
+                <option value="40">40 students</option>
+                <option value="50">50 students</option>
+              </select>
+            </div>
+
+
           </div>
 
-          <div className="mb-4 relative">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class Description (Optional)
+          <div className="space-y-2">
+            <label className="block text-gray-700 font-medium mb-2 flex items-center">
+              <FiBook className="mr-2 text-gray-600" />
+              Class Description
             </label>
             <textarea
               name="classDescription"
-              placeholder="Provide additional notes about the class."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Provide additional notes about the class..."
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[120px]"
               rows={4}
               value={formData.classDescription}
               onChange={handleChange}
-            ></textarea>
+            />
           </div>
 
-          {/* Assign Teacher */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
-              Assign Teacher
-            </label>
-            <select
-              name="assignedTeacher"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={formData.assignedTeacher}
-              onChange={handleChange}
+          <div className="flex items-center gap-x-4 mb-4">
+            <h1 className="text-2xl font-semibold text-gray-800">Add Course</h1>
+            <Link 
+              href="/courses" 
+              className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
             >
-              <option value="" disabled>
-                Select a teacher
-              </option>
-              <option value="teacher-1">Mr. John Adewale</option>
-              <option value="teacher-2">Ms. Sarah Akinola</option>
-              <option value="teacher-3">Dr. Peter Okonkwo</option>
-            </select>
+              + Add
+            </Link>
           </div>
 
-          {/* Courses Section */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
-              Courses
-            </label>
-            <div className="flex flex-wrap gap-5">
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                MTH112
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG123
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG125
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                SCI101
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-5 py-5">
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                MTH112
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG123
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG125
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                SCI101
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-5">
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                MTH112
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG123
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                ENG125
-              </span>
-              <span className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
-                SCI101
-              </span>
-            </div>
-          </div>
-
-          {/* Add New Course Button */}
-          <div className="mb-6">
+          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={toggleModal}
-              className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-gray-300"
-            >
-              Add New Course
-            </button>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-between items-center mt-6">
-            <button
-              type="button"
-              className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              onClick={() => router.push(`/classes/view-class/${classId}`)}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
-              disabled={buttonLoader}
+              className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+              disabled={isSubmitting}
             >
-              {buttonLoader ? "Saving..." : "Save"}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : 'Save Changes'}
             </button>
           </div>
         </form>
       </div>
-    
- 
-
-
-
-         {/* Add Class Modal */}
-    {isModalOpen && (
-  <div
-    className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${
-      isModalOpen ? "opacity-100" : "opacity-0"
-    }`}
-    onClick={toggleModal} // Close modal on clicking the overlay
-  >
-    <div
-      className={`absolute right-0 top-0 h-full w-full md:w-1/2 bg-white p-6 shadow-lg transform transition-transform duration-300 ease-in-out ${
-        isModalOpen ? "translate-x-0" : "translate-x-full"
-      } flex flex-col`}
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-      {/* Modal Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-semibold text-gray-800">Add Subjects</h3>
-        <button
-          className="text-gray-500 hover:text-gray-700 text-2xl"
-          onClick={toggleModal}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Modal Body */}
-      <form className="flex-grow">
-        <div className="mb-4 flex gap-4">
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Subject Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter class name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-            Course Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g: MAT112"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-          {/* Assign Teacher */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
-              Assign Teacher
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select a teacher
-              </option>
-              <option value="teacher-1">Mr. John Adewale</option>
-              <option value="teacher-2">Ms. Sarah Akinola</option>
-              <option value="teacher-3">Dr. Peter Okonkwo</option>
-            </select>
-          </div>
-        <div className="mb-4 relative">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Subject Description (Optional)
-          </label>
-          <textarea
-            placeholder="Provide additional notes about the class."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-          ></textarea>
-        </div>
-      </form>
-
-      {/* Modal Footer */}
-      <div className="flex justify-end gap-4 mt-auto">
-        <button
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-          onClick={toggleModal}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
-        >
-          Create
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
     </div>
   );
 };
 
 export default EditClass;
-
-
-
-
-
-
-
-
-

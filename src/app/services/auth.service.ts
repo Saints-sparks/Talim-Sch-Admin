@@ -39,6 +39,7 @@ export const authService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           ...credentials,
@@ -46,12 +47,16 @@ export const authService = {
           platform: credentials.platform || 'web',
         }),
       });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to login');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to login');
       }
-      return response.json();
+
+      const data = await response.json();
+      return data;
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   },
@@ -62,15 +67,21 @@ export const authService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ token }),
       });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to validate token');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to validate token');
       }
-      return response.json();
+
+      const data = await response.json();
+      return data;
     } catch (error) {
+      console.error('Token introspection error:', error);
       throw error;
     }
   },

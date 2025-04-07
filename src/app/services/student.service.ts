@@ -2,21 +2,24 @@ import { API_ENDPOINTS } from '../lib/api/config';
 
 interface User {
   _id: string;
-  email: string;
-  role: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  userAvatar?: string;
+  email: string;
+  dateOfBirth: string;
+  gender: string;
+  userAvatar: string;
+  [key: string]: string | number | boolean;
 }
 
 export interface Class {
-  _id?: string;
+  _id: string;
   name: string;
-  schoolId: string;
   classCapacity: number;
   classDescription: string;
+  schoolId: string;
   assignedCourses: string[];
+  [key: string]: string | number | string[];
 }
 
 interface ParentContact {
@@ -25,6 +28,8 @@ interface ParentContact {
   phoneNumber: string;
   email: string;
   relationship: string;
+  address: string;
+  [key: string]: string;
 }
 
 export interface Student {
@@ -35,9 +40,95 @@ export interface Student {
   parentId: string;
   parentContact: ParentContact;
   isActive: boolean;
+  enrollmentDate?: string;
+  assignedSubjects?: string[];
+  attendance?: string;
+  [key: string]: string | boolean | string[] | User | Class | ParentContact | undefined;
 }
 
-interface GetStudentsResponse {
+export interface StudentById {
+  _id: string;
+  userId: {
+    _id: string;
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    dateOfBirth?: string;
+    gender?: string;
+    userAvatar?: string;
+  };
+  classId?: {
+    _id: string;
+    name: string;
+  };
+  gradeLevel: string;
+  parentId: {
+    _id: string;
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+  };
+  parentContact: {
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    relationship: string;
+    _id: string;
+  };
+  isActive: boolean;
+  enrollmentDate?: string;
+  assignedSubjects?: string[];
+  attendance?: string;
+}
+
+interface StudentResponse {
+  _id: string;
+  userId: {
+    _id: string;
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+  };
+  classId: {
+    _id: string;
+    name: string;
+  };
+  gradeLevel: string;
+  parentId: {
+    _id: string;
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+  };
+  parentContact: {
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    relationship: string;
+    _id: string;
+  };
+  isActive: boolean;
+}
+
+interface StudentApiResponse {
+  data: StudentResponse[];
+  meta: {
+    total: number;
+    page: number;
+    lastPage: number;
+    limit: number;
+  };
+}
+
+export interface GetStudentsResponse {
   data: Student[];
   meta: {
     total: number;
@@ -124,7 +215,7 @@ export const getClasses = async (): Promise<Class[]> => {
   return response.json();
 };
 
-export const createClass = async (payload: Class) => {
+export const createClass = async (payload: Omit<Class, '_id'>) => {
   const response = await fetch(API_ENDPOINTS.CREATE_CLASS, {
     method: 'POST',
     headers: {
@@ -139,28 +230,28 @@ export const createClass = async (payload: Class) => {
     throw new Error('Class creation failed');
   }
 
-  return response.json();
+  return response.json() as Promise<Class>;
 };
 
-export const editClass = async (payload: Class) => {
-  const response = await fetch(API_ENDPOINTS.EDIT_CLASS, {
-    method: 'POST',
+export const editClass = async (classId: string, data: any) => {
+  const response = await fetch(`${API_ENDPOINTS.EDIT_CLASS}/${classId}`, {
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data)
   });
 
   if (!response.ok) {
-    throw new Error('Class creation failed');
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update class');
   }
 
   return response.json();
 };
 
-export const getClass = async (classId: string) => {
+export const getClass = async (classId: any) => {
   const response = await fetch(`${API_ENDPOINTS.GET_CLASS}/${classId}`, {
     method: 'GET',
     headers: {
@@ -176,6 +267,28 @@ export const getClass = async (classId: string) => {
   return response.json();
 };
 
+export const updateStudent = async (studentId: string, data: Partial<Student>) => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.STUDENTS}/${studentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update student profile');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error updating student:', error);
+    throw error;
+  }
+};
+
 export const studentService = {
   async getStudents(page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
     const userId = getLocalStorageItem('user')?.userId;
@@ -186,6 +299,54 @@ export const studentService = {
 
     try {
       const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch students');
+      }
+
+      const data: GetStudentsResponse = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async getStudentById(studentId: string): Promise<StudentById> {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        // Handle 404 specifically
+        if (response.status === 404) {
+          throw new Error('Student not found');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch student details');
+      }
+
+      const data = await response.json();
+      console.log('Student data:', data);
+      return data.data[0];
+    } catch (error) {
+      console.error('Error fetching student:', error);
+      throw error;
+    }
+  },
+
+  async getStudentsByClass(classId: string, page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?page=${page}&limit=${limit}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }

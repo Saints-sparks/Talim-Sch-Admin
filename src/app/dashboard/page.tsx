@@ -63,7 +63,7 @@ const Dashboard = () => {
         {/* Main Content */}
         <main className="flex-grow p-8 overflow-y-auto">
           {/* Header */}
-          <Header />
+          <Header user="Administrator" title="Dashboard" />
           <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">Class Overview</h1>
 
           {/* Class Overview Cards */}

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify'; // Import toast from react-toastify
 import { authService } from '../services/auth.service';
 import nookies from 'nookies'
+import { setLocalStorageItem } from '../../app/utils/localStorage';
 
 export default function SignIn() {
   const router = useRouter();
@@ -40,38 +41,33 @@ export default function SignIn() {
       const requestBody = {
         email,
         password,
-        deviceToken: '123456', // Replace with actual device token
-        platform: 'web', // Replace with actual platform (e.g., 'web', 'ios', 'android')
+        deviceToken: 'web',
+        platform: 'web'
       };
 
       // Send login request to the backend
       const response = await authService.login(requestBody);
 
-      nookies.set(null, 'access_token', response.access_token, {
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: '/',
-      })
-      nookies.set(null, 'refresh_token', response.refresh_token, {
-        maxAge: 30 * 24 * 60 * 60,
-        path: '/',
-      })
+      // Store tokens in localStorage
+      localStorage.setItem('accessToken', response.access_token);
+      localStorage.setItem('refreshToken', response.refresh_token);
 
       // Get user info
-      const userInfo = await authService.introspectToken(response.access_token)
+      const userInfo = await authService.introspectToken(response.access_token);
 
       // Store user info in localStorage
-      localStorage.setItem('user', JSON.stringify(userInfo.user))
-      localStorage.setItem('accessToken', response.access_token); // Store access token
-      localStorage.setItem('refreshToken', response.refresh_token)
+      localStorage.setItem('user', JSON.stringify(userInfo.user));
+
       toast.success('Login successful! Redirecting...');
 
       // Redirect to dashboard or home page on successful login
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000); // Delay redirect to allow toast to be seen
-    } catch (err) {
-      // Display error toast
-      toast.error('An error occurred. Please try again.');
+      }, 1000); // Reduced timeout to 1000ms
+    } catch (error: any) {
+      console.error('Login error:', error);
+      // Display error toast with specific error message
+      toast.error(error.message || 'An error occurred. Please try again.');
     } finally {
       // Reset loading state
       setLoading(false);

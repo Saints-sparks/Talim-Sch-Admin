@@ -1,19 +1,30 @@
 // src/components/ProtectedRoute.tsx
+'use client';
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAccessToken } from '../utils/auth';
+import { getLocalStorageItem } from '../app/utils/localStorage';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const accessToken = getAccessToken();
+  
+  const user = getLocalStorageItem('user');
+  const accessToken = getLocalStorageItem('accessToken');
+
+  // Check if user is authenticated
+  const isAuthenticated = !!user && !!accessToken;
 
   useEffect(() => {
-    if (!accessToken) {
-      router.push('/signin'); // Redirect to login if no token
+    if (!isAuthenticated) {
+      router.push('/signin'); // Redirect to login if not authenticated
     }
-  }, [accessToken, router]);
+  }, [isAuthenticated, router]);
 
-  return accessToken ? <>{children}</> : null;
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

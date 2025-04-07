@@ -61,7 +61,7 @@ export default function SignIn() {
     // Set loading to true when the form is submitted
     setLoading(true);
 
-    console.log('Login request:', { email, password });
+    //console.log('Login request:', { email, password });
     try {
       // Prepare the request body
       const requestBody = {
@@ -95,7 +95,7 @@ export default function SignIn() {
       // Redirect to dashboard or home page on successful login
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000); // Delay redirect to allow toast to be seen
+      }, 1000); // Delay redirect to allow toast to be seen
     } catch (err) {
       // Display error toast
       toast.error('An error occurred. Please try again.');
@@ -196,47 +196,6 @@ export default function SignIn() {
             layout="fill"
             objectFit="cover"
           />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function Dashboard() {
-  return (
-    <div className="p-4 sm:p-6 bg-[#F8FAFC] min-h-screen">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <DashboardCard
-          title="Total Students"
-          value="1,234"
-          icon={<EyeIcon className="w-6 h-6" />}
-          trend="+12% from last month"
-        />
-        <DashboardCard
-          title="Active Classes"
-          value="45"
-          icon={<EyeIcon className="w-6 h-6" />}
-        />
-        <DashboardCard
-          title="Pending Requests"
-          value="23"
-          icon={<EyeIcon className="w-6 h-6" />}
-        />
-        <DashboardCard
-          title="New Messages"
-          value="5"
-          icon={<EyeIcon className="w-6 h-6" />}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-4">Recent Activity</h2>
-          {/* Activity content */}
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-4">Quick Actions</h2>
-          {/* Quick actions content */}
         </div>
       </div>
     </div>

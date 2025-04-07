@@ -192,7 +192,8 @@ const Settings: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 h-screen">
-      <Header />
+      {/* Header */}
+      <Header user="Administrator" title="Settings" />
       
       {/* Page Title */}
       <h1 className="text-2xl font-semibold mb-6 text-gray-800">Academic Settings</h1>

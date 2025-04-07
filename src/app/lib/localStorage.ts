@@ -24,8 +24,8 @@ export interface School {
   schoolPrefix: string;
   active: boolean;
   logo: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   __v: number;
 }
 

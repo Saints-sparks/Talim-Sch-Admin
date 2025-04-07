@@ -98,8 +98,8 @@ const NotificationsPage: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 h-full">
-      <Header />
-  
+      <Header user="Administrator" title="Notifications" />
+
       <div className="flex justify-between items-center mb-6">
         {/* Title */}
         <h1 className="text-2xl font-semibold text-gray-800">Notifications</h1>
