@@ -52,6 +52,31 @@ const Timetable = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState("");
+
+
+  useEffect(() => {
+    const fetchTimetableByClass = async () => {
+      if (!selectedClassId) return;
+  
+      try {
+        const res = await fetch(`${API_ENDPOINTS.GET_TIMETABLE_BY_CLASS}/${selectedClassId}`, {
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok) throw new Error("Failed to fetch timetable");
+  
+        const data = await res.json();
+        console.log("Fetched timetable:", data);
+        setTimetableEntries(Array.isArray(data) ? data : data.data || []);
+      } catch (error: any) {
+        console.error("Error fetching timetable:", error);
+        toast.error(error.message || "Failed to fetch timetable");
+      }
+    };
+  
+    fetchTimetableByClass();
+  }, [selectedClassId]);
+  
 
   // Modal state and form inputs.  
   // Note: "subject" now holds the selected subject's ID while "course" holds the selected course's name (or ID, as needed).
@@ -213,10 +238,27 @@ const Timetable = () => {
           <button className="font-bold text-[#154473]" onClick={toggleModal}>
             + Add
           </button>
+          <div className="mb-6">
+  <label className="block mb-2 font-medium text-gray-700">Select Class</label>
+  <select
+    value={selectedClassId}
+    onChange={(e) => setSelectedClassId(e.target.value)}
+    className="px-4 py-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    <option value="" disabled>Select a class</option>
+    {classes.map((cls) => (
+      <option key={cls._id} value={cls._id}>
+        {cls.name}
+      </option>
+    ))}
+  </select>
+</div>
+
         </div>
         <p className="text-gray-500 mb-6">Stay on Track with Your Class Schedule!</p>
 
         {/* Timetable Grid */}
+        {selectedClassId ? (
         <div className="overflow-x-auto border border-gray-300 text-gray-700 rounded-t-3xl max-h-[510px] 2xl:max-h-[800px] overflow-y-scroll">
           {/* Header Row */}
           <div className="grid sticky top-0 z-30" style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}>
@@ -291,6 +333,10 @@ const Timetable = () => {
             </div>
           </div>
         </div>
+        ) : (
+          <p className="text-gray-500 mt-8">Please select a class to view the timetable.</p>
+        )}
+        
       </div>
 
       {/* Modal for creating a new timetable entry */}

@@ -8,7 +8,7 @@ export const API_URLS = {
     LOGOUT: '/auth/logout'
   },
   SCHOOL: {
-    GET_CLASS: '/classes/:classId',
+    GET_CLASS: '/classes',
     GET_CLASSES: '/classes',
     CREATE_CLASS: '/classes',
     EDIT_CLASS: '/classes/:classId'
@@ -66,7 +66,8 @@ export const API_URLS = {
     GET_TIMETABLE: '/timetable?page=:page&limit=:limit',
     GET_TIMETABLE_BY_DAY: '/timetable/day/:day',
     UPDATE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
-    DELETE_TIMETABLE_ENTRY: '/timetable/entry/:entryId'
+    DELETE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
+    GET_TIMETABLE_BY_CLASS: '/timetable/class/:classId'
   },
   COMPLAINTS: {
     CREATE_COMPLAINT: '/complaints',
@@ -81,7 +82,7 @@ export const API_ENDPOINTS = {
   INTROSPECT: `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
   LOGOUT: `${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`,
   REGISTER: `${API_BASE_URL}${API_URLS.AUTH.REGISTER}`,
-  GET_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASS.replace(':classId', classId)}`,
+  GET_CLASS: `${API_BASE_URL}/classes`,
   GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
   GET_SUBJECTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
@@ -100,6 +101,8 @@ export const API_ENDPOINTS = {
   CREATE_TIMETABLE_ENTRY: `${API_BASE_URL}${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE: (page: number, limit: number) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE.replace(':page', page.toString()).replace(':limit', limit.toString())}`,
   GET_TIMETABLE_BY_DAY: (day: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(':day', day)}`,
+  GET_TIMETABLE_BY_CLASS: (classId: string) =>
+    `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_CLASS.replace(':classId', classId)}`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   DELETE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   CREATE_COMPLAINT: `${API_BASE_URL}${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
