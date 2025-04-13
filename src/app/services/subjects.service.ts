@@ -121,3 +121,98 @@ export const getCourseById = async (courseId: string): Promise<Course> => {
 
   return await response.json();
 };
+
+export const createSubject = async (payload: { name: string, code: string, schoolId: string }) => {
+  const response = await fetch(API_ENDPOINTS.CREATE_SUBJECT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('Subject creation failed');
+  }
+
+  return response.json(); // Returns the created subject
+};
+
+export const getSubjectsBySchool = async (): Promise<any[]> => {
+  const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch subjects');
+  }
+
+  return response.json(); // Returns an array of subjects for the logged-in user's school
+};
+
+export const getCoursesBySubject = async (subjectId: string): Promise<Course[]> => {
+  console.log(subjectId, "yeah");
+  
+  // const token = getLocalStorageItem('accessToken');
+  // if (!token) {
+  //   throw new Error('No access token found');
+  // }
+  // console.log(token);
+  
+
+  const response = await fetch(`${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    }
+  });
+
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch courses by subject: ${response.statusText}`);
+  }
+  console.log(response);
+
+
+  const data = await response.json();
+  
+  if (!Array.isArray(data)) {
+    throw new Error('Expected an array of courses');
+  }
+
+  return data;
+};
+
+export const getCoursesBySchool = async (): Promise<Course[]> => {
+  const token = getLocalStorageItem('accessToken');
+  if (!token) {
+    throw new Error('No access token found');
+  }
+
+  const response = await fetch(API_ENDPOINTS.GET_COURSES_BY_SCHOOL, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch courses by school: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (!Array.isArray(data)) {
+    throw new Error('Expected an array of courses');
+  }
+
+  return data;
+};

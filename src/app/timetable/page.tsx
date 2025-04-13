@@ -1,59 +1,224 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react";
-import Header from "@/components/Header";
+import React, { useState, useEffect, FormEvent } from "react";
+import { toast } from "react-toastify";
+import { API_ENDPOINTS } from "@/app/lib/api/config"; // adjust import if needed
+import { teacherService } from "../services/teacher.service";
+
+interface TimetableEntry {
+  teacherId: string;
+  classId: string;
+  day: string;
+  startTime: string; // in "HH:mm" format
+  endTime: string;   // in "HH:mm" format
+  subject: string;   // this will hold the selected course's name
+}
+
+interface Teacher {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  // add other properties if needed
+}
+
+interface Course {
+  _id: string;
+  title: string;
+  // add other properties if needed
+}
+
+interface Class {
+  _id: string;
+  name: string;
+  // add other properties if needed
+}
+
+interface Subject {
+  _id: string;
+  name: string;
+}
 
 const Timetable = () => {
   const hourHeight = 130; // Height for each hour (in pixels)
-  const startHour = 8; // Start of the timetable (8 AM)
+  const startHour = 8;    // Timetable starting time (8 AM)
 
-  // Set your custom time here (use a 24-hour format)
+  // For current time indicator, using manualTime in 24-hour "HH:mm" format
   const [manualTime, setManualTime] = useState("11:00");
-
   const [currentTimePosition, setCurrentTimePosition] = useState(0);
 
+  // States for fetched data
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+
+  // Modal state and form inputs.  
+  // Note: "subject" now holds the selected subject's ID while "course" holds the selected course's name (or ID, as needed).
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    classId: "",
+    day: "",
+    startTime: "",
+    endTime: "",
+    subject: "", // Selected subject ID
+    courseId: "",  // Selected course name (or id) – dependent on subject selection
+  });
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
+  // Calculate current time indicator position
   useEffect(() => {
-    // Parse the manually set time
     const [hours, minutes] = manualTime.split(":").map(Number);
-
-    // Calculate the position based on hours and minutes
     const timePosition = ((hours - startHour) + minutes / 60) * hourHeight + 65;
-
     setCurrentTimePosition(timePosition);
   }, [manualTime, hourHeight]);
 
-  const subjects = [
-    { name: "Biology", day: "Monday", start: 8, end: 10 },
-    { name: "Mathematics", day: "Tuesday", start: 8, end: 9 },
-    { name: "Physics", day: "Tuesday", start: 9, end: 10 },
-    { name: "English Language", day: "Wednesday", start: 10, end: 11 },
-    { name: "French", day: "Thursday", start: 9, end: 10 },
-    { name: "Break time", day: "All", start: 12, end: 13 },
-    { name: "Agric Science", day: "All", start: 13, end: 14 },
-  ];
+  // Helper: get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("accessToken");
+    return {
+      "Content-Type": "application/json",
+      "Authorization": token ? `Bearer ${token}` : "",
+    };
+  };
+
+  // Fetch teachers on mount
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const teachersResponse = await teacherService.getTeachers(1, 100);
+        setTeachers(teachersResponse);
+        console.log("Teachers:", teachersResponse);
+      } catch (error) {
+        console.error("Failed to fetch teachers", error);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
+
+  // When modal is open, fetch subjects and classes
+  useEffect(() => {
+    if (isModalOpen) {
+      const fetchData = async () => {
+        try {
+          const [subjectsRes, classesRes] = await Promise.all([
+            fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, { headers: getAuthHeaders() }),
+            fetch(API_ENDPOINTS.GET_CLASSES, { headers: getAuthHeaders() }),
+          ]);
+
+          const subjectsData = await subjectsRes.json();
+          const classesData = await classesRes.json();
+
+          console.log("Subjects data:", subjectsData);
+          console.log("Classes data:", classesData);
+
+          setSubjects(Array.isArray(subjectsData) ? subjectsData : subjectsData.data || []);
+          setClasses(Array.isArray(classesData) ? classesData : classesData.data || []);
+        } catch (error: any) {
+          console.error("Error fetching data:", error);
+          toast.error(error.message || "Failed to load data");
+        }
+      };
+
+      fetchData();
+    }
+  }, [isModalOpen]);
+
+  // Handler for subject change, which then fetches courses by subject
+  const handleSubjectChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const subjectId = e.target.value;
+    setFormData({ ...formData, subject: subjectId, course: "" }); // Reset course when subject changes
+    try {
+      const res = await fetch(`${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch courses by subject");
+      const coursesData = await res.json();
+      console.log("Courses by subject data:", coursesData);
+      setCourses(Array.isArray(coursesData) ? coursesData : coursesData.data || []);
+    } catch (error: any) {
+      console.error("Error fetching courses by subject:", error);
+      toast.error(error.message || "Failed to fetch courses");
+    }
+  };
+
+  const formatTime = (timeStr: string): string => {
+    const [hourStr, minute] = timeStr.split(":");
+    let hour = Number(hourStr);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    // Ensure two-digit hour format if needed (e.g., "08" if required)
+    const formattedHour = hour < 10 ? `0${hour}` : hour.toString();
+    return `${formattedHour}:${minute} ${ampm}`;
+  };
+
+  // Handle form submission to create a new timetable entry
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const { classId, day, startTime, endTime, courseId } = formData;
+    if (!classId || !day || !startTime || !endTime || !courseId ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    
+    // Prepare the payload per expected API schema
+    const payload = {
+      classId,
+      courseId, // Use the course id from formData.course
+      day,
+      startTime: formatTime(startTime), // Format to "hh:mm AM/PM"
+      endTime: formatTime(endTime),
+    };
+
+    try {
+      const res = await fetch(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to create timetable entry");
+      }
+      const newEntry = await res.json();
+      setTimetableEntries((prev) => [...prev, newEntry]);
+      toast.success("Timetable entry created successfully");
+      toggleModal();
+      // Reset form inputs and courses list
+      setFormData({
+        classId: "",
+        day: "",
+        startTime: "",
+        endTime: "",
+        subject: "",
+        courseId: "",
+      });
+      setCourses([]);
+    } catch (error: any) {
+      console.error("Error creating timetable entry:", error);
+      toast.error(error.message || "Failed to create timetable entry");
+    }
+  };
 
   return (
     <div className="px-4">
       <div className="mx-auto bg-[#F8F8F8] rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-medium text-gray-800">Timetable</h1>
-          <button
-              className="font-bold text-[#154473]"
-              onClick={toggleModal}
-            >
-              + Add
-            </button>
-
+          <button className="font-bold text-[#154473]" onClick={toggleModal}>
+            + Add
+          </button>
         </div>
         <p className="text-gray-500 mb-6">Stay on Track with Your Class Schedule!</p>
 
+        {/* Timetable Grid */}
         <div className="overflow-x-auto border border-gray-300 text-gray-700 rounded-t-3xl max-h-[510px] 2xl:max-h-[800px] overflow-y-scroll">
+          {/* Header Row */}
           <div className="grid sticky top-0 z-30" style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}>
             <div className="font-semibold text-center bg-[#FFFFFF] py-6">Time</div>
             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day, index) => (
@@ -63,8 +228,10 @@ const Timetable = () => {
             ))}
           </div>
 
+          {/* Body Grid */}
           <div className="grid relative" style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}>
-            <div className="left-0 bg-white">
+            {/* Time labels */}
+            <div className="bg-white">
               {["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM"].map((time, index) => (
                 <div key={index} className="flex items-center justify-center border-b border-gray-300" style={{ height: `${hourHeight}px` }}>
                   {time}
@@ -72,228 +239,195 @@ const Timetable = () => {
               ))}
             </div>
 
-            {subjects
-              .filter((subject) => subject.name === "Break time")
-              .map((breakTime, index) => {
-                const topPosition = (breakTime.start - startHour) * hourHeight + 65;
-                const subjectHeight = (breakTime.end - breakTime.start) * hourHeight - 16;
-
-                return (
-                  <div
-                    key={index}
-                    className="absolute left-[103px] right-0 m-1 p-2 rounded shadow-md bg-gray-400 flex items-center justify-center text-center"
-                    style={{
-                      top: `${topPosition}px`,
-                      height: `${subjectHeight}px`,
-                      gridColumn: "span 5",
-                    }}
-                  >
-                    <div>
-                      <div className="font-semibold">{breakTime.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {breakTime.start}:00 PM - {breakTime.end}:00 PM
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
+            {/* Render timetable entries per day */}
             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day, dayIndex) => (
               <div key={dayIndex} className="col-span-1 border-l border-gray-300 relative">
-                {subjects
-                  .filter((subject) => subject.day === day)
-                  .map((subject, subjectIndex) => {
-                    const topPosition = (subject.start - startHour) * hourHeight + 65;
-                    const subjectHeight = (subject.end - subject.start) * hourHeight - 16;
-
+                {timetableEntries
+                  .filter((entry) => entry.day === day)
+                  .map((entry, entryIndex) => {
+                   // Here, startTime and endTime are already formatted as "hh:mm AM/PM"
+                   const [startHourStr] = entry.startTime.split(":");
+                   const [endHourStr] = entry.endTime.split(":");
+                   const startHr = Number(startHourStr);
+                   const endHr = Number(endHourStr);
+                   const topPosition = (startHr - startHour) * hourHeight + 65;
+                   const entryHeight = (endHr - startHr) * hourHeight - 16;
                     return (
                       <div
-                        key={subjectIndex}
-                        className="absolute left-0 right-0 m-1 p-2 rounded shadow-orange-800  bg-[#ffffff] flex items-center justify-center text-center"
+                        key={entryIndex}
+                        className="absolute left-0 right-0 m-1 p-2 rounded shadow-md bg-white flex flex-col items-center justify-center text-center"
                         style={{
                           top: `${topPosition}px`,
-                          height: `${subjectHeight}px`,
+                          height: `${entryHeight}px`,
+                          border: "1px solid #154473",
                         }}
                       >
-                        <div>
-                          <div className="font-semibold">{subject.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {subject.start}:00 AM - {subject.end}:00 AM
-                          </div>
+                        <div className="font-semibold">{entry.subject}</div>
+                        <div className="text-sm text-gray-500">
+                          {entry.startTime} - {entry.endTime}
                         </div>
                       </div>
                     );
                   })}
               </div>
             ))}
- 
-            {/* Dynamic Time Indicator Based on Custom Time */}
+
+            {/* Dynamic Time Indicator */}
             <div
-  className="absolute left-[110px] w-[88%] 2xl:w-[93%]"
-  style={{
-    top: `${currentTimePosition - 7}px `, // Position based on the calculated time
-    zIndex: 20,
- 
-  }}
->
-  {/* Time Pill */}
-  <div className="absolute top-[-6px] left-[-87px] px-3 py-1 flex items-center justify-center bg-[#002B5B] text-white font-medium rounded-full">
-    {manualTime}
-  </div>
-
-  {/* Blue Dot */}
-  <div className="absolute  left-[-8px] right-0 h-2 w-2 rounded-full bg-[#002B5B]" 
-  style={{
-    top: `5.4px`, // Position based on the calculated time
-    
-  }}/>
-
-  {/* Horizontal Line */}
-  <div
-    className="absolute top-2 left-0 right-0 bg-[#002B5B]"
-    style={{
-      height: "3px", // Line thickness
-      
-      
-    }}
-  />
-</div>
-
-          
-          </div>
-        </div>
-      </div>
-
-
-
-     {/* Add Class Modal */}
-     {isModalOpen && (
-  <div
-    className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${
-      isModalOpen ? "opacity-100" : "opacity-0"
-    }`}
-    onClick={toggleModal} // Close modal on clicking the overlay
-  >
-    <div
-      className={`absolute right-0 top-0 h-full w-full md:w-1/2 bg-white p-6 shadow-lg transform transition-transform duration-300 ease-in-out ${
-        isModalOpen ? "translate-x-0" : "translate-x-full"
-      } flex flex-col`}
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-      {/* Modal Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-semibold text-gray-800">Timetable</h3>
-        <button
-          className="text-gray-500 hover:text-gray-700 text-2xl"
-          onClick={toggleModal}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Modal Body */}
-      <form className="flex-grow">
-        <div className="mb-4 gap-4">
-
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class 
-            </label>
-            <select
-              className="w-1/3 px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="absolute left-[110px] w-[88%] 2xl:w-[93%]"
+              style={{
+                top: `${currentTimePosition - 7}px`,
+                zIndex: 20,
+              }}
             >
-              <option value="" disabled selected>
-                Select class
-              </option>
-              <option value="JSS 1">JSS 1</option>
-              <option value="JSS 2">JSS 2</option>
-              <option value="JSS 3">JSS 3</option>
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Subject 
-            </label>
-            <select
-              className="w-1/3 px-4 py-3 border text-gray-700 bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Subject
-              </option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="English Language">English Language</option>
-              <option value="Physics">Physics</option>
-            </select>
-            <div>
-
-            <div className="flex-1">
-            <label className="block mb-1 font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                name="date"
-                placeholder="Select date"
-                className="w-1/3 px-3 py-2 text-gray-700 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+              <div className="absolute top-[-6px] left-[-87px] px-3 py-1 flex items-center justify-center bg-[#002B5B] text-white font-medium rounded-full">
+                {manualTime}
+              </div>
+              <div
+                className="absolute left-[-8px] right-0 h-2 w-2 rounded-full bg-[#002B5B]"
+                style={{ top: "5.4px" }}
               />
-
-            <label className="block text-gray-700 font-semibold mb-2">
-              Start Time 
-            </label>
-            <select
-              className="w-1/3 px-4 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Time
-              </option>
-              <option value="8:00 AM">8:00 AM</option>
-              <option value="8:30 AM">8:30 AM</option>
-              <option value="9:00 AM">9:00 AM</option>
-
-
-            </select>
+              <div className="absolute top-2 left-0 right-0 bg-[#002B5B]" style={{ height: "3px" }} />
             </div>
-
-            <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              End Time
-            </label>
-            <select
-              className="w-1/3 px-4 py-3 border bg-white border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select Time
-              </option>
-              <option value="8:00 AM">8:00 AM</option>
-              <option value="8:30 AM">8:30 AM</option>
-              <option value="9:00 AM">9:00 AM</option>
-
-
-            </select>
-          </div>
-           
-          </div>
-
           </div>
         </div>
-      </form>
+      </div>
 
-      {/* Modal Footer */}
-      <div className="flex justify-end gap-4 mt-auto">
-        <button
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+      {/* Modal for creating a new timetable entry */}
+      {isModalOpen && (
+        <div
+          className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${isModalOpen ? "opacity-100" : "opacity-0"}`}
           onClick={toggleModal}
         >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          <div
+            className={`absolute right-0 top-0 h-full w-full md:w-1/2 bg-white p-6 shadow-lg transform transition-transform duration-300 ease-in-out ${isModalOpen ? "translate-x-0" : "translate-x-full"} flex flex-col`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800">New Timetable Entry</h3>
+              <button className="text-gray-500 hover:text-gray-700 text-2xl" onClick={toggleModal}>
+                ✕
+              </button>
+            </div>
+            <form className="flex-grow" onSubmit={handleSubmit}>
+              <div className="mb-4 gap-4">
+                {/* Class Selection */}
+                <div className="flex flex-col mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">Class</label>
+                  <select
+                    required
+                    value={formData.classId}
+                    onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                    className="w-full px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="" disabled>
+                      Select class
+                    </option>
+                    {classes.map((cls) => (
+                      <option key={cls._id} value={cls._id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Subject Selection */}
+                <div className="flex flex-col mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">Subject</label>
+                  <select
+                    required
+                    value={formData.subject}
+                    onChange={handleSubjectChange}
+                    className="w-full px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="" disabled>
+                      Select subject
+                    </option>
+                    {subjects.map((subject) => (
+                      <option key={subject._id} value={subject._id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Render Course Selection only if a subject is selected */}
+                {formData.subject && (
+                  <div className="flex flex-col mb-4">
+                    <label className="block text-gray-700 font-semibold mb-2">Course</label>
+                    <select
+                      required
+                      value={formData.courseId}
+                      onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+                      className="w-full px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="" disabled>
+                        Select course
+                      </option>
+                      {courses.map((course) => (
+                        <option key={course._id} value={course._id}>
+                          {course.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {/* Day Selection */}
+                <div className="flex flex-col mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">Day</label>
+                  <select
+                    required
+                    value={formData.day}
+                    onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                    className="w-full px-4 py-3 border bg-white text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="" disabled>
+                      Select day
+                    </option>
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Start Time */}
+                <div className="flex flex-col mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">Start Time</label>
+                  <input
+                    required
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+                {/* End Time */}
+                <div className="flex flex-col mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">End Time</label>
+                  <input
+                    required
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-4 mt-auto">
+                <button
+                  type="button"
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  onClick={toggleModal}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

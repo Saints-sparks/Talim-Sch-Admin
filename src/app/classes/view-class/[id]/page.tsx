@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import Header from "@/components/Header";
+import {Header} from "@/components/Header";
 import { FiEdit, FiArrowLeft, FiUsers, FiBook, FiUser } from "react-icons/fi";
 import { useRouter, useParams } from "next/navigation";
 import { getClass } from '../../../services/student.service';

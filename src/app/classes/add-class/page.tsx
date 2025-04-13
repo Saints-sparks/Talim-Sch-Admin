@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, FormEvent, ChangeEvent } from "react";
-import Header from "@/components/Header";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Flip } from "react-toastify";
+import { Header } from "@/components/Header";
 
 interface FormData {
   className: string;
@@ -86,7 +86,9 @@ const AddSubject: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header user="Administrator" title="Add New Class" />
+      <Header onMenuClick={function (): void {
+        throw new Error("Function not implemented.");
+      } }/>
 
       <h1 className="text-2xl font-semibold text-gray-800">Add New Class</h1>
 
