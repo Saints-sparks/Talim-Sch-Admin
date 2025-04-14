@@ -253,7 +253,14 @@ const Timetable = () => {
         throw new Error("Failed to create timetable entry");
       }
       const newEntry = await res.json();
-      setTimetableEntries((prev) => [...prev, newEntry]);
+      setTimetableEntries((prev) => {
+        const updatedEntries = { ...prev };
+        if (!updatedEntries[newEntry.day]) {
+          updatedEntries[newEntry.day] = [];
+        }
+        updatedEntries[newEntry.day].push(newEntry);
+        return updatedEntries;
+      });
       toast.success("Timetable entry created successfully");
       toggleModal();
       // Reset form inputs and courses list
