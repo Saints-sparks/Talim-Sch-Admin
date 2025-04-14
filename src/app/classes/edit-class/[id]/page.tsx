@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
-import Header from "@/components/Header";
+import { Header } from "@/components/Header";
 import { FiArrowLeft, FiUsers, FiBook } from "react-icons/fi";
 import { useRouter, useParams } from "next/navigation";
-import { getClass, editClass } from '../../../services/student.service';
-import { getSchoolId } from '../../../services/school.service';
+import { getClass, editClass } from "../../../services/student.service";
+import { getSchoolId } from "../../../services/school.service";
 import { toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import Link from 'next/link'
+import "react-toastify/dist/ReactToastify.css";
+import Link from "next/link";
 
 interface FormData {
   name: string;
@@ -59,9 +59,11 @@ const EditClass: React.FC = () => {
     fetchClassData();
   }, [classId, router]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -77,7 +79,7 @@ const EditClass: React.FC = () => {
       }
       const schoolId = getSchoolId();
       if (!schoolId) {
-        toast.error('School ID is required');
+        toast.error("School ID is required");
         return;
       }
 
@@ -85,11 +87,11 @@ const EditClass: React.FC = () => {
         name: formData.name,
         classCapacity: formData.classCapacity,
         classDescription: formData.classDescription,
-        schoolId: schoolId
+        schoolId: schoolId,
       };
 
       const response = await editClass(classId, updateData);
-      
+
       if (response) {
         toast.success("Class updated successfully!");
         router.push(`/classes/view-class/${classId}`);
@@ -105,13 +107,13 @@ const EditClass: React.FC = () => {
   };
 
   const handleAddCourse = () => {
-    router.push('/courses')
-  }
+    router.push("/courses");
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="Edit Class" />
+        <Header />
 
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -122,7 +124,7 @@ const EditClass: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Header user="Administrator" title="Edit Class" />
+      <Header />
 
       <div className="flex items-center mb-8">
         <button
@@ -164,7 +166,9 @@ const EditClass: React.FC = () => {
                 value={formData.classCapacity}
                 onChange={handleChange}
               >
-                <option value="" className="text-gray-400">Select capacity</option>
+                <option value="" className="text-gray-400">
+                  Select capacity
+                </option>
                 <option value="10">10 students</option>
                 <option value="20">20 students</option>
                 <option value="30">30 students</option>
@@ -172,8 +176,6 @@ const EditClass: React.FC = () => {
                 <option value="50">50 students</option>
               </select>
             </div>
-
-
           </div>
 
           <div className="space-y-2">
@@ -193,8 +195,8 @@ const EditClass: React.FC = () => {
 
           <div className="flex items-center gap-x-4 mb-4">
             <h1 className="text-2xl font-semibold text-gray-800">Add Course</h1>
-            <Link 
-              href="/courses" 
+            <Link
+              href="/courses"
               className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
             >
               + Add
@@ -217,13 +219,31 @@ const EditClass: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Saving...
                 </>
-              ) : 'Save Changes'}
+              ) : (
+                "Save Changes"
+              )}
             </button>
           </div>
         </form>

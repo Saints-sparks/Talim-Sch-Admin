@@ -1,15 +1,12 @@
 "use client";
 
 import React from "react";
-import Header from "@/components/Header";
-
+import { Header } from "@/components/Header";
 
 const ApprovedRequestLeavePage: React.FC = () => {
- 
-
   return (
     <div className="p-6 bg-gray-100 h-full">
-        <Header user="Administrator" title="Approved Requests" />
+      <Header />
       {/* Page Title */}
       <h1 className="text-2xl font-semibold mb-6">Student Request Leave</h1>
 
@@ -42,10 +39,14 @@ const ApprovedRequestLeavePage: React.FC = () => {
           </div>
           <div className="flex justify-left  items-center mb-4">
             <span className="text-sm font-medium text-gray-500">Date:</span>
-            <span className="text-sm px-4 text-gray-800">10/01/2025 - 12/01/2025</span>
+            <span className="text-sm px-4 text-gray-800">
+              10/01/2025 - 12/01/2025
+            </span>
           </div>
           <div className="flex justify-left  items-start">
-            <span className="text-sm font-medium text-gray-500">Description:</span>
+            <span className="text-sm font-medium text-gray-500">
+              Description:
+            </span>
             <span className="text-sm px-4 text-gray-800">Family wedding</span>
           </div>
         </div>

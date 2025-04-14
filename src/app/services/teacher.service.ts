@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from '../lib/api/config';
+import { API_ENDPOINTS } from "../lib/api/config";
 
 // Reusing your existing User and Class interfaces
 interface User {
@@ -35,6 +35,8 @@ export interface Course {
 export interface Teacher {
   _id: string;
   userId: User;
+  firstName: string;
+  lastName: string;
   highestAcademicQualification: string;
   yearsOfExperience: number;
   specialization: string;
@@ -91,32 +93,34 @@ const getLocalStorageItem = (key: string) => {
 
 export const registerTeacher = async (payload: RegisterTeacherPayload) => {
   const response = await fetch(API_ENDPOINTS.REGISTER, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Teacher registration failed');
+    throw new Error(errorData.message || "Teacher registration failed");
   }
 
   return response.json();
 };
 
-
-export const createTeacherProfile = async (userId: string, payload: CreateTeacherProfilePayload) => {
+export const createTeacherProfile = async (
+  userId: string,
+  payload: CreateTeacherProfilePayload
+) => {
   if (!userId) {
-    throw new Error('User ID is required to create teacher profile');
+    throw new Error("User ID is required to create teacher profile");
   }
 
   const response = await fetch(`${API_ENDPOINTS.CREATE_TEACHER}${userId}`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
@@ -124,34 +128,37 @@ export const createTeacherProfile = async (userId: string, payload: CreateTeache
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     throw new Error(
-      errorData?.message || 
-      errorData?.error || 
-      'Profile creation failed'
+      errorData?.message || errorData?.error || "Profile creation failed"
     );
   }
 
   return response.json();
 };
 
-
 export const teacherService = {
-  async getTeachers(page: number = 1, limit: number = 10): Promise<GetTeachersResponse> {
-    const userId = getLocalStorageItem('user')?.userId;
+  async getTeachers(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<GetTeachersResponse> {
+    const userId = getLocalStorageItem("user")?.userId;
 
     if (!userId) {
-      throw new Error('User not authenticated');
+      throw new Error("User not authenticated");
     }
 
     try {
-      const response = await fetch(`${API_ENDPOINTS.GET_TEACHERS}?page=${page}&limit=${limit}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      const response = await fetch(
+        `${API_ENDPOINTS.GET_TEACHERS}?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch teachers');
+        throw new Error(error.message || "Failed to fetch teachers");
       }
 
       const data: GetTeachersResponse = await response.json();
@@ -164,49 +171,58 @@ export const teacherService = {
   async getTeacherById(teacherId: string): Promise<Teacher> {
     const response = await fetch(`${API_ENDPOINTS.GET_TEACHER}/${teacherId}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch teacher');
+      throw new Error(error.message || "Failed to fetch teacher");
     }
 
     return response.json();
   },
 
-  async updateTeacher(teacherId: string, payload: Partial<CreateTeacherProfilePayload>): Promise<Teacher> {
-    const response = await fetch(`${API_ENDPOINTS.UPDATE_TEACHER}/${teacherId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      },
-      body: JSON.stringify(payload)
-    });
+  async updateTeacher(
+    teacherId: string,
+    payload: Partial<CreateTeacherProfilePayload>
+  ): Promise<Teacher> {
+    const response = await fetch(
+      `${API_ENDPOINTS.UPDATE_TEACHER}/${teacherId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to update teacher');
+      throw new Error(error.message || "Failed to update teacher");
     }
 
     return response.json();
   },
 
   async deactivateTeacher(teacherId: string): Promise<Teacher> {
-    const response = await fetch(`${API_ENDPOINTS.DEACTIVATE_TEACHER}/${teacherId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    const response = await fetch(
+      `${API_ENDPOINTS.DEACTIVATE_TEACHER}/${teacherId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to deactivate teacher');
+      throw new Error(error.message || "Failed to deactivate teacher");
     }
 
     return response.json();
-  }
+  },
 };

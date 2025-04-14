@@ -9,14 +9,8 @@ interface Class {
   name: string;
 }
 
-// Define a type for Teacher based on your API response
-interface Teacher {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  // add any other teacher properties you need
-}
+// Import the Teacher type from the teacher service to ensure consistency
+import type { Teacher } from "@/app/services/teacher.service";
 
 interface CourseFormModalProps {
   isOpen: boolean;

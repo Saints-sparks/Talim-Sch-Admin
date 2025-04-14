@@ -86,9 +86,7 @@ const AddSubject: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header onMenuClick={function (): void {
-        throw new Error("Function not implemented.");
-      } }/>
+      <Header />
 
       <h1 className="text-2xl font-semibold text-gray-800">Add New Class</h1>
 

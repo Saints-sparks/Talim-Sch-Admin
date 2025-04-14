@@ -29,7 +29,7 @@ const ViewClass: React.FC = () => {
   useEffect(() => {
     const fetchClassData = async () => {
       console.log("Fetching class data");
-      
+
       console.log(classId);
       try {
         if (!classId) {
@@ -38,14 +38,14 @@ const ViewClass: React.FC = () => {
         }
 
         const data = await getClass(classId);
-        
+
         setClassData(data);
       } catch (error: any) {
         console.error("Error fetching class:", error);
         setError("Failed to load class details");
         toast.error("Failed to load class details");
         // Remove automatic redirection so the error message is rendered
-        // router.push("/classes"); 
+        // router.push("/classes");
       } finally {
         setIsLoading(false);
       }
@@ -57,7 +57,7 @@ const ViewClass: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="View Class" />
+        <Header />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -69,7 +69,7 @@ const ViewClass: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="View Class" />
+        <Header />
         <div className="bg-white rounded-xl shadow-sm p-6 text-center max-w-2xl mx-auto">
           <p className="text-gray-600 mb-6">{error}</p>
           <button
@@ -87,7 +87,7 @@ const ViewClass: React.FC = () => {
   if (!classData) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="View Class" />
+        <Header />
         <div className="bg-white rounded-xl shadow-sm p-6 text-center max-w-2xl mx-auto">
           <p className="text-gray-600 mb-6">Class not found</p>
           <button
@@ -103,7 +103,7 @@ const ViewClass: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Header user="Administrator" title="View Class" />
+      <Header />
 
       <div className="flex items-center mb-6">
         <button
@@ -118,7 +118,9 @@ const ViewClass: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{classData.name}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {classData.name}
+            </h2>
             <p className="text-gray-500 mt-1">
               School ID: {classData.schoolId}
             </p>

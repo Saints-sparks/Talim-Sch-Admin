@@ -63,9 +63,7 @@ const Dashboard = () => {
         {/* Main Content */}
         <main className="flex-grow overflow-y-auto">
           {/* Header */}
-          <Header onMenuClick={function (): void {
-            throw new Error('Function not implemented.');
-          } } />
+          <Header />
           <h1 className="font-medium text-xl py-5 px-5 text-[#2F2F2F]">Class Overview</h1>
 
           {/* Class Overview Cards */}

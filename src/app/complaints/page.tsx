@@ -2,15 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
 import { complaintService } from "@/app/services/complaint.service";
-import { getLocalStorageItem } from "../utils/localStorage";
-import { User } from "../types/user";
-import Toast from '../components/Toast';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import ComplaintCard from '../components/ComplaintCard';
-import { Complaint as ComplaintService } from '../services/complaint.service';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import ComplaintCard from "../components/ComplaintCard";
+import { Complaint as ComplaintService } from "../services/complaint.service";
 
 interface Complaint extends ComplaintService {
   attachment?: string;
@@ -33,7 +29,9 @@ const Complaints: React.FC = () => {
     router.push(`/complaints/${ticket}`);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setNewComplaint((prev) => ({ ...prev, [name]: value }));
   };
@@ -41,7 +39,10 @@ const Complaints: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files } = e.target;
     if (files && files[0]) {
-      setNewComplaint((prev) => ({ ...prev, [name]: URL.createObjectURL(files[0]) }));
+      setNewComplaint((prev) => ({
+        ...prev,
+        [name]: URL.createObjectURL(files[0]),
+      }));
     }
   };
 
@@ -54,12 +55,12 @@ const Complaints: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      
+
       // Create complaint
       const complaint = await complaintService.createComplaint({
         subject: newComplaint.subject,
         description: newComplaint.description,
-        attachment: newComplaint.attachment
+        attachment: newComplaint.attachment,
       });
 
       toast.success("Complaint submitted successfully!");
@@ -89,11 +90,13 @@ const Complaints: React.FC = () => {
         setComplaints(data);
         setError(null);
       } else {
-        setError('Invalid response format');
+        setError("Invalid response format");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch complaints');
-      console.error('Error fetching complaints:', err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch complaints"
+      );
+      console.error("Error fetching complaints:", err);
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +109,7 @@ const Complaints: React.FC = () => {
   return (
     <div className="p-6 bg-gray-100">
       <ToastContainer />
-      
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Complaints</h1>
@@ -126,13 +129,23 @@ const Complaints: React.FC = () => {
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="mx-auto h-12 w-12 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-red-600">Network Error</h3>
-            <div className="mt-1 text-sm text-red-500">
-              {error}
-            </div>
+            <h3 className="mt-2 text-sm font-medium text-red-600">
+              Network Error
+            </h3>
+            <div className="mt-1 text-sm text-red-500">{error}</div>
             <div className="mt-6">
               <button
                 onClick={fetchComplaints}
@@ -144,10 +157,22 @@ const Complaints: React.FC = () => {
           </div>
         ) : Array.isArray(complaints) && complaints.length === 0 ? (
           <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No Complaints Found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No Complaints Found
+            </h3>
             <div className="mt-1 text-sm text-gray-500">
               You haven't submitted any complaints yet.
             </div>
@@ -185,7 +210,9 @@ const Complaints: React.FC = () => {
           >
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-700">Submit Complaint</h2>
+              <h2 className="text-lg font-semibold text-gray-700">
+                Submit Complaint
+              </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -198,7 +225,10 @@ const Complaints: React.FC = () => {
             <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
               {/* Subject Input */}
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="subject"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Subject
                 </label>
                 <input
@@ -214,7 +244,10 @@ const Complaints: React.FC = () => {
 
               {/* Description Input */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Description
                 </label>
                 <textarea
@@ -230,7 +263,10 @@ const Complaints: React.FC = () => {
 
               {/* Attachment Input */}
               <div>
-                <label htmlFor="attachment" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="attachment"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Attachment (optional)
                 </label>
                 <input
@@ -256,10 +292,12 @@ const Complaints: React.FC = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={`px-4 py-2 bg-[#154473] text-white rounded-md transition ${
-                    isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                    isSubmitting
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-blue-700"
                   }`}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </form>

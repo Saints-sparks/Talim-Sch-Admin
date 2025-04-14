@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
-export function Header({ onMenuClick }: { onMenuClick: () => void }) {
+export function Header() {
   return (
     <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] pb-4">
       {/* Top row: Menu, Date, Notifications, Avatar */}
@@ -14,7 +14,6 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="flex items-center w-full sm:w-auto justify-between">
           <div
             className="md:hidden rounded-md shadow-none"
-            onClick={onMenuClick}
           >
             <Menu className="text-[#003366]" size={24} />
           </div>

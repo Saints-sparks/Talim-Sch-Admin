@@ -21,7 +21,6 @@ import {
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
 
-
 type SidebarProps = {
   className?: string;
 };
@@ -108,7 +107,13 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { isCollapsed, toggleCollapse } = useSidebar();
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
 
   const checkIfMobile = useCallback(() => {
     setIsMobile(window.innerWidth < 768);
@@ -215,11 +220,11 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
           </div>
 
           <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
-          <Image src="/unity.png" alt="School" width={40} height={40} />
-          <span className="ml-2 font-medium text-base text-gray-700">
-            Unity Secondary S...
-          </span>
-        </div>
+            <Image src="/unity.png" alt="School" width={40} height={40} />
+            <span className="ml-2 font-medium text-base text-gray-700">
+              Unity Secondary S...
+            </span>
+          </div>
 
           {/* Menu Sections */}
           {menuSections.map((section) => (
@@ -284,7 +289,8 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
             {!isCollapsed && (
               <div>
                 <div className="font-semibold flex gap-2">
-                  {!isCollapsed && <Power />}<p>Logout Account</p>
+                  {!isCollapsed && <Power />}
+                  <p>Logout Account</p>
                 </div>
               </div>
             )}

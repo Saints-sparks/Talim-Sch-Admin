@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FiEdit, FiSave } from 'react-icons/fi';
 import { teacherService, Teacher } from '@/app/services/teacher.service';
-import Header from '@/components/Header';
+import {Header} from '@/components/Header';
 
 const TeacherProfile = () => {
   const [editMode, setEditMode] = useState(false);
@@ -43,7 +43,7 @@ const TeacherProfile = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="Teacher Profile" />
+        <Header />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
@@ -54,7 +54,7 @@ const TeacherProfile = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="Teacher Profile" />
+        <Header />
         <div className="text-center py-12">
           <p className="text-red-600">{error}</p>
           <button
@@ -71,7 +71,7 @@ const TeacherProfile = () => {
   if (!teacher) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <Header user="Administrator" title="Teacher Profile" />
+        <Header />
         <div className="text-center py-12">
           <p className="text-gray-600">Teacher not found</p>
         </div>
@@ -81,7 +81,7 @@ const TeacherProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Header user="Administrator" title="Teacher Profile" />
+      <Header />
       
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-end mb-4">

@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
+import { Header } from "@/components/Header";
 import { FaSearch } from "react-icons/fa";
 
 const notifications = [
   {
     id: 1,
     title: "System Maintenance Scheduled",
-    description: "The system will be unavailable on Dec 29th from 1:00 AM to 3:00 AM GMT.",
+    description:
+      "The system will be unavailable on Dec 29th from 1:00 AM to 3:00 AM GMT.",
     time: "1:52 AM",
   },
   {
@@ -45,7 +46,8 @@ const notifications = [
   {
     id: 7,
     title: "System Maintenance Scheduled",
-    description: "The system will be unavailable on Dec 29th from 1:00 AM to 3:00 AM GMT.",
+    description:
+      "The system will be unavailable on Dec 29th from 1:00 AM to 3:00 AM GMT.",
     time: "1:52 AM",
   },
   {
@@ -98,7 +100,7 @@ const NotificationsPage: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 h-full">
-      <Header user="Administrator" title="Notifications" />
+      <Header />
 
       <div className="flex justify-between items-center mb-6">
         {/* Title */}
@@ -121,14 +123,14 @@ const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-
-
       <div className="bg-white shadow-md rounded-lg">
         {/* Table Header */}
         <div className="flex items-center border-b border-gray-200 px-6 py-3">
           <input type="checkbox" className="mr-4" />
           <div className="flex-1 text-sm font-medium text-gray-600">Title</div>
-          <div className="flex-1 text-sm font-medium text-gray-600">Description</div>
+          <div className="flex-1 text-sm font-medium text-gray-600">
+            Description
+          </div>
           <div className="text-sm font-medium text-gray-600">Time</div>
         </div>
 
@@ -145,7 +147,9 @@ const NotificationsPage: React.FC = () => {
                 <div className="flex-1 text-sm text-gray-800 font-medium">
                   {notification.title}
                 </div>
-                <div className="flex-1 text-sm text-gray-600">{notification.description}</div>
+                <div className="flex-1 text-sm text-gray-600">
+                  {notification.description}
+                </div>
                 <div className="text-sm text-gray-500">{notification.time}</div>
               </div>
             ))
@@ -159,11 +163,17 @@ const NotificationsPage: React.FC = () => {
 
       {/* Pagination */}
       <div className="flex justify-between items-center px-6 py-4">
-        <div className="text-sm text-gray-600">Showing {filteredNotifications.length} of {notifications.length}</div>
+        <div className="text-sm text-gray-600">
+          Showing {filteredNotifications.length} of {notifications.length}
+        </div>
         <div className="flex items-center gap-4">
-          <button className="text-sm text-gray-600 hover:text-gray-800">{"<"}</button>
+          <button className="text-sm text-gray-600 hover:text-gray-800">
+            {"<"}
+          </button>
           <span className="text-sm text-gray-600">1</span>
-          <button className="text-sm text-gray-600 hover:text-gray-800">{">"}</button>
+          <button className="text-sm text-gray-600 hover:text-gray-800">
+            {">"}
+          </button>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
+import {Header} from '@/components/Header';
 import AddTeacherModal from '@/components/AddTeacherModal';
 import { FaSearch } from 'react-icons/fa';
 import { teacherService, Teacher } from '@/app/services/teacher.service';
@@ -52,7 +52,7 @@ const TeachersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Header user="Administrator" title="Teachers" />
+      <Header />
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-x-4 mb-4">
