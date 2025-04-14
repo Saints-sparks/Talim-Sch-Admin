@@ -67,7 +67,7 @@ export const API_URLS = {
     GET_TIMETABLE_BY_DAY: '/timetable/day/:day',
     UPDATE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
     DELETE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
-    GET_TIMETABLE_BY_CLASS: '/timetable/class/:classId'
+    GET_TIMETABLE_BY_CLASS: '/timetable/class/'
   },
   COMPLAINTS: {
     CREATE_COMPLAINT: '/complaints',
@@ -101,8 +101,7 @@ export const API_ENDPOINTS = {
   CREATE_TIMETABLE_ENTRY: `${API_BASE_URL}${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE: (page: number, limit: number) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE.replace(':page', page.toString()).replace(':limit', limit.toString())}`,
   GET_TIMETABLE_BY_DAY: (day: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(':day', day)}`,
-  GET_TIMETABLE_BY_CLASS: (classId: string) =>
-    `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_CLASS.replace(':classId', classId)}`,
+  GET_TIMETABLE_BY_CLASS: `${API_BASE_URL}/timetable/class`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   DELETE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   CREATE_COMPLAINT: `${API_BASE_URL}${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
