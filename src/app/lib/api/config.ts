@@ -8,13 +8,13 @@ export const API_URLS = {
     LOGOUT: '/auth/logout'
   },
   SCHOOL: {
-    GET_CLASS: '/classes/:classId',
+    GET_CLASS: '/classes',
     GET_CLASSES: '/classes',
     CREATE_CLASS: '/classes',
     EDIT_CLASS: '/classes/:classId'
   },
   STUDENT: {
-    CREATE: '/students'
+    CREATE: '/students',
   },
   STUDENTS: {
     GET_STUDENT: '/students',
@@ -24,11 +24,17 @@ export const API_URLS = {
     DELETE_STUDENT: '/users/students/:studentId',
     GET_STUDENTS_BY_CLASS: '/students/by-class/:classId',
   },
+  SUBJECTS: {
+    GET_SUBJECTS_BY_SCHOOL: '/subjects-courses/by-school',
+    CREATE_SUBJECT: '/subjects-courses/subjects',
+  },
   COURSES: {
     CREATE_COURSE: '/subjects-courses/courses',
     GET_COURSE: '/courses',
     GET_COURSES: '/courses',
     UPDATE_COURSE: '/courses',
+    GET_COURSES_BY_SUBJECT: '/subjects-courses/courses/subject',
+    GET_COURSES_BY_SCHOOL: '/subjects-courses/courses/school', 
     DELETE_COURSE: '',
     GET_COURSE_BY_ID: ''
   },
@@ -56,11 +62,12 @@ export const API_URLS = {
     SET_CURRENT_TERM: '/academic-year-term/term/:termId/set-current',
   },
   TIMETABLE: {
-    CREATE_TIMETABLE_ENTRY: '/timetable/entry',
+    CREATE_TIMETABLE_ENTRY: '/timetable',
     GET_TIMETABLE: '/timetable?page=:page&limit=:limit',
     GET_TIMETABLE_BY_DAY: '/timetable/day/:day',
     UPDATE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
-    DELETE_TIMETABLE_ENTRY: '/timetable/entry/:entryId'
+    DELETE_TIMETABLE_ENTRY: '/timetable/entry/:entryId',
+    GET_TIMETABLE_BY_CLASS: '/timetable/class/'
   },
   COMPLAINTS: {
     CREATE_COMPLAINT: '/complaints',
@@ -75,9 +82,11 @@ export const API_ENDPOINTS = {
   INTROSPECT: `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
   LOGOUT: `${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`,
   REGISTER: `${API_BASE_URL}${API_URLS.AUTH.REGISTER}`,
-  GET_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASS.replace(':classId', classId)}`,
+  GET_CLASS: `${API_BASE_URL}/classes`,
   GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
+  GET_SUBJECTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
+  CREATE_SUBJECT: `${API_BASE_URL}${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
   EDIT_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.EDIT_CLASS.replace(':classId', classId)}`,
   CREATE_ANNOUNCEMENT: `${API_BASE_URL}${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
   CREATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENT.CREATE}`,
@@ -92,6 +101,7 @@ export const API_ENDPOINTS = {
   CREATE_TIMETABLE_ENTRY: `${API_BASE_URL}${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE: (page: number, limit: number) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE.replace(':page', page.toString()).replace(':limit', limit.toString())}`,
   GET_TIMETABLE_BY_DAY: (day: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(':day', day)}`,
+  GET_TIMETABLE_BY_CLASS: `${API_BASE_URL}/timetable/class`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   DELETE_TIMETABLE_ENTRY: (entryId: string) => `${API_BASE_URL}${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(':entryId', entryId)}`,
   CREATE_COMPLAINT: `${API_BASE_URL}${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
@@ -116,6 +126,8 @@ export const API_ENDPOINTS = {
   UPDATE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.UPDATE_COURSE}`,
   DELETE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.DELETE_COURSE}`,
   GET_COURSE_BY_ID: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSE_BY_ID}`,
+  GET_COURSES_BY_SUBJECT: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SUBJECT}`,
+  GET_COURSES_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
   GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
   GET_STUDENTS_BY_CLASS_ID: (classId: string) => `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(':classId', classId)}`,
 } as const;

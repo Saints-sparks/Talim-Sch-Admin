@@ -251,7 +251,7 @@ export const editClass = async (classId: string, data: any) => {
   return response.json();
 };
 
-export const getClass = async (classId: any) => {
+export const getClass = async (classId: string) => {
   const response = await fetch(`${API_ENDPOINTS.GET_CLASS}/${classId}`, {
     method: 'GET',
     headers: {
@@ -259,6 +259,11 @@ export const getClass = async (classId: any) => {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
   });
+  console.log("hi");
+
+  console.log(response);
+  
+  
 
   if (!response.ok) {
     throw new Error('Error fetching class details');
@@ -364,3 +369,6 @@ export const studentService = {
     }
   }
 };
+
+
+

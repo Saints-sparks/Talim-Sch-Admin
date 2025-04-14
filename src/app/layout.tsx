@@ -1,6 +1,6 @@
 "use client";
 import localFont from "next/font/local";
-import { Poppins } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 
@@ -27,11 +27,11 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Google Font: Poppins
-const poppins = Poppins({
+// Google Font: Manrioe
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-poppins",
-  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-manrope",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export default function RootLayout({
@@ -66,9 +66,10 @@ export default function RootLayout({
   return (
     <LoadingProvider>
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
-      >
+    <body
+  className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased`}
+>
+
         <SidebarProvider>
           <PageIndicatorProvider>
             <LayoutShell showSidebar={showSidebar}>

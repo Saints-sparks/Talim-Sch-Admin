@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Header from '@/components/Header';
 import { HiOutlineBookOpen, HiOutlineClipboard } from 'react-icons/hi';
 import { IoPeopleOutline } from 'react-icons/io5';
 import { FiChevronRight, FiChevronDown, FiEdit, FiTrash, FiPlus } from 'react-icons/fi';
 import ProtectedRoute from '../../components/ProtectedRoutes';
+import { Header } from '@/components/Header';
 
 const Dashboard = () => {
   const [classes] = useState([
@@ -59,22 +59,29 @@ const Dashboard = () => {
 
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex h-screen bg-[#F8F8F8] p-2">
         {/* Main Content */}
-        <main className="flex-grow p-8 overflow-y-auto">
+        <main className="flex-grow overflow-y-auto">
           {/* Header */}
-          <Header user="Administrator" title="Dashboard" />
-          <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">Class Overview</h1>
+          <Header onMenuClick={function (): void {
+            throw new Error('Function not implemented.');
+          } } />
+          <h1 className="font-medium text-xl py-5 px-5 text-[#2F2F2F]">Class Overview</h1>
 
           {/* Class Overview Cards */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Card 1: Total Classes */}
             <div className="bg-white p-6 shadow rounded-2xl flex flex-col items-center">
-              <h3 className="text-4xl font-semibold text-gray-800">15</h3>
-              <HiOutlineBookOpen className="text-4xl text-[#154473]" />
-              <p className="text-gray-500 text-gray-800">Total Number of Classes</p>
+              <div className="flex items-center">
+                <div className="border border-[#F1F1F1]">
+                  <HiOutlineBookOpen className="text-[#003366]" />
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-medium text-xl text-[#030E18]">15</p>
+                  <p className="text-gray-500 text-gray-800">Total Number of Classes</p>
+                </div>
+              </div>
               <div
-                onClick={() => toggleExpand(1)}
                 className="flex items-center text-blue-500 mt-4 cursor-pointer text-gray-800"
               >
                 {expandedCards.includes(1) ? (

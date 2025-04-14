@@ -20,12 +20,12 @@ export default function LayoutShell({ children, showSidebar }: LayoutShellProps)
       )}
       <div
         className={classNames("flex-1 transition-all duration-300", {
-          "ml-64": showSidebar && !isCollapsed,
-          "ml-20": showSidebar && isCollapsed,
+          // "ml-64": showSidebar && !isCollapsed,
+          // "ml-20": showSidebar && isCollapsed,
         })}
       >
-        <SchoolAdminNavbar user="Jessica" title="School Admin" />
-        <main className="p-4">{children}</main>
+        {/* <SchoolAdminNavbar user="Jessica" title="School Admin" /> */}
+        <main className="">{children}</main>
       </div>
     </div>
   );

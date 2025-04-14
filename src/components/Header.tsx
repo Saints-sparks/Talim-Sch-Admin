@@ -1,71 +1,54 @@
-"use client";
+import Link from "next/link";
+import { Search, Bell, Menu, CalendarRange } from "lucide-react";
+import { format } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { IoMdNotificationsOutline } from "react-icons/io";
-import { AiOutlineSearch } from "react-icons/ai"; // Search Icon
-import { BsCalendar2Date } from "react-icons/bs"; // Calendar Icon
-
-interface HeaderProps {
-  user: string;
-  title: string;
-}
-
-const Header: React.FC<HeaderProps> = ({ user, title }) => {
-  const [currentDate, setCurrentDate] = useState("");
-  const router = useRouter(); // Router for navigation
-
-  useEffect(() => {
-    const date = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-    setCurrentDate(date);
-  }, []);
-
+export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <div className="flex justify-between items-center mb-8">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
-        <span className="text-gray-500">{user}</span>
-      </div>
-
-      {/* Search Bar with Search Icon */}
-      <div className="relative w-1/3">
-        <AiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Search"
-          className="w-full pl-10 p-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-        />
-      </div>
-
-      {/* Icons and Profile Section */}
-      <div className="flex items-center space-x-6">
-        {/* Calendar Icon with Current Date */}
-        <div className="flex items-center space-x-2 text-gray-500">
-          <BsCalendar2Date className="w-5 h-5" />
-          <span>{currentDate}</span>
+    <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] pb-4">
+      {/* Top row: Menu, Date, Notifications, Avatar */}
+      <div className="flex flex-col  sm:flex-row items-center w-full justify-between gap-4 py-3">
+        {/* Menu Button (Only on Mobile) */}
+        <div className="flex items-center w-full sm:w-auto justify-between">
+          <div
+            className="md:hidden rounded-md shadow-none"
+            onClick={onMenuClick}
+          >
+            <Menu className="text-[#003366]" size={24} />
+          </div>
+          {/* Right Side: Date, Notifications, Avatar */}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2 items-center text-sm text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white">
+              <p className="text-[16px]">
+                {format(new Date(), "dd MMM, yyyy")}
+              </p>
+              <CalendarRange size={24} />
+            </div>
+            <Link href="/notifications">
+              <Button className="bg-white shadow-none border border-[#F0F0F0] hover:bg-gray-200 h-full rounded-lg p-3">
+                <Bell className="h-5 w-5 text-gray-600" />
+              </Button>
+            </Link>
+            <Link href="/profile">
+              <Avatar>
+                <AvatarImage src="/placeholder.svg" alt="User avatar" />
+                <AvatarFallback className="bg-green-300">OA</AvatarFallback>
+              </Avatar>
+            </Link>
+          </div>
         </div>
-
-        {/* Notification Icon */}
-        <div className="relative cursor-pointer">
-          <IoMdNotificationsOutline className="w-6 h-6 text-gray-500" />
-          {/* Optional Notification Badge */}
-          <span className="absolute top-0 right-0 block w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+        {/* Search Bar: Below on Mobile, Left-Aligned on Larger Screens */}
+        <div className="relative w-full sm:w-[40%] max-w-md sm:order-first">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <Input
+            type="search"
+            placeholder="Search"
+            className="pl-10 py-5 rounded-lg bg-white"
+          />
         </div>
-
-        {/* Profile Picture */}
-        <img
-          src="../../img/teacher.jpg"
-          alt="Profile"
-          className="w-10 h-10 rounded-full cursor-pointer"
-          onClick={() => router.push("/profile")} // Navigate to the profile page
-        />
       </div>
-    </div>
+    </header>
   );
-};
-
-export default Header;
+}

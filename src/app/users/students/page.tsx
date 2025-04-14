@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { studentService, StudentById, Class, getClasses, Student } from '@/app/services/student.service';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import Header from '@/components/Header';
+import {Header} from '@/components/Header';
 import AddStudentModal from '@/components/AddStudentModal';
 import { FaSearch } from 'react-icons/fa';
 
@@ -94,7 +94,7 @@ const StudentPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Section */}
-      <Header user="Administrator" title="Students" />
+      <Header  />
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-x-4 mb-4">
