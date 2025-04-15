@@ -144,7 +144,15 @@ const Timetable = () => {
     const fetchTeachers = async () => {
       try {
         const teachersResponse = await teacherService.getTeachers(1, 100);
-        setTeachers(teachersResponse);
+        setTeachers(
+          Array.isArray(teachersResponse.data)
+            ? teachersResponse.data.map((teacher: any) => ({
+                _id: teacher._id,
+                firstName: teacher.firstName,
+                lastName: teacher.lastName,
+              }))
+            : []
+        );
         console.log("Teachers:", teachersResponse);
       } catch (error) {
         console.error("Failed to fetch teachers", error);
@@ -193,7 +201,7 @@ const Timetable = () => {
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const subjectId = e.target.value;
-    setFormData({ ...formData, subject: subjectId, course: "" }); // Reset course when subject changes
+    setFormData({ ...formData, subject: subjectId, courseId: "" }); // Reset courseId when subject changes
     try {
       const res = await fetch(
         `${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`,

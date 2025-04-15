@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
 import React, { useState, FormEvent, ChangeEvent } from "react";
-import Header from "@/components/Header";
+import { Header } from "@/components/Header";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Flip } from "react-toastify";
 import { useRouter, useParams } from "next/navigation";
-import {getClass, editClass} from '../../services/student.service'
+import { getClass, editClass } from "../../services/student.service";
 interface FormData {
   className: string;
   classCapacity: string;
@@ -34,7 +34,9 @@ const AddSubject: React.FC = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -47,23 +49,21 @@ const AddSubject: React.FC = () => {
     setButtonLoader(true);
 
     try {
-      const response = await getClass(classId)
+      if (!classId) {
+        throw new Error("Class ID is required");
+      }
+      const response = await getClass(classId);
 
-      console.log("Response: " +response)
-      
+      console.log("Response: " + response);
     } catch (error) {
-      console.log(error)
-      
+      console.log(error);
     }
-
-  
-    
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header user="Administrator" title="Edit Class" />
+      <Header />
 
       <h1 className="text-2xl font-semibold text-gray-800">Add New Subject</h1>
 
@@ -86,23 +86,23 @@ const AddSubject: React.FC = () => {
             </div>
 
             <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Class Capacity (Optional)
-          </label>
-          <select
-            name="classCapacity"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.classCapacity} // Controlled by state
-            onChange={handleChange}
-          >
-            <option value="" disabled>
-              Choose your class capacity
-            </option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="30">30</option>
-          </select>
-        </div>
+              <label className="block text-gray-700 font-semibold mb-2">
+                Class Capacity (Optional)
+              </label>
+              <select
+                name="classCapacity"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.classCapacity} // Controlled by state
+                onChange={handleChange}
+              >
+                <option value="" disabled>
+                  Choose your class capacity
+                </option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+              </select>
+            </div>
           </div>
 
           <div className="mb-4 relative">
@@ -219,109 +219,104 @@ const AddSubject: React.FC = () => {
           </div>
         </form>
       </div>
-    
- 
 
-
-
-         {/* Add Class Modal */}
-    {isModalOpen && (
-  <div
-    className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${
-      isModalOpen ? "opacity-100" : "opacity-0"
-    }`}
-    onClick={toggleModal} // Close modal on clicking the overlay
-  >
-    <div
-      className={`absolute right-0 top-0 h-full w-full md:w-1/2 bg-white p-6 shadow-lg transform transition-transform duration-300 ease-in-out ${
-        isModalOpen ? "translate-x-0" : "translate-x-full"
-      } flex flex-col`}
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-      {/* Modal Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-semibold text-gray-800">Add Subjects</h3>
-        <button
-          className="text-gray-500 hover:text-gray-700 text-2xl"
-          onClick={toggleModal}
+      {/* Add Class Modal */}
+      {isModalOpen && (
+        <div
+          className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${
+            isModalOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={toggleModal} // Close modal on clicking the overlay
         >
-          ✕
-        </button>
-      </div>
+          <div
+            className={`absolute right-0 top-0 h-full w-full md:w-1/2 bg-white p-6 shadow-lg transform transition-transform duration-300 ease-in-out ${
+              isModalOpen ? "translate-x-0" : "translate-x-full"
+            } flex flex-col`}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800">
+                Add Subjects
+              </h3>
+              <button
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+                onClick={toggleModal}
+              >
+                ✕
+              </button>
+            </div>
 
-      {/* Modal Body */}
-      <form className="flex-grow">
-        <div className="mb-4 flex gap-4">
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Subject Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter class name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            {/* Modal Body */}
+            <form className="flex-grow">
+              <div className="mb-4 flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Subject Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter class name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
 
-          <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-            Course Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g: MAT112"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+                <div className="flex-1">
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Course Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g: MAT112"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Assign Teacher */}
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Assign Teacher
+                </label>
+                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="" disabled selected>
+                    Select a teacher
+                  </option>
+                  <option value="teacher-1">Mr. John Adewale</option>
+                  <option value="teacher-2">Ms. Sarah Akinola</option>
+                  <option value="teacher-3">Dr. Peter Okonkwo</option>
+                </select>
+              </div>
+              <div className="mb-4 relative">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Subject Description (Optional)
+                </label>
+                <textarea
+                  placeholder="Provide additional notes about the class."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                ></textarea>
+              </div>
+            </form>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-4 mt-auto">
+              <button
+                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                onClick={toggleModal}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
+              >
+                Create
+              </button>
+            </div>
           </div>
         </div>
-
-          {/* Assign Teacher */}
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
-              Assign Teacher
-            </label>
-            <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled selected>
-                Select a teacher
-              </option>
-              <option value="teacher-1">Mr. John Adewale</option>
-              <option value="teacher-2">Ms. Sarah Akinola</option>
-              <option value="teacher-3">Dr. Peter Okonkwo</option>
-            </select>
-          </div>
-        <div className="mb-4 relative">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Subject Description (Optional)
-          </label>
-          <textarea
-            placeholder="Provide additional notes about the class."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-          ></textarea>
-        </div>
-      </form>
-
-      {/* Modal Footer */}
-      <div className="flex justify-end gap-4 mt-auto">
-        <button
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-          onClick={toggleModal}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700"
-        >
-          Create
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
     </div>
   );
 };

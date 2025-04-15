@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Header from "@/components/Header";
+import {Header} from "@/components/Header";
 import { createAnnouncement, AnnouncementResponse, getAnnouncementsBySender, CreateAnnouncementResponse } from "../services/announcement.service";
 import { toast } from "react-toastify";
 import { getLocalStorageItem } from '../lib/localStorage';
@@ -148,7 +148,7 @@ const Announcement: React.FC = () => {
   return (
     <div className="p-6 bg-gray-100">
       {/* Header */}
-      <Header user="Administrator" title="Announcements" />
+      <Header  />
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>

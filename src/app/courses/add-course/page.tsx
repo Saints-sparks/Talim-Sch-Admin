@@ -1,10 +1,8 @@
-'use client';
+"use client";
 
 import React, { useState, FormEvent, ChangeEvent } from "react";
-import Header from "@/components/Header";
-import axios from "axios";
+import { Header } from "@/components/Header";
 import { toast, Flip, ToastContainer } from "react-toastify";
-
 
 interface FormData {
   title: string;
@@ -18,7 +16,7 @@ interface FormData {
 }
 
 const AddCourse: React.FC = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [buttonLoader, setButtonLoader] = useState<boolean>(false);
@@ -36,7 +34,6 @@ const AddCourse: React.FC = () => {
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
-
 
   const resetForm = () => {
     setFormData({
@@ -63,10 +60,10 @@ const AddCourse: React.FC = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setButtonLoader(true);
-  
+
     // Retrieve the authorization token from local storage
-    const authToken = localStorage.getItem('accessToken');
-  
+    const authToken = localStorage.getItem("accessToken");
+
     if (!authToken) {
       toast.error("Authorization token not found. Please log in again.", {
         position: "top-center",
@@ -82,28 +79,31 @@ const AddCourse: React.FC = () => {
       setButtonLoader(false);
       return;
     }
-  
+
     try {
       console.log("Request Data:", JSON.stringify(formData, null, 2));
-  
-      const response = await fetch(`http://localhost:5000/subjects-courses/courses`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(formData),
-      });
-  
+
+      const response = await fetch(
+        `http://localhost:5000/subjects-courses/courses`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
       if (!response.ok) {
         const errorResponse = await response.json(); // Parse the error response
         console.error("Error Response:", errorResponse);
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-  
+
       const data = await response.json();
       console.log("Response Data:", data);
-  
+
       toast.success("Course created successfully", {
         position: "top-center",
         autoClose: 5000,
@@ -115,7 +115,7 @@ const AddCourse: React.FC = () => {
         theme: "colored",
         transition: Flip,
       });
-  
+
       setButtonLoader(false);
       resetForm();
     } catch (error: any) {
@@ -140,9 +140,9 @@ const AddCourse: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <Header user="Administrator" title="Courses" />
+      <Header />
 
-      <ToastContainer/>
+      <ToastContainer />
 
       <h1 className="text-2xl font-semibold text-gray-800">Add New Course</h1>
 
@@ -221,8 +221,12 @@ const AddCourse: React.FC = () => {
                 Select a teacher
               </option>
               <option value="507f1f77bcf86cd799439031">Mr. John Adewale</option>
-              <option value="507f1f77bcf86cd799439051">Ms. Sarah Akinola</option>
-              <option value="507f1f77bcf86cd799439061">Dr. Peter Okonkwo</option>
+              <option value="507f1f77bcf86cd799439051">
+                Ms. Sarah Akinola
+              </option>
+              <option value="507f1f77bcf86cd799439061">
+                Dr. Peter Okonkwo
+              </option>
             </select>
           </div>
 
@@ -239,7 +243,9 @@ const AddCourse: React.FC = () => {
               <option value="" disabled>
                 Select a School
               </option>
-              <option value="887f1f77bcf86cd799439001">Unity Secondary Sch.</option>
+              <option value="887f1f77bcf86cd799439001">
+                Unity Secondary Sch.
+              </option>
               <option value="887f1f77bcf86cd799439201">Treasuredale</option>
               <option value="887f1f77bcf86cd799439501">Play Learn</option>
             </select>

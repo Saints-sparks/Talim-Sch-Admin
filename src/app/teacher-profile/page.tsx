@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
 import Image from "next/legacy/image";
-import { useState, useEffect } from 'react';
-import { usePageIndicator } from '../context/PageIndicatorContext';
-import Header from '@/components/Header';
-import {useRouter, usePathname} from 'next/navigation'
-import {useNavigationHelpers} from '../../utils/useNavigationHelpers'
+import { useState } from "react";
+import { usePageIndicator } from "../context/PageIndicatorContext";
+import { Header } from "@/components/Header";
+import { useRouter, usePathname } from "next/navigation";
+import { useNavigationHelpers } from "../../utils/useNavigationHelpers";
 
 interface FormData {
   firstName: string;
@@ -19,25 +19,24 @@ interface FormData {
 
 export default function Step1() {
   const { currentPage, setCurrentPage } = usePageIndicator();
-  const router = useRouter()
-  const pathname = usePathname()
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const {goBack} = useNavigationHelpers();
+  const { goBack } = useNavigationHelpers();
 
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    emailAddress: '',
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    emailAddress: "",
     // dateOfBirth: Date.toString(),
-    country: '',
+    country: "",
     logo: null,
   });
 
-
- 
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -54,15 +53,10 @@ export default function Step1() {
     }
   };
 
-
-
   return (
     <div className="flex bg-gray-100">
-     
-
-
       <div className="bg-gray-100 p-8 rounded shadow-md w-full h-auto min-h-[90vh]">
-      <Header user="Administrator" title="Teacher Profile" />
+        <Header />
         <h2 className="text-2xl font-semibold mb-6">Personal Details</h2>
         <div className="flex items-center space-x-4 mb-6">
           <div className="w-24 h-24 rounded-full border flex justify-center items-center overflow-hidden bg-gray-200">
@@ -163,26 +157,17 @@ export default function Step1() {
           </div>
         </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-left space-x-4 mt-8">
-      <button
-          className="px-4 py-2 bg-[#123961] text-white rounded hover:bg-blue-600"
-        >
-          Update
-        </button>
+        {/* Navigation Buttons */}
+        <div className="flex justify-left space-x-4 mt-8">
+          <button className="px-4 py-2 bg-[#123961] text-white rounded hover:bg-blue-600">
+            Update
+          </button>
 
-        <button
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"  
-        >
-          Remove User
-        </button>
-
-      </div>
-
-
-
+          <button className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+            Remove User
+          </button>
+        </div>
       </div>
     </div>
-     
   );
 }

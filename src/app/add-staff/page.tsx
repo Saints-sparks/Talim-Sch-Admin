@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HiUserCircle, HiHome, HiPencil, HiTrash } from "react-icons/hi";
-import Header from "@/components/Header";
+import {Header} from "@/components/Header";
 
 export default function AddStaff() {
   const [formData, setFormData] = useState({
@@ -51,7 +51,7 @@ export default function AddStaff() {
   return (
     <div className="p-6 space-y-1 bg-[F8F8F8]">
         
-     <Header user={"Administrator"} title={"Add Student"} />
+     <Header  />
 
       {/* Main Content */}
       <main className="flex-1">

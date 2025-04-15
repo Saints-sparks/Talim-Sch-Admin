@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getClasses } from "@/app/services/student.service";
+import { Class, getClasses } from "@/app/services/student.service";
 import { toast } from "react-toastify";
 import FloatingHeader from "@/components/curricula/FloatingHeader";
 import SubjectsTable from "@/components/curricula/SubjectsTable";
@@ -10,7 +10,6 @@ import {
   createSubject,
   getSubjectsBySchool,
 } from "../services/subjects.service";
-import { log } from "console";
 import { API_ENDPOINTS } from "../lib/api/config";
 
 const CurriculumPage = () => {
@@ -138,7 +137,7 @@ const CurriculumPage = () => {
 
   const handleEditCourse = (
     subjectId: string,
-    course: { id: string; title: string; description: string }
+    course: any
   ) => {
     setCourseMode("edit");
     setSelectedCourse(course);
@@ -188,7 +187,7 @@ const CurriculumPage = () => {
         if (subject.id !== subjectId) return subject;
 
         const filteredCourses = subject.courses.filter(
-          (course) => course.id !== courseId
+          (course: { id: string }) => course.id !== courseId
         );
         return { ...subject, courses: filteredCourses };
       })

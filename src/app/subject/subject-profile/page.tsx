@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
 import { NextPage } from "next";
 import React, { useState } from "react";
-import Header from "@/components/Header";
+import { Header } from "@/components/Header";
 
 const SubjectProfile: NextPage = () => {
   const [subjectName, setSubjectName] = useState<string>("");
@@ -21,15 +21,16 @@ const SubjectProfile: NextPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">   
-
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Page Content */}
       <main className="flex-grow p-6">
-        
-      {/* Page Header */}
-      <Header user="Administrator" title="Subject Profile" />
+        {/* Page Header */}
+        <Header />
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4"> Subject Profile</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            {" "}
+            Subject Profile
+          </h2>
 
           <form onSubmit={handleSubmit}>
             {/* Subject Name */}
@@ -95,17 +96,16 @@ const SubjectProfile: NextPage = () => {
               ></textarea>
             </div>
 
-
             <div className="flex-1">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Class 
-            </label>
-            <input
-              type="text"
-              placeholder="Enter class name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+              <label className="block text-gray-700 font-semibold mb-2">
+                Class
+              </label>
+              <input
+                type="text"
+                placeholder="Enter class name"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
             {/* Buttons */}
             <div className="flex justify-end gap-4">
@@ -126,7 +126,6 @@ const SubjectProfile: NextPage = () => {
           </form>
         </div>
       </main>
-
     </div>
   );
 };
