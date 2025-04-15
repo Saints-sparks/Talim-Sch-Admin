@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
+import Link from "next/link";
 
 type SidebarProps = {
   className?: string;
@@ -134,15 +135,6 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
     [currentPath]
   );
 
-  const handleNavigate = useCallback(
-    (path: string) => {
-      setCurrentPath(path);
-      window.history.pushState({}, "", path);
-      if (isMobile) setIsOpen(false);
-    },
-    [isMobile]
-  );
-
   const handleLogout = useCallback(() => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -244,33 +236,35 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
               {openSections[section.title] &&
                 section.items.map((item) => (
                   <React.Fragment key={item.path}>
-                    <div
-                      className={`p-3 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
-                        isActive(item.path)
-                          ? "bg-blue-900 text-white"
-                          : "hover:bg-gray-100"
-                      }`}
-                      onClick={() => handleNavigate(item.path)}
-                    >
-                      {item.icon}
-                      {!isCollapsed && <span>{item.label}</span>}
-                    </div>
+                    <Link href={item.path}>
+                      <div
+                        className={`p-3 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
+                          isActive(item.path)
+                            ? "bg-blue-900 text-white"
+                            : "hover:bg-gray-100"
+                        }`}
+                      >
+                        {item.icon}
+                        {!isCollapsed && <span>{item.label}</span>}
+                      </div>
+                    </Link>
                     {item.subItems &&
                       openSections[section.title] &&
                       !isCollapsed && (
                         <div className="pl-8">
                           {item.subItems.map((subItem) => (
-                            <div
-                              key={subItem.path}
-                              className={`p-2 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
-                                isActive(subItem.path)
-                                  ? "bg-blue-900 text-white"
-                                  : "hover:bg-gray-100"
-                              }`}
-                              onClick={() => handleNavigate(subItem.path)}
-                            >
-                              <span>{subItem.label}</span>
-                            </div>
+                            <Link href={subItem.path}>
+                              <div
+                                key={subItem.path}
+                                className={`p-2 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
+                                  isActive(subItem.path)
+                                    ? "bg-blue-900 text-white"
+                                    : "hover:bg-gray-100"
+                                }`}
+                              >
+                                <span>{subItem.label}</span>
+                              </div>
+                            </Link>
                           ))}
                         </div>
                       )}
