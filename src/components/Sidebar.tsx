@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
+import Link from "next/link";
 
 type SidebarProps = {
   className?: string;
@@ -244,6 +245,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
               {openSections[section.title] &&
                 section.items.map((item) => (
                   <React.Fragment key={item.path}>
+                    <Link href={item.path}>
                     <div
                       className={`p-3 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
                         isActive(item.path)
@@ -255,11 +257,14 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
                       {item.icon}
                       {!isCollapsed && <span>{item.label}</span>}
                     </div>
+                    </Link>
+                    {/* Sub-items */}
                     {item.subItems &&
                       openSections[section.title] &&
                       !isCollapsed && (
                         <div className="pl-8">
                           {item.subItems.map((subItem) => (
+                            <Link href={subItem.path}>
                             <div
                               key={subItem.path}
                               className={`p-2 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
@@ -271,6 +276,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
                             >
                               <span>{subItem.label}</span>
                             </div>
+                            </Link>
                           ))}
                         </div>
                       )}

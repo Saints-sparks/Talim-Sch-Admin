@@ -53,7 +53,7 @@ const TeachersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <Header />
-      <div className="mb-6">
+      <div className="pt-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-x-4 mb-4">
             <h1 className="text-2xl font-semibold text-gray-800">Teachers</h1>
@@ -107,11 +107,11 @@ const TeachersPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 pt-7">
             {filteredTeachers.map((teacher) => (
               <div
                 key={teacher._id}
-                className="p-4 border border-gray-200 rounded shadow-sm bg-white relative"
+                className="p-4 border border-gray-200 rounded shadow-sm bg-white w-[295px] h-[218px] relative"
               >
                 <img
                   src={teacher.userId.userAvatar || '/default-avatar.png'}
