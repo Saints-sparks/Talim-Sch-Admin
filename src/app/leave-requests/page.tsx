@@ -17,7 +17,7 @@ const RequestLeavePage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 h-full">
+    <div className="p-6 bg-gray-100 h-[100vh]">
       <Header />
       {/* Page Title */}
       <h1 className="text-2xl font-semibold mb-6">Student Request Leave</h1>

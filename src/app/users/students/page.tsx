@@ -95,12 +95,12 @@ const StudentPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Section */}
       <Header  />
-      <div className="mb-6">
+      <div className="mb-6 mt-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-x-4 mb-4">
-            <h1 className="text-2xl font-semibold text-gray-800">Student</h1>
+            <h1 className="text-2xl font-semibold text-[#393939]">Student</h1>
             <button
-              className="font-bold text-white px-4 py-1 bg-[#154473] rounded text-gray-500"
+              className="font-bold text-[#393939] px-4 py-1 bg-[#EFEFEF] rounded-full"
               onClick={toggleModal}
             >
               + Add
@@ -175,7 +175,7 @@ const StudentPage: React.FC = () => {
           {currentTeachers.map((student) => (
             <div
               key={student._id}
-              className="p-4 border border-gray-200 rounded shadow-sm bg-white relative"
+              className="p-4 border border-gray-200 rounded-[10px] shadow-sm bg-white relative"
             >
               <img
                 src={student.userId.userAvatar || '/default-avatar.png'}
@@ -185,14 +185,14 @@ const StudentPage: React.FC = () => {
               <h3 className="text-center text-lg font-semibold text-[#154473]">{`${student.userId.firstName} ${student.userId.lastName}`}</h3>
               <p className="text-center text-gray-500">{student.gradeLevel}</p>
               <button
-                className="px-4 py-1 mt-4 text-[#154473] bg-[#154473] rounded mx-auto block hover:bg-blue-100"
+                className="px-4 py-1 mt-4 rounded-[10px] border-[#EDEDED] border-2 bg-transparent  mx-auto block hover:bg-blue-100"
                 onClick={() => handleViewProfile(student._id)}
               >
-                <span className="text-white">View Profile</span>
+                <span className="text-[#434343]">View Profile</span>
               </button>
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-4 right-8">
                 <button
-                  className="text-gray-600 hover:text-gray-800 text-[#154473]"
+                  className="text-[#262B2B] font-semibold hover:text-gray-800"
                   onClick={() => toggleMenu(student._id)}
                 >
                   &#x22EE; {/* 3-dot menu */}
@@ -224,7 +224,7 @@ const StudentPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-x-2">
           <button
-            className="px-3 py-1 bg-[#154473] text-white rounded hover:bg-gray-100"
+            className="px-3 py-1 bg-[#EFEFEF] border-2 border-[#E4E4E4] text-[#393939]  rounded hover:bg-gray-100"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           >
@@ -234,7 +234,7 @@ const StudentPage: React.FC = () => {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            className="px-3 py-1 bg-[#154473] text-white rounded hover:bg-gray-100"
+            className="px-3 py-1 bg-[#EFEFEF] border-2 border-[#E4E4E4] text-[#393939] rounded hover:bg-gray-100"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
           >

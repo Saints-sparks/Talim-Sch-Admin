@@ -122,8 +122,11 @@ export const createTeacherProfile = async (
       Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       "Content-Type": "application/json",
     },
+    
     body: JSON.stringify(payload),
+    
   });
+
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);

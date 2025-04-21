@@ -1,308 +1,150 @@
-import React, { useState, useCallback, memo, useEffect } from "react";
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
-  Home,
   BookOpen,
-  Users,
-  Speaker,
-  ClipboardList,
-  MessageSquare,
   Calendar,
-  AlertCircle,
-  Ticket,
-  Settings,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
+  Home,
   LogOut,
-  Menu,
+  MessageSquare,
+  AlertCircle,
+  Settings,
+  Speaker,
+  Ticket,
+  Users,
+  Bell,
   CircleUser,
-  Power,
-} from "lucide-react";
-import { useSidebar } from "@/context/SidebarContext";
-import Image from "next/image";
+} from "lucide-react"
 
-type SidebarProps = {
-  className?: string;
-};
+import { cn } from "@/lib/utils"
 
-const menuSections = [
-  {
-    title: "School Management",
-    items: [
-      {
-        path: "/dashboard",
-        icon: <Home className="w-5 h-5" />,
-        label: "Dashboard",
-      },
-      {
-        path: "/classes",
-        icon: <BookOpen className="w-5 h-5" />,
-        label: "Classes",
-      },
-      {
-        path: "/users",
-        icon: <Users className="w-5 h-5" />,
-        label: "Users",
-        subItems: [
-          { path: "/users/students", label: "Students" },
-          { path: "/users/teachers", label: "Teachers" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "Academic",
-    items: [
-      {
-        path: "/timetable",
-        icon: <Calendar className="w-5 h-5" />,
-        label: "Timetable",
-      },
-      {
-        path: "/complaints",
-        icon: <AlertCircle className="w-5 h-5" />,
-        label: "Complaints",
-      },
-      {
-        path: "/leave-requests",
-        icon: <Ticket className="w-5 h-5" />,
-        label: "Leave Requests",
-      },
-      {
-        path: "/curricula",
-        icon: <ClipboardList className="w-5 h-5" />,
-        label: "Curricula",
-      },
-    ],
-  },
-  {
-    title: "Communication",
-    items: [
-      {
-        path: "/announcements",
-        icon: <Speaker className="w-5 h-5" />,
-        label: "Announcements",
-      },
-      {
-        path: "/messages",
-        icon: <MessageSquare className="w-5 h-5" />,
-        label: "Messages",
-      },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      {
-        path: "/settings",
-        icon: <Settings className="w-5 h-5" />,
-        label: "Settings",
-      },
-    ],
-  },
-];
+export default function Sidebar() {
+  const pathname = usePathname()
+  const [expandedUsers, setExpandedUsers] = useState(true)
 
-const Sidebar: React.FC<SidebarProps> = memo(({ className }) => {
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [isMobile, setIsMobile] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const { isCollapsed, toggleCollapse } = useSidebar();
-  const [currentPath, setCurrentPath] = useState<string>("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setCurrentPath(window.location.pathname);
-    }
-  }, []);
-
-  const checkIfMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  useEffect(() => {
-    checkIfMobile();
-    window.addEventListener("resize", checkIfMobile);
-    return () => window.removeEventListener("resize", checkIfMobile);
-  }, [checkIfMobile]);
-
-  useEffect(() => {
-    if (isMobile) setIsOpen(false);
-  }, [currentPath, isMobile]);
-
-  const isActive = useCallback(
-    (path: string) => currentPath === path,
-    [currentPath]
-  );
-
-  const handleNavigate = useCallback(
-    (path: string) => {
-      setCurrentPath(path);
-      window.history.pushState({}, "", path);
-      if (isMobile) setIsOpen(false);
+  // Define menu items
+  const menuItems = [
+    { path: "/dashboard", icon: <Home className="w-5 h-5" />, label: "Dashboard" },
+    { path: "/classes", icon: <BookOpen className="w-5 h-5" />, label: "Classes" },
+    {
+      path: "/users",
+      icon: <Users className="w-5 h-5" />,
+      label: "Users",
+      hasDropdown: true,
+      expanded: expandedUsers,
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault()
+        setExpandedUsers(!expandedUsers)
+      },
+      subItems: [
+        { path: "/users/students", label: "Students" },
+        { path: "/users/teachers", label: "Teachers" },
+      ],
     },
-    [isMobile]
-  );
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    window.location.href = "/";
-  }, []);
-
-  const toggleSection = useCallback((title: string) => {
-    setOpenSections((prev) => ({ ...prev, [title]: !prev[title] }));
-  }, []);
+    { path: "/timetable", icon: <Calendar className="w-5 h-5" />, label: "Timetable" },
+    { path: "/announcements", icon: <Speaker className="w-5 h-5" />, label: "Announcements" },
+    { path: "/notifications", icon: <Bell className="w-5 h-5" />, label: "Notifications" },
+    {
+      path: "/messages",
+      icon: <MessageSquare className="w-5 h-5" />,
+      label: "Messages",
+      badge: 2,
+    },
+    { path: "/request-leave", icon: <Ticket className="w-5 h-5" />, label: "Request leave" },
+    { path: "/complaints", icon: <AlertCircle className="w-5 h-5" />, label: "Complaints" },
+    { path: "/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
+  ]
 
   return (
-    <>
-      {/* Hamburger Button */}
-      {isMobile && !isOpen && (
-        <button
-          className="fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
-          onClick={() => setIsOpen(true)}
-        >
-          <Menu className="w-6 h-6 text-blue-900" />
-        </button>
-      )}
-
-      {/* Mobile Overlay */}
-      {isMobile && isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <div
-        className={`
-        ${isMobile ? "fixed left-0 top-0 z-[60]" : "sticky top-0 z-30"} 
-        ${isMobile && !isOpen ? "-translate-x-full" : "translate-x-0"}
-        // ${isCollapsed ? "w-20" : "w-64"} 
-        transform flex flex-col justify-between h-screen bg-white text-[#929292]
-        transition-all duration-300 ease-in-out
-      `}
-      >
-        {/* Sidebar Content */}
-        <div
-          className={`overflow-y-auto flex-1 ${isCollapsed ? "p-2" : "p-4"}`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b pb-4 mb-4">
-            {!isCollapsed && (
-              <div className="flex items-center gap-4">
-                <img src="/icons/talim.svg" alt="Logo" className="w-11 h-11" />
-                <span className="text-xl font-semibold text-[#030E18]">
-                  Talim
-                </span>
-              </div>
-            )}
-            {!isMobile && (
-              <button
-                className="p-1 border rounded-md hover:bg-gray-100 sm:hidden"
-                onClick={toggleCollapse}
-              >
-                <ChevronLeft
-                  className={`w-5 h-5 transition-transform ${
-                    isCollapsed ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-            )}
-            {isMobile && isOpen && (
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 rounded-md border hover:bg-gray-100"
-              >
-                <ChevronRight className="w-5 h-5 text-blue-900" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center px-2 py-3 border-2 border-solid border-[#F1F1F1] bg-[#FBFBFB] rounded-md mb-4">
-            <Image src="/unity.png" alt="School" width={40} height={40} />
-            <span className="ml-2 font-medium text-base text-gray-700">
-              Unity Secondary S...
-            </span>
-          </div>
-
-          {/* Menu Sections */}
-          {menuSections.map((section) => (
-            <div key={section.title} className="mt-4">
-              <div
-                className="flex items-center justify-between p-2  font-medium cursor-pointer hover:bg-gray-50 rounded-md"
-                onClick={() => toggleSection(section.title)}
-              >
-                {!isCollapsed && <span>{section.title}</span>}
-                {!isCollapsed &&
-                  (openSections[section.title] ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  ))}
-              </div>
-              {openSections[section.title] &&
-                section.items.map((item) => (
-                  <React.Fragment key={item.path}>
-                    <div
-                      className={`p-3 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
-                        isActive(item.path)
-                          ? "bg-blue-900 text-white"
-                          : "hover:bg-gray-100"
-                      }`}
-                      onClick={() => handleNavigate(item.path)}
-                    >
-                      {item.icon}
-                      {!isCollapsed && <span>{item.label}</span>}
-                    </div>
-                    {item.subItems &&
-                      openSections[section.title] &&
-                      !isCollapsed && (
-                        <div className="pl-8">
-                          {item.subItems.map((subItem) => (
-                            <div
-                              key={subItem.path}
-                              className={`p-2 flex items-center gap-4 cursor-pointer rounded-md transition-colors ${
-                                isActive(subItem.path)
-                                  ? "bg-blue-900 text-white"
-                                  : "hover:bg-gray-100"
-                              }`}
-                              onClick={() => handleNavigate(subItem.path)}
-                            >
-                              <span>{subItem.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </React.Fragment>
-                ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Footer (Logout) */}
-        <div
-          className="p-4 border-t flex items-center justify-between hover:bg-gray-100 cursor-pointer"
-          onClick={handleLogout}
-        >
-          <div className="flex items-center gap-3">
-            {!isCollapsed && (
-              <div>
-                <div className="font-semibold flex gap-2">
-                  {!isCollapsed && <Power />}
-                  <p>Logout Account</p>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="h-screen w-64 bg-white border-r border-r-blue-100 flex flex-col">
+      {/* Logo */}
+      <div className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-900 rounded flex items-center justify-center text-white font-bold">T</div>
+          <span className="text-lg font-medium">Talim</span>
         </div>
       </div>
 
-      {/* Mobile Spacer */}
-      {isMobile && <div className="h-16 md:hidden" />}
-    </>
-  );
-});
+      {/* School */}
+      <div className="px-4 py-2">
+        <div className="flex items-center gap-2 p-2 rounded">
+          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+            <CircleUser className="w-5 h-5 text-blue-900" />
+          </div>
+          <span className="text-sm text-gray-700">Unity Secondary School</span>
+        </div>
+      </div>
 
-Sidebar.displayName = "Sidebar";
-export default Sidebar;
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-2 space-y-4">
+        {menuItems.map((item) => (
+          <div key={item.path}>
+            {item.hasDropdown ? (
+              <div
+                className={cn(
+                  "flex items-center gap-3 mx-2 px-3 py-2 rounded-md cursor-pointer",
+                  pathname === item.path || (item.hasDropdown && item.expanded)
+                    ? "bg-blue-50 text-blue-900"
+                    : "text-[#929292] hover:bg-gray-50",
+                )}
+                onClick={item.onClick}
+              >
+                {item.icon}
+                <span className="text-[16px]">{item.label}</span>
+                <ChevronDown className={cn("ml-auto w-4 h-4", item.expanded ? "transform rotate-180" : "")} />
+              </div>
+            ) : (
+              <Link href={item.path}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 mx-2 px-3 py-2 rounded-md cursor-pointer",
+                    pathname === item.path ? "bg-blue-50 text-blue-900" : "text-[#929292] hover:bg-gray-50",
+                  )}
+                >
+                  {item.icon}
+                  <span className="text-[16px]">{item.label}</span>
+                  {item.badge && (
+                    <div className="ml-auto w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-sm text-white">{item.badge}</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )}
+
+            {/* Sub-items */}
+            {item.hasDropdown && item.expanded && item.subItems && (
+              <div className="ml-10 mt-1 ">
+                {item.subItems.map((subItem) => (
+                  <Link href={subItem.path} key={subItem.path}>
+                    <div
+                      className={cn(
+                        "text-[16px] font-[500] py-1 px-2 rounded-md mb-3",
+                        pathname === subItem.path ? "text-blue-900 font-medium" : "text-gray-500 hover:text-blue-900",
+                      )}
+                    >
+                      {subItem.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Logout */}
+      <div className="p-4 border-t">
+        <div className="flex items-center gap-3 px-3 py-2 text-gray-500 hover:bg-gray-50 rounded-md cursor-pointer">
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm">Logout Account</span>
+        </div>
+      </div>
+    </div>
+  )
+}
