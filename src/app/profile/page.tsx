@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import Sidebar from "@/components/sidebar";
+
 
 type Tab = "school" | "admin";
 

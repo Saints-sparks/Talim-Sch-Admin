@@ -6,9 +6,14 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/Header"
 import AddTeacherModal from "@/components/AddTeacherModal"
 import { FaSearch } from "react-icons/fa"
-import { teacherService, type Teacher } from "@/app/services/teacher.service"
+import { teacherService, type Teacher as BaseTeacher } from "@/app/services/teacher.service"
 import { getClasses, type Class } from "@/app/services/student.service"
 import { toast } from "react-toastify"
+
+// Extended Teacher type with classIds property
+interface Teacher extends BaseTeacher {
+  classIds?: string[];
+}
 
 const TeachersPage: React.FC = () => {
   const router = useRouter()
@@ -28,15 +33,19 @@ const TeachersPage: React.FC = () => {
       setIsLoading(true)
       setError(null)
 
+      let response;
       if (selectedClass) {
-        const response = await teacherService.getTeachersByClass(selectedClass, currentPage, 9)
-        setTeachers(response.data)
-        setTotalTeachers(response.meta.total)
+        // Use the existing getTeachers method with supported parameters
+        response = await teacherService.getTeachers(currentPage, 9)
+        // Filter the response data by selectedClass
+        response.data = response.data.filter(teacher => 
+          teacher.classIds && teacher.classIds.includes(selectedClass)
+        )
       } else {
-        const response = await teacherService.getTeachers(currentPage, 9)
-        setTeachers(response.data)
-        setTotalTeachers(response.meta.total)
+        response = await teacherService.getTeachers(currentPage, 9)
       }
+      setTeachers(response.data)
+      setTotalTeachers(response.meta.total)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teachers")
       toast.error("Failed to fetch teachers")
