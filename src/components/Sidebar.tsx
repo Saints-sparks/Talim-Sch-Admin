@@ -23,7 +23,11 @@ import {
 
 import { cn } from "@/lib/utils"
 
-export default function Sidebar() {
+type SidebarProps = React.ComponentProps<"nav"> & {
+  className?: string
+}
+
+export default function Sidebar({className, ...rest}: SidebarProps) {
   const pathname = usePathname()
   const [expandedUsers, setExpandedUsers] = useState(true)
 
