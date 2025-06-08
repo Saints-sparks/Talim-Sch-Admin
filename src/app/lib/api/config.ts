@@ -1,4 +1,7 @@
-export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+import exp from "constants";
+
+// export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+export const API_BASE_URL = "http://localhost:5000"
 
 export const API_URLS = {
   AUTH: {
@@ -11,7 +14,9 @@ export const API_URLS = {
     GET_CLASS: '/classes',
     GET_CLASSES: '/classes',
     CREATE_CLASS: '/classes',
-    EDIT_CLASS: '/classes/:classId'
+    EDIT_CLASS: '/classes/:classId',
+    UPDATE_COURSES: '/classes/:classId/courses',
+
   },
   STUDENT: {
     CREATE: '/students',
@@ -39,13 +44,15 @@ export const API_URLS = {
     GET_COURSE_BY_ID: ''
   },
   TEACHERS: {
-    GET_TEACHER: '/users/teachers',
+    GET_TEACHER: '/teachers',
     GET_TEACHERS: '/users/teachers',
     CREATE_TEACHER: '/teachers/',
-    UPDATE_TEACHER: '/users/teachers/:userId',
+    UPDATE_TEACHER: '/users/teachers',
+    UPDATE_TEACHER_BY_COURSE: '/teachers/:userId/class-course-assignments',
     DELETE_TEACHER: '/users/teachers/:userId',
     DEACTIVATE_TEACHER: '/users/teachers/:userId',
-    REGISTER_TEACHER: '/teachers/:userId'
+    REGISTER_TEACHER: '/teachers/:userId',
+    GET_TEACHER_BY_ID: '/teachers/:userId'
   },
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: '/notifications/announcements',
@@ -73,7 +80,15 @@ export const API_URLS = {
     CREATE_COMPLAINT: '/complaints',
     GET_COMPLAINTS: '/complaints/by-user',
     GET_COMPLAINT_BY_TICKET: '/complaints/:ticket'
+  },
+  LEAVE_REQUESTS: {
+    GET_LEAVE_REQUESTS: '/leave-requests',
+    CREATE_LEAVE_REQUEST: '/leave-requests',
+    GET_LEAVE_REQUEST_BY_ID: '/leave-requests/:leaveRequestId',
+    UPDATE_LEAVE_REQUEST: '/leave-requests/:leaveRequestId',
+    DELETE_LEAVE_REQUEST: '/leave-requests/:leaveRequestId'
   }
+
 };
 
 export const API_ENDPOINTS = {
@@ -87,6 +102,7 @@ export const API_ENDPOINTS = {
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
   GET_SUBJECTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
   CREATE_SUBJECT: `${API_BASE_URL}${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
+  UPDATE_COURSES_BY_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_COURSES.replace(':classId', classId)}`,
   EDIT_CLASS: (classId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.EDIT_CLASS.replace(':classId', classId)}`,
   CREATE_ANNOUNCEMENT: `${API_BASE_URL}${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
   CREATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENT.CREATE}`,
@@ -114,6 +130,9 @@ export const API_ENDPOINTS = {
   
   CREATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.CREATE_TEACHER}`,
   GET_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER}`,
+  GET_TEACHER_BY_ID: (userId: string) => `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(':teacherId', userId)}`,
+  // GET_TEACHER_BY_ID: (userId: string) => `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(':teacherId', userId)}`,
+  UPDATE_TEACHER_BY_COURSE: (userId: string) => `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER_BY_COURSE.replace(':teacherId', userId)}`,  
   GET_TEACHERS: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHERS}`,
   REGISTER_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.REGISTER_TEACHER}`,
   UPDATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER}`,

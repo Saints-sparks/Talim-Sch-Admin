@@ -234,7 +234,10 @@ export const createClass = async (payload: Omit<Class, '_id'>) => {
 };
 
 export const editClass = async (classId: string, data: any) => {
-  const response = await fetch(`${API_ENDPOINTS.EDIT_CLASS}/${classId}`, {
+
+  const url = API_ENDPOINTS.EDIT_CLASS(classId);
+
+  const response = await fetch(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -244,8 +247,30 @@ export const editClass = async (classId: string, data: any) => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to update class');
+    try {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update class');
+    } catch (jsonError) {
+      // If we can't parse JSON, use the status text
+      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+    }
+  }
+
+  return response.json();
+};
+
+export const updateCoursesInClass = async (classId: string, courseIds: string[]) => {
+  const response = await fetch(API_ENDPOINTS.UPDATE_COURSES_BY_CLASS(classId), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify({ courseIds })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update courses in class');
   }
 
   return response.json();
@@ -259,7 +284,7 @@ export const getClass = async (classId: string) => {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
     },
   });
-  console.log("hi");
+ 
 
   console.log(response);
   

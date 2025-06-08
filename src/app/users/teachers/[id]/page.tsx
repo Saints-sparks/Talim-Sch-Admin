@@ -1,15 +1,46 @@
-// src/app/users/teachers/[id]/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FiEdit, FiSave } from 'react-icons/fi';
-import { teacherService, Teacher } from '@/app/services/teacher.service';
+import { FiEdit } from 'react-icons/fi';
+import { teacherService, TeacherById } from '@/app/services/teacher.service';
 import {Header} from '@/components/Header';
 
+interface TeacherProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  userAvatar: string;
+}
+interface User {
+  _id: string
+  email: string
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  role: string
+  schoolId: string
+  isActive: boolean
+}
+
+interface Teacher {
+  _id: string
+  userId: User
+  assignedClasses: string[]
+  assignedCourses: string[]
+  isFormTeacher: boolean
+  highestAcademicQualification: string
+  yearsOfExperience: number
+  specialization: string
+  employmentType: string
+  employmentRole: string
+  availabilityDays: string[]
+  availableTime: string
+}
+
 const TeacherProfile = () => {
-  const [editMode, setEditMode] = useState(false);
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [teacher, setTeacher] = useState<TeacherById | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const params = useParams();
@@ -21,8 +52,48 @@ const TeacherProfile = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await teacherService.getTeacherById(teacherId);
-        setTeacher(data);
+        const teachers = await teacherService.getTeacherById(teacherId);
+        console.log(teachers, "teachers");
+
+        if (!teachers) {
+          throw new Error('Teacher not found');
+        }
+
+        const teacherData: TeacherById = {
+          _id: teachers._id,
+          userId: {
+            _id: teachers.userId._id,
+            userId: teachers.userId._id,
+            email: teachers.userId.email,
+            firstName: teachers.userId.firstName,
+            lastName: teachers.userId.lastName,
+            phoneNumber: teachers.userId.phoneNumber,
+            role: teachers.userId.role,
+            schoolId: teachers.userId.schoolId,
+            isActive: teachers.userId.isActive,
+            isEmailVerified: teachers.userId.isEmailVerified || false,
+            isTwoFactorEnabled: teachers.userId.isTwoFactorEnabled || false,
+            devices: teachers.userId.devices || [],
+            id: teachers.userId._id,
+            createdAt: teachers.userId.createdAt || new Date().toISOString(),
+            updatedAt: teachers.userId.updatedAt || new Date().toISOString(),
+            __v: teachers.userId.__v || 0,
+          },
+          assignedClasses: teachers.assignedClasses,
+          assignedCourses: teachers.assignedCourses,
+          isFormTeacher: teachers.isFormTeacher,
+          highestAcademicQualification: teachers.highestAcademicQualification,
+          yearsOfExperience: teachers.yearsOfExperience,
+          specialization: teachers.specialization,
+          employmentType: teachers.employmentType,
+          employmentRole: teachers.employmentRole,
+          availabilityDays: teachers.availabilityDays,
+          availableTime: teachers.availableTime,
+          createdAt: teachers.createdAt || new Date().toISOString(),
+          updatedAt: teachers.updatedAt || new Date().toISOString(),
+          __v: teachers.__v || 0,
+        };
+        setTeacher(teacherData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch teacher');
       } finally {
@@ -34,11 +105,6 @@ const TeacherProfile = () => {
       fetchTeacher();
     }
   }, [teacherId]);
-
-  const handleSave = () => {
-    setEditMode(false);
-    // Add update logic here
-  };
 
   if (isLoading) {
     return (
@@ -85,31 +151,17 @@ const TeacherProfile = () => {
       
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-end mb-4">
-          {editMode ? (
-            <button 
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              <FiSave /> Save
-            </button>
-          ) : (
-            <button 
-              onClick={() => setEditMode(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-            >
-              <FiEdit /> Edit
-            </button>
-          )}
+          <button 
+            onClick={() => router.push(`/users/teachers/${teacherId}/edit`)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+          >
+            <FiEdit /> Edit
+          </button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
           <div className="w-full md:w-1/3">
             <div className="flex flex-col items-center">
-              <img
-                src={teacher.userId.userAvatar || '/default-avatar.png'}
-                alt={`${teacher.userId.firstName} ${teacher.userId.lastName}`}
-                className="w-32 h-32 rounded-full mb-4"
-              />
               <h2 className="text-xl font-bold text-center">
                 {teacher.userId.firstName} {teacher.userId.lastName}
               </h2>
@@ -178,6 +230,19 @@ const TeacherProfile = () => {
                     ))
                   ) : (
                     <p className="text-gray-500">No classes assigned</p>
+                  )}
+                </div>
+
+                <h3 className="text-lg font-semibold mt-6 mb-2">Assigned Courses</h3>
+                <div className="space-y-2">
+                  {teacher.assignedCourses && teacher.assignedCourses.length > 0 ? (
+                    teacher.assignedCourses.map((courseId) => (
+                      <div key={courseId} className="bg-gray-50 p-2 rounded">
+                        {courseId} {/* Ideally, fetch course name by ID */}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No courses assigned</p>
                   )}
                 </div>
               </div>

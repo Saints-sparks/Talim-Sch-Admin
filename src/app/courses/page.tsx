@@ -10,18 +10,18 @@ import {
 } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
 import { Header } from "@/components/Header";
+import { API_ENDPOINTS } from "../lib/api/config";
 
-// Types
+// Updated interface to match API response
 interface Course {
   _id: string;
-  title: string;
-  description: string;
-  courseCode: string;
-  subjectName: string;
-  teacherId: string;
+  name: string;
+  subjectId: string;
+  code: string;
   schoolId: string;
-  classId: string;
-  teacherRole: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 const CourseManagement = () => {
@@ -30,14 +30,9 @@ const CourseManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    courseCode: "",
-    subjectName: "",
-    teacherId: "",
+    name: "",
+    code: "",
     schoolId: "",
-    classId: "",
-    teacherRole: "Academic",
   });
 
   // Fetch courses
@@ -46,22 +41,36 @@ const CourseManagement = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        "http://localhost:5000/subjects-courses/courses",
+        API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-
+      
       if (!response.ok) throw new Error("Failed to fetch courses");
 
-      const data = await response.json();
-      setCourses(data);
-      toast.success("Courses loaded successfully");
+      const responseData = await response.json();
+      console.log(responseData, "response for courses");
+
+      // Check if responseData is an array
+      if (Array.isArray(responseData)) {
+        setCourses(responseData);
+        toast.success("Courses loaded successfully");
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        // If data is nested in a "data" property
+        setCourses(responseData.data);
+        toast.success("Courses loaded successfully");
+      } else {
+        console.error("Unexpected response structure:", responseData);
+        toast.error("Invalid data format received");
+        setCourses([]);
+      }
     } catch (error) {
       toast.error("Error loading courses");
       console.error(error);
+      setCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +82,7 @@ const CourseManagement = () => {
 
   // Handle form input changes
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -108,12 +115,15 @@ const CourseManagement = () => {
       if (!response.ok) throw new Error(response.statusText);
 
       const data = await response.json();
+      
+      // Get the actual course object from the response
+      const newCourse = data.data || data;
 
       if (currentCourse) {
-        setCourses(courses.map((c) => (c._id === data._id ? data : c)));
+        setCourses(courses.map((c) => (c._id === newCourse._id ? newCourse : c)));
         toast.success("Course updated successfully", { id: loadingToast });
       } else {
-        setCourses([...courses, data]);
+        setCourses([...courses, newCourse]);
         toast.success("Course created successfully", { id: loadingToast });
       }
 
@@ -159,24 +169,14 @@ const CourseManagement = () => {
     setFormData(
       course
         ? {
-            title: course.title,
-            description: course.description,
-            courseCode: course.courseCode,
-            subjectName: course.subjectName,
-            teacherId: course.teacherId,
+            name: course.name,
+            code: course.code,
             schoolId: course.schoolId,
-            classId: course.classId,
-            teacherRole: course.teacherRole,
           }
         : {
-            title: "",
-            description: "",
-            courseCode: "",
-            subjectName: "",
-            teacherId: "",
+            name: "",
+            code: "",
             schoolId: "",
-            classId: "",
-            teacherRole: "Academic",
           }
     );
     setIsModalOpen(true);
@@ -210,12 +210,15 @@ const CourseManagement = () => {
           </motion.button>
         </div>
 
+        {/* Debug Information */}
+        
+
         {/* Course Table */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <ArrowPathIcon className="h-12 w-12 text-gray-400 animate-spin" />
           </div>
-        ) : (
+        ) : courses.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -230,7 +233,7 @@ const CourseManagement = () => {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      Title
+                      Name
                     </th>
                     <th
                       scope="col"
@@ -242,19 +245,13 @@ const CourseManagement = () => {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      Subject
+                      Subject ID
                     </th>
                     <th
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      Class
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Teacher Role
+                      School ID
                     </th>
                     <th
                       scope="col"
@@ -264,46 +261,32 @@ const CourseManagement = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y text-black divide-gray-200">
                   {courses.map((course) => (
                     <tr key={course._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {course.title}
-                            </div>
-                            <div className="text-sm text-gray-500 line-clamp-1">
-                              {course.description}
+                              {course.name}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-blue-600 font-medium">
-                          {course.courseCode}
+                          {course.code}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {course.subjectName}
+                          {course.subjectId}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {course.classId}
+                          {course.schoolId}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            course.teacherRole === "Academic"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-purple-100 text-purple-800"
-                          }`}
-                        >
-                          {course.teacherRole}
-                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -333,6 +316,17 @@ const CourseManagement = () => {
               </table>
             </div>
           </motion.div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-sm p-8">
+            <p className="text-gray-500 mb-4">No courses found</p>
+            <button 
+              onClick={fetchCourses}
+              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <ArrowPathIcon className="h-5 w-5" />
+              Refresh
+            </button>
+          </div>
         )}
 
         {/* Course Modal */}
@@ -366,15 +360,15 @@ const CourseManagement = () => {
                   </div>
 
                   <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Course Title
+                          Course Name
                         </label>
                         <input
                           type="text"
-                          name="title"
-                          value={formData.title}
+                          name="name"
+                          value={formData.name}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                           required
@@ -386,128 +380,25 @@ const CourseManagement = () => {
                         </label>
                         <input
                           type="text"
-                          name="courseCode"
-                          value={formData.courseCode}
+                          name="code"
+                          value={formData.code}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                           required
                         />
                       </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Subject Name
-                      </label>
-                      <input
-                        type="text"
-                        name="subjectName"
-                        value={formData.subjectName}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Teacher
+                          School ID
                         </label>
-                        <select
-                          name="teacherId"
-                          value={formData.teacherId}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                          required
-                        >
-                          <option value="">Select Teacher</option>
-                          <option value="507f1f77bcf86cd799439031">
-                            Mr. John Adewale
-                          </option>
-                          <option value="507f1f77bcf86cd799439051">
-                            Ms. Sarah Akinola
-                          </option>
-                          <option value="507f1f77bcf86cd799439061">
-                            Dr. Peter Okonkwo
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Teacher Role
-                        </label>
-                        <select
-                          name="teacherRole"
-                          value={formData.teacherRole}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="Academic">Academic</option>
-                          <option value="NonAcademic">Non-Academic</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          School
-                        </label>
-                        <select
+                        <input
+                          type="text"
                           name="schoolId"
                           value={formData.schoolId}
                           onChange={handleChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                           required
-                        >
-                          <option value="">Select School</option>
-                          <option value="887f1f77bcf86cd799439001">
-                            Unity Secondary Sch.
-                          </option>
-                          <option value="887f1f77bcf86cd799439201">
-                            Treasuredale
-                          </option>
-                          <option value="887f1f77bcf86cd799439501">
-                            Play Learn
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Class
-                        </label>
-                        <select
-                          name="classId"
-                          value={formData.classId}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                          required
-                        >
-                          <option value="">Select Class</option>
-                          <option value="507f191e810c19729de860ea">
-                            JSS 1
-                          </option>
-                          <option value="887f1f77bcf86cd799439201">
-                            JSS 2
-                          </option>
-                          <option value="887f1f77bcf86cd799439501">
-                            JSS 3
-                          </option>
-                        </select>
+                        />
                       </div>
                     </div>
 

@@ -7,6 +7,8 @@ export interface Course {
   schoolId: string;
   description: string;
   courseCode: string;
+  code: string;
+  name: string;
   subjectName: string;
   teacherId: string;
   classId: string;
@@ -26,6 +28,7 @@ export const getCourses = async (): Promise<Course[]> => {
       'Authorization': `Bearer ${token}`
     }
   });
+  console.log(response, "response");
 
   if (!response.ok) {
     throw new Error(`Failed to fetch courses: ${response.statusText}`);
