@@ -1,59 +1,86 @@
-"use client"
+"use client";
 
-import { useState, useEffect, type FormEvent, type ChangeEvent } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, ChevronLeft, ChevronRight, Search, Bell, User } from "lucide-react"
-import { useRouter, useParams } from "next/navigation"
-import { teacherService, type TeacherById } from "@/app/services/teacher.service"
-import { toast } from "react-toastify"
-import { API_ENDPOINTS } from "@/app/lib/api/config"
-import { Loader2 } from "lucide-react"
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Bell,
+  User,
+} from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
+import {
+  teacherService,
+  type TeacherById,
+} from "@/app/services/teacher.service";
+import { toast } from "react-toastify";
+import { API_ENDPOINTS } from "@/app/lib/api/config";
+import { Loader2 } from "lucide-react";
 
 interface Course {
-  _id: string
-  name: string
-  code: string
-  description?: string
+  _id: string;
+  name: string;
+  code: string;
+  description?: string;
+}
+
+interface Class {
+  _id: string;
+  name: string;
+  gradeLevel?: string;
+  section?: string;
+  // Add other class properties as needed
 }
 
 interface FormData {
-  firstName: string
-  lastName: string
-  email: string
-  phoneNumber: string
-  specialization: string
-  employmentType: string
-  employmentRole: string
-  highestAcademicQualification: string
-  yearsOfExperience: string
-  availabilityDays: string[]
-  availableTime: string
-  isFormTeacher: boolean
-  schoolId: string
-  subjectToTeach: string
-  assignedClass: string
-  classTeacherAssignment: string
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  specialization: string;
+  employmentType: string;
+  employmentRole: string;
+  highestAcademicQualification: string;
+  yearsOfExperience: string;
+  availabilityDays: string[];
+  availableTime: string;
+  isFormTeacher: boolean;
+  schoolId: string;
+  subjectToTeach: string;
+  assignedClass: string;
+  classTeacherAssignment: string;
 }
 
 export default function TeacherProfileForm() {
-  const router = useRouter()
-  const params = useParams()
-  const teacherId = Array.isArray(params.id) ? params.id[0] : params.id || ""
+  const router = useRouter();
+  const params = useParams();
+  const teacherId = Array.isArray(params.id) ? params.id[0] : params.id || "";
 
-  const [activeTab, setActiveTab] = useState("personal-details")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmittingPersonal, setIsSubmittingPersonal] = useState(false)
-  const [isSubmittingQualifications, setIsSubmittingQualifications] = useState(false)
-  const [isSubmittingEmployment, setIsSubmittingEmployment] = useState(false)
-  const [isSubmittingAssign, setIsSubmittingAssign] = useState(false)
-  const [isSubmittingAvailability, setIsSubmittingAvailability] = useState(false)
-  const [courses, setCourses] = useState<Course[]>([])
+  const [activeTab, setActiveTab] = useState("personal-details");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingPersonal, setIsSubmittingPersonal] = useState(false);
+  const [isSubmittingQualifications, setIsSubmittingQualifications] =
+    useState(false);
+  const [isSubmittingEmployment, setIsSubmittingEmployment] = useState(false);
+  const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
+  const [isSubmittingAvailability, setIsSubmittingAvailability] =
+    useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -71,17 +98,17 @@ export default function TeacherProfileForm() {
     subjectToTeach: "",
     assignedClass: "",
     classTeacherAssignment: "",
-  })
+  });
 
   const fetchTeacherData = async () => {
     try {
       if (!teacherId) {
-        toast.error("Teacher ID is required")
-        router.push("/users/teachers")
-        return
+        toast.error("Teacher ID is required");
+        router.push("/users/teachers");
+        return;
       }
 
-      const data: TeacherById = await teacherService.getTeacherById(teacherId)
+      const data: TeacherById = await teacherService.getTeacherById(teacherId);
       setFormData({
         firstName: data.userId.firstName || "",
         lastName: data.userId.lastName || "",
@@ -97,288 +124,367 @@ export default function TeacherProfileForm() {
         isFormTeacher: data.isFormTeacher || false,
         schoolId: data.userId.schoolId || "",
         subjectToTeach: data.assignedCourses?.[0] || "",
-        assignedClass: "",
+        assignedClass: data.assignedClasses?.[0] || "",
         classTeacherAssignment: "",
-      })
+      });
     } catch (error) {
-      console.error("Error fetching teacher:", error)
-      toast.error("Failed to load teacher details")
-      router.push("/users/teachers")
-    } finally {
-      setIsLoading(false)
+      console.error("Error fetching teacher:", error);
+      toast.error("Failed to load teacher details");
+      router.push("/users/teachers");
     }
-  }
+  };
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem("accessToken")
+      const token = localStorage.getItem("accessToken");
       const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to fetch courses")
+      if (!response.ok) throw new Error("Failed to fetch courses");
 
-      const responseData = await response.json()
+      const responseData = await response.json();
       if (Array.isArray(responseData)) {
-        setCourses(responseData)
+        setCourses(responseData);
       } else if (responseData.data && Array.isArray(responseData.data)) {
-        setCourses(responseData.data)
+        setCourses(responseData.data);
       } else {
-        console.error("Unexpected response structure:", responseData)
-        toast.error("Invalid data format received")
-        setCourses([])
+        console.error("Unexpected response structure:", responseData);
+        toast.error("Invalid data format received for courses");
+        setCourses([]);
       }
     } catch (error) {
-      toast.error("Error loading courses")
-      console.error(error)
-      setCourses([])
+      toast.error("Error loading courses");
+      console.error(error);
+      setCourses([]);
     }
-  }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        "https://talimbe-v2-li38.onrender.com/classes",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch classes");
+
+      const responseData = await response.json();
+
+      // Handle different response structures
+      let classesData: Class[] = [];
+      if (Array.isArray(responseData)) {
+        classesData = responseData;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        classesData = responseData.data;
+      } else if (responseData.classes && Array.isArray(responseData.classes)) {
+        classesData = responseData.classes;
+      } else {
+        console.error(
+          "Unexpected response structure for classes:",
+          responseData
+        );
+        toast.error("Invalid data format received for classes");
+        setClasses([]);
+        return;
+      }
+
+      setClasses(classesData);
+    } catch (error) {
+      toast.error("Error loading classes");
+      console.error("Error fetching classes:", error);
+      setClasses([]);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true)
-      await Promise.all([fetchTeacherData(), fetchCourses()])
-      setIsLoading(false)
-    }
+      setIsLoading(true);
+      await Promise.all([fetchTeacherData(), fetchCourses(), fetchClasses()]);
+      setIsLoading(false);
+    };
 
-    loadData()
-  }, [teacherId, router])
+    loadData();
+  }, [teacherId, router]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target
+    const { name, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: checked,
-    }))
-  }
+    }));
+  };
 
   const handleAvailabilityDaysChange = (day: string, checked: boolean) => {
     setFormData((prev) => ({
       ...prev,
-      availabilityDays: checked ? [...prev.availabilityDays, day] : prev.availabilityDays.filter((d) => d !== day),
-    }))
-  }
+      availabilityDays: checked
+        ? [...prev.availabilityDays, day]
+        : prev.availabilityDays.filter((d) => d !== day),
+    }));
+  };
 
   // Separate submit handlers for each tab
   const handleSubmitPersonal = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsSubmittingPersonal(true)
+    e.preventDefault();
+    setIsSubmittingPersonal(true);
 
     try {
       if (!teacherId) {
-        throw new Error("Teacher ID is missing")
+        throw new Error("Teacher ID is missing");
       }
 
       // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId)
-      const userId = teacherData.userId._id
+      const teacherData = await teacherService.getTeacherById(teacherId);
+      const userId = teacherData.userId._id;
 
       const personalData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
+      };
+
+      // Use direct API call to update personal details
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `${API_ENDPOINTS.BASE_URL}/users/${userId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(personalData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update personal details");
       }
 
-      // Note: Personal details might need a separate user endpoint
-      // For now, using the general teacher update
-      await teacherService.updateTeacher(teacherId, personalData)
-      toast.success("Personal details updated successfully!")
+      toast.success("Personal details updated successfully!");
     } catch (error: any) {
-      console.error("Error updating personal details:", error)
-      toast.error(error.message || "Failed to update personal details")
+      console.error("Error updating personal details:", error);
+      toast.error(error.message || "Failed to update personal details");
     } finally {
-      setIsSubmittingPersonal(false)
+      setIsSubmittingPersonal(false);
     }
-  }
+  };
 
   const handleSubmitQualifications = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsSubmittingQualifications(true)
+    e.preventDefault();
+    setIsSubmittingQualifications(true);
 
     try {
       if (!teacherId) {
-        throw new Error("Teacher ID is missing")
+        throw new Error("Teacher ID is missing");
       }
 
       // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId)
-      const userId = teacherData.userId._id
+      const teacherData = await teacherService.getTeacherById(teacherId);
+      const userId = teacherData.userId._id;
 
-      const token = localStorage.getItem("accessToken")
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/teachers/${userId}/qualification-details`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          specialization: formData.specialization,
-          highestAcademicQualification: formData.highestAcademicQualification,
-          yearsOfExperience: Number.parseInt(formData.yearsOfExperience) || 0,
-        }),
-      })
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/qualification-details`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            specialization: formData.specialization,
+            highestAcademicQualification: formData.highestAcademicQualification,
+            yearsOfExperience: Number.parseInt(formData.yearsOfExperience) || 0,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update qualifications")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update qualifications");
       }
 
-      toast.success("Qualifications updated successfully!")
+      toast.success("Qualifications updated successfully!");
     } catch (error: any) {
-      console.error("Error updating qualifications:", error)
-      toast.error(error.message || "Failed to update qualifications")
+      console.error("Error updating qualifications:", error);
+      toast.error(error.message || "Failed to update qualifications");
     } finally {
-      setIsSubmittingQualifications(false)
+      setIsSubmittingQualifications(false);
     }
-  }
+  };
 
   const handleSubmitEmployment = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsSubmittingEmployment(true)
+    e.preventDefault();
+    setIsSubmittingEmployment(true);
 
     try {
       if (!teacherId) {
-        throw new Error("Teacher ID is missing")
+        throw new Error("Teacher ID is missing");
       }
 
       // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId)
-      const userId = teacherData.userId._id
+      const teacherData = await teacherService.getTeacherById(teacherId);
+      const userId = teacherData.userId._id;
 
-      const token = localStorage.getItem("accessToken")
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/teachers/${userId}/employment`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          employmentType: formData.employmentType,
-          employmentRole: formData.employmentRole,
-        }),
-      })
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/employment`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            employmentType: formData.employmentType,
+            employmentRole: formData.employmentRole,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update employment details")
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to update employment details"
+        );
       }
 
-      toast.success("Employment details updated successfully!")
+      toast.success("Employment details updated successfully!");
     } catch (error: any) {
-      console.error("Error updating employment details:", error)
-      toast.error(error.message || "Failed to update employment details")
+      console.error("Error updating employment details:", error);
+      toast.error(error.message || "Failed to update employment details");
     } finally {
-      setIsSubmittingEmployment(false)
+      setIsSubmittingEmployment(false);
     }
-  }
+  };
 
   const handleSubmitAssign = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsSubmittingAssign(true)
+    e.preventDefault();
+    setIsSubmittingAssign(true);
 
     try {
       if (!teacherId) {
-        throw new Error("Teacher ID is missing")
+        throw new Error("Teacher ID is missing");
       }
 
       // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId)
-      const userId = teacherData.userId._id
+      const teacherData = await teacherService.getTeacherById(teacherId);
+      const userId = teacherData.userId._id;
 
       // Use the correct endpoint structure from your controller
-      const token = localStorage.getItem("accessToken")
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/teachers/${userId}/class-course-assignments`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: userId,
-          assignedClasses: formData.assignedClass ? [formData.assignedClass] : [],
-          assignedCourses: formData.subjectToTeach ? [formData.subjectToTeach] : [],
-          isFormTeacher: formData.isFormTeacher,
-        }),
-      })
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/class-course-assignments`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            assignedClasses: formData.assignedClass
+              ? [formData.assignedClass]
+              : [],
+            assignedCourses: formData.subjectToTeach
+              ? [formData.subjectToTeach]
+              : [],
+            isFormTeacher: formData.isFormTeacher,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update assignments")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update assignments");
       }
 
-      toast.success("Class and subject assignment updated successfully!")
+      toast.success("Class and subject assignment updated successfully!");
     } catch (error: any) {
-      console.error("Error updating assignment:", error)
-      toast.error(error.message || "Failed to update class and subject assignment")
+      console.error("Error updating assignment:", error);
+      toast.error(
+        error.message || "Failed to update class and subject assignment"
+      );
     } finally {
-      setIsSubmittingAssign(false)
+      setIsSubmittingAssign(false);
     }
-  }
+  };
 
   const handleSubmitAvailability = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsSubmittingAvailability(true)
+    e.preventDefault();
+    setIsSubmittingAvailability(true);
 
     try {
       if (!teacherId) {
-        throw new Error("Teacher ID is missing")
+        throw new Error("Teacher ID is missing");
       }
 
       // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId)
-      const userId = teacherData.userId._id
+      const teacherData = await teacherService.getTeacherById(teacherId);
+      const userId = teacherData.userId._id;
 
-      const token = localStorage.getItem("accessToken")
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/teachers/${userId}/availability`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          availabilityDays: formData.availabilityDays,
-          availableTime: formData.availableTime,
-        }),
-      })
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/availability`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            availabilityDays: formData.availabilityDays,
+            availableTime: formData.availableTime,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to update availability")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update availability");
       }
 
-      toast.success("Availability updated successfully!")
+      toast.success("Availability updated successfully!");
     } catch (error: any) {
-      console.error("Error updating availability:", error)
-      toast.error(error.message || "Failed to update availability")
+      console.error("Error updating availability:", error);
+      toast.error(error.message || "Failed to update availability");
     } finally {
-      setIsSubmittingAvailability(false)
+      setIsSubmittingAvailability(false);
     }
-  }
+  };
 
   const handleRemoveUser = async () => {
     if (window.confirm("Are you sure you want to deactivate this teacher?")) {
       try {
-        await teacherService.deactivateTeacher(teacherId)
-        toast.success("Teacher deactivated successfully!")
-        router.push("/users/teachers")
+        await teacherService.deactivateTeacher(teacherId);
+        toast.success("Teacher deactivated successfully!");
+        router.push("/users/teachers");
       } catch (error: any) {
-        console.error("Error deactivating teacher:", error)
-        toast.error(error.message || "Failed to deactivate teacher")
+        console.error("Error deactivating teacher:", error);
+        toast.error(error.message || "Failed to deactivate teacher");
       }
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -387,7 +493,7 @@ export default function TeacherProfileForm() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -398,7 +504,10 @@ export default function TeacherProfileForm() {
           <div className="flex-1 max-w-md mx-8">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input placeholder="Search" className="pl-10 bg-gray-100 border-0 focus:bg-white" />
+              <Input
+                placeholder="Search"
+                className="pl-10 bg-gray-100 border-0 focus:bg-white"
+              />
             </div>
           </div>
 
@@ -433,7 +542,11 @@ export default function TeacherProfileForm() {
       {/* Main Content */}
       <div className="p-6">
         <Card>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-[50px]">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full h-[50px]"
+          >
             <TabsList className="grid w-full h-[50px] grid-cols-5 bg-gray-100 rounded-lg">
               <TabsTrigger
                 value="personal-details"
@@ -471,17 +584,24 @@ export default function TeacherProfileForm() {
               <TabsContent value="personal-details" className="mt-0">
                 <form onSubmit={handleSubmitPersonal}>
                   <div className="space-y-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Personal Details</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Personal Details
+                    </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Profile Picture Section */}
                       <div className="flex flex-col items-center space-y-4">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-gray-700 mb-4 block">Profile Picture</Label>
+                          <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                            Profile Picture
+                          </Label>
                           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <User className="w-12 h-12 text-gray-400" />
                           </div>
-                          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
                             Upload Photo
                           </Button>
                         </div>
@@ -490,7 +610,10 @@ export default function TeacherProfileForm() {
                       {/* Form Fields */}
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="firstName"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             First Name
                           </Label>
                           <Input
@@ -504,7 +627,10 @@ export default function TeacherProfileForm() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="lastName"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Last Name
                           </Label>
                           <Input
@@ -518,7 +644,10 @@ export default function TeacherProfileForm() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="phone"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Phone Number
                           </Label>
                           <Input
@@ -532,7 +661,10 @@ export default function TeacherProfileForm() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="email"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Email Address
                           </Label>
                           <Input
@@ -546,14 +678,24 @@ export default function TeacherProfileForm() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="dob" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="dob"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Date of Birth
                           </Label>
-                          <Input id="dob" placeholder="12/10/2024" className="bg-gray-50 border-gray-200" />
+                          <Input
+                            id="dob"
+                            placeholder="12/10/2024"
+                            className="bg-gray-50 border-gray-200"
+                          />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="gender"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Gender
                           </Label>
                           <Select>
@@ -602,17 +744,24 @@ export default function TeacherProfileForm() {
               <TabsContent value="qualifications" className="mt-0">
                 <form onSubmit={handleSubmitQualifications}>
                   <div className="space-y-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Qualifications & Experience</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Qualifications & Experience
+                    </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Profile Picture Section */}
                       <div className="flex flex-col items-center space-y-4">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-gray-700 mb-4 block">Profile Picture</Label>
+                          <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                            Profile Picture
+                          </Label>
                           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <User className="w-12 h-12 text-gray-400" />
                           </div>
-                          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
                             Upload Photo
                           </Button>
                         </div>
@@ -621,31 +770,44 @@ export default function TeacherProfileForm() {
                       {/* Form Fields */}
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="qualification" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="qualification"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Highest Qualification
                           </Label>
                           <Select
                             value={formData.highestAcademicQualification}
                             onValueChange={(value) =>
-                              setFormData((prev) => ({ ...prev, highestAcademicQualification: value }))
+                              setFormData((prev) => ({
+                                ...prev,
+                                highestAcademicQualification: value,
+                              }))
                             }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
                               <SelectValue placeholder="Select qualification" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
-                              <SelectItem value="Master's Degree">Master's Degree</SelectItem>
-                              <SelectItem value="PhD">PhD</SelectItem>
-                              <SelectItem value="Diploma">Diploma</SelectItem>
-                              <SelectItem value="Certificate">Certificate</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
+                              <SelectItem value="Undergraduate">
+                                Undergraduate
+                              </SelectItem>
+                              <SelectItem value="Graduate">Graduate</SelectItem>
+                              <SelectItem value="Postgraduate">
+                                Postgraduate
+                              </SelectItem>
+                              <SelectItem value="Doctorate">
+                                Doctorate
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="experience" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="experience"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Years of Teaching Experience
                           </Label>
                           <Input
@@ -660,7 +822,10 @@ export default function TeacherProfileForm() {
                         </div>
 
                         <div className="md:col-span-2 space-y-2">
-                          <Label htmlFor="specialization" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="specialization"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Specialization/Subject Expertise
                           </Label>
                           <Input
@@ -707,17 +872,24 @@ export default function TeacherProfileForm() {
               <TabsContent value="employment" className="mt-0">
                 <form onSubmit={handleSubmitEmployment}>
                   <div className="space-y-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Employment Details</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Employment Details
+                    </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Profile Picture Section */}
                       <div className="flex flex-col items-center space-y-4">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-gray-700 mb-4 block">Profile Picture</Label>
+                          <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                            Profile Picture
+                          </Label>
                           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <User className="w-12 h-12 text-gray-400" />
                           </div>
-                          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
                             Upload Photo
                           </Button>
                         </div>
@@ -726,41 +898,61 @@ export default function TeacherProfileForm() {
                       {/* Form Fields */}
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="employmentType" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="employmentType"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Employment Type
                           </Label>
                           <Select
                             value={formData.employmentType}
-                            onValueChange={(value) => setFormData((prev) => ({ ...prev, employmentType: value }))}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                employmentType: value,
+                              }))
+                            }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Full-time">Full-time</SelectItem>
-                              <SelectItem value="Part-time">Part-time</SelectItem>
-                              <SelectItem value="Contract">Contract</SelectItem>
-                              <SelectItem value="Substitute">Substitute</SelectItem>
+                              <SelectItem value="Fulltime">
+                                Full-time
+                              </SelectItem>
+                              <SelectItem value="Parttime">
+                                Part-time
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="classroomRole" className="text-sm font-medium text-gray-700">
-                            Classroom Role
+                          <Label
+                            htmlFor="classroomRole"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Employment Role
                           </Label>
                           <Select
                             value={formData.employmentRole}
-                            onValueChange={(value) => setFormData((prev) => ({ ...prev, employmentRole: value }))}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                employmentRole: value,
+                              }))
+                            }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
                               <SelectValue placeholder="Select role" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Head Teacher">Head Teacher</SelectItem>
-                              <SelectItem value="Subject Teacher">Subject Teacher</SelectItem>
-                              <SelectItem value="Form Teacher">Form Teacher</SelectItem>
-                              <SelectItem value="Assistant Teacher">Assistant Teacher</SelectItem>
+                              <SelectItem value="Academic">
+                                Aacademic Staff
+                              </SelectItem>
+                              <SelectItem value="NonAcademic">
+                                Non-Academic Staff
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -799,17 +991,24 @@ export default function TeacherProfileForm() {
               <TabsContent value="assign" className="mt-0">
                 <form onSubmit={handleSubmitAssign}>
                   <div className="space-y-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Assign to Class and Subject</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Assign to Class and Subject
+                    </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Profile Picture Section */}
                       <div className="flex flex-col items-center space-y-4">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-gray-700 mb-4 block">Profile Picture</Label>
+                          <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                            Profile Picture
+                          </Label>
                           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <User className="w-12 h-12 text-gray-400" />
                           </div>
-                          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
                             Upload Photo
                           </Button>
                         </div>
@@ -818,67 +1017,135 @@ export default function TeacherProfileForm() {
                       {/* Form Fields */}
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="subjectsToTeach" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="subjectsToTeach"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Subjects to Teach
                           </Label>
                           <Select
                             value={formData.subjectToTeach}
-                            onValueChange={(value) => setFormData((prev) => ({ ...prev, subjectToTeach: value }))}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                subjectToTeach: value,
+                              }))
+                            }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
-                              <SelectValue placeholder="Select role" />
+                              <SelectValue placeholder="Select subject" />
                             </SelectTrigger>
                             <SelectContent>
-                              {courses.map((course) => (
-                                <SelectItem key={course._id} value={course._id}>
-                                  {course.code} - {course.name}
+                              {courses.length > 0 ? (
+                                courses.map((course) => (
+                                  <SelectItem
+                                    key={course._id}
+                                    value={course._id}
+                                  >
+                                    {course.code} - {course.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="" disabled>
+                                  No subjects available
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="assignTeacherToClass" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="assignTeacherToClass"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Assign Teacher to Class
                           </Label>
                           <Select
                             value={formData.assignedClass}
-                            onValueChange={(value) => setFormData((prev) => ({ ...prev, assignedClass: value }))}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                assignedClass: value,
+                              }))
+                            }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
-                              <SelectValue placeholder="Select role" />
+                              <SelectValue placeholder="Select class" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="class-1a">Class 1A</SelectItem>
-                              <SelectItem value="class-1b">Class 1B</SelectItem>
-                              <SelectItem value="class-2a">Class 2A</SelectItem>
-                              <SelectItem value="class-2b">Class 2B</SelectItem>
-                              <SelectItem value="class-3a">Class 3A</SelectItem>
+                              {classes.length > 0 ? (
+                                classes.map((classItem) => (
+                                  <SelectItem
+                                    key={classItem._id}
+                                    value={classItem._id}
+                                  >
+                                    {classItem.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="" disabled>
+                                  No classes available
+                                </SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="md:col-span-2 space-y-2">
-                          <Label htmlFor="classTeacherAssignment" className="text-sm font-medium text-gray-700">
+                          <Label
+                            htmlFor="classTeacherAssignment"
+                            className="text-sm font-medium text-gray-700"
+                          >
                             Class Teacher Assignment
                           </Label>
                           <Select
                             value={formData.classTeacherAssignment}
                             onValueChange={(value) =>
-                              setFormData((prev) => ({ ...prev, classTeacherAssignment: value }))
+                              setFormData((prev) => ({
+                                ...prev,
+                                classTeacherAssignment: value,
+                              }))
                             }
                           >
                             <SelectTrigger className="bg-gray-50 border-gray-200">
-                              <SelectValue placeholder="Select role" />
+                              <SelectValue placeholder="Select assignment type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="primary-class-teacher">Primary Class Teacher</SelectItem>
-                              <SelectItem value="secondary-class-teacher">Secondary Class Teacher</SelectItem>
-                              <SelectItem value="assistant-class-teacher">Assistant Class Teacher</SelectItem>
-                              <SelectItem value="no-assignment">No Class Teacher Assignment</SelectItem>
+                              <SelectItem value="primary-class-teacher">
+                                Primary Class Teacher
+                              </SelectItem>
+                              <SelectItem value="secondary-class-teacher">
+                                Secondary Class Teacher
+                              </SelectItem>
+                              <SelectItem value="assistant-class-teacher">
+                                Assistant Class Teacher
+                              </SelectItem>
+                              <SelectItem value="no-assignment">
+                                No Class Teacher Assignment
+                              </SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+
+                        {/* Add checkbox for Form Teacher */}
+                        <div className="md:col-span-2 space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="isFormTeacher"
+                              name="isFormTeacher"
+                              checked={formData.isFormTeacher}
+                              onChange={handleCheckboxChange}
+                              className="rounded border-gray-300"
+                            />
+                            <Label
+                              htmlFor="isFormTeacher"
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Make this teacher a Form Teacher
+                            </Label>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -915,17 +1182,24 @@ export default function TeacherProfileForm() {
               <TabsContent value="availability" className="mt-0">
                 <form onSubmit={handleSubmitAvailability}>
                   <div className="space-y-8">
-                    <h2 className="text-xl font-semibold text-gray-900">Teacher Availability</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Teacher Availability
+                    </h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Profile Picture Section */}
                       <div className="flex flex-col items-center space-y-4">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-gray-700 mb-4 block">Profile Picture</Label>
+                          <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                            Profile Picture
+                          </Label>
                           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <User className="w-12 h-12 text-gray-400" />
                           </div>
-                          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                          <Button
+                            variant="outline"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
                             Upload Photo
                           </Button>
                         </div>
@@ -934,7 +1208,9 @@ export default function TeacherProfileForm() {
                       {/* Form Fields */}
                       <div className="lg:col-span-2 space-y-6">
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">Available Days</Label>
+                          <Label className="text-sm font-medium text-gray-700">
+                            Available Days
+                          </Label>
                           <Select>
                             <SelectTrigger className="bg-gray-50 border-gray-200">
                               <SelectValue placeholder="Select Day(s)" />
@@ -942,20 +1218,32 @@ export default function TeacherProfileForm() {
                             <SelectContent>
                               <SelectItem value="monday">Monday</SelectItem>
                               <SelectItem value="tuesday">Tuesday</SelectItem>
-                              <SelectItem value="wednesday">Wednesday</SelectItem>
+                              <SelectItem value="wednesday">
+                                Wednesday
+                              </SelectItem>
                               <SelectItem value="thursday">Thursday</SelectItem>
                               <SelectItem value="friday">Friday</SelectItem>
                               <SelectItem value="saturday">Saturday</SelectItem>
                               <SelectItem value="sunday">Sunday</SelectItem>
-                              <SelectItem value="weekdays">Weekdays (Mon-Fri)</SelectItem>
-                              <SelectItem value="weekends">Weekends (Sat-Sun)</SelectItem>
+                              <SelectItem value="weekdays">
+                                Weekdays (Mon-Fri)
+                              </SelectItem>
+                              <SelectItem value="weekends">
+                                Weekends (Sat-Sun)
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="availableTime" className="text-sm font-medium text-gray-700">
-                            Available Time <span className="text-gray-500 font-normal">(Optional)</span>
+                          <Label
+                            htmlFor="availableTime"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Available Time{" "}
+                            <span className="text-gray-500 font-normal">
+                              (Optional)
+                            </span>
                           </Label>
                           <Input
                             id="availableTime"
@@ -1003,5 +1291,5 @@ export default function TeacherProfileForm() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

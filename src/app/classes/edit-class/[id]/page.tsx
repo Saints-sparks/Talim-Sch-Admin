@@ -143,7 +143,7 @@ const EditClass: React.FC = () => {
 
       if (response) {
         toast.success("Class updated successfully!");
-        router.push(`/classes/view-class/${classId}`);
+        router.push(`/classes/${classId}`);
       } else {
         throw new Error("Failed to update class");
       }

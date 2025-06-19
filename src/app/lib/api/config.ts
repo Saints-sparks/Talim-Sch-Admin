@@ -1,7 +1,8 @@
 import exp from "constants";
+import { Geist_Mono } from "next/font/google";
 
-// export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
-export const API_BASE_URL = "http://localhost:5000"
+export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+// export const API_BASE_URL = "http://localhost:5000"
 
 export const API_URLS = {
   AUTH: {
@@ -82,11 +83,9 @@ export const API_URLS = {
     GET_COMPLAINT_BY_TICKET: '/complaints/:ticket'
   },
   LEAVE_REQUESTS: {
-    GET_LEAVE_REQUESTS: '/leave-requests',
-    CREATE_LEAVE_REQUEST: '/leave-requests',
-    GET_LEAVE_REQUEST_BY_ID: '/leave-requests/:leaveRequestId',
-    UPDATE_LEAVE_REQUEST: '/leave-requests/:leaveRequestId',
-    DELETE_LEAVE_REQUEST: '/leave-requests/:leaveRequestId'
+    GET_LEAVE_REQUESTS: '/leave-requests/school-admin/all',
+    GET_LEAVE_REQUEST_BY_ID: '/leave-requests/school-admin/:requestId',
+  
   }
 
 };
@@ -149,4 +148,6 @@ export const API_ENDPOINTS = {
   GET_COURSES_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
   GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
   GET_STUDENTS_BY_CLASS_ID: (classId: string) => `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(':classId', classId)}`,
+
+  GET_LEAVE_REQUESTS: `${API_BASE_URL}${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
 } as const;

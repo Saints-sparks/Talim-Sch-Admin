@@ -4,10 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { FiEdit, FiArrowLeft, FiBook } from "react-icons/fi";
 import { useRouter, useParams } from "next/navigation";
- // adjust the path if needed
+import { getClass } from "../../services/student.service"; // adjust the path if needed
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { getClass } from "@/app/services/student.service";
 
 interface ClassDetails {
   _id: string;

@@ -170,12 +170,12 @@ export default function Classes() {
                     {item.classDescription}
                   </td>
                   <td className="py-2 px-4">
-                    <a
-                      href={`/classes/view-class/${item._id}`} // Replace with your actual URL
+                    <button
+                      onClick={() => router.push(`/classes/${item._id}`)} // Replace with your actual URL
                       className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
                     >
                       View
-                    </a>
+                    </button>
 
                     <button
                       onClick={() =>

@@ -62,7 +62,7 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
     { path: "/leave-requests", icon: <Ticket className="w-5 h-5" />, label: "Request leave" },
     { path: "/complaints", icon: <AlertCircle className="w-5 h-5" />, label: "Complaints" },
     { path: "/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
-    {path: "/curicula", icon: <BookOpen className="w-5 h-5" />, label: "Curriculum" },
+    {path: "/curriculum", icon: <BookOpen className="w-5 h-5" />, label: "Curriculum" },
   ]
 
   return (

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../lib/api/config';
+import { API_BASE_URL, API_ENDPOINTS } from '../lib/api/config';
 import { getLocalStorageItem } from '../lib/localStorage';
 import { toast } from 'react-toastify';
 
@@ -75,16 +75,15 @@ export const createLeaveRequest = async (leave: LeaveRequest): Promise<LeaveResp
 export const getLeaveRequests = async (page: number = 1, limit: number = 10): Promise<LeaveRequestsResponse> => {
   const token = localStorage.getItem('accessToken');
 
-  if (!token) {
-    throw new Error('User not authenticated');
-  }
+  console.log(`Fetching leave requests with token: ${token}`);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/leave/requests?page=${page}&limit=${limit}`, {
+    const response = await fetch(API_ENDPOINTS.GET_LEAVE_REQUESTS, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        
       }
     });
 
@@ -109,7 +108,7 @@ export const getLeaveRequestById = async (leaveId: string): Promise<LeaveRespons
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/leave/requests/${leaveId}`, {
+    const response = await fetch(`${API_BASE_URL}/leave-requests/${leaveId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +137,7 @@ export const updateLeaveRequestStatus = async (leaveId: string, status: string):
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/leave/requests/${leaveId}/status`, {
+    const response = await fetch(`${API_BASE_URL}/leave-requests/${leaveId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
