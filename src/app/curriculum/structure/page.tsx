@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Header } from "@/components/Header";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
@@ -69,7 +69,20 @@ interface NewCourse {
   subjectId: string;
 }
 
-const CurriculumStructurePage: React.FC = () => {
+// Loading component for Suspense fallback
+const LoadingSpinner = () => (
+  <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex-shrink-0">
+      <Header />
+    </div>
+    <div className="flex-1 flex justify-center items-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
+    </div>
+  </div>
+);
+
+// Main component that uses useSearchParams
+const CurriculumStructureMain: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialAction = searchParams?.get('action');
@@ -376,16 +389,7 @@ const CurriculumStructurePage: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
-        <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -780,6 +784,15 @@ const CurriculumStructurePage: React.FC = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Main wrapper component with Suspense
+const CurriculumStructurePage: React.FC = () => {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <CurriculumStructureMain />
+    </Suspense>
   );
 };
 
