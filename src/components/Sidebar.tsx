@@ -29,7 +29,7 @@ type SidebarProps = React.ComponentProps<"nav"> & {
 
 export default function Sidebar({className, ...rest}: SidebarProps) {
   const pathname = usePathname()
-  const [expandedUsers, setExpandedUsers] = useState(true)
+  const [expandedUsers, setExpandedUsers] = useState(false)
 
   // Define menu items
   const menuItems = [
@@ -59,9 +59,10 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
       label: "Messages",
       badge: 2,
     },
-    { path: "/request-leave", icon: <Ticket className="w-5 h-5" />, label: "Request leave" },
+    { path: "/leave-requests", icon: <Ticket className="w-5 h-5" />, label: "Request leave" },
     { path: "/complaints", icon: <AlertCircle className="w-5 h-5" />, label: "Complaints" },
     { path: "/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },
+    {path: "/curriculum", icon: <BookOpen className="w-5 h-5" />, label: "Curriculum" },
   ]
 
   return (

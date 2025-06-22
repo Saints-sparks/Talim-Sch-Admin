@@ -37,6 +37,10 @@ export interface Teacher {
   userId: User;
   firstName: string;
   lastName: string;
+  phoneNumber: string;
+  email: string;
+  role: string;
+  
   highestAcademicQualification: string;
   yearsOfExperience: number;
   specialization: string;
@@ -51,7 +55,44 @@ export interface Teacher {
   createdAt?: Date;
   updatedAt?: Date;
   classIds?: string[];
+  __v?: number; // Added __v property to match TeacherById type
 }
+
+export interface TeacherById {
+  _id: string;
+  userId: {
+    _id: string;
+    userId: string;
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    isActive: boolean;
+    isEmailVerified: boolean;
+    schoolId: string;
+    isTwoFactorEnabled: boolean;
+    devices: any[]; // Could be more specific if device structure is known
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+    id: string;
+  };
+  assignedClasses: any[]; // Could be more specific if class structure is known
+  assignedCourses: any[]; // Could be more specific if course structure is known
+  isFormTeacher: boolean;
+  highestAcademicQualification: string;
+  yearsOfExperience: number;
+  specialization: string;
+  employmentType: string;
+  employmentRole: string;
+  availabilityDays: string[];
+  availableTime: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 
 interface GetTeachersResponse {
   data: Teacher[];
@@ -172,20 +213,82 @@ export const teacherService = {
     }
   },
 
-  async getTeacherById(teacherId: string): Promise<Teacher> {
+  async updateTeacherByCourse(
+    teacherId: string, 
+    assignedCourses: string[]
+  ): Promise<TeacherById> {
+    try {
+      // Construct the correct endpoint URL
+      const url = `${API_ENDPOINTS.BASE_URL}/teachers/${teacherId}/class-course-assignments`;
+      
+      const requestBody = {
+        assignedCourses: assignedCourses,
+        // Include other fields if needed
+        assignedClasses: [], // Add existing classes if you don't want to remove them
+        isFormTeacher: false // or get this from current teacher data
+      };
+
+      const response = await fetch(url, {
+        method: 'PATCH', // Use PATCH for partial updates
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        // Handle different error statuses
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please login again.');
+        }
+        if (response.status === 404) {
+          throw new Error('Teacher not found');
+        }
+        
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to update teacher courses (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log('Teacher courses updated:', data);
+
+      return data;
+    } catch (error) {
+      console.error('Error updating teacher courses:', error);
+      throw error;
+    }
+  },
+
+  async getTeacherById(teacherId: string): Promise<TeacherById> {
+    try {
     const response = await fetch(`${API_ENDPOINTS.GET_TEACHER}/${teacherId}`, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      }
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch teacher");
+      // Handle 404 specifically
+      if (response.status === 404) {
+        throw new Error('Teacher not found');
+      }
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch student details');
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('Teacher data:', data);
+
+    return data;
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+      throw error;
+    }
   },
+
 
   async updateTeacher(
     teacherId: string,

@@ -44,11 +44,7 @@ export const getSchoolId = (): string | null => {
     console.log('Original schoolId:', user.schoolId);
 
     // Extract the _id directly using a regular expression
-    const match = user.schoolId.match(/_id: new ObjectId\('([^']+)'\)/);
-    if (!match) {
-      console.error('Failed to extract schoolId: No match found');
-      return null;
-    }
+    const match = user.schoolId;
 
     const schoolId = match[1];
     console.log('Extracted schoolId:', schoolId);
