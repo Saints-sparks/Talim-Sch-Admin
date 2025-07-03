@@ -143,13 +143,7 @@ const StudentPage: React.FC = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white w-96 rounded-lg shadow-lg p-6">
-            <AddStudentModal onClose={toggleModal} />
-          </div>
-        </div>
-      )}
+      {isModalOpen && <AddStudentModal onClose={toggleModal} />}
 
       {/* Cards Section */}
       {isLoading ? (

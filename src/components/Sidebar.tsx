@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import {
   BookOpen,
   Calendar,
@@ -70,8 +71,14 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
       {/* Logo */}
       <div className="p-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-900 rounded flex items-center justify-center text-white font-bold">T</div>
-          <span className="text-lg font-medium">Talim</span>
+          <Image
+            src="/img/treelogo.svg"
+            alt="Talim Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8"
+          />
+          <span className="text-lg font-medium text-gray-900">Talim</span>
         </div>
       </div>
 
@@ -81,7 +88,7 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
           <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
             <CircleUser className="w-5 h-5 text-blue-900" />
           </div>
-          <span className="text-sm text-gray-700">Unity Secondary School</span>
+          <span className="text-sm text-gray-800 font-medium">Unity Secondary School</span>
         </div>
       </div>
 
@@ -89,26 +96,25 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
       <div className="flex-1 overflow-y-auto py-2 space-y-4">
         {menuItems.map((item) => (
           <div key={item.path}>
-            {item.hasDropdown ? (
-              <div
-                className={cn(
-                  "flex items-center gap-3 mx-2 px-3 py-2 rounded-md cursor-pointer",
-                  pathname === item.path || (item.hasDropdown && item.expanded)
-                    ? "bg-blue-50 text-blue-900"
-                    : "text-[#929292] hover:bg-gray-50",
-                )}
-                onClick={item.onClick}
-              >
-                {item.icon}
-                <span className="text-[16px]">{item.label}</span>
-                <ChevronDown className={cn("ml-auto w-4 h-4", item.expanded ? "transform rotate-180" : "")} />
-              </div>
+            {item.hasDropdown ? (                <div
+                  className={cn(
+                    "flex items-center gap-3 mx-2 px-3 py-2 rounded-md cursor-pointer",
+                    pathname === item.path || (item.hasDropdown && item.expanded)
+                      ? "bg-blue-50 text-blue-900 font-medium"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  )}
+                  onClick={item.onClick}
+                >
+                  {item.icon}
+                  <span className="text-[16px]">{item.label}</span>
+                  <ChevronDown className={cn("ml-auto w-4 h-4", item.expanded ? "transform rotate-180" : "")} />
+                </div>
             ) : (
               <Link href={item.path}>
                 <div
                   className={cn(
                     "flex items-center gap-3 mx-2 px-3 py-2 rounded-md cursor-pointer",
-                    pathname === item.path ? "bg-blue-50 text-blue-900" : "text-[#929292] hover:bg-gray-50",
+                    pathname === item.path ? "bg-blue-50 text-blue-900 font-medium" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
                   )}
                 >
                   {item.icon}
@@ -130,7 +136,7 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
                     <div
                       className={cn(
                         "text-[16px] font-[500] py-1 px-2 rounded-md mb-3",
-                        pathname === subItem.path ? "text-blue-900 font-medium" : "text-gray-500 hover:text-blue-900",
+                        pathname === subItem.path ? "text-blue-900 font-medium" : "text-gray-600 hover:text-blue-900",
                       )}
                     >
                       {subItem.label}
@@ -145,7 +151,7 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
 
       {/* Logout */}
       <div className="p-4 border-t">
-        <div className="flex items-center gap-3 px-3 py-2 text-gray-500 hover:bg-gray-50 rounded-md cursor-pointer">
+        <div className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md cursor-pointer">
           <LogOut className="w-5 h-5" />
           <span className="text-sm">Logout Account</span>
         </div>

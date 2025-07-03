@@ -166,6 +166,8 @@ const getLocalStorageItem = (key: string) => {
 };
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
+  console.log('Registering student with payload:', payload);
+  
   const response = await fetch(API_ENDPOINTS.REGISTER, {
     method: 'POST',
     headers: {
@@ -175,13 +177,19 @@ export const registerStudent = async (payload: RegisterStudentPayload) => {
   });
 
   if (!response.ok) {
-    throw new Error('Registration failed');
+    const errorData = await response.json();
+    console.error('Registration failed:', errorData);
+    throw new Error(errorData.message || `Registration failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('Registration successful:', result);
+  return result;
 };
 
 export const createStudentProfile = async (payload: CreateStudentProfilePayload) => {
+  console.log('Creating student profile with payload:', payload);
+  
   const response = await fetch(API_ENDPOINTS.CREATE_STUDENT, {
     method: 'POST',
     headers: {
@@ -193,10 +201,14 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
   });
 
   if (!response.ok) {
-    throw new Error('Profile creation failed');
+    const errorData = await response.json();
+    console.error('Profile creation failed:', errorData);
+    throw new Error(errorData.message || `Profile creation failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('Profile creation successful:', result);
+  return result;
 };
 
 export const getClasses = async (): Promise<Class[]> => {

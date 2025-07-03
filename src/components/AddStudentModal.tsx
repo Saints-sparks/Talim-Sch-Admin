@@ -32,13 +32,16 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
     const fetchClasses = async () => {
       const schoolId = getSchoolId();
+      console.log('Current user data:', localStorage.getItem('user'));
+      console.log('Extracted school ID:', schoolId);
+      
       if (!schoolId) {
         toast.error('School ID is required');
         return;
       }
   
       try {
-        const classes = await getClasses(); // Ensure this function accepts schoolId
+        const classes = await getClasses();
         setClasses(classes);
       } catch (error) {
         console.error('Error fetching classes:', error);
@@ -54,9 +57,25 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     try {
       const schoolId = getSchoolId();
       
-      if (!schoolId) throw new Error('School ID not found');
+      if (!schoolId) {
+        toast.error('School ID not found. Please log in again.');
+        throw new Error('School ID not found');
+      }
+
+      // Validate schoolId format (should be a MongoDB ObjectId)
+      if (!/^[0-9a-fA-F]{24}$/.test(schoolId)) {
+        console.error('Invalid schoolId format:', schoolId);
+        toast.error('Invalid school ID format. Please contact support.');
+        throw new Error('Invalid school ID format');
+      }
 
       if (currentStep === 0) {
+        // Validate required fields
+        if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+          toast.error('Please fill in all required fields');
+          return;
+        }
+
         const registrationData = {
           email: formData.email,
           password: formData.password,
@@ -66,24 +85,41 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber
         };
+
+        console.log('Sending registration data:', registrationData);
         const { userId } = await registerStudent(registrationData);
         setUserId(userId);
         setCurrentStep(1);
+        toast.success('Student registered successfully!');
       } else {
-        if (!userId) throw new Error('User ID not found');
+        if (!userId) {
+          toast.error('User ID not found. Please try again.');
+          throw new Error('User ID not found');
+        }
+
+        // Validate required fields for profile creation
+        if (!formData.classId || !formData.gradeLevel || !formData.parentContact.fullName) {
+          toast.error('Please fill in all required fields');
+          return;
+        }
+
         const profileData = {
-          userId: userId!, // Ensure userId is properly passed to createStudentProfile
+          userId: userId,
           classId: formData.classId,
           gradeLevel: formData.gradeLevel,
           parentContact: formData.parentContact
         };
+
+        console.log('Sending profile data:', profileData);
         await createStudentProfile(profileData);
+        toast.success('Student profile created successfully!');
         onClose();
-        router.push('/students');
+        router.push('/users/students');
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('An error occurred. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

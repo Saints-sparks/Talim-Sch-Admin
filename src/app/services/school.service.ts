@@ -43,12 +43,17 @@ export const getSchoolId = (): string | null => {
     // Log the original schoolId
     console.log('Original schoolId:', user.schoolId);
 
-    // Extract the _id directly using a regular expression
-    const match = user.schoolId;
-
-    const schoolId = match[1];
-    console.log('Extracted schoolId:', schoolId);
-    return schoolId;
+    // Check if schoolId is a string (direct ID) or object
+    if (typeof user.schoolId === 'string') {
+      return user.schoolId;
+    } else if (user.schoolId && typeof user.schoolId === 'object' && user.schoolId._id) {
+      return user.schoolId._id;
+    } else if (user.schoolId && typeof user.schoolId === 'object' && user.schoolId.id) {
+      return user.schoolId.id;
+    }
+    
+    console.error('Invalid schoolId format:', user.schoolId);
+    return null;
   } catch (error) {
     console.error('Failed to extract schoolId:', error);
     return null;

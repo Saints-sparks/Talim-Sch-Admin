@@ -158,7 +158,7 @@ export default function ForgotPassword() {
   const renderEmailStep = () => (
     <form className="flex flex-col space-y-4 sm:space-y-6" onSubmit={handleEmailSubmit}>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
           Email Address
         </label>
         <input
@@ -168,7 +168,7 @@ export default function ForgotPassword() {
           placeholder="Enter your email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full px-3 py-2 rounded-lg shadow-sm text-gray-800 transition-all duration-200 hover:ring-2 hover:ring-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none border border-gray-300"
+          className="mt-1 w-full px-4 py-3 rounded-lg shadow-sm text-gray-900 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none border border-gray-400 bg-white"
           required
         />
       </div>
@@ -186,7 +186,7 @@ export default function ForgotPassword() {
   const renderOtpStep = () => (
     <form className="flex flex-col space-y-4 sm:space-y-6" onSubmit={handleOtpSubmit}>
       <div>
-        <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 mb-2">
           Enter OTP
         </label>
         <input
@@ -196,11 +196,11 @@ export default function ForgotPassword() {
           placeholder="Enter 6-digit OTP"
           value={otp}
           onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          className="mt-1 w-full px-3 py-2 rounded-lg shadow-sm text-gray-800 transition-all duration-200 hover:ring-2 hover:ring-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none border border-gray-300 text-center text-2xl tracking-widest"
+          className="mt-1 w-full px-4 py-3 rounded-lg shadow-sm text-gray-900 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none border border-gray-400 bg-white text-center text-2xl tracking-widest"
           maxLength={6}
           required
         />
-        <p className="mt-2 text-sm text-gray-600 text-center">
+        <p className="mt-2 text-sm text-gray-700 text-center">
           We've sent a 6-digit verification code to {email}
         </p>
       </div>
@@ -230,7 +230,7 @@ export default function ForgotPassword() {
   const renderPasswordStep = () => (
     <form className="flex flex-col space-y-4 sm:space-y-6" onSubmit={handlePasswordSubmit}>
       <div className="relative">
-        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-900 mb-2">
           New Password
         </label>
         <input
@@ -240,13 +240,13 @@ export default function ForgotPassword() {
           placeholder="Enter new password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          className="mt-1 w-full px-3 py-2 rounded-lg shadow-sm text-gray-800 transition-all duration-200 hover:ring-2 hover:ring-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none border border-gray-300"
+          className="mt-1 w-full px-4 py-3 rounded-lg shadow-sm text-gray-900 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none border border-gray-400 bg-white pr-12"
           required
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-2/3 transform -translate-y-1/2 text-gray-600 focus:outline-none"
+          className="absolute right-3 top-10 text-gray-600 focus:outline-none"
         >
           {showPassword ? (
             <EyeSlashIcon className="h-5 w-5" />
@@ -257,7 +257,7 @@ export default function ForgotPassword() {
       </div>
 
       <div className="relative">
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-900 mb-2">
           Confirm New Password
         </label>
         <input
@@ -267,13 +267,13 @@ export default function ForgotPassword() {
           placeholder="Confirm new password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="mt-1 w-full px-3 py-2 rounded-lg shadow-sm text-gray-800 transition-all duration-200 hover:ring-2 hover:ring-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none border border-gray-300"
+          className="mt-1 w-full px-4 py-3 rounded-lg shadow-sm text-gray-900 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:ring-2 focus:ring-blue-500 focus:outline-none border border-gray-400 bg-white pr-12"
           required
         />
         <button
           type="button"
           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-          className="absolute right-3 top-2/3 transform -translate-y-1/2 text-gray-600 focus:outline-none"
+          className="absolute right-3 top-10 text-gray-600 focus:outline-none"
         >
           {showConfirmPassword ? (
             <EyeSlashIcon className="h-5 w-5" />
@@ -342,16 +342,17 @@ export default function ForgotPassword() {
               <Image
                 src={treelogo}
                 alt="Talim Logo"
-                width={100}
-                height={100}
+                width={80}
+                height={80}
                 className="h-16 w-16 sm:h-20 sm:w-20"
+                priority
               />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
               {getStepTitle()}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mb-6 text-center">
+            <p className="text-xs sm:text-sm text-gray-700 mb-6 text-center">
               {getStepDescription()}
             </p>
 
@@ -371,7 +372,7 @@ export default function ForgotPassword() {
 
             {/* Sign In Link */}
             <div className="text-center mt-6">
-              <span className="text-sm text-gray-600">Remember your password? </span>
+              <span className="text-sm text-gray-700">Remember your password? </span>
               <a
                 href="/"
                 className="text-sm text-[#154473] hover:underline font-medium"
