@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import {Header} from '@/components/Header';
 import AddStudentModal from '@/components/AddStudentModal';
 import { FaSearch } from 'react-icons/fa';
+import StudentsSkeleton from '@/components/StudentsSkeleton';
 
 const StudentPage: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -147,22 +148,43 @@ const StudentPage: React.FC = () => {
 
       {/* Cards Section */}
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </div>
+        <StudentsSkeleton />
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={fetchStudents}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Try Again
-          </button>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Students</div>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchStudents}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       ) : students.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-600">No students found</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+            <div className="text-gray-400 text-6xl mb-4">📚</div>
+            <div className="text-gray-600 text-lg font-semibold mb-2">No Students Found</div>
+            <p className="text-gray-500 mb-4">
+              {searchTerm || selectedClass 
+                ? 'No students match your current search or filter criteria.'
+                : 'There are no students in the system yet.'}
+            </p>
+            {(searchTerm || selectedClass) && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedClass(null);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -193,10 +215,10 @@ const StudentPage: React.FC = () => {
                 </button>
                 {menuOpen === student._id && (
                   <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg">
-                    <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 text-gray-500">
+                    <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
                       Edit
                     </button>
-                    <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 text-gray-500">
+                    <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100">
                       Delete
                     </button>
                   </div>

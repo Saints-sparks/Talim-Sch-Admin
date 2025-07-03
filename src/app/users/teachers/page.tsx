@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/Header"
 import AddTeacherModal from "@/components/AddTeacherModal"
+import TeachersSkeleton from "@/components/TeachersSkeleton"
 import { FaSearch } from "react-icons/fa"
 import { Teacher, teacherService } from "@/app/services/teacher.service"
 import { getClasses, type Class } from "@/app/services/student.service"
@@ -123,7 +124,7 @@ const TeachersPage: React.FC = () => {
               />
             </div>
 
-            <select
+            {/* <select
               className="p-2 border border-gray-300 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#154473] w-full md:w-48"
               value={selectedClass || ""}
               onChange={(e) => {
@@ -137,7 +138,7 @@ const TeachersPage: React.FC = () => {
                   {cls.name}
                 </option>
               ))}
-            </select>
+            </select> */}
           </div>
         </div>
 
@@ -150,9 +151,7 @@ const TeachersPage: React.FC = () => {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#154473]"></div>
-          </div>
+          <TeachersSkeleton />
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-red-600">{error}</p>

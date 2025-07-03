@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { useRouter } from "next/navigation";
 import { getLeaveRequests, updateLeaveRequestStatus } from "../services/leave.service";
 import { toast } from 'react-toastify';
+import LeaveRequestSkeleton from "@/components/LeaveRequestSkeleton";
 
 // Updated interface to match your actual API response
 interface ApiLeaveRequest {
@@ -20,7 +21,6 @@ interface ApiLeaveRequest {
   studentProfile: {
     _id: string;
     userId: string;
-    // Add other student profile fields as needed
   };
   studentUser: {
     _id: string;
@@ -28,7 +28,6 @@ interface ApiLeaveRequest {
     email: string;
     firstName?: string;
     lastName?: string;
-    // Add other user fields as needed
   };
   term: string;
   updatedAt: string;
@@ -52,7 +51,7 @@ interface TransformedLeaveRequest {
   leaveType: string;
   attachments?: string[];
   viewed: boolean;
-  originalData: ApiLeaveRequest; // Keep original data for API calls
+  originalData: ApiLeaveRequest;
 }
 
 const AdminLeaveRequestsPage: React.FC = () => {
@@ -71,13 +70,10 @@ const AdminLeaveRequestsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Get the raw response from your API
         const response = await getLeaveRequests(currentPage, 10);
         
-        // Handle the response based on its actual structure
         let apiData: ApiLeaveRequest[];
         
-        // Check if response is wrapped in a data property or is direct array
         if (Array.isArray(response)) {
           apiData = response as unknown as ApiLeaveRequest[];
         } else if (response && Array.isArray(response.data)) {
@@ -86,12 +82,8 @@ const AdminLeaveRequestsPage: React.FC = () => {
           throw new Error("Invalid API response format");
         }
         
-        // Transform API response to match your UI interface
         const transformedData = transformApiResponse(apiData);
         setLeaveRequests(transformedData);
-        
-        // Set pagination info (you might need to get this from headers or adjust API)
-        // For now, assuming single page since your API doesn't return pagination meta
         setTotalPages(1);
         
       } catch (err) {
@@ -110,9 +102,9 @@ const AdminLeaveRequestsPage: React.FC = () => {
     return data.map(item => ({
       id: item._id,
       studentName: getStudentName(item.studentUser),
-      studentImage: "/img/default-avatar.png", // You might need to add this to your API
-      grade: item.leaveType, // Using leaveType as grade for now
-      parent: "Unknown Parent", // You might need to fetch parent info separately
+      studentImage: "/img/default-avatar.png",
+      grade: item.leaveType,
+      parent: "Unknown Parent",
       startDate: new Date(item.startDate).toLocaleDateString(),
       endDate: new Date(item.endDate).toLocaleDateString(),
       description: item.reason || "",
@@ -134,7 +126,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
       return studentUser.firstName;
     }
     if (studentUser.email) {
-      return studentUser.email.split('@')[0]; // Use email prefix as fallback
+      return studentUser.email.split('@')[0];
     }
     return "Unknown Student";
   };
@@ -142,12 +134,10 @@ const AdminLeaveRequestsPage: React.FC = () => {
   // Handle status update using your service
   const handleQuickAction = async (requestId: string, newStatus: "approved" | "rejected") => {
     try {
-      // Capitalize first letter to match your API expectation
       const apiStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
       
       await updateLeaveRequestStatus(requestId, apiStatus);
 
-      // Update local state
       setLeaveRequests(prev => 
         prev.map(request => 
           request.id === requestId 
@@ -191,15 +181,10 @@ const AdminLeaveRequestsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
-        <div className="flex-shrink-0 px-6 py-4 bg-gray-100">
-          <h1 className="text-2xl font-semibold">All Leave Requests</h1>
-        </div>
-        <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <Header />
+        <div className="pt-4">
+          <LeaveRequestSkeleton />
         </div>
       </div>
     );
@@ -207,28 +192,40 @@ const AdminLeaveRequestsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
-        <div className="flex-shrink-0 px-6 py-4 bg-gray-100">
-          <h1 className="text-2xl font-semibold">All Leave Requests</h1>
-        </div>
-        <div className="flex-1 px-6 py-4">
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="flex">
-              <div className="text-red-400">⚠️</div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-sm text-red-700">{error}</div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-3 px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                >
-                  Retry
-                </button>
-              </div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <Header />
+        <div className="pt-4">
+          <div className="flex flex-col items-center justify-center py-20 px-6 bg-white rounded-lg border-2 border-red-200">
+            <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <svg
+                className="w-12 h-12 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
             </div>
+            <h3 className="text-xl font-semibold text-red-700 mb-2">
+              Error Loading Leave Requests
+            </h3>
+            <p className="text-red-600 text-center max-w-md mb-6">
+              {error}
+            </p>
+            <button
+              onClick={() => {
+                setError(null);
+                window.location.reload();
+              }}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -236,23 +233,21 @@ const AdminLeaveRequestsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
-      
-      {/* Fixed Page Title and Filter */}
-      <div className="flex-shrink-0 px-6 py-4 bg-gray-100">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">All Leave Requests</h1>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <Header />
+      <div className="pt-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">All Leave Requests</h1>
+            <p className="text-gray-600">Review and manage student leave requests</p>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setFilter("all")}
               className={`px-4 py-2 rounded-md text-sm transition ${
                 filter === "all" 
                   ? "bg-[#154473] text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
               All ({leaveRequests.length})
@@ -262,7 +257,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
               className={`px-4 py-2 rounded-md text-sm transition ${
                 filter === "pending" 
                   ? "bg-[#154473] text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
               Pending ({leaveRequests.filter(r => r.status === "pending").length})
@@ -272,7 +267,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
               className={`px-4 py-2 rounded-md text-sm transition ${
                 filter === "approved" 
                   ? "bg-[#154473] text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
               Approved ({leaveRequests.filter(r => r.status === "approved").length})
@@ -282,20 +277,43 @@ const AdminLeaveRequestsPage: React.FC = () => {
               className={`px-4 py-2 rounded-md text-sm transition ${
                 filter === "rejected" 
                   ? "bg-[#154473] text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
               Rejected ({leaveRequests.filter(r => r.status === "rejected").length})
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-hidden px-6">
-        <div className="h-full overflow-y-auto">
-          {/* Leave Requests Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pb-6">
+        {filteredRequests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
+            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+              <svg
+                className="w-12 h-12 text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              No Leave Requests Found
+            </h3>
+            <p className="text-gray-500 text-center max-w-md">
+              {filter === "all" 
+                ? "There are no leave requests to display at the moment."
+                : `There are no ${filter} leave requests to display.`
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredRequests.map((request) => (
               <div
                 key={request.id}
@@ -305,7 +323,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
                 {/* Student Info */}
                 <div className="flex items-center mb-4">
                   <img
-                    src={ "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp"}
+                    src="https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp"
                     alt={request.studentName}
                     className="w-12 h-12 rounded-full object-cover mr-3"
                     onError={(e) => (e.currentTarget.src = "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp")}
@@ -351,47 +369,31 @@ const AdminLeaveRequestsPage: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleQuickAction(request.id, "rejected");
+                        handleQuickAction(request.id, "approved");
                       }}
-                      className="flex-1 px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-red-100 hover:text-red-700 transition"
+                      className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                     >
-                      Reject
+                      Approve
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleQuickAction(request.id, "approved");
+                        handleQuickAction(request.id, "rejected");
                       }}
-                      className="flex-1 px-3 py-1 bg-[#154473] text-white rounded text-sm hover:bg-blue-700 transition"
+                      className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
                     >
-                      Approve
+                      Reject
                     </button>
                   </div>
                 )}
               </div>
             ))}
           </div>
+        )}
 
-          {/* Empty State */}
-          {filteredRequests.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-4xl mb-4">📝</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No leave requests found</h3>
-              <p className="text-gray-500">
-                {filter === "all" 
-                  ? "There are no leave requests to display." 
-                  : `There are no ${filter} leave requests.`
-                }
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Fixed Pagination */}
-      {totalPages > 1 && (
-        <div className="flex-shrink-0 px-6 py-4 bg-gray-100 border-t">
-          <div className="flex justify-center">
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
             <div className="flex gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -424,8 +426,8 @@ const AdminLeaveRequestsPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

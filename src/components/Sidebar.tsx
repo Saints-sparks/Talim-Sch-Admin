@@ -24,6 +24,17 @@ import {
 
 import { cn } from "@/lib/utils"
 
+interface MenuItem {
+  path: string;
+  icon: React.ReactNode;
+  label: string;
+  badge?: number;
+  hasDropdown?: boolean;
+  expanded?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+  subItems?: { path: string; label: string }[];
+}
+
 type SidebarProps = React.ComponentProps<"nav"> & {
   className?: string
 }
@@ -33,7 +44,7 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
   const [expandedUsers, setExpandedUsers] = useState(false)
 
   // Define menu items
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { path: "/dashboard", icon: <Home className="w-5 h-5" />, label: "Dashboard" },
     { path: "/classes", icon: <BookOpen className="w-5 h-5" />, label: "Classes" },
     {
@@ -53,13 +64,13 @@ export default function Sidebar({className, ...rest}: SidebarProps) {
     },
     { path: "/timetable", icon: <Calendar className="w-5 h-5" />, label: "Timetable" },
     { path: "/announcements", icon: <Speaker className="w-5 h-5" />, label: "Announcements" },
-    { path: "/notifications", icon: <Bell className="w-5 h-5" />, label: "Notifications" },
-    {
-      path: "/messages",
-      icon: <MessageSquare className="w-5 h-5" />,
-      label: "Messages",
-      badge: 2,
-    },
+   // { path: "/notifications", icon: <Bell className="w-5 h-5" />, label: "Notifications" },
+    // {
+    //   path: "/messages",
+    //   icon: <MessageSquare className="w-5 h-5" />,
+    //   label: "Messages",
+    //   badge: 2,
+    // },
     { path: "/leave-requests", icon: <Ticket className="w-5 h-5" />, label: "Request leave" },
     { path: "/complaints", icon: <AlertCircle className="w-5 h-5" />, label: "Complaints" },
     { path: "/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" },

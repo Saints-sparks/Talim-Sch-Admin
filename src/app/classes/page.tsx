@@ -8,6 +8,7 @@ import { getClasses, createClass, Class } from "../services/student.service";
 import { getSchoolId } from "../services/school.service";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ClassesSkeleton from "@/components/ClassesSkeleton";
 
 export default function Classes() {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function Classes() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -69,18 +71,23 @@ export default function Classes() {
   useEffect(() => {
     const fetchClasses = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const schoolId = getSchoolId();
         if (!schoolId) {
-          toast.error("School ID is required");
-          return;
+          throw new Error("School ID is required");
         }
 
         const classes = await getClasses();
         setClasses(classes);
       } catch (error) {
         console.error("Error fetching classes:", error);
-        toast.error("Failed to load classes. Please try again later.");
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to load classes. Please try again later.";
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -127,105 +134,160 @@ export default function Classes() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <main className="flex-grow p-8">
-        <Header />
-        <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">
-          Class Overview
-        </h1>
+    <>
+      {isLoading ? (
+        <ClassesSkeleton />
+      ) : (
+        <div className="flex h-screen bg-gray-100">
+          <main className="flex-grow p-8">
+            <Header />
+            <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">
+              Class Overview
+            </h1>
 
-        {/* Classes Table */}
-        <section className="bg-white shadow rounded p-6">
-          <div className="flex items-center gap-x-4 mb-4">
-            <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
-            <button
-              className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
-              onClick={toggleModal}
-            >
-              + Add
-            </button>
-          </div>
+            {/* Classes Table */}
+            <section className="bg-white shadow rounded p-6">
+              <div className="flex items-center gap-x-4 mb-4">
+                <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
+                <button
+                  className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
+                  onClick={toggleModal}
+                >
+                  + Add
+                </button>
+              </div>
 
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-4  text-gray-800">
-                  Class Name
-                </th>
-                <th className="text-left py-2 px-4 text-gray-800">Capacity</th>
-                <th className="text-left py-2 px-4 text-gray-800">
-                  Subjects Assigned
-                </th>
-                <th className="text-left py-2 px-4 text-gray-800">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedClasses.map((item, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4 text-gray-800">{item.name}</td>
-                  <td className="py-2 px-4 text-gray-800">
-                    {item.classCapacity}
-                  </td>
-                  <td className="py-2 px-4 text-gray-800">
-                    {item.classDescription}
-                  </td>
-                  <td className="py-2 px-4">
+              {error ? (
+                <div className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+                    <div className="text-red-600 text-lg font-semibold mb-2">
+                      Error Loading Classes
+                    </div>
+                    <p className="text-red-600 mb-4">{error}</p>
                     <button
-                      onClick={() => router.push(`/classes/${item._id}`)} // Replace with your actual URL
-                      className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                     >
-                      View
+                      Try Again
                     </button>
-
+                  </div>
+                </div>
+              ) : classes.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+                    <div className="text-gray-400 text-6xl mb-4">🏫</div>
+                    <div className="text-gray-600 text-lg font-semibold mb-2">
+                      No Classes Found
+                    </div>
+                    <p className="text-gray-500 mb-4">
+                      Get started by creating your first class to organize your
+                      students.
+                    </p>
                     <button
-                      onClick={() =>
-                        router.push(`/classes/edit-class/${item._id}`)
-                      }
-                      className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700"
-                      aria-label="Edit class"
+                      onClick={toggleModal}
+                      className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
                     >
-                      <FiEdit className="text-xl" />
+                      Create First Class
                     </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-4  text-gray-800">
+                          Class Name
+                        </th>
+                        <th className="text-left py-2 px-4 text-gray-800">
+                          Capacity
+                        </th>
+                        <th className="text-left py-2 px-4 text-gray-800">
+                          Subjects Assigned
+                        </th>
+                        <th className="text-left py-2 px-4 text-gray-800">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedClasses.map((item, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-4 text-gray-800">{item.name}</td>
+                          <td className="py-2 px-4 text-gray-800">
+                            {item.classCapacity}
+                          </td>
+                          <td className="py-2 px-4 text-gray-800">
+                            {item.classDescription}
+                          </td>
+                          <td className="py-2 px-4">
+                            <button
+                              onClick={() => router.push(`/classes/${item._id}`)} // Replace with your actual URL
+                              className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
+                            >
+                              View
+                            </button>
 
-                    <button className="ml-2 px-2 py-1 text-red-500 hover:text-red-700">
-                      <FiTrash className="text-xl" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                            <button
+                              onClick={() =>
+                                router.push(`/classes/edit-class/${item._id}`)
+                              }
+                              className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700"
+                              aria-label="Edit class"
+                            >
+                              <FiEdit className="text-xl" />
+                            </button>
 
-          {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-4">
-            <button
-              className={`px-3 py-1 border rounded bg-[#154473] text-white rounded ${
-                currentPage === 1
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "text-blue-500 hover:bg-gray-100"
-              }`}
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-            >
-              &lt; Previous
-            </button>
-            <span className="text-gray-500">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              className={`px-3 py-1 border rounded  bg-[#154473] text-white rounded ${
-                currentPage === totalPages
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "text-blue-500 hover:bg-gray-100"
-              }`}
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-            >
-              Next &gt;
-            </button>
-          </div>
-        </section>
-      </main>
+                            <button className="ml-2 px-2 py-1 text-red-500 hover:text-red-700">
+                              <FiTrash className="text-xl" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination Controls */}
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(endIndex, classes.length)} of {classes.length}{" "}
+                      classes
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 border rounded bg-[#154473] text-white transition-colors ${
+                          currentPage === 1
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-blue-700"
+                        }`}
+                      >
+                        Previous
+                      </button>
+                      <span className="px-3 py-1 text-sm text-gray-600">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 border rounded bg-[#154473] text-white transition-colors ${
+                          currentPage === totalPages
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-blue-700"
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          </main>
+        </div>
+      )}
 
       {/* Add Class Modal */}
       {isModalOpen && (
@@ -352,6 +414,6 @@ export default function Classes() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

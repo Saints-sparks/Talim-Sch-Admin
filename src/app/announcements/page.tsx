@@ -5,6 +5,7 @@ import {Header} from "@/components/Header";
 import { createAnnouncement, AnnouncementResponse, getAnnouncementsBySender, CreateAnnouncementResponse } from "../services/announcement.service";
 import { toast } from "react-toastify";
 import { getLocalStorageItem } from '../lib/localStorage';
+import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 
 interface Announcement {
   title: string;
@@ -21,6 +22,7 @@ const Announcement: React.FC = () => {
   });
   const [announcements, setAnnouncements] = useState<CreateAnnouncementResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -30,6 +32,9 @@ const Announcement: React.FC = () => {
 
   const fetchAnnouncements = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
       const userId = getLocalStorageItem('user')?.userId;
       if (!userId) {
         throw new Error('User ID not found');
@@ -44,7 +49,9 @@ const Announcement: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error fetching announcements:", error);
-      toast.error("Failed to fetch announcements. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch announcements. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -113,7 +120,7 @@ const Announcement: React.FC = () => {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 mx-1 rounded ${
+          className={`px-3 py-1 mx-1 rounded transition-colors ${
             pagination.page === i
               ? 'bg-[#154473] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -129,7 +136,7 @@ const Announcement: React.FC = () => {
         <button
           onClick={() => handlePageChange(pagination.page - 1)}
           disabled={pagination.page === 1}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-gray-800"
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Previous
         </button>
@@ -137,7 +144,7 @@ const Announcement: React.FC = () => {
         <button
           onClick={() => handlePageChange(pagination.page + 1)}
           disabled={pagination.page === pagination.lastPage}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-gray-800"
+          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -146,68 +153,98 @@ const Announcement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100">
-      {/* Header */}
-      <Header  />
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition text-gray-800"
-        >
-          Create Announcement
-        </button>
-      </div>
-
+    <>
       {loading ? (
-        <div className="flex justify-center items-center min-h-[200px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#154473]" />
-        </div>
+        <AnnouncementsSkeleton />
       ) : (
-        <>
-          <div className="space-y-6">
-            {announcements.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <p>No announcements available</p>
-              </div>
-            ) : (
-              announcements.map((announcement) => (
-                <div key={announcement.id} className="bg-white rounded-lg shadow-md p-6 ">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-1 text-gray-800">{announcement.title}</h2>
-                      <p className="text-sm text-gray-500">
-                        {formatDateTime(announcement.createdAt)}
-                      </p>
-                    </div>
-                    {announcement.attachment && (
-                      <a
-                        href={announcement.attachment}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        View Attachment
-                      </a>
-                    )}
-                  </div>
-                  <div className="prose max-w-none mb-4 text-gray-800">
-                    <p>{announcement.content}</p>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <button className="text-blue-500 hover:text-blue-700">👍</button>
-                    <button className="text-red-500 hover:text-red-700">❤️</button>
-                    <button className="text-gray-500 hover:text-gray-700">👎</button>
-                  </div>
-                </div>
-              ))
-            )}
+        <div className="p-6 bg-gray-100">
+          {/* Header */}
+          <Header />
+
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-semibold text-gray-800">Announcements</h1>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Create Announcement
+            </button>
           </div>
-          {renderPagination()}
-        </>
+
+          {error ? (
+            <div className="text-center py-12">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+                <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Announcements</div>
+                <p className="text-red-600 mb-4">{error}</p>
+                <button
+                  onClick={fetchAnnouncements}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-6">
+                {announcements.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+                      <div className="text-gray-400 text-6xl mb-4">📢</div>
+                      <div className="text-gray-600 text-lg font-semibold mb-2">No Announcements Found</div>
+                      <p className="text-gray-500 mb-4">
+                        Get started by creating your first announcement to keep everyone informed.
+                      </p>
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Create First Announcement
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  announcements.map((announcement) => (
+                    <div key={announcement.id} className="bg-white rounded-lg shadow-md p-6 ">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h2 className="text-xl font-semibold mb-1 text-gray-800">{announcement.title}</h2>
+                          <p className="text-sm text-gray-500">
+                            {formatDateTime(announcement.createdAt)}
+                          </p>
+                        </div>
+                        {announcement.attachment && (
+                          <a
+                            href={announcement.attachment}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            View Attachment
+                          </a>
+                        )}
+                      </div>
+                      <div className="prose max-w-none mb-4 text-gray-800">
+                        <p>{announcement.content}</p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <button className="text-blue-500 hover:text-blue-700">👍</button>
+                        <button className="text-red-500 hover:text-red-700">❤️</button>
+                        <button className="text-gray-500 hover:text-gray-700">👎</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {pagination.lastPage > 1 && renderPagination()}
+            </>
+          )}
+        </div>
       )}
 
+      {/* Create Announcement Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -254,7 +291,7 @@ const Announcement: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
