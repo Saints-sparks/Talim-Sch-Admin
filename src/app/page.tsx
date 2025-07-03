@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify'; // Import toast from react-toastify
 import { authService } from './services/auth.service';
 import nookies from 'nookies'
+import treelogo from '../../public/img/treelogo.svg'; // Adjust the path as necessary
+import loginImage from '../../public/img/Education-rafiki 1.svg'; // Adjust the path as necessary 
 
 interface DashboardCardProps {
   title: string;
@@ -109,7 +111,18 @@ export default function SignIn() {
     <div className="flex flex-col sm:flex-row h-screen bg-white-400">
       {/* Left Section */}
       <div className="w-full sm:w-1/2 flex flex-col justify-center items-center px-4 sm:px-8 py-8 sm:py-0">
-        <div className="w-full sm:w-[70%] bg-white shadow-lg rounded-lg p-6 sm:p-8">
+        <div className="w-full sm:w-[70%] bg-white  rounded-lg p-6 sm:p-8">
+
+            {/* Logo Section */}    
+        <div className="flex items-center justify-center mb-6">
+          <Image
+            src={treelogo}
+            alt="Talim Logo"
+            width={100}
+            height={100}
+            className="h-16 w-16 sm:h-20 sm:w-20"
+          />
+        </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 text-center">
             Welcome Back!
           </h1>
@@ -150,7 +163,7 @@ export default function SignIn() {
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                className="absolute right-3 top-9 transform -translate-y-1/2 text-gray-600 focus:outline-none"
+                className="absolute right-3 top-2/3 transform -translate-y-1/2 text-gray-600 focus:outline-none"
               >
                 {showPassword ? (
                   <EyeSlashIcon className="h-5 w-5" />
@@ -183,18 +196,28 @@ export default function SignIn() {
             >
               {loading ? 'Signing in...' : 'Sign In'} {/* Change button text based on loading state */}
             </button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center mt-4">
+                <a
+                    href="/forgot-password"
+                    className="text-sm text-[#154473] hover:underline"
+                >
+                    Forgot your password?
+                </a>
+            </div>
           </form>
         </div>
       </div>
 
       {/* Right Section */}
-      <div className="w-full sm:w-1/2 flex items-center justify-center bg-gray-200">
-        <div className="w-full h-full relative">
+      <div className="w-full sm:w-1/2 flex items-center justify-center bg-[#F8F8F8]">
+        <div className="h-[610px] w-[610px] relative">
           <Image
-            src="/img/signup.png"
+            src={loginImage}
             alt="High School"
             layout="fill"
-            objectFit="cover"
+            objectFit="fill"
           />
         </div>
       </div>
