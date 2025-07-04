@@ -122,10 +122,10 @@ const Dashboard = () => {
             // Create class
             const classData = {
                 name: formData.name,
-                classCapacity: Number.parseInt(formData.classCapacity),
+                classCapacity: formData.classCapacity,
                 classDescription: formData.classDescription,
-                schoolId: getSchoolId()!,
-                assignedCourses: [],
+                // schoolId: getSchoolId()!,
+                // assignedCourses: [],
             }
 
             await createClass(classData)

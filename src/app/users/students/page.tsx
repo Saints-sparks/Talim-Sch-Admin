@@ -30,7 +30,6 @@ const StudentPage: React.FC = () => {
                 const response = await studentService.getStudentsByClass(selectedClass, currentPage, 9);
                 console.log(response.data);
                 setStudents(response.data);
-
             } else {
                 const response = await studentService.getStudents(currentPage, 9);
                 setStudents(response.data);
@@ -72,20 +71,19 @@ const StudentPage: React.FC = () => {
         setIsModalOpen(!isModalOpen);
     };
 
-    const teachersPerPage = 9; // Number of cards per page
-    const filteredTeachers = students.filter((student) => {
+    const studentsPerPage = 9;
+    const filteredStudents = students.filter((student) => {
         const nameMatch = `${student.userId.firstName} ${student.userId.lastName}`
             .toLowerCase()
             .includes(searchTerm.toLowerCase());
         return nameMatch;
     });
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredTeachers.length / teachersPerPage);
-    const startIndex = (currentPage - 1) * teachersPerPage;
-    const currentTeachers = filteredTeachers.slice(
+    const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+    const startIndex = (currentPage - 1) * studentsPerPage;
+    const currentStudents = filteredStudents.slice(
         startIndex,
-        startIndex + teachersPerPage
+        startIndex + studentsPerPage
     );
 
     const toggleMenu = (studentId: string) => {
@@ -93,48 +91,51 @@ const StudentPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-6 flex flex-col">
             {/* Header Section */}
             <Header />
-            <div className="mb-6 mt-5">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-x-4 mb-4">
-                        <h1 className="text-2xl font-semibold text-[#393939]">Student</h1>
-                        <button
-                            className="font-bold text-[#393939] px-4 py-1 bg-[#EFEFEF] rounded-full"
-                            onClick={toggleModal}
-                        >
-                            + Add
-                        </button>
-                    </div>
+            
+            {/* Title and Controls */}
+            <div className="flex items-center justify-between mb-6 mt-5">
+                <div className="flex items-center gap-x-4">
+                    <h1 className="text-xl font-medium text-gray-800">Students</h1>
+                    <button
+                        className="flex items-center gap-2 text-gray-600 font-medium"
+                        onClick={toggleModal}
+                    >
+                        <span className="text-lg">+</span>
+                        Add
+                    </button>
+                </div>
 
-                    {/* Search Bar with Icon */}
-                    <div className="relative w-80">
-                        <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
-                            <FaSearch /> {/* React Icon for search */}
+                <div className="flex items-center gap-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                            <FaSearch size={16} />
                         </span>
                         <input
                             type="text"
                             placeholder="Search for students"
-                            className="w-full pl-10 p-2 border border-gray-300 rounded text-gray-500"
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
-                                setCurrentPage(1); // Reset to the first page after search
+                                setCurrentPage(1);
                             }}
                         />
                     </div>
 
-                    {/* Filter Dropdown */}
+                    {/* Class Filter */}
                     <select
-                        className="p-2 border border-gray-300 rounded w-32 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#154473]"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={selectedClass || ''}
                         onChange={(e) => {
                             setSelectedClass(e.target.value || null);
-                            setCurrentPage(1); // Reset to the first page after filter change
+                            setCurrentPage(1);
                         }}
                     >
-                        <option value="" className="text-gray-500">All Classes</option>
+                        <option value="">Select class</option>
                         {classes.map((cls) => (
                             <option key={cls._id} value={cls._id}>
                                 {cls.name}
@@ -146,117 +147,172 @@ const StudentPage: React.FC = () => {
 
             {isModalOpen && <AddStudentModal onClose={toggleModal} />}
 
-            {/* Cards Section */}
-            {isLoading ? (
-                <StudentsSkeleton />
-            ) : error ? (
-                <div className="text-center py-12">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-                        <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Students</div>
-                        <p className="text-red-600 mb-4">{error}</p>
-                        <button
-                            onClick={fetchStudents}
-                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                        >
-                            Try Again
-                        </button>
-                    </div>
-                </div>
-            ) : students.length === 0 ? (
-                <div className="text-center py-12">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                        <div className="text-gray-400 text-6xl mb-4">📚</div>
-                        <div className="text-gray-600 text-lg font-semibold mb-2">No Students Found</div>
-                        <p className="text-gray-500 mb-4">
-                            {searchTerm || selectedClass
-                                ? 'No students match your current search or filter criteria.'
-                                : 'There are no students in the system yet.'}
-                        </p>
-                        {(searchTerm || selectedClass) && (
+            {/* Main Content Area - Flex container to push pagination to bottom */}
+            <div className="flex flex-col flex-1">
+                {/* Content Section */}
+                {isLoading ? (
+                    <StudentsSkeleton />
+                ) : error ? (
+                    <div className="text-center py-12 flex-1 flex items-center justify-center">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+                            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Students</div>
+                            <p className="text-red-600 mb-4">{error}</p>
                             <button
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setSelectedClass(null);
-                                    setCurrentPage(1);
-                                }}
-                                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                                onClick={fetchStudents}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                             >
-                                Clear Filters
+                                Try Again
                             </button>
-                        )}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {currentTeachers.map((student) => (
-                        <div
-                            key={student._id}
-                            className="p-4 border border-gray-200 rounded-[10px] shadow-sm bg-white relative"
-                        >
-                            <img
-                                src={student.userId.userAvatar || '/default-avatar.png'}
-                                alt={`${student.userId.firstName} ${student.userId.lastName}`}
-                                className="w-16 h-16 rounded-full mx-auto mb-2 text-gray-500"
-                            />
-                            <h3 className="text-center text-lg font-semibold text-[#154473]">{`${student.userId.firstName} ${student.userId.lastName}`}</h3>
-                            <p className="text-center text-gray-500">{student.gradeLevel}</p>
-                            <button
-                                className="px-4 py-1 mt-4 rounded-[10px] border-[#EDEDED] border-2 bg-transparent  mx-auto block hover:bg-blue-100"
-                                onClick={() => handleViewProfile(student._id)}
-                            >
-                                <span className="text-[#434343]">View Profile</span>
-                            </button>
-                            <div className="absolute top-4 right-8">
+                ) : students.length === 0 ? (
+                    <div className="text-center py-12 flex-1 flex items-center justify-center">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+                            <div className="text-gray-400 text-6xl mb-4">👨‍🎓</div>
+                            <div className="text-gray-600 text-lg font-semibold mb-2">No Students Found</div>
+                            <p className="text-gray-500 mb-4">
+                                {searchTerm || selectedClass
+                                    ? 'No students match your current search or filter criteria.'
+                                    : 'There are no students in the system yet.'}
+                            </p>
+                            {(searchTerm || selectedClass) ? (
                                 <button
-                                    className="text-[#262B2B] font-semibold hover:text-gray-800"
-                                    onClick={() => toggleMenu(student._id)}
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setSelectedClass(null);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
                                 >
-                                    &#x22EE; {/* 3-dot menu */}
+                                    Clear Filters
                                 </button>
-                                {menuOpen === student._id && (
-                                    <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded shadow-lg">
-                                        <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
-                                            Edit
+                            ) : (
+                                <button
+                                    onClick={toggleModal}
+                                    className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
+                                >
+                                    Add First Student
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Students Grid - Takes available space */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
+                            {currentStudents.map((student) => (
+                                <div
+                                    key={student._id}
+                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit"
+                                >
+                                    {/* Three dots menu */}
+                                    <div className="absolute top-4 right-4">
+                                        <button
+                                            className="text-gray-400 hover:text-gray-600 p-1"
+                                            onClick={() => toggleMenu(student._id)}
+                                        >
+                                            <span className="text-lg font-bold">⋮</span>
                                         </button>
-                                        <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100">
-                                            Delete
+                                        {menuOpen === student._id && (
+                                            <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                                <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg">
+                                                    Edit
+                                                </button>
+                                                <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 rounded-b-lg">
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Student Avatar */}
+                                    <div className="flex justify-center mb-4">
+                                        <img
+                                            src={student.userId.userAvatar || '/default-avatar.png'}
+                                            alt={`${student.userId.firstName} ${student.userId.lastName}`}
+                                            className="w-16 h-16 rounded-full object-cover"
+                                        />
+                                    </div>
+
+                                    {/* Student Info */}
+                                    <div className="text-center">
+                                        <h3 className="font-medium text-gray-900 mb-1">
+                                            {`${student.userId.firstName} ${student.userId.lastName}`}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mb-4">{student.gradeLevel}</p>
+                                        
+                                        {/* View Profile Button */}
+                                        <button
+                                            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                                            onClick={() => handleViewProfile(student._id)}
+                                        >
+                                            View Profile
                                         </button>
                                     </div>
-                                )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Pagination - Fixed at bottom matching Figma design */}
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <span>Row per page</span>
+                                <select 
+                                    className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    value={studentsPerPage}
+                                    onChange={(e) => {
+                                        // Handle rows per page change
+                                        // setStudentsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <option value="4">4</option>
+                                    <option value="9">9</option>
+                                    <option value="18">18</option>
+                                    <option value="27">27</option>
+                                </select>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span>
+                                    Showing {startIndex + 1} - {Math.min(startIndex + studentsPerPage, filteredStudents.length)} of {filteredStudents.length}
+                                </span>
+                                
+                                <div className="flex items-center gap-2">
+                                    <select 
+                                        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        value={currentPage}
+                                        onChange={(e) => setCurrentPage(Number(e.target.value))}
+                                    >
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                            <option key={page} value={page}>
+                                                {page}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <span>of page {totalPages}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    >
+                                        ‹
+                                    </button>
+                                    <button
+                                        className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    >
+                                        ›
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Pagination Section */}
-            <div className="flex justify-between items-center mt-6">
-                <div>
-                    <span className="text-gray-500">
-                        Showing {startIndex + 1} -{' '}
-                        {Math.min(startIndex + teachersPerPage, filteredTeachers.length)} of{' '}
-                        {filteredTeachers.length}
-                    </span>
-                </div>
-                <div className="flex items-center gap-x-2">
-                    <button
-                        className="px-3 py-1 bg-[#EFEFEF] border-2 border-[#E4E4E4] text-[#393939]  rounded hover:bg-gray-100"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    >
-                        Previous
-                    </button>
-                    <span className="text-gray-500">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        className="px-3 py-1 bg-[#EFEFEF] border-2 border-[#E4E4E4] text-[#393939] rounded hover:bg-gray-100"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    >
-                        Next
-                    </button>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );

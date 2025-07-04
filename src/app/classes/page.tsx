@@ -104,10 +104,8 @@ export default function Classes() {
             // Create class
             const classData = {
                 name: formData.name,
-                classCapacity: parseInt(formData.classCapacity),
+                classCapacity: formData.classCapacity,
                 classDescription: formData.classDescription,
-                schoolId: getSchoolId()!,
-                assignedCourses: [],
             };
 
             await createClass(classData);
@@ -139,14 +137,14 @@ export default function Classes() {
                 <ClassesSkeleton />
             ) : (
                 <div className="flex h-screen bg-gray-100">
-                    <main className="flex-grow p-8">
+                    <main className="flex-grow p-8 flex flex-col">
                         <Header />
                         <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">
                             Class Overview
                         </h1>
 
                         {/* Classes Table */}
-                        <section className="bg-white shadow rounded p-6">
+                        <section className="bg-white shadow rounded p-6 flex-1 flex flex-col">
                             <div className="flex items-center gap-x-4 mb-4">
                                 <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
                                 <button
@@ -158,7 +156,7 @@ export default function Classes() {
                             </div>
 
                             {error ? (
-                                <div className="text-center py-12">
+                                <div className="text-center py-12 flex-1 flex items-center justify-center">
                                     <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
                                         <div className="text-red-600 text-lg font-semibold mb-2">
                                             Error Loading Classes
@@ -173,7 +171,7 @@ export default function Classes() {
                                     </div>
                                 </div>
                             ) : classes.length === 0 ? (
-                                <div className="text-center py-12">
+                                <div className="text-center py-12 flex-1 flex items-center justify-center">
                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
                                         <div className="text-gray-400 text-6xl mb-4">🏫</div>
                                         <div className="text-gray-600 text-lg font-semibold mb-2">
@@ -192,63 +190,65 @@ export default function Classes() {
                                     </div>
                                 </div>
                             ) : (
-                                <>
-                                    <table className="w-full border-collapse">
-                                        <thead>
-                                            <tr className="border-b">
-                                                <th className="text-left py-2 px-4  text-gray-800">
-                                                    Class Name
-                                                </th>
-                                                <th className="text-left py-2 px-4 text-gray-800">
-                                                    Capacity
-                                                </th>
-                                                <th className="text-left py-2 px-4 text-gray-800">
-                                                    Subjects Assigned
-                                                </th>
-                                                <th className="text-left py-2 px-4 text-gray-800">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {displayedClasses.map((item, index) => (
-                                                <tr key={index} className="border-b hover:bg-gray-50">
-                                                    <td className="py-2 px-4 text-gray-800">{item.name}</td>
-                                                    <td className="py-2 px-4 text-gray-800">
-                                                        {item.classCapacity}
-                                                    </td>
-                                                    <td className="py-2 px-4 text-gray-800">
-                                                        {item.classDescription}
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <button
-                                                            onClick={() => router.push(`/classes/${item._id}`)} // Replace with your actual URL
-                                                            className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
-                                                        >
-                                                            View
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() =>
-                                                                router.push(`/classes/edit-class/${item._id}`)
-                                                            }
-                                                            className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700"
-                                                            aria-label="Edit class"
-                                                        >
-                                                            <FiEdit className="text-xl" />
-                                                        </button>
-
-                                                        <button className="ml-2 px-2 py-1 text-red-500 hover:text-red-700">
-                                                            <FiTrash className="text-xl" />
-                                                        </button>
-                                                    </td>
+                                <div className="flex flex-col flex-1">
+                                    <div className="flex-1">
+                                        <table className="w-full border-collapse">
+                                            <thead>
+                                                <tr className="border-b">
+                                                    <th className="text-left py-2 px-4  text-gray-800">
+                                                        Class Name
+                                                    </th>
+                                                    <th className="text-left py-2 px-4 text-gray-800">
+                                                        Capacity
+                                                    </th>
+                                                    <th className="text-left py-2 px-4 text-gray-800">
+                                                        Subjects Assigned
+                                                    </th>
+                                                    <th className="text-left py-2 px-4 text-gray-800">
+                                                        Actions
+                                                    </th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {displayedClasses.map((item, index) => (
+                                                    <tr key={index} className="border-b hover:bg-gray-50">
+                                                        <td className="py-2 px-4 text-gray-800">{item.name}</td>
+                                                        <td className="py-2 px-4 text-gray-800">
+                                                            {item.classCapacity}
+                                                        </td>
+                                                        <td className="py-2 px-4 text-gray-800">
+                                                            {item.classDescription}
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <button
+                                                                onClick={() => router.push(`/classes/${item._id}`)}
+                                                                className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
+                                                            >
+                                                                View
+                                                            </button>
 
-                                    {/* Pagination Controls */}
-                                    <div className="flex justify-between items-center mt-4">
+                                                            <button
+                                                                onClick={() =>
+                                                                    router.push(`/classes/edit-class/${item._id}`)
+                                                                }
+                                                                className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700"
+                                                                aria-label="Edit class"
+                                                            >
+                                                                <FiEdit className="text-xl" />
+                                                            </button>
+
+                                                            <button className="ml-2 px-2 py-1 text-red-500 hover:text-red-700">
+                                                                <FiTrash className="text-xl" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Pagination Controls - Now at the bottom */}
+                                    <div className="flex justify-between items-center mt-4 pt-4 border-t">
                                         <span className="text-sm text-gray-600">
                                             Showing {startIndex + 1} to{" "}
                                             {Math.min(endIndex, classes.length)} of {classes.length}{" "}
@@ -280,7 +280,7 @@ export default function Classes() {
                                             </button>
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </section>
                     </main>
