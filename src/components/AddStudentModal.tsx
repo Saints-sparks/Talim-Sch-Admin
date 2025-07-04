@@ -8,348 +8,347 @@ import { registerStudent, createStudentProfile, getClasses, Class } from '../app
 import { getSchoolId } from '../app/services/school.service';
 
 const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-    classId: "",
-    gradeLevel: "",
-    parentContact: {
-      fullName: "",
-      phoneNumber: "",
-      email: "",
-      relationship: ""
-    }
-  });
-
-  useEffect(() => {
-    const fetchClasses = async () => {
-      const schoolId = getSchoolId();
-      console.log('Current user data:', localStorage.getItem('user'));
-      console.log('Extracted school ID:', schoolId);
-      
-      if (!schoolId) {
-        toast.error('School ID is required');
-        return;
-      }
-  
-      try {
-        const classes = await getClasses();
-        setClasses(classes);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-        toast.error('Failed to load classes');
-      }
-    };
-  
-    fetchClasses();
-  }, []);
-
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    try {
-      const schoolId = getSchoolId();
-      
-      if (!schoolId) {
-        toast.error('School ID not found. Please log in again.');
-        throw new Error('School ID not found');
-      }
-
-      // Validate schoolId format (should be a MongoDB ObjectId)
-      if (!/^[0-9a-fA-F]{24}$/.test(schoolId)) {
-        console.error('Invalid schoolId format:', schoolId);
-        toast.error('Invalid school ID format. Please contact support.');
-        throw new Error('Invalid school ID format');
-      }
-
-      if (currentStep === 0) {
-        // Validate required fields
-        if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-          toast.error('Please fill in all required fields');
-          return;
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        phoneNumber: "",
+        classId: "",
+        gradeLevel: "",
+        parentContact: {
+            fullName: "",
+            phoneNumber: "",
+            email: "",
+            relationship: ""
         }
-
-        const registrationData = {
-          email: formData.email,
-          password: formData.password,
-          role: 'student',
-          schoolId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber
-        };
-
-        console.log('Sending registration data:', registrationData);
-        const { userId } = await registerStudent(registrationData);
-        setUserId(userId);
-        setCurrentStep(1);
-        toast.success('Student registered successfully!');
-      } else {
-        if (!userId) {
-          toast.error('User ID not found. Please try again.');
-          throw new Error('User ID not found');
-        }
-
-        // Validate required fields for profile creation
-        if (!formData.classId || !formData.gradeLevel || !formData.parentContact.fullName) {
-          toast.error('Please fill in all required fields');
-          return;
-        }
-
-        const profileData = {
-          userId: userId,
-          classId: formData.classId,
-          gradeLevel: formData.gradeLevel,
-          parentContact: formData.parentContact
-        };
-
-        console.log('Sending profile data:', profileData);
-        await createStudentProfile(profileData);
-        toast.success('Student profile created successfully!');
-        onClose();
-        router.push('/users/students');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    if (name === 'parentContact') return;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleParentContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      parentContact: { ...formData.parentContact, [name]: value }
     });
-  };
 
-  const renderPageContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <div className="space-y-6">
-            <div className="flex gap-6">
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter email"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
+    useEffect(() => {
+        const fetchClasses = async () => {
+            const schoolId = getSchoolId();
+            console.log('Current user data:', localStorage.getItem('user'));
+            console.log('Extracted school ID:', schoolId);
 
-            <div className="flex gap-6">
-              <input
-                type="text"
-                name="firstName"
-                placeholder="Enter first name"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.firstName}
-                onChange={handleInputChange}
-              />
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Enter last name"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.lastName}
-                onChange={handleInputChange}
-              />
-            </div>
+            if (!schoolId) {
+                toast.error('School ID is required');
+                return;
+            }
 
-            <div className="flex gap-6">
-              <input
-                type="tel"
-                name="phoneNumber"
-                placeholder="+234XXXXXXX"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        );
+            try {
+                const classes = await getClasses();
+                setClasses(classes);
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+                toast.error('Failed to load classes');
+            }
+        };
 
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="flex gap-6">
-              <select
-                name="classId"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.classId}
-                onChange={handleInputChange}
-              >
-                <option value="">Select Class</option>
-                {classes.map((classItem) => (
-                  <option key={classItem._id} value={classItem._id}>
-                    {classItem.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                name="gradeLevel"
-                placeholder="Enter grade level"
-                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
-                value={formData.gradeLevel}
-                onChange={handleInputChange}
-              />
-            </div>
+        fetchClasses();
+    }, []);
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 font-medium">Parent Full Name</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.parentContact.fullName}
-                  onChange={handleParentContactChange}
-                  placeholder="Enter parent full name"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
-                />
-              </div>
+    const handleSubmit = async () => {
+        setIsLoading(true);
+        try {
+            const schoolId = getSchoolId();
 
-              <div>
-                <label className="block mb-1 font-medium">Parent Phone Number</label>
-                <input
-                  type="number"
-                  name="phoneNumber"
-                  value={formData.parentContact.phoneNumber}
-                  onChange={handleParentContactChange}
-                  placeholder="Enter parent phone number"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
-                />
-              </div>
+            if (!schoolId) {
+                toast.error('School ID not found. Please log in again.');
+                throw new Error('School ID not found');
+            }
 
-              <div>
-                <label className="block mb-1 font-medium">Parent Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.parentContact.email}
-                  onChange={handleParentContactChange}
-                  placeholder="Enter parent email address"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
-                />
-              </div>
+            // Validate schoolId format (should be a MongoDB ObjectId)
+            if (!/^[0-9a-fA-F]{24}$/.test(schoolId)) {
+                console.error('Invalid schoolId format:', schoolId);
+                toast.error('Invalid school ID format. Please contact support.');
+                throw new Error('Invalid school ID format');
+            }
 
-              <div>
-                <label className="block mb-1 font-medium">Relationship to Student</label>
-                <select
-                  name="relationship"
-                  value={formData.parentContact.relationship}
-                  onChange={handleParentContactChange}
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
-                >
-                  <option value="">Select Relationship</option>
-                  <option value="FATHER">Father</option>
-                  <option value="MOTHER">Mother</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        );
+            if (currentStep === 0) {
+                // Validate required fields
+                if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+                    toast.error('Please fill in all required fields');
+                    return;
+                }
 
-      default:
-        return null;
-    }
-  };
+                const registrationData = {
+                    email: formData.email,
+                    password: formData.password,
+                    role: 'student',
+                    schoolId,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phoneNumber: formData.phoneNumber
+                };
 
-  const handleBackClick = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+                console.log('Sending registration data:', registrationData);
+                const { userId } = await registerStudent(registrationData);
+                setUserId(userId);
+                setCurrentStep(1);
+                toast.success('Student registered successfully!');
+            } else {
+                if (!userId) {
+                    toast.error('User ID not found. Please try again.');
+                    throw new Error('User ID not found');
+                }
 
-  return (
-    <div
-      id="modal-overlay"
-      className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50"
-      onClick={(e) => {
-        if ((e.target as Element).id === "modal-overlay") {
-          onClose();
+                // Validate required fields for profile creation
+                if (!formData.classId || !formData.gradeLevel || !formData.parentContact.fullName) {
+                    toast.error('Please fill in all required fields');
+                    return;
+                }
+
+                const profileData = {
+                    userId: userId,
+                    classId: formData.classId,
+                    gradeLevel: formData.gradeLevel,
+                    parentContact: formData.parentContact
+                };
+
+                console.log('Sending profile data:', profileData);
+                await createStudentProfile(profileData);
+                toast.success('Student profile created successfully!');
+                onClose();
+                router.push('/users/students');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
-      }}
-    >
-      <div className="bg-white h-full w-1/2 rounded-l-lg shadow-lg p-10 space-y-6 relative">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Add Student</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 text-xl"
-          >
-            &times;
-          </button>
-        </div>
-        <p className="text-base text-gray-600">
-          Step {currentStep + 1}:{" "}
-          {currentStep === 0 ? " Student Registration" : " Student Profile"}
-        </p>
-        {renderPageContent()}
+    };
 
-        <div className="absolute bottom-10 left-0 right-0 px-10">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={handleBackClick}
-              className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400"
-              disabled={currentStep === 0}
-            >
-              Back
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
-              disabled={isLoading}
-            >
-              {currentStep === 1 ? "Save" : "Next"}
-            </button>
-          </div>
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        if (name === 'parentContact') return;
+        setFormData({ ...formData, [name]: value });
+    };
 
-          <div className="flex justify-center mt-4">
-            {[0, 1].map((page) => (
-              <div
-                key={page}
-                className={`h-2 w-2 mx-1 rounded-full ${
-                  currentStep === page ? "bg-[#154473]" : "bg-gray-300"
-                }`}
-              ></div>
-            ))}
-          </div>
+    const handleParentContactChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            parentContact: { ...formData.parentContact, [name]: value }
+        });
+    };
+
+    const renderPageContent = () => {
+        switch (currentStep) {
+            case 0:
+                return (
+                    <div className="space-y-6">
+                        <div className="flex gap-6">
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Enter email"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                            />
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Enter password"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="flex gap-6">
+                            <input
+                                type="text"
+                                name="firstName"
+                                placeholder="Enter first name"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                            />
+                            <input
+                                type="text"
+                                name="lastName"
+                                placeholder="Enter last name"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="flex gap-6">
+                            <input
+                                type="tel"
+                                name="phoneNumber"
+                                placeholder="+234XXXXXXX"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.phoneNumber}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 1:
+                return (
+                    <div className="space-y-6">
+                        <div className="flex gap-6">
+                            <select
+                                name="classId"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.classId}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">Select Class</option>
+                                {classes.map((classItem) => (
+                                    <option key={classItem._id} value={classItem._id}>
+                                        {classItem.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <input
+                                type="text"
+                                name="gradeLevel"
+                                placeholder="Enter grade level"
+                                className="w-1/2 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 text-gray-900"
+                                value={formData.gradeLevel}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block mb-1 font-medium">Parent Full Name</label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.parentContact.fullName}
+                                    onChange={handleParentContactChange}
+                                    placeholder="Enter parent full name"
+                                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1 font-medium">Parent Phone Number</label>
+                                <input
+                                    type="number"
+                                    name="phoneNumber"
+                                    value={formData.parentContact.phoneNumber}
+                                    onChange={handleParentContactChange}
+                                    placeholder="Enter parent phone number"
+                                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1 font-medium">Parent Email Address</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.parentContact.email}
+                                    onChange={handleParentContactChange}
+                                    placeholder="Enter parent email address"
+                                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1 font-medium">Relationship to Student</label>
+                                <select
+                                    name="relationship"
+                                    value={formData.parentContact.relationship}
+                                    onChange={handleParentContactChange}
+                                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 text-gray-900"
+                                >
+                                    <option value="">Select Relationship</option>
+                                    <option value="FATHER">Father</option>
+                                    <option value="MOTHER">Mother</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    const handleBackClick = () => {
+        if (currentStep > 0) {
+            setCurrentStep(currentStep - 1);
+        }
+    };
+
+    return (
+        <div
+            id="modal-overlay"
+            className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50"
+            onClick={(e) => {
+                if ((e.target as Element).id === "modal-overlay") {
+                    onClose();
+                }
+            }}
+        >
+            <div className="bg-white h-full w-1/2 rounded-l-lg shadow-lg p-10 space-y-6 relative">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Add Student</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-800 text-xl"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <p className="text-base text-gray-600">
+                    Step {currentStep + 1}:{" "}
+                    {currentStep === 0 ? " Student Registration" : " Student Profile"}
+                </p>
+                {renderPageContent()}
+
+                <div className="absolute bottom-10 left-0 right-0 px-10">
+                    <div className="flex justify-between items-center">
+                        <button
+                            onClick={handleBackClick}
+                            className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400"
+                            disabled={currentStep === 0}
+                        >
+                            Back
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            className="bg-[#154473] text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700"
+                            disabled={isLoading}
+                        >
+                            {currentStep === 1 ? "Save" : "Next"}
+                        </button>
+                    </div>
+
+                    <div className="flex justify-center mt-4">
+                        {[0, 1].map((page) => (
+                            <div
+                                key={page}
+                                className={`h-2 w-2 mx-1 rounded-full ${currentStep === page ? "bg-[#154473]" : "bg-gray-300"
+                                    }`}
+                            ></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default AddStudentModal;
