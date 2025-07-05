@@ -16,44 +16,22 @@ import {
   Settings,
   Users
 } from "lucide-react";
-import { API_ENDPOINTS } from "@/app/lib/api/config";
 import { getSchoolId } from "@/app/services/school.service";
-
-interface Class {
-  _id: string;
-  name: string;
-  gradeLevel: string;
-  section?: string;
-}
-
-interface Subject {
-  _id: string;
-  name: string;
-  code: string;
-  schoolId: string;
-  classId?: string;
-  courses?: Course[];
-  createdAt?: string;
-}
-
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  courseCode: string;
-  subjectId: string;
-  teacherId?: string;
-  classId?: string;
-  createdAt?: string;
-}
-
-interface Teacher {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  userId?: string; // This seems to be just an ID, not a nested object
-}
+import {
+  getClasses,
+  getTeachers,
+  getSubjectsWithCourses,
+  createSubject,
+  updateSubject,
+  deleteSubject,
+  createCourse,
+  updateCourseService,
+  deleteCourseService,
+  Class,
+  Subject,
+  Teacher,
+  Course
+} from "@/app/services/subjects.service";
 
 interface NewSubject {
   name: string;
@@ -171,6 +149,7 @@ const CurriculumStructureMain: React.FC = () => {
         fetchTeachers()
       ]);
     } catch (error) {
+      console.error("Error in fetchAllData:", error);
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -181,21 +160,11 @@ const CurriculumStructureMain: React.FC = () => {
     if (typeof window === 'undefined' || !mounted) return;
     
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.error("No access token found");
-        return;
-      }
-      
-      const response = await fetch(`${API_ENDPOINTS.GET_CLASSES}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Failed to fetch classes");
-      const data = await response.json();
-      setClasses(Array.isArray(data) ? data : data.data || []);
+      const data = await getClasses();
+      setClasses(data);
     } catch (error) {
       console.error("Error fetching classes:", error);
+      toast.error("Failed to load classes");
     }
   };
 
@@ -203,20 +172,11 @@ const CurriculumStructureMain: React.FC = () => {
     if (typeof window === 'undefined' || !mounted) return;
     
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.error("No access token found");
-        return;
-      }
-      
-      const response = await fetch(`${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Failed to fetch subjects");
-      const data = await response.json();
-      setSubjects(Array.isArray(data) ? data : data.data || []);
+      const data = await getSubjectsWithCourses();
+      setSubjects(data);
     } catch (error) {
       console.error("Error fetching subjects:", error);
+      toast.error("Failed to load subjects");
     }
   };
 
@@ -224,33 +184,8 @@ const CurriculumStructureMain: React.FC = () => {
     if (typeof window === 'undefined' || !mounted) return;
     
     try {
-      console.log("Fetching teachers from:", `${API_ENDPOINTS.GET_TEACHERS}`);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.error("No access token found");
-        return;
-      }
-      
-      const response = await fetch(`${API_ENDPOINTS.GET_TEACHERS}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      console.log("Teachers response status:", response.status);
-      
-      if (!response.ok) throw new Error("Failed to fetch teachers");
-      const data = await response.json();
-      console.log("Teachers response data:", data);
-      console.log("Sample teacher structure:", data.data?.[0]); // Log first teacher structure from data.data
-      
-      const teachersArray = Array.isArray(data) ? data : data.data || [];
-      console.log("Setting teachers array with length:", teachersArray.length);
-      if (teachersArray.length > 0) {
-        console.log("Sample processed teacher:", teachersArray[0]);
-        console.log("Teacher has firstName:", teachersArray[0]?.firstName);
-        console.log("Teacher has lastName:", teachersArray[0]?.lastName);
-        console.log("Teacher has email:", teachersArray[0]?.email);
-      }
-      setTeachers(teachersArray);
+      const data = await getTeachers();
+      setTeachers(data);
     } catch (error) {
       console.error("Error fetching teachers:", error);
       toast.error("Failed to load teachers");
@@ -282,57 +217,35 @@ const CurriculumStructureMain: React.FC = () => {
       return;
     }
 
-    console.log("Submitting subject:", {
-      name: newSubject.name,
-      code: newSubject.code,
-      classId: newSubject.classId
-    });
     setIsSubmittingSubject(true);
 
     try {
       if (typeof window === 'undefined' || !mounted) return;
       
       const schoolId = getSchoolId();
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Authentication required");
+      if (!schoolId) {
+        toast.error("School ID not found");
         return;
       }
       
-      const url = subjectMode === "add" 
-        ? API_ENDPOINTS.CREATE_SUBJECT
-        : `https://talimbe-v2-li38.onrender.com/subjects/${selectedSubject?._id}`;
-      
-      const method = subjectMode === "add" ? "POST" : "PUT";
-      console.log(`Making ${method} request to:`, url);
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      if (subjectMode === "add") {
+        await createSubject({
           name: newSubject.name,
           code: newSubject.code,
           schoolId: schoolId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        
-        // Handle specific error messages from backend
-        if (response.status === 409) {
-          throw new Error(errorData?.message || `Subject with code '${newSubject.code}' already exists`);
-        }
-        
-        throw new Error(errorData?.message || `Failed to ${subjectMode} subject`);
+        });
+      } else if (selectedSubject) {
+        await updateSubject(selectedSubject._id, {
+          name: newSubject.name,
+          code: newSubject.code,
+          schoolId: schoolId,
+        });
       }
 
       toast.success(`Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`);
       setShowSubjectModal(false);
-      fetchSubjects(); // Refresh the list
+      
+      fetchSubjects(); // This will now fetch subjects with their courses
     } catch (error: any) {
       console.error(`Error ${subjectMode}ing subject:`, error);
       toast.error(error.message || `Failed to ${subjectMode} subject`);
@@ -343,9 +256,6 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Course Functions
   const openAddCourseModal = async (subject: Subject) => {
-    console.log("Opening add course modal for subject:", subject.name);
-    console.log("Current teachers count:", teachers.length);
-    
     setCourseMode("add");
     setSelectedCourse(null);
     setActiveSubjectForCourse(subject);
@@ -371,7 +281,6 @@ const CurriculumStructureMain: React.FC = () => {
     setIsLoadingTeachers(true);
     try {
       await fetchTeachers();
-      console.log("Teachers after fetch:", teachers.length);
     } catch (error) {
       console.error("Error fetching teachers for course modal:", error);
       toast.error("Failed to load teachers");
@@ -423,32 +332,15 @@ const CurriculumStructureMain: React.FC = () => {
     try {
       if (typeof window === 'undefined' || !mounted) return;
       
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Authentication required");
-        return;
+      if (courseMode === "add") {
+        await createCourse(newCourse);
+      } else if (selectedCourse) {
+        await updateCourseService(selectedCourse._id, newCourse);
       }
-      
-      const url = courseMode === "add" 
-        ? "https://talimbe-v2-li38.onrender.com/courses"
-        : `https://talimbe-v2-li38.onrender.com/courses/${selectedCourse?._id}`;
-      
-      const method = courseMode === "add" ? "POST" : "PUT";
-      
-      const response = await fetch(`${API_ENDPOINTS.CREATE_COURSE}`, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newCourse),
-      });
-
-      if (!response.ok) throw new Error(`Failed to ${courseMode} course`);
 
       toast.success(`Course ${courseMode === "add" ? "created" : "updated"} successfully!`);
       closeCourseModal();
-      fetchSubjects(); // Refresh to get updated courses
+      fetchSubjects(); // This will now fetch subjects with their courses
     } catch (error: any) {
       console.error(`Error ${courseMode}ing course:`, error);
       toast.error(error.message || `Failed to ${courseMode} course`);
@@ -466,19 +358,7 @@ const CurriculumStructureMain: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Authentication required");
-        return;
-      }
-      
-      const response = await fetch(`https://talimbe-v2-li38.onrender.com/subjects/${subjectId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete subject");
-
+      await deleteSubject(subjectId);
       toast.success("Subject deleted successfully!");
       fetchSubjects();
     } catch (error: any) {
@@ -495,21 +375,9 @@ const CurriculumStructureMain: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error("Authentication required");
-        return;
-      }
-      
-      const response = await fetch(`https://talimbe-v2-li38.onrender.com/courses/${courseId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete course");
-
+      await deleteCourseService(courseId);
       toast.success("Course deleted successfully!");
-      fetchSubjects();
+      fetchSubjects(); // This will refresh subjects with their courses
     } catch (error: any) {
       console.error("Error deleting course:", error);
       toast.error(error.message || "Failed to delete course");
