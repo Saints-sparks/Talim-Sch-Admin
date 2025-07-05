@@ -137,7 +137,14 @@ export const createSubject = async (payload: { name: string, code: string, schoo
   });
 
   if (!response.ok) {
-    throw new Error('Subject creation failed');
+    const errorData = await response.json().catch(() => null);
+    
+    // Handle specific error messages from backend
+    if (response.status === 409) {
+      throw new Error(errorData?.message || 'Subject with this code or name already exists');
+    }
+    
+    throw new Error(errorData?.message || 'Subject creation failed');
   }
 
   return response.json(); // Returns the created subject

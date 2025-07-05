@@ -20,6 +20,7 @@ import {
   Calendar,
   Book
 } from "lucide-react";
+import { API_ENDPOINTS } from '../lib/api/config';
 
 interface Class {
   _id: string;
@@ -139,6 +140,7 @@ const CurriculumDashboardMain: React.FC = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch("https://talimbe-v2-li38.onrender.com/classes", {
+        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch classes");
@@ -152,7 +154,7 @@ const CurriculumDashboardMain: React.FC = () => {
   const fetchSubjects = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/subjects/school", {
+      const response = await fetch(`${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch subjects");
@@ -167,6 +169,7 @@ const CurriculumDashboardMain: React.FC = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch("https://talimbe-v2-li38.onrender.com/curriculum", {
+        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch curriculum contents");

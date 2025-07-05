@@ -71,7 +71,7 @@ const TeachersPage: React.FC = () => {
 
     // Filter teachers based on search term and selected class
     const filteredTeachers = teachers.filter((teacher) => {
-        const nameMatch = `${teacher.userId.firstName} ${teacher.userId.lastName}`
+        const nameMatch = `${teacher.userId?.firstName || teacher.firstName} ${teacher.userId?.lastName || teacher.lastName}`
             .toLowerCase()
             .includes(searchTerm.toLowerCase())
 
@@ -82,60 +82,73 @@ const TeachersPage: React.FC = () => {
     })
 
     // Calculate pagination values for filtered results
-    const currentTeachers = filteredTeachers
-    const totalPages = Math.ceil(totalTeachers / teachersPerPage)
+    const totalPages = Math.ceil(filteredTeachers.length / teachersPerPage)
     const startIndex = (currentPage - 1) * teachersPerPage
-    const endIndex = Math.min(startIndex + teachersPerPage, currentTeachers.length)
+    const currentTeachers = filteredTeachers.slice(
+        startIndex,
+        startIndex + teachersPerPage
+    )
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 flex flex-col">
             {/* Header Section */}
             <Header />
             
-            {/* Filters and Search */}
-            <div className="mb-6 mt-5">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-                    <div className="flex items-center gap-x-4">
-                        <h1 className="text-2xl font-semibold text-[#393939]">Teachers</h1>
-                        <button
-                            className="font-bold text-[#393939] px-4 py-1 bg-[#EFEFEF] rounded-full hover:bg-gray-200 transition-colors"
-                            onClick={toggleModal}
-                        >
-                            + Add
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                        <div className="relative w-full md:w-80">
-                            <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
-                                <FaSearch />
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Search for teachers"
-                                className="w-full pl-10 p-2 border border-gray-300 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#154473]"
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value)
-                                    setCurrentPage(1)
-                                }}
-                            />
-                        </div>
-                    </div>
+            {/* Title and Controls */}
+            <div className="flex items-center justify-between mb-6 mt-5">
+                <div className="flex items-center gap-x-4">
+                    <h1 className="text-xl font-medium text-gray-800">Teachers</h1>
+                    <button
+                        className="flex items-center gap-2 text-gray-600 font-medium"
+                        onClick={toggleModal}
+                    >
+                        <span className="text-lg">+</span>
+                        Add
+                    </button>
                 </div>
 
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-50">
-                        <div className="bg-white h-full w-full md:w-1/2 rounded-l-lg shadow-lg p-6 overflow-y-auto">
-                            <AddTeacherModal onClose={toggleModal} onSuccess={fetchTeachers} />
-                        </div>
+                <div className="flex items-center gap-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                            <FaSearch size={16} />
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search for teacher"
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                        />
                     </div>
-                )}
+
+                    {/* Class Filter */}
+                    <select
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedClass || ''}
+                        onChange={(e) => {
+                            setSelectedClass(e.target.value || null)
+                            setCurrentPage(1)
+                        }}
+                    >
+                        <option value="">Select class</option>
+                        {classes.map((cls) => (
+                            <option key={cls._id} value={cls._id}>
+                                {cls.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Main Content Area - Flex Container */}
+            {isModalOpen && <AddTeacherModal onClose={toggleModal} onSuccess={fetchTeachers} />}
+
+            {/* Main Content Area - Flex container to push pagination to bottom */}
             <div className="flex flex-col flex-1">
-                {/* Cards/Table Section */}
+                {/* Content Section */}
                 {isLoading ? (
                     <TeachersSkeleton />
                 ) : error ? (
@@ -184,17 +197,20 @@ const TeachersPage: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 flex-1">
-                            {/* Teacher cards here */}
+                        {/* Teachers Grid - Takes available space */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
                             {currentTeachers.map((teacher) => (
-                                <div key={teacher._id} className="p-6 border border-gray-200 rounded-lg shadow-sm bg-white relative">
-                                    {/* Three dots menu - positioned at top right like in UI */}
+                                <div
+                                    key={teacher._id}
+                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit"
+                                >
+                                    {/* Three dots menu */}
                                     <div className="absolute top-4 right-4">
                                         <button
-                                            className="text-gray-400 hover:text-gray-600 text-lg font-bold"
+                                            className="text-gray-400 hover:text-gray-600 p-1"
                                             onClick={() => toggleMenu(teacher._id)}
                                         >
-                                            ⋮
+                                            <span className="text-lg font-bold">⋮</span>
                                         </button>
                                         {menuOpen === teacher._id && (
                                             <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -231,16 +247,16 @@ const TeachersPage: React.FC = () => {
 
                                     {/* Teacher Info */}
                                     <div className="text-center">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                                        <h3 className="font-medium text-gray-900 mb-1">
                                             {teacher.userId?.firstName || teacher.firstName} {teacher.userId?.lastName || teacher.lastName}
                                         </h3>
-                                        <p className="text-gray-500 text-sm mb-4">
+                                        <p className="text-sm text-gray-500 mb-4">
                                             {teacher.email} • {teacher.role}
                                         </p>
                                         
                                         {/* View Profile Button */}
                                         <button
-                                            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#BFCCD9] transition-colors text-sm"
                                             onClick={() => handleViewProfile(teacher._id)}
                                         >
                                             View Profile
@@ -250,28 +266,34 @@ const TeachersPage: React.FC = () => {
                             ))}
                         </div>
 
-                        {/* Pagination Section - Only shows when there are teachers */}
-                        <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600">Row per page</span>
-                                <select className="border border-gray-300 rounded px-2 py-1 text-sm">
+                        {/* Pagination - Fixed at bottom matching Figma design */}
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <span>Row per page</span>
+                                <select 
+                                    className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    value={teachersPerPage}
+                                    onChange={(e) => {
+                                        // Handle rows per page change
+                                        // setTeachersPerPage(Number(e.target.value));
+                                        setCurrentPage(1)
+                                    }}
+                                >
+                                    <option value="4">4</option>
                                     <option value="9">9</option>
                                     <option value="18">18</option>
                                     <option value="27">27</option>
                                 </select>
                             </div>
                             
-                            <div className="flex items-center gap-4">
-                                <span className="text-sm text-gray-600">
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span>
                                     Showing {startIndex + 1} - {Math.min(startIndex + teachersPerPage, filteredTeachers.length)} of {filteredTeachers.length}
                                 </span>
                                 
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600">
-                                        {currentPage}
-                                    </span>
                                     <select 
-                                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         value={currentPage}
                                         onChange={(e) => setCurrentPage(Number(e.target.value))}
                                     >
@@ -281,7 +303,7 @@ const TeachersPage: React.FC = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    <span className="text-sm text-gray-600">of page {totalPages}</span>
+                                    <span>of page {totalPages}</span>
                                 </div>
                                 
                                 <div className="flex items-center gap-1">

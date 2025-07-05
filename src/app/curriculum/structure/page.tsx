@@ -16,6 +16,8 @@ import {
   Settings,
   Users
 } from "lucide-react";
+import { API_ENDPOINTS } from "@/app/lib/api/config";
+import { getSchoolId } from "@/app/services/school.service";
 
 interface Class {
   _id: string;
@@ -110,6 +112,7 @@ const CurriculumStructureMain: React.FC = () => {
   const [courseMode, setCourseMode] = useState<"add" | "edit">("add");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [activeSubjectForCourse, setActiveSubjectForCourse] = useState<Subject | null>(null);
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: "",
@@ -127,9 +130,24 @@ const CurriculumStructureMain: React.FC = () => {
     if (initialAction === "add-subject") {
       openAddSubjectModal();
     } else if (initialAction === "add-course") {
-      setShowCourseModal(true);
+      // For add-course from URL, we need to open with a dummy subject
+      // This will be handled after data is loaded
+      // setShowCourseModal(true); // Remove direct modal opening
     }
   }, [initialAction]);
+
+  // Handle URL action after data is loaded
+  useEffect(() => {
+    if (!loading && initialAction === "add-course" && subjects.length > 0) {
+      // Open course modal with the first available subject
+      const firstSubject = subjects[0];
+      if (firstSubject) {
+        openAddCourseModal(firstSubject);
+      } else {
+        toast.error("No subjects available. Please create a subject first.");
+      }
+    }
+  }, [loading, initialAction, subjects]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -149,7 +167,8 @@ const CurriculumStructureMain: React.FC = () => {
   const fetchClasses = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/classes", {
+      const response = await fetch(`${API_ENDPOINTS.GET_CLASSES}`, {
+        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch classes");
@@ -163,7 +182,7 @@ const CurriculumStructureMain: React.FC = () => {
   const fetchSubjects = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/subjects/school", {
+      const response = await fetch(`${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch subjects");
@@ -176,15 +195,24 @@ const CurriculumStructureMain: React.FC = () => {
 
   const fetchTeachers = async () => {
     try {
+      console.log("Fetching teachers from:", `${API_ENDPOINTS.GET_TEACHERS}`);
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/users/teachers", {
+      const response = await fetch(`${API_ENDPOINTS.GET_TEACHERS}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      console.log("Teachers response status:", response.status);
+      
       if (!response.ok) throw new Error("Failed to fetch teachers");
       const data = await response.json();
-      setTeachers(Array.isArray(data) ? data : data.data || []);
+      console.log("Teachers response data:", data);
+      
+      const teachersArray = Array.isArray(data) ? data : data.data || [];
+      console.log("Setting teachers array with length:", teachersArray.length);
+      setTeachers(teachersArray);
     } catch (error) {
       console.error("Error fetching teachers:", error);
+      toast.error("Failed to load teachers");
     }
   };
 
@@ -213,23 +241,22 @@ const CurriculumStructureMain: React.FC = () => {
       return;
     }
 
+    console.log("Submitting subject:", {
+      name: newSubject.name,
+      code: newSubject.code,
+      classId: newSubject.classId
+    });
     setIsSubmittingSubject(true);
+
     try {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const schoolIdMatch = user.schoolId?.match(/ObjectId\('(.+?)'\)/);
-      const extractedSchoolId = schoolIdMatch?.[1];
-
-      if (!extractedSchoolId) {
-        toast.error("Could not determine school ID");
-        return;
-      }
-
+      const schoolId = getSchoolId();
       const token = localStorage.getItem("accessToken");
       const url = subjectMode === "add" 
-        ? "https://talimbe-v2-li38.onrender.com/subjects"
+        ? API_ENDPOINTS.CREATE_SUBJECT
         : `https://talimbe-v2-li38.onrender.com/subjects/${selectedSubject?._id}`;
       
       const method = subjectMode === "add" ? "POST" : "PUT";
+      console.log(`Making ${method} request to:`, url);
       
       const response = await fetch(url, {
         method,
@@ -240,12 +267,20 @@ const CurriculumStructureMain: React.FC = () => {
         body: JSON.stringify({
           name: newSubject.name,
           code: newSubject.code,
-          schoolId: extractedSchoolId,
-          classId: newSubject.classId || undefined
+          schoolId: schoolId,
         }),
       });
 
-      if (!response.ok) throw new Error(`Failed to ${subjectMode} subject`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        
+        // Handle specific error messages from backend
+        if (response.status === 409) {
+          throw new Error(errorData?.message || `Subject with code '${newSubject.code}' already exists`);
+        }
+        
+        throw new Error(errorData?.message || `Failed to ${subjectMode} subject`);
+      }
 
       toast.success(`Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`);
       setShowSubjectModal(false);
@@ -259,7 +294,10 @@ const CurriculumStructureMain: React.FC = () => {
   };
 
   // Course Functions
-  const openAddCourseModal = (subject: Subject) => {
+  const openAddCourseModal = async (subject: Subject) => {
+    console.log("Opening add course modal for subject:", subject.name);
+    console.log("Current teachers count:", teachers.length);
+    
     setCourseMode("add");
     setSelectedCourse(null);
     setActiveSubjectForCourse(subject);
@@ -271,10 +309,23 @@ const CurriculumStructureMain: React.FC = () => {
       classId: subject.classId || "",
       subjectId: subject._id
     });
+    
     setShowCourseModal(true);
+    
+    // Ensure teachers are always fetched when opening the modal
+    setIsLoadingTeachers(true);
+    try {
+      await fetchTeachers();
+      console.log("Teachers after fetch:", teachers.length);
+    } catch (error) {
+      console.error("Error fetching teachers for course modal:", error);
+      toast.error("Failed to load teachers");
+    } finally {
+      setIsLoadingTeachers(false);
+    }
   };
 
-  const openEditCourseModal = (course: Course) => {
+  const openEditCourseModal = async (course: Course) => {
     setCourseMode("edit");
     setSelectedCourse(course);
     setNewCourse({
@@ -285,7 +336,19 @@ const CurriculumStructureMain: React.FC = () => {
       classId: course.classId || "",
       subjectId: course.subjectId
     });
+    
     setShowCourseModal(true);
+    
+    // Ensure teachers are always fetched when opening the modal
+    setIsLoadingTeachers(true);
+    try {
+      await fetchTeachers();
+    } catch (error) {
+      console.error("Error fetching teachers for course modal:", error);
+      toast.error("Failed to load teachers");
+    } finally {
+      setIsLoadingTeachers(false);
+    }
   };
 
   const handleCourseSubmit = async () => {
@@ -725,19 +788,35 @@ const CurriculumStructureMain: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Assigned Teacher
+                  {isLoadingTeachers && (
+                    <span className="ml-2 text-sm text-blue-600">Loading...</span>
+                  )}
                 </label>
                 <select
                   value={newCourse.teacherId}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, teacherId: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isLoadingTeachers}
                 >
-                  <option value="">Select a teacher</option>
-                  {teachers.map(teacher => (
+                  <option value="">
+                    {isLoadingTeachers 
+                      ? "Loading teachers..." 
+                      : teachers.length === 0 
+                        ? "No teachers available" 
+                        : "Select a teacher"
+                    }
+                  </option>
+                  {!isLoadingTeachers && teachers.map(teacher => (
                     <option key={teacher._id} value={teacher._id}>
                       {teacher.userId.firstName} {teacher.userId.lastName} ({teacher.userId.email})
                     </option>
                   ))}
                 </select>
+                {!isLoadingTeachers && teachers.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    No teachers found. Please add teachers first.
+                  </p>
+                )}
               </div>
 
               <div>
