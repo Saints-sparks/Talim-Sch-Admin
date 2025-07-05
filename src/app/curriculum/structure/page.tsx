@@ -49,11 +49,10 @@ interface Course {
 
 interface Teacher {
   _id: string;
-  userId: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  firstName: string;
+  lastName: string;
+  email: string;
+  userId?: string; // This seems to be just an ID, not a nested object
 }
 
 interface NewSubject {
@@ -93,6 +92,7 @@ const CurriculumStructureMain: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
 
@@ -114,6 +114,13 @@ const CurriculumStructureMain: React.FC = () => {
   const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
   const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [activeSubjectForCourse, setActiveSubjectForCourse] = useState<Subject | null>(null);
+  
+  // Search states for dropdowns
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
+  const [classSearchTerm, setClassSearchTerm] = useState("");
+  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
+  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: "",
     description: "",
@@ -124,17 +131,21 @@ const CurriculumStructureMain: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchAllData();
-    
-    // Handle initial action from URL
-    if (initialAction === "add-subject") {
-      openAddSubjectModal();
-    } else if (initialAction === "add-course") {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (mounted) {
+      fetchAllData();
+      
+      // Handle initial action from URL
+      if (initialAction === "add-subject") {
+        openAddSubjectModal();
+      }
       // For add-course from URL, we need to open with a dummy subject
-      // This will be handled after data is loaded
-      // setShowCourseModal(true); // Remove direct modal opening
+      // This will be handled after data is loaded in the next useEffect
     }
-  }, [initialAction]);
+  }, [mounted, initialAction]);
 
   // Handle URL action after data is loaded
   useEffect(() => {
@@ -150,6 +161,8 @@ const CurriculumStructureMain: React.FC = () => {
   }, [loading, initialAction, subjects]);
 
   const fetchAllData = async () => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     setLoading(true);
     try {
       await Promise.all([
@@ -165,8 +178,15 @@ const CurriculumStructureMain: React.FC = () => {
   };
 
   const fetchClasses = async () => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     try {
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found");
+        return;
+      }
+      
       const response = await fetch(`${API_ENDPOINTS.GET_CLASSES}`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -180,8 +200,15 @@ const CurriculumStructureMain: React.FC = () => {
   };
 
   const fetchSubjects = async () => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     try {
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found");
+        return;
+      }
+      
       const response = await fetch(`${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -194,9 +221,16 @@ const CurriculumStructureMain: React.FC = () => {
   };
 
   const fetchTeachers = async () => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     try {
       console.log("Fetching teachers from:", `${API_ENDPOINTS.GET_TEACHERS}`);
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("No access token found");
+        return;
+      }
+      
       const response = await fetch(`${API_ENDPOINTS.GET_TEACHERS}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -206,9 +240,16 @@ const CurriculumStructureMain: React.FC = () => {
       if (!response.ok) throw new Error("Failed to fetch teachers");
       const data = await response.json();
       console.log("Teachers response data:", data);
+      console.log("Sample teacher structure:", data.data?.[0]); // Log first teacher structure from data.data
       
       const teachersArray = Array.isArray(data) ? data : data.data || [];
       console.log("Setting teachers array with length:", teachersArray.length);
+      if (teachersArray.length > 0) {
+        console.log("Sample processed teacher:", teachersArray[0]);
+        console.log("Teacher has firstName:", teachersArray[0]?.firstName);
+        console.log("Teacher has lastName:", teachersArray[0]?.lastName);
+        console.log("Teacher has email:", teachersArray[0]?.email);
+      }
       setTeachers(teachersArray);
     } catch (error) {
       console.error("Error fetching teachers:", error);
@@ -249,8 +290,15 @@ const CurriculumStructureMain: React.FC = () => {
     setIsSubmittingSubject(true);
 
     try {
+      if (typeof window === 'undefined' || !mounted) return;
+      
       const schoolId = getSchoolId();
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+      
       const url = subjectMode === "add" 
         ? API_ENDPOINTS.CREATE_SUBJECT
         : `https://talimbe-v2-li38.onrender.com/subjects/${selectedSubject?._id}`;
@@ -301,6 +349,13 @@ const CurriculumStructureMain: React.FC = () => {
     setCourseMode("add");
     setSelectedCourse(null);
     setActiveSubjectForCourse(subject);
+    
+    // Reset search states
+    setTeacherSearchTerm("");
+    setClassSearchTerm("");
+    setShowTeacherDropdown(false);
+    setShowClassDropdown(false);
+    
     setNewCourse({
       title: "",
       description: "",
@@ -328,6 +383,13 @@ const CurriculumStructureMain: React.FC = () => {
   const openEditCourseModal = async (course: Course) => {
     setCourseMode("edit");
     setSelectedCourse(course);
+    
+    // Reset search states
+    setTeacherSearchTerm("");
+    setClassSearchTerm("");
+    setShowTeacherDropdown(false);
+    setShowClassDropdown(false);
+    
     setNewCourse({
       title: course.title,
       description: course.description,
@@ -359,14 +421,21 @@ const CurriculumStructureMain: React.FC = () => {
 
     setIsSubmittingCourse(true);
     try {
+      if (typeof window === 'undefined' || !mounted) return;
+      
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+      
       const url = courseMode === "add" 
         ? "https://talimbe-v2-li38.onrender.com/courses"
         : `https://talimbe-v2-li38.onrender.com/courses/${selectedCourse?._id}`;
       
       const method = courseMode === "add" ? "POST" : "PUT";
       
-      const response = await fetch(url, {
+      const response = await fetch(`${API_ENDPOINTS.CREATE_COURSE}`, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -378,7 +447,7 @@ const CurriculumStructureMain: React.FC = () => {
       if (!response.ok) throw new Error(`Failed to ${courseMode} course`);
 
       toast.success(`Course ${courseMode === "add" ? "created" : "updated"} successfully!`);
-      setShowCourseModal(false);
+      closeCourseModal();
       fetchSubjects(); // Refresh to get updated courses
     } catch (error: any) {
       console.error(`Error ${courseMode}ing course:`, error);
@@ -390,12 +459,19 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Delete Functions
   const handleDeleteSubject = async (subjectId: string) => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     if (!window.confirm("Are you sure you want to delete this subject? This will also delete all associated courses.")) {
       return;
     }
 
     try {
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+      
       const response = await fetch(`https://talimbe-v2-li38.onrender.com/subjects/${subjectId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -412,12 +488,19 @@ const CurriculumStructureMain: React.FC = () => {
   };
 
   const handleDeleteCourse = async (courseId: string) => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
     if (!window.confirm("Are you sure you want to delete this course?")) {
       return;
     }
 
     try {
       const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+      
       const response = await fetch(`https://talimbe-v2-li38.onrender.com/courses/${courseId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -433,6 +516,16 @@ const CurriculumStructureMain: React.FC = () => {
     }
   };
 
+  // Course modal management
+  const closeCourseModal = () => {
+    setShowCourseModal(false);
+    setTeacherSearchTerm("");
+    setClassSearchTerm("");
+    setShowTeacherDropdown(false);
+    setShowClassDropdown(false);
+    setIsLoadingTeachers(false);
+  };
+
   // Helper Functions
   const getClassName = (classId: string) => {
     const classItem = classes.find(c => c._id === classId);
@@ -441,7 +534,55 @@ const CurriculumStructureMain: React.FC = () => {
 
   const getTeacherName = (teacherId: string) => {
     const teacher = teachers.find(t => t._id === teacherId);
-    return teacher ? `${teacher.userId.firstName} ${teacher.userId.lastName}` : "No Teacher Assigned";
+    if (!teacher) return "No Teacher Assigned";
+    
+    const firstName = teacher.firstName || "";
+    const lastName = teacher.lastName || "";
+    return firstName || lastName ? `${firstName} ${lastName}`.trim() : "No Teacher Assigned";
+  };
+
+  // Filter functions for searchable dropdowns
+  const filteredTeachers = teachers.filter(teacher => {
+    // Add null checks to prevent errors
+    if (!teacher) return false;
+    
+    const firstName = teacher.firstName || "";
+    const lastName = teacher.lastName || "";
+    const email = teacher.email || "";
+    
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
+    const emailLower = email.toLowerCase();
+    const searchLower = teacherSearchTerm.toLowerCase();
+    
+    return fullName.includes(searchLower) || emailLower.includes(searchLower);
+  });
+
+  const filteredClasses = classes.filter(cls => {
+    if (!cls) return false;
+    
+    const searchLower = classSearchTerm.toLowerCase();
+    const name = cls.name || "";
+    const gradeLevel = cls.gradeLevel || "";
+    
+    return name.toLowerCase().includes(searchLower) || 
+           gradeLevel.toLowerCase().includes(searchLower);
+  });
+
+  // Get selected teacher/class display names
+  const getSelectedTeacherDisplay = () => {
+    if (!newCourse.teacherId) return "";
+    const teacher = teachers.find(t => t._id === newCourse.teacherId);
+    if (!teacher) return "";
+    
+    const firstName = teacher.firstName || "";
+    const lastName = teacher.lastName || "";
+    return firstName || lastName ? `${firstName} ${lastName}`.trim() : "";
+  };
+
+  const getSelectedClassDisplay = () => {
+    if (!newCourse.classId) return "";
+    const cls = classes.find(c => c._id === newCourse.classId);
+    return cls ? cls.name : "";
   };
 
   const filteredSubjects = subjects.filter(subject => {
@@ -451,7 +592,7 @@ const CurriculumStructureMain: React.FC = () => {
     return matchesSearch && matchesClass;
   });
 
-  if (loading) {
+  if (!mounted || loading) {
     return <LoadingSpinner />;
   }
 
@@ -736,7 +877,7 @@ const CurriculumStructureMain: React.FC = () => {
                 )}
               </h2>
               <button
-                onClick={() => setShowCourseModal(false)}
+                onClick={() => closeCourseModal()}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-6 h-6" />
@@ -792,26 +933,75 @@ const CurriculumStructureMain: React.FC = () => {
                     <span className="ml-2 text-sm text-blue-600">Loading...</span>
                   )}
                 </label>
-                <select
-                  value={newCourse.teacherId}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, teacherId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isLoadingTeachers}
-                >
-                  <option value="">
-                    {isLoadingTeachers 
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={showTeacherDropdown ? teacherSearchTerm : getSelectedTeacherDisplay()}
+                    onChange={(e) => {
+                      setTeacherSearchTerm(e.target.value);
+                      setShowTeacherDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setShowTeacherDropdown(true);
+                      setTeacherSearchTerm("");
+                    }}
+                    onBlur={() => {
+                      // Delay hiding to allow clicking on options
+                      setTimeout(() => setShowTeacherDropdown(false), 150);
+                    }}
+                    placeholder={isLoadingTeachers 
                       ? "Loading teachers..." 
                       : teachers.length === 0 
                         ? "No teachers available" 
-                        : "Select a teacher"
+                        : "Search and select a teacher..."
                     }
-                  </option>
-                  {!isLoadingTeachers && teachers.map(teacher => (
-                    <option key={teacher._id} value={teacher._id}>
-                      {teacher.userId.firstName} {teacher.userId.lastName} ({teacher.userId.email})
-                    </option>
-                  ))}
-                </select>
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoadingTeachers || teachers.length === 0}
+                  />
+                  {showTeacherDropdown && !isLoadingTeachers && teachers.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {filteredTeachers.length > 0 ? (
+                        <>
+                          <div
+                            onClick={() => {
+                              setNewCourse(prev => ({ ...prev, teacherId: "" }));
+                              setTeacherSearchTerm("");
+                              setShowTeacherDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b text-gray-500"
+                          >
+                            Clear selection
+                          </div>
+                          {filteredTeachers.map(teacher => (
+                            <div
+                              key={teacher._id}
+                              onClick={() => {
+                                setNewCourse(prev => ({ ...prev, teacherId: teacher._id }));
+                                setTeacherSearchTerm("");
+                                setShowTeacherDropdown(false);
+                              }}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            >
+                              <div className="font-medium">
+                                {teacher.firstName} {teacher.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {teacher.email}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500">
+                          No teachers found matching "{teacherSearchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {!isLoadingTeachers && teachers.length === 0 && (
                   <p className="text-sm text-gray-500 mt-1">
                     No teachers found. Please add teachers first.
@@ -823,22 +1013,84 @@ const CurriculumStructureMain: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Class
                 </label>
-                <select
-                  value={newCourse.classId}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, classId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a class</option>
-                  {classes.map(cls => (
-                    <option key={cls._id} value={cls._id}>{cls.name}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={showClassDropdown ? classSearchTerm : getSelectedClassDisplay()}
+                    onChange={(e) => {
+                      setClassSearchTerm(e.target.value);
+                      setShowClassDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setShowClassDropdown(true);
+                      setClassSearchTerm("");
+                    }}
+                    onBlur={() => {
+                      // Delay hiding to allow clicking on options
+                      setTimeout(() => setShowClassDropdown(false), 150);
+                    }}
+                    placeholder={classes.length === 0 
+                      ? "No classes available" 
+                      : "Search and select a class..."
+                    }
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={classes.length === 0}
+                  />
+                  {showClassDropdown && classes.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {filteredClasses.length > 0 ? (
+                        <>
+                          <div
+                            onClick={() => {
+                              setNewCourse(prev => ({ ...prev, classId: "" }));
+                              setClassSearchTerm("");
+                              setShowClassDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b text-gray-500"
+                          >
+                            Clear selection
+                          </div>
+                          {filteredClasses.map(cls => (
+                            <div
+                              key={cls._id}
+                              onClick={() => {
+                                setNewCourse(prev => ({ ...prev, classId: cls._id }));
+                                setClassSearchTerm("");
+                                setShowClassDropdown(false);
+                              }}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            >
+                              <div className="font-medium">
+                                {cls.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Grade {cls.gradeLevel} {cls.section ? `- Section ${cls.section}` : ""}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500">
+                          No classes found matching "{classSearchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {classes.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    No classes found. Please add classes first.
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-4 p-6 border-t bg-gray-50">
               <button
-                onClick={() => setShowCourseModal(false)}
+                onClick={() => closeCourseModal()}
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                 disabled={isSubmittingCourse}
               >

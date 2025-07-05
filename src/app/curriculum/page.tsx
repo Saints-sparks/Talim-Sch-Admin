@@ -139,7 +139,7 @@ const CurriculumDashboardMain: React.FC = () => {
   const fetchClasses = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/classes", {
+      const response = await fetch(`${API_ENDPOINTS.GET_CLASSES}`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
