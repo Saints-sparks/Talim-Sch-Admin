@@ -123,8 +123,8 @@ export default function TeacherProfileForm() {
         availableTime: data.availableTime || "",
         isFormTeacher: data.isFormTeacher || false,
         schoolId: data.userId.schoolId || "",
-        subjectToTeach: data.assignedCourses?.[0] || "",
-        assignedClass: data.assignedClasses?.[0] || "",
+        subjectToTeach: data.assignedCourses?.[0]?._id || "",
+        assignedClass: data.assignedClasses?.[0]?._id || "",
         classTeacherAssignment: "",
       });
     } catch (error) {

@@ -18,26 +18,21 @@ import {
   Search,
   Bell,
   User,
+  BookOpen,
+  Users,
+  GraduationCap,
+  Briefcase,
+  Clock,
+  Award,
+  Mail,
+  Phone,
+  MapPin,
+  Badge,
+  Calendar as CalendarIcon,
 } from "lucide-react";
-
-interface Class {
-  _id: string;
-  name: string;
-  gradeLevel?: string;
-  section?: string;
-}
-
-interface Course {
-  _id: string;
-  name: string;
-  code: string;
-  description?: string;
-}
 
 const TeacherProfile = () => {
   const [teacher, setTeacher] = useState<TeacherById | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("personal-details");
@@ -45,62 +40,6 @@ const TeacherProfile = () => {
   const params = useParams();
   const router = useRouter();
   const teacherId = params.id as string;
-
-  // Function to fetch classes
-  const fetchClasses = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/classes", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch classes");
-
-      const responseData = await response.json();
-      
-      let classesData: Class[] = [];
-      if (Array.isArray(responseData)) {
-        classesData = responseData;
-      } else if (responseData.data && Array.isArray(responseData.data)) {
-        classesData = responseData.data;
-      } else if (responseData.classes && Array.isArray(responseData.classes)) {
-        classesData = responseData.classes;
-      }
-
-      setClasses(classesData);
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-    }
-  };
-
-  // Function to fetch courses/subjects
-  const fetchCourses = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch courses");
-
-      const responseData = await response.json();
-      
-      let coursesData: Course[] = [];
-      if (Array.isArray(responseData)) {
-        coursesData = responseData;
-      } else if (responseData.data && Array.isArray(responseData.data)) {
-        coursesData = responseData.data;
-      }
-
-      setCourses(coursesData);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-    }
-  };
 
   useEffect(() => {
     const fetchTeacher = async () => {
@@ -114,41 +53,8 @@ const TeacherProfile = () => {
           throw new Error('Teacher not found');
         }
 
-        const teacherData: TeacherById = {
-          _id: teachers._id,
-          userId: {
-            _id: teachers.userId._id,
-            userId: teachers.userId._id,
-            email: teachers.userId.email,
-            firstName: teachers.userId.firstName,
-            lastName: teachers.userId.lastName,
-            phoneNumber: teachers.userId.phoneNumber,
-            role: teachers.userId.role,
-            schoolId: teachers.userId.schoolId,
-            isActive: teachers.userId.isActive,
-            isEmailVerified: teachers.userId.isEmailVerified || false,
-            isTwoFactorEnabled: teachers.userId.isTwoFactorEnabled || false,
-            devices: teachers.userId.devices || [],
-            id: teachers.userId._id,
-            createdAt: teachers.userId.createdAt || new Date().toISOString(),
-            updatedAt: teachers.userId.updatedAt || new Date().toISOString(),
-            __v: teachers.userId.__v || 0,
-          },
-          assignedClasses: teachers.assignedClasses,
-          assignedCourses: teachers.assignedCourses,
-          isFormTeacher: teachers.isFormTeacher,
-          highestAcademicQualification: teachers.highestAcademicQualification,
-          yearsOfExperience: teachers.yearsOfExperience,
-          specialization: teachers.specialization,
-          employmentType: teachers.employmentType,
-          employmentRole: teachers.employmentRole,
-          availabilityDays: teachers.availabilityDays,
-          availableTime: teachers.availableTime,
-          createdAt: teachers.createdAt || new Date().toISOString(),
-          updatedAt: teachers.updatedAt || new Date().toISOString(),
-          __v: teachers.__v || 0,
-        };
-        setTeacher(teacherData);
+        // No need to manually transform the data since it should match the interface now
+        setTeacher(teachers);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch teacher');
       } finally {
@@ -156,36 +62,73 @@ const TeacherProfile = () => {
       }
     };
 
-    const loadData = async () => {
-      await Promise.all([
-        fetchTeacher(),
-        fetchClasses(),
-        fetchCourses()
-      ]);
-    };
-
     if (teacherId) {
-      loadData();
+      fetchTeacher();
     }
   }, [teacherId]);
 
-  // Helper function to get class name by ID
-  const getClassName = (classId: string): string => {
-    const classItem = classes.find(c => c._id === classId);
-    return classItem ? classItem.name : classId;
-  };
-
-  // Helper function to get course name by ID
-  const getCourseName = (courseId: string): string => {
-    const courseItem = courses.find(c => c._id === courseId);
-    return courseItem ? `${courseItem.code} - ${courseItem.name}` : courseId;
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F3F3F3] p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Skeleton */}
+        <div className="border-b border-gray-200 px-6 py-4 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 max-w-md mx-8">
+              <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Skeleton */}
+        <div className="p-6 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-28 bg-gray-200 rounded-md animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="p-6">
+          <div className="bg-white rounded-lg shadow-sm border">
+            {/* Tabs Skeleton */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex space-x-8">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Skeleton */}
+            <div className="p-8">
+              <div className="space-y-8">
+                <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Profile Picture Skeleton */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-32 h-32 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+                  </div>
+
+                  {/* Information Skeleton */}
+                  <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-10 bg-gray-100 border rounded-md animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -193,16 +136,24 @@ const TeacherProfile = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F3F3F3] p-6">
-        <Header />
-        <div className="text-center py-12">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={() => router.push('/users/teachers')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Back to Teachers
-          </button>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-md mx-auto mt-32">
+          <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.963-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Teacher</h3>
+            <p className="text-red-600 mb-6">{error}</p>
+            <button
+              onClick={() => router.push('/users/teachers')}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Back to Teachers
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -210,112 +161,141 @@ const TeacherProfile = () => {
 
   if (!teacher) {
     return (
-      <div className="min-h-screen bg-[#F3F3F3] p-6">
-        <Header />
-        <div className="text-center py-12">
-          <p className="text-gray-600">Teacher not found</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-md mx-auto mt-32">
+          <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <User className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Teacher Not Found</h3>
+            <p className="text-gray-600 mb-6">The teacher you're looking for doesn't exist or has been removed.</p>
+            <button
+              onClick={() => router.push('/users/teachers')}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              Back to Teachers
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F3F3]">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1 max-w-md mx-8">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
-                placeholder="Search"
-                className="w-full pl-10 bg-gray-100 border-0 focus:bg-white rounded-md py-2 px-3"
+                placeholder="Search teachers, classes, subjects..."
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-gray-600">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm">12 Oct, 2024</span>
+            <div className="flex items-center space-x-2 text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+              <CalendarIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">July 5, 2025</span>
             </div>
-            <Bell className="w-5 h-5 text-gray-600" />
-            <Avatar className="w-8 h-8">
+            <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <Avatar className="w-8 h-8 ring-2 ring-gray-200">
               <AvatarImage src="/placeholder.svg" />
-              <AvatarFallback>U</AvatarFallback>
+              <AvatarFallback className="bg-blue-500 text-white text-sm font-semibold">AD</AvatarFallback>
             </Avatar>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="p-6">
+      <div className="bg-white px-6 py-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => router.push('/users/teachers')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors group"
             >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm">Back to Teachers</span>
+              <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">Back to Teachers</span>
             </button>
+            <div className="text-gray-300">|</div>
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600">Teacher Profile</span>
+            </div>
           </div>
           <button 
             onClick={() => router.push(`/users/teachers/${teacherId}/edit`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
           >
-            <FiEdit /> Edit Teacher
+            <FiEdit className="w-4 h-4" /> 
+            Edit Teacher
           </button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="p-6">
-        <Card>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="w-full h-[50px]"
+            className="w-full"
           >
-            <TabsList className="grid w-full h-[50px] grid-cols-5 bg-gray-100 rounded-lg">
+            <TabsList className="grid w-full grid-cols-5 bg-gray-50 border-b border-gray-200 rounded-none h-auto p-0">
               <TabsTrigger
                 value="personal-details"
-                className="data-[state=active]:bg-white h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
+                <User className="w-4 h-4" />
                 Personal Details
               </TabsTrigger>
               <TabsTrigger
                 value="qualifications"
-                className="data-[state=active]:bg-white h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
-                Qualifications & Experience
+                <GraduationCap className="w-4 h-4" />
+                Qualifications
               </TabsTrigger>
               <TabsTrigger
                 value="employment"
-                className="data-[state=active]:bg-white h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
-                Employment Details
+                <Briefcase className="w-4 h-4" />
+                Employment
               </TabsTrigger>
               <TabsTrigger
                 value="assign"
-                className="data-[state=active]:bg-white h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
-                Class and Subject Assignment
+                <BookOpen className="w-4 h-4" />
+                Assignments
               </TabsTrigger>
               <TabsTrigger
                 value="availability"
-                className="data-[state=active]:bg-white h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
-                Teacher Availability
+                <Clock className="w-4 h-4" />
+                Availability
               </TabsTrigger>
             </TabsList>
 
             <CardContent className="p-8">
               <TabsContent value="personal-details" className="mt-0">
                 <div className="space-y-8">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Personal Details
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Personal Details</h2>
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Picture Section */}
@@ -324,78 +304,108 @@ const TeacherProfile = () => {
                         <Label className="text-sm font-medium text-gray-700 mb-4 block">
                           Profile Picture
                         </Label>
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-gray-600">
-                            {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
-                          </span>
+                        <div className="relative">
+                          <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <span className="text-3xl font-bold text-white">
+                              {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
+                            </span>
+                          </div>
+                          <div className="absolute -bottom-2 -right-2">
+                            {teacher.userId.isActive ? (
+                              <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-400 rounded-full border-2 border-white"></div>
+                            )}
+                          </div>
                         </div>
-                        {teacher.isFormTeacher && (
-                          <span className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                            Form Teacher
-                          </span>
-                        )}
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {teacher.userId.firstName} {teacher.userId.lastName}
+                          </h3>
+                          {teacher.isFormTeacher && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-sm rounded-full font-medium">
+                              <Badge className="w-3 h-3" />
+                              Form Teacher
+                            </span>
+                          )}
+                          <div className="flex items-center justify-center gap-1">
+                            <span className={`w-2 h-2 rounded-full ${teacher.userId.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                            <span className={`text-xs font-medium ${teacher.userId.isActive ? 'text-green-700' : 'text-gray-500'}`}>
+                              {teacher.userId.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Information Display */}
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <User className="w-4 h-4" />
                           First Name
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.userId.firstName}</span>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                          <span className="text-gray-900 font-medium">{teacher.userId.firstName}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <User className="w-4 h-4" />
                           Last Name
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.userId.lastName}</span>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                          <span className="text-gray-900 font-medium">{teacher.userId.lastName}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Phone className="w-4 h-4" />
                           Phone Number
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.userId.phoneNumber}</span>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                          <span className="text-gray-900 font-medium">{teacher.userId.phoneNumber}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Mail className="w-4 h-4" />
                           Email Address
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.userId.email}</span>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                          <span className="text-gray-900 font-medium">{teacher.userId.email}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Status
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Badge className="w-4 h-4" />
+                          Account Status
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                             teacher.userId.isActive 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {teacher.userId.isActive ? 'Active' : 'Inactive'}
+                            <span className={`w-1.5 h-1.5 rounded-full ${teacher.userId.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                            {teacher.userId.isActive ? 'Active Account' : 'Inactive Account'}
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <MapPin className="w-4 h-4" />
                           User ID
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900 text-sm">{teacher.userId._id}</span>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                          <span className="text-gray-600 text-sm font-mono">{teacher.userId._id}</span>
                         </div>
                       </div>
                     </div>
@@ -405,51 +415,70 @@ const TeacherProfile = () => {
 
               <TabsContent value="qualifications" className="mt-0">
                 <div className="space-y-8">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Qualifications & Experience
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <GraduationCap className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Qualifications & Experience</h2>
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Picture Section */}
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
                         <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                          Profile Picture
+                          Academic Profile
                         </Label>
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-gray-600">
-                            {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
-                          </span>
+                        <div className="w-32 h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                          <GraduationCap className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{teacher.specialization}</h3>
+                          <p className="text-sm text-gray-600">Specialization</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Information Display */}
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Award className="w-4 h-4" />
                           Highest Qualification
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.highestAcademicQualification}</span>
+                        <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg px-4 py-4">
+                          <span className="text-emerald-900 font-semibold">{teacher.highestAcademicQualification}</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Years of Teaching Experience
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Clock className="w-4 h-4" />
+                          Teaching Experience
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.yearsOfExperience} years</span>
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-blue-700">{teacher.yearsOfExperience}</span>
+                            <span className="text-blue-600 font-medium">years</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="md:col-span-2 space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Specialization/Subject Expertise
+                      <div className="md:col-span-2 space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <BookOpen className="w-4 h-4" />
+                          Subject Expertise
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.specialization}</span>
+                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-200 rounded-lg">
+                              <BookOpen className="w-5 h-5 text-purple-700" />
+                            </div>
+                            <div>
+                              <span className="text-purple-900 font-semibold text-lg">{teacher.specialization}</span>
+                              <p className="text-purple-700 text-sm">Primary teaching subject</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -459,20 +488,27 @@ const TeacherProfile = () => {
 
               <TabsContent value="employment" className="mt-0">
                 <div className="space-y-8">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Employment Details
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Employment Details</h2>
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Picture Section */}
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
                         <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                          Profile Picture
+                          Employment Status
                         </Label>
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-gray-600">
-                            {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
+                        <div className="w-32 h-32 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                          <Briefcase className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="text-center space-y-2">
+                          <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 text-sm rounded-full font-medium">
+                            <Briefcase className="w-3 h-3" />
+                            {teacher.employmentType}
                           </span>
                         </div>
                       </div>
@@ -480,21 +516,39 @@ const TeacherProfile = () => {
 
                     {/* Information Display */}
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Clock className="w-4 h-4" />
                           Employment Type
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.employmentType}</span>
+                        <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-200 rounded-lg">
+                              <Clock className="w-4 h-4 text-amber-700" />
+                            </div>
+                            <div>
+                              <span className="text-amber-900 font-semibold">{teacher.employmentType}</span>
+                              <p className="text-amber-700 text-sm">Work schedule</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Badge className="w-4 h-4" />
                           Employment Role
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">{teacher.employmentRole}</span>
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-200 rounded-lg">
+                              <Badge className="w-4 h-4 text-blue-700" />
+                            </div>
+                            <div>
+                              <span className="text-blue-900 font-semibold">{teacher.employmentRole}</span>
+                              <p className="text-blue-700 text-sm">Position type</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -504,75 +558,167 @@ const TeacherProfile = () => {
 
               <TabsContent value="assign" className="mt-0">
                 <div className="space-y-8">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Class and Subject Assignment
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <BookOpen className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Class and Subject Assignments</h2>
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Picture Section */}
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
                         <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                          Profile Picture
+                          Teaching Overview
                         </Label>
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-gray-600">
-                            {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
-                          </span>
+                        <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                          <BookOpen className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Form Teacher Status
+                            </Label>
+                            <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
+                              <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                                teacher.isFormTeacher 
+                                  ? 'bg-emerald-100 text-emerald-800' 
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                <Badge className="w-3 h-3" />
+                                {teacher.isFormTeacher ? 'Form Teacher' : 'Subject Teacher'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Information Display */}
-                    <div className="lg:col-span-2 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Form Teacher Status
-                          </Label>
-                          <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              teacher.isFormTeacher 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {teacher.isFormTeacher ? 'Form Teacher' : 'Regular Teacher'}
-                            </span>
+                    <div className="lg:col-span-2 space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-5 h-5 text-indigo-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Assigned Classes</h3>
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <h3 className="text-lg font-semibold mb-3">Assigned Classes</h3>
-                          <div className="space-y-2">
-                            {teacher.assignedClasses && teacher.assignedClasses.length > 0 ? (
-                              teacher.assignedClasses.map((classId, index) => (
-                                <div key={index} className="bg-gray-50 border border-gray-200 rounded-md p-3">
-                                  <span className="font-medium">{getClassName(classId)}</span>
-                                  <span className="text-xs text-gray-500 ml-2">ID: {classId}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                          <div className="space-y-3">
+                            {/* Regular assigned classes */}
+                            {teacher.assignedClasses && teacher.assignedClasses.length > 0 && (
+                              <>
+                                {teacher.assignedClasses.map((classObj, index) => (
+                                  <div key={`assigned-${index}`} className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Users className="w-4 h-4 text-blue-600" />
+                                          <span className="font-semibold text-blue-900">{classObj.name}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2 text-sm text-blue-700">
+                                            <User className="w-3 h-3" />
+                                            <span>Capacity: {classObj.classCapacity} students</span>
+                                          </div>
+                                          {classObj.classDescription && (
+                                            <p className="text-sm text-blue-600">{classObj.classDescription}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <span className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                                        Subject Teacher
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                            
+                            {/* Form teacher classes */}
+                            {teacher.classTeacherClasses && teacher.classTeacherClasses.length > 0 && (
+                              <>
+                                {teacher.classTeacherClasses.map((classObj, index) => (
+                                  <div key={`form-teacher-${index}`} className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition-all">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Badge className="w-4 h-4 text-emerald-600" />
+                                          <span className="font-semibold text-emerald-900">{classObj.name}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                                            <User className="w-3 h-3" />
+                                            <span>Capacity: {classObj.classCapacity} students</span>
+                                          </div>
+                                          {classObj.classDescription && (
+                                            <p className="text-sm text-emerald-600">{classObj.classDescription}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <span className="bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                                        Form Teacher
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                            
+                            {/* Show message if no classes assigned */}
+                            {(!teacher.assignedClasses || teacher.assignedClasses.length === 0) && 
+                             (!teacher.classTeacherClasses || teacher.classTeacherClasses.length === 0) && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                                <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                                 <span className="text-gray-500 italic">No classes assigned</span>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div>
-                          <h3 className="text-lg font-semibold mb-3">Assigned Courses</h3>
-                          <div className="space-y-2">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-purple-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Assigned Courses</h3>
+                          </div>
+                          <div className="space-y-3">
                             {teacher.assignedCourses && teacher.assignedCourses.length > 0 ? (
-                              teacher.assignedCourses.map((courseId, index) => (
-                                <div key={index} className="bg-gray-50 border border-gray-200 rounded-md p-3">
-                                  <span className="font-medium">{getCourseName(courseId)}</span>
-                                  <span className="text-xs text-gray-500 ml-2">ID: {courseId}</span>
-                                </div>
-                              ))
+                              teacher.assignedCourses.map((course, index) => {
+                                // Find the class name from both assigned classes and form teacher classes
+                                let assignedClass = teacher.assignedClasses?.find(cls => cls._id === course.classId);
+                                if (!assignedClass) {
+                                  assignedClass = teacher.classTeacherClasses?.find(cls => cls._id === course.classId);
+                                }
+                                const className = assignedClass ? assignedClass.name : course.classId;
+                                
+                                return (
+                                  <div key={index} className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4 hover:shadow-md transition-all">
+                                    <div className="space-y-3">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <BookOpen className="w-4 h-4 text-purple-600" />
+                                          <span className="font-semibold text-purple-900">{course.title}</span>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <Badge className="w-3 h-3 text-purple-600" />
+                                          <span className="text-purple-700 font-medium">Code: {course.courseCode}</span>
+                                        </div>
+                                        {course.description && (
+                                          <p className="text-sm text-purple-600 bg-purple-50 rounded px-2 py-1">{course.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <Users className="w-3 h-3 text-purple-600" />
+                                          <span className="text-purple-700">Class: {className}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
                             ) : (
-                              <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                                <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                                 <span className="text-gray-500 italic">No courses assigned</span>
                               </div>
                             )}
@@ -586,49 +732,81 @@ const TeacherProfile = () => {
 
               <TabsContent value="availability" className="mt-0">
                 <div className="space-y-8">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Teacher Availability
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-teal-100 rounded-lg">
+                      <Clock className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Teacher Availability</h2>
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Profile Picture Section */}
                     <div className="flex flex-col items-center space-y-4">
                       <div className="text-center">
                         <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                          Profile Picture
+                          Schedule Overview
                         </Label>
-                        <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-gray-600">
-                            {teacher.userId.firstName[0]}{teacher.userId.lastName[0]}
-                          </span>
+                        <div className="w-32 h-32 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                          <Clock className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="text-center space-y-2">
+                          <h3 className="text-lg font-semibold text-gray-900">Work Schedule</h3>
+                          <div className="flex items-center justify-center gap-1">
+                            <Clock className="w-4 h-4 text-teal-600" />
+                            <span className="text-sm text-gray-600">Teaching Hours</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Information Display */}
                     <div className="lg:col-span-2 space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-4">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <CalendarIcon className="w-4 h-4" />
                           Available Days
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">
-                            {teacher.availabilityDays && teacher.availabilityDays.length > 0 
-                              ? teacher.availabilityDays.join(', ') 
-                              : 'Not specified'
-                            }
-                          </span>
+                        <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg p-6">
+                          {teacher.availabilityDays && teacher.availabilityDays.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {teacher.availabilityDays.map((day, index) => (
+                                <span key={index} className="inline-flex items-center gap-2 px-4 py-2 bg-teal-200 text-teal-800 rounded-full text-sm font-medium">
+                                  <CalendarIcon className="w-3 h-3" />
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <CalendarIcon className="w-8 h-8 text-teal-400 mx-auto mb-2" />
+                              <span className="text-teal-600 italic">No specific days specified</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">
+                      <div className="space-y-4">
+                        <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Clock className="w-4 h-4" />
                           Available Time
                         </Label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                          <span className="text-gray-900">
-                            {teacher.availableTime || 'Not specified'}
-                          </span>
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+                          {teacher.availableTime ? (
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-blue-200 rounded-lg">
+                                <Clock className="w-6 h-6 text-blue-700" />
+                              </div>
+                              <div>
+                                <span className="text-blue-900 font-semibold text-lg">{teacher.availableTime}</span>
+                                <p className="text-blue-700 text-sm">Working hours</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <Clock className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                              <span className="text-blue-600 italic">No specific time specified</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -637,7 +815,7 @@ const TeacherProfile = () => {
               </TabsContent>
             </CardContent>
           </Tabs>
-        </Card>
+        </div>
       </div>
     </div>
   );

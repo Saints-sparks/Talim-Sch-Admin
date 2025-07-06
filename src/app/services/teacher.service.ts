@@ -72,14 +72,34 @@ export interface TeacherById {
     isEmailVerified: boolean;
     schoolId: string;
     isTwoFactorEnabled: boolean;
-    devices: any[]; // Could be more specific if device structure is known
+    devices: any[];
     createdAt: string;
     updatedAt: string;
     __v: number;
     id: string;
   };
-  assignedClasses: any[]; // Could be more specific if class structure is known
-  assignedCourses: any[]; // Could be more specific if course structure is known
+  assignedClasses: {
+    _id: string;
+    name: string;
+    classCapacity: number;
+    classDescription: string;
+    assignedCourses: string[];
+  }[]; // Array of populated class objects
+  classTeacherClasses?: {
+    _id: string;
+    name: string;
+    classCapacity: number;
+    classDescription: string;
+    assignedCourses: string[];
+  }[]; // Array of populated class objects for classes where teacher is form teacher
+  assignedCourses: {
+    _id: string;
+    courseCode: string;
+    title: string;
+    description: string;
+    classId: string;
+    subjectId: string;
+  }[]; // Array of populated course objects
   isFormTeacher: boolean;
   highestAcademicQualification: string;
   yearsOfExperience: number;
