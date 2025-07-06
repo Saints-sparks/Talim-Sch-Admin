@@ -8,6 +8,7 @@ import { Header } from '@/components/Header';
 import AddStudentModal from '@/components/AddStudentModal';
 import { FaSearch } from 'react-icons/fa';
 import StudentsSkeleton from '@/components/StudentsSkeleton';
+import Avatar from '@/components/Avatar';
 
 const StudentPage: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -227,10 +228,11 @@ const StudentPage: React.FC = () => {
 
                                     {/* Student Avatar */}
                                     <div className="flex justify-center mb-4">
-                                        <img
-                                            src={student.userId.userAvatar || '/default-avatar.png'}
-                                            alt={`${student.userId.firstName} ${student.userId.lastName}`}
-                                            className="w-16 h-16 rounded-full object-cover"
+                                        <Avatar
+                                            src={student.userId.userAvatar}
+                                            firstName={student.userId.firstName}
+                                            lastName={student.userId.lastName}
+                                            size="md"
                                         />
                                     </div>
 

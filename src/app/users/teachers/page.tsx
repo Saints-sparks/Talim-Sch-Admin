@@ -9,6 +9,7 @@ import { FaSearch } from "react-icons/fa"
 import { Teacher, teacherService } from "@/app/services/teacher.service"
 import { getClasses, type Class } from "@/app/services/student.service"
 import { toast } from "react-toastify"
+import Avatar from "@/components/Avatar"
 
 const TeachersPage: React.FC = () => {
     const router = useRouter()
@@ -238,10 +239,11 @@ const TeachersPage: React.FC = () => {
 
                                     {/* Teacher Avatar */}
                                     <div className="flex justify-center mb-4">
-                                        <img
-                                            src={teacher.userId?.userAvatar || "/default-avatar.png"}
-                                            alt={`${teacher.userId?.firstName || teacher.firstName} ${teacher.userId?.lastName || teacher.lastName}`}
-                                            className="w-16 h-16 rounded-full object-cover"
+                                        <Avatar
+                                            src={teacher.userId?.userAvatar}
+                                            firstName={teacher.userId?.firstName || teacher.firstName}
+                                            lastName={teacher.userId?.lastName || teacher.lastName}
+                                            size="md"
                                         />
                                     </div>
 

@@ -1,7 +1,9 @@
 "use client"
 
-import TeacherEditProfile from "./components/teachersProfileUpdate_backup"
+import TeacherProfileForm from "./components/teachersProfileUpdate"
+
+
 
 export default function Page() {
-  return <TeacherEditProfile />
+  return <TeacherProfileForm />
 }
