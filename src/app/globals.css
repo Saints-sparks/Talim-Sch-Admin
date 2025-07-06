@@ -11,6 +11,42 @@ body {
   font-family: 'Manrope', Arial, Helvetica, sans-serif;
 }
 
+/* Enhanced smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus states */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Smooth hover states for interactive elements only */
+button,
+a[href] {
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Loading state animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

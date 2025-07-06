@@ -3,11 +3,11 @@ import localFont from "next/font/local";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
+import { TransitionProvider } from "@/context/TransitionContext";
 
 import { usePathname, useRouter } from "next/navigation"; // Import usePathname and useRouter for routing
 
 import { useEffect } from "react"; // Import useEffect for side effects
-import LoadingProvider from '@/providers/LoadingProvider';
 import { SidebarProvider } from "@/context/SidebarContext";
 import LayoutShell from "@/components/LayoutShell";
 import { ToastContainer, useToast } from "@/components/CustomToast";
@@ -56,22 +56,21 @@ export default function RootLayout({
   }, [pathname, router, toast]);
 
   return (
-    <LoadingProvider>
     <html lang="en">
     <body
   className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased`}
 >
-
-        <SidebarProvider>
-          <PageIndicatorProvider>
-            <LayoutShell showSidebar={showSidebar}>
-              {children}
-            </LayoutShell>
-            <ToastContainer toasts={toasts} onRemove={removeToast} />
-          </PageIndicatorProvider>
-        </SidebarProvider>
+        <TransitionProvider>
+          <SidebarProvider>
+            <PageIndicatorProvider>
+              <LayoutShell showSidebar={showSidebar}>
+                {children}
+              </LayoutShell>
+              <ToastContainer toasts={toasts} onRemove={removeToast} />
+            </PageIndicatorProvider>
+          </SidebarProvider>
+        </TransitionProvider>
       </body>
     </html>
-  </LoadingProvider>
   );
 }

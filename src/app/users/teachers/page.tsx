@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 import { Header } from "@/components/Header"
 import AddTeacherModal from "@/components/AddTeacherModal"
 import TeachersSkeleton from "@/components/TeachersSkeleton"
@@ -10,6 +11,8 @@ import { Teacher, teacherService } from "@/app/services/teacher.service"
 import { getClasses, type Class } from "@/app/services/student.service"
 import { toast } from "react-toastify"
 import Avatar from "@/components/Avatar"
+import SmoothButton from "@/components/SmoothButton"
+import { ErrorState, EmptyState } from "@/components/StateComponents"
 
 const TeachersPage: React.FC = () => {
     const router = useRouter()
@@ -99,13 +102,15 @@ const TeachersPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6 mt-5">
                 <div className="flex items-center gap-x-4">
                     <h1 className="text-xl font-medium text-gray-800">Teachers</h1>
-                    <button
-                        className="flex items-center gap-2 text-gray-600 font-medium"
+                    <SmoothButton
                         onClick={toggleModal}
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-2 text-gray-600 font-medium hover:text-gray-900"
                     >
                         <span className="text-lg">+</span>
                         Add
-                    </button>
+                    </SmoothButton>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -153,57 +158,52 @@ const TeachersPage: React.FC = () => {
                 {isLoading ? (
                     <TeachersSkeleton />
                 ) : error ? (
-                    <div className="text-center py-12 flex-1 flex items-center justify-center">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-                            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Teachers</div>
-                            <p className="text-red-600 mb-4">{error}</p>
-                            <button
-                                onClick={fetchTeachers}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    </div>
+                    <ErrorState
+                        title="Error Loading Teachers"
+                        message={error}
+                        onRetry={fetchTeachers}
+                    />
                 ) : teachers.length === 0 ? (
-                    <div className="text-center py-12 flex-1 flex items-center justify-center">
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                            <div className="text-gray-400 text-6xl mb-4">👨‍🏫</div>
-                            <div className="text-gray-600 text-lg font-semibold mb-2">No Teachers Found</div>
-                            <p className="text-gray-500 mb-4">
-                                {searchTerm || selectedClass
-                                    ? 'No teachers match your current search or filter criteria.'
-                                    : 'Get started by adding your first teacher to the system.'}
-                            </p>
-                            {(searchTerm || selectedClass) ? (
-                                <button
-                                    onClick={() => {
-                                        setSearchTerm('');
-                                        setSelectedClass(null);
-                                        setCurrentPage(1);
-                                    }}
-                                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                                >
-                                    Clear Filters
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={toggleModal}
-                                    className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
-                                >
-                                    Add First Teacher
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <EmptyState
+                        icon="👨‍🏫"
+                        title="No Teachers Found"
+                        message={
+                            searchTerm || selectedClass
+                                ? 'No teachers match your current search or filter criteria.'
+                                : 'Get started by adding your first teacher to the system.'
+                        }
+                        actionText={
+                            searchTerm || selectedClass 
+                                ? "Clear Filters" 
+                                : "Add First Teacher"
+                        }
+                        onAction={
+                            searchTerm || selectedClass 
+                                ? () => {
+                                    setSearchTerm('');
+                                    setSelectedClass(null);
+                                    setCurrentPage(1);
+                                  }
+                                : toggleModal
+                        }
+                    />
                 ) : (
                     <>
                         {/* Teachers Grid - Takes available space */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
-                            {currentTeachers.map((teacher) => (
-                                <div
+                        <motion.div 
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {currentTeachers.map((teacher, index) => (
+                                <motion.div
                                     key={teacher._id}
-                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit"
+                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit hover:shadow-md transition-shadow duration-200"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05, duration: 0.2 }}
+                                    whileHover={{ y: -2 }}
                                 >
                                     {/* Three dots menu */}
                                     <div className="absolute top-4 right-4">
@@ -257,16 +257,17 @@ const TeachersPage: React.FC = () => {
                                         </p>
                                         
                                         {/* View Profile Button */}
-                                        <button
-                                            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#BFCCD9] transition-colors text-sm"
+                                        <SmoothButton
                                             onClick={() => handleViewProfile(teacher._id)}
+                                            variant="outline"
+                                            className="w-full text-gray-700 border-gray-300 hover:bg-[#BFCCD9]"
                                         >
                                             View Profile
-                                        </button>
+                                        </SmoothButton>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
-                        </div>
+                        </motion.div>
 
                         {/* Pagination - Fixed at bottom matching Figma design */}
                         <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">

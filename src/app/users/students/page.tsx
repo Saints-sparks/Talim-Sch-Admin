@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { studentService, StudentById, Class, getClasses, Student } from '@/app/services/student.service';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
@@ -9,6 +10,8 @@ import AddStudentModal from '@/components/AddStudentModal';
 import { FaSearch } from 'react-icons/fa';
 import StudentsSkeleton from '@/components/StudentsSkeleton';
 import Avatar from '@/components/Avatar';
+import SmoothButton from '@/components/SmoothButton';
+import { ErrorState, EmptyState } from '@/components/StateComponents';
 
 const StudentPage: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -100,13 +103,15 @@ const StudentPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6 mt-5">
                 <div className="flex items-center gap-x-4">
                     <h1 className="text-xl font-medium text-gray-800">Students</h1>
-                    <button
-                        className="flex items-center gap-2 text-gray-600 font-medium"
+                    <SmoothButton
                         onClick={toggleModal}
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-2 text-gray-600 font-medium hover:text-gray-900"
                     >
                         <span className="text-lg">+</span>
                         Add
-                    </button>
+                    </SmoothButton>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -154,57 +159,52 @@ const StudentPage: React.FC = () => {
                 {isLoading ? (
                     <StudentsSkeleton />
                 ) : error ? (
-                    <div className="text-center py-12 flex-1 flex items-center justify-center">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-                            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Students</div>
-                            <p className="text-red-600 mb-4">{error}</p>
-                            <button
-                                onClick={fetchStudents}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    </div>
+                    <ErrorState
+                        title="Error Loading Students"
+                        message={error}
+                        onRetry={fetchStudents}
+                    />
                 ) : students.length === 0 ? (
-                    <div className="text-center py-12 flex-1 flex items-center justify-center">
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                            <div className="text-gray-400 text-6xl mb-4">👨‍🎓</div>
-                            <div className="text-gray-600 text-lg font-semibold mb-2">No Students Found</div>
-                            <p className="text-gray-500 mb-4">
-                                {searchTerm || selectedClass
-                                    ? 'No students match your current search or filter criteria.'
-                                    : 'There are no students in the system yet.'}
-                            </p>
-                            {(searchTerm || selectedClass) ? (
-                                <button
-                                    onClick={() => {
-                                        setSearchTerm('');
-                                        setSelectedClass(null);
-                                        setCurrentPage(1);
-                                    }}
-                                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                                >
-                                    Clear Filters
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={toggleModal}
-                                    className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
-                                >
-                                    Add First Student
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <EmptyState
+                        icon="👨‍🎓"
+                        title="No Students Found"
+                        message={
+                            searchTerm || selectedClass
+                                ? 'No students match your current search or filter criteria.'
+                                : 'There are no students in the system yet.'
+                        }
+                        actionText={
+                            searchTerm || selectedClass 
+                                ? "Clear Filters" 
+                                : "Add First Student"
+                        }
+                        onAction={
+                            searchTerm || selectedClass 
+                                ? () => {
+                                    setSearchTerm('');
+                                    setSelectedClass(null);
+                                    setCurrentPage(1);
+                                  }
+                                : toggleModal
+                        }
+                    />
                 ) : (
                     <>
                         {/* Students Grid - Takes available space */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
-                            {currentStudents.map((student) => (
-                                <div
+                        <motion.div 
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {currentStudents.map((student, index) => (
+                                <motion.div
                                     key={student._id}
-                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit"
+                                    className="bg-white rounded-lg border border-gray-200 p-6 relative h-fit hover:shadow-md transition-shadow duration-200"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05, duration: 0.2 }}
+                                    whileHover={{ y: -2 }}
                                 >
                                     {/* Three dots menu */}
                                     <div className="absolute top-4 right-4">
@@ -244,16 +244,17 @@ const StudentPage: React.FC = () => {
                                         <p className="text-sm text-gray-500 mb-4">{student.gradeLevel}</p>
                                         
                                         {/* View Profile Button */}
-                                        <button
-                                            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                                        <SmoothButton
                                             onClick={() => handleViewProfile(student._id)}
+                                            variant="outline"
+                                            className="w-full text-gray-700 border-gray-300 hover:bg-gray-50"
                                         >
                                             View Profile
-                                        </button>
+                                        </SmoothButton>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
-                        </div>
+                        </motion.div>
 
                         {/* Pagination - Fixed at bottom matching Figma design */}
                         <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">

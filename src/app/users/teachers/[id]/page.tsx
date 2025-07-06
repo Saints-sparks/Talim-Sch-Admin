@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FiEdit } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 import { teacherService, TeacherById } from '@/app/services/teacher.service';
 import { Header } from '@/components/Header';
 import { API_ENDPOINTS } from '@/app/lib/api/config';
