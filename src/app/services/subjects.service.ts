@@ -70,7 +70,7 @@ export const getCourses = async (): Promise<Course[]> => {
 };
 
 export const createCourse = async (courseData: Omit<Course, '_id'>): Promise<Course> => {
-  const token = getLocalStorageItem('accessToken');
+  const token = localStorage.getItem('accessToken');
   if (!token) {
     throw new Error('No access token found');
   }

@@ -45,6 +45,7 @@ export interface User {
 export const getLocalStorageItem = (key: string): LocalStorageItem | null => {
   if (typeof window === 'undefined') return null;
   const item = localStorage.getItem(key);
+  if (!item) return null;
   return item ? JSON.parse(item) : null;
 };
 
