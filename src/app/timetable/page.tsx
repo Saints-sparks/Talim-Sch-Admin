@@ -39,11 +39,15 @@ interface Subject {
 }
 
 const Timetable = () => {
-    const hourHeight = 130; // Height for each hour (in pixels)
-    const startHour = 8; // Timetable starting time (8 AM)
+    const hourHeight = 120; // Height for each hour (in pixels)
+    const [startHour, setStartHour] = useState(8); // Configurable start hour
+    const [endHour, setEndHour] = useState(17); // Configurable end hour (5 PM)
+    const [visibleDays, setVisibleDays] = useState([
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+    ]); // Configurable visible days
 
     // For current time indicator, using manualTime in 24-hour "HH:mm" format
-    const [manualTime, setManualTime] = useState("11:00");
+    const [manualTime, setManualTime] = useState("10:32");
     const [currentTimePosition, setCurrentTimePosition] = useState(0);
 
     // States for fetched data
@@ -163,9 +167,22 @@ const Timetable = () => {
     // Calculate current time indicator position
     useEffect(() => {
         const [hours, minutes] = manualTime.split(":").map(Number);
-        const timePosition = (hours - startHour + minutes / 60) * hourHeight + 65;
-        setCurrentTimePosition(timePosition);
-    }, [manualTime, hourHeight]);
+        if (hours >= startHour && hours <= endHour) {
+            const timePosition = (hours - startHour + minutes / 60) * hourHeight + 65;
+            setCurrentTimePosition(timePosition);
+        }
+    }, [manualTime, hourHeight, startHour]);
+
+    // Generate time slots based on start and end hour
+    const generateTimeSlots = () => {
+        const slots = [];
+        for (let hour = startHour; hour <= endHour; hour++) {
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            slots.push(`${displayHour} ${period}`);
+        }
+        return slots;
+    };
 
     // Helper: get auth headers
     const getAuthHeaders = () => {
@@ -442,8 +459,27 @@ const Timetable = () => {
     );
 
     return (
-        <div className="px-4">
-            <div className="mx-auto bg-[#F8F8F8] rounded-lg p-6">
+        <>
+            <style jsx>{`
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .line-clamp-1 {
+                    overflow: hidden;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 1;
+                    -webkit-box-orient: vertical;
+                }
+                .time-slot-hover:hover {
+                    background-color: #f8fafc;
+                }
+            `}</style>
+            <div className="px-4">
+                <div className="mx-auto bg-[#F8F8F8] rounded-lg p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
                         <h1 className="text-2xl font-medium text-gray-800">Timetable</h1>
@@ -453,6 +489,69 @@ const Timetable = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        {/* Day Filter */}
+                        <div className="min-w-[150px]">
+                            <label className="block mb-1 text-sm font-medium text-gray-700">
+                                Days Filter
+                            </label>
+                            <select
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "all") {
+                                        setVisibleDays(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+                                    } else if (value === "weekdays") {
+                                        setVisibleDays(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+                                    } else if (value === "mon-wed") {
+                                        setVisibleDays(["Monday", "Tuesday", "Wednesday"]);
+                                    } else if (value === "thu-fri") {
+                                        setVisibleDays(["Thursday", "Friday"]);
+                                    }
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Days</option>
+                                <option value="weekdays">Weekdays</option>
+                                <option value="mon-wed">Mon - Wed</option>
+                                <option value="thu-fri">Thu - Fri</option>
+                            </select>
+                        </div>
+
+                        {/* Time Range Filter */}
+                        <div className="flex gap-2 items-center">
+                            <div className="min-w-[100px]">
+                                <label className="block mb-1 text-sm font-medium text-gray-700">
+                                    Start Hour
+                                </label>
+                                <select
+                                    value={startHour}
+                                    onChange={(e) => setStartHour(Number(e.target.value))}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 24 }, (_, i) => (
+                                        <option key={i} value={i}>
+                                            {i === 0 ? '12 AM' : i > 12 ? `${i - 12} PM` : `${i} ${i === 12 ? 'PM' : 'AM'}`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="min-w-[100px]">
+                                <label className="block mb-1 text-sm font-medium text-gray-700">
+                                    End Hour
+                                </label>
+                                <select
+                                    value={endHour}
+                                    onChange={(e) => setEndHour(Number(e.target.value))}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 24 }, (_, i) => (
+                                        <option key={i} value={i} disabled={i <= startHour}>
+                                            {i === 0 ? '12 AM' : i > 12 ? `${i - 12} PM` : `${i} ${i === 12 ? 'PM' : 'AM'}`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
                         <div className="min-w-[200px]">
                             <label className="block mb-2 font-medium text-gray-700">
                                 Select Class
@@ -527,46 +626,36 @@ const Timetable = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto border border-gray-300 text-gray-700 rounded-t-3xl max-h-[510px] 2xl:max-h-[800px] overflow-y-scroll">
+                    <div className="overflow-x-auto border border-gray-300 text-gray-700 rounded-lg max-h-[600px] 2xl:max-h-[800px] overflow-y-scroll">
                         {/* Header Row */}
                         <div
-                            className="grid sticky top-0 z-30"
-                            style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}
+                            className="grid sticky top-0 z-30 bg-white border-b border-gray-300"
+                            style={{ gridTemplateColumns: `120px repeat(${visibleDays.length}, 1fr)` }}
                         >
-                            <div className="font-semibold text-center bg-[#FFFFFF] py-6">
+                            <div className="font-semibold text-center py-4 border-r border-gray-300">
                                 Time
                             </div>
-                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-                                (day, index) => (
-                                    <div
-                                        key={index}
-                                        className="font-semibold text-center bg-[#FFFFFF] py-6 border-l border-gray-300"
-                                    >
-                                        {day}
-                                    </div>
-                                )
-                            )}
+                            {visibleDays.map((day, index) => (
+                                <div
+                                    key={index}
+                                    className="font-semibold text-center py-4 border-r border-gray-300 last:border-r-0"
+                                >
+                                    {day}
+                                </div>
+                            ))}
                         </div>
 
                         {/* Body Grid */}
                         <div
-                            className="grid relative"
-                            style={{ gridTemplateColumns: "103px repeat(5, 1fr)" }}
+                            className="grid relative bg-white"
+                            style={{ gridTemplateColumns: `120px repeat(${visibleDays.length}, 1fr)` }}
                         >
                             {/* Time labels */}
-                            <div className="bg-white">
-                                {[
-                                    "8 AM",
-                                    "9 AM",
-                                    "10 AM",
-                                    "11 AM",
-                                    "12 PM",
-                                    "1 PM",
-                                    "2 PM",
-                                ].map((time, index) => (
+                            <div className="bg-gray-50 border-r border-gray-300">
+                                {generateTimeSlots().map((time, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-center justify-center border-b border-gray-300"
+                                        className="flex items-center justify-center border-b border-gray-200 text-sm font-medium text-gray-600"
                                         style={{ height: `${hourHeight}px` }}
                                     >
                                         {time}
@@ -575,63 +664,82 @@ const Timetable = () => {
                             </div>
 
                             {/* Render timetable entries per day */}
-                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-                                (day, dayIndex) => (
-                                    <div
-                                        key={dayIndex}
-                                        className="col-span-1 border-l border-gray-300 relative"
-                                    >
-                                        {(timetableEntries[day] || []).map((entry, entryIndex) => {
-                                            const startHr = parseTime(entry.startTime);
-                                            const endHr = parseTime(entry.endTime);
-                                            const topPosition =
-                                                (startHr - startHour) * hourHeight + 65;
-                                            const entryHeight = (endHr - startHr) * hourHeight - 16;
+                            {visibleDays.map((day, dayIndex) => (
+                                <div
+                                    key={dayIndex}
+                                    className="relative border-r border-gray-200 last:border-r-0"
+                                    style={{ minHeight: `${(endHour - startHour + 1) * hourHeight}px` }}
+                                >
+                                    {/* Hour grid lines */}
+                                    {generateTimeSlots().map((_, index) => (
+                                        <div
+                                            key={index}
+                                            className="absolute left-0 right-0 border-b border-gray-100"
+                                            style={{ top: `${index * hourHeight}px`, height: '1px' }}
+                                        />
+                                    ))}
 
-                                            return (
-                                                <div
-                                                    key={entryIndex}
-                                                    className="absolute left-0 right-0 m-1 p-2 rounded shadow-md bg-white flex flex-col items-center justify-center text-center"
-                                                    style={{
-                                                        top: `${topPosition}px`,
-                                                        height: `${entryHeight}px`,
-                                                        border: "1px solid #154473",
-                                                    }}
-                                                >
-                                                    <div className="font-semibold">{entry.course}</div>
-                                                    <div className="text-sm text-gray-500">
+                                    {/* Timetable entries */}
+                                    {(timetableEntries[day] || []).map((entry, entryIndex) => {
+                                        const startHr = parseTime(entry.startTime);
+                                        const endHr = parseTime(entry.endTime);
+                                        
+                                        // Only show entries within visible time range
+                                        if (startHr < startHour || endHr > endHour + 1) {
+                                            return null;
+                                        }
+
+                                        const topPosition = (startHr - startHour) * hourHeight + 2;
+                                        const entryHeight = (endHr - startHr) * hourHeight - 4;
+
+                                        return (
+                                            <div
+                                                key={entryIndex}
+                                                className="absolute left-1 right-1 p-3 rounded-lg shadow-sm border-l-4 border-l-[#154473] bg-blue-50 hover:bg-blue-100 transition-colors duration-200 cursor-pointer"
+                                                style={{
+                                                    top: `${topPosition}px`,
+                                                    height: `${entryHeight}px`,
+                                                    minHeight: '60px'
+                                                }}
+                                            >
+                                                <div className="h-full flex flex-col justify-center overflow-hidden">
+                                                    <div className="font-semibold text-[#154473] text-sm mb-1 truncate">
+                                                        {entry.course}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 mb-1 truncate">
                                                         {entry.subject}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs text-gray-500 font-medium">
                                                         {entry.startTime} - {entry.endTime}
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )
-                            )}
-
-                            {/* Dynamic Time Indicator */}
-                            <div
-                                className="absolute left-[110px] w-[88%] 2xl:w-[93%]"
-                                style={{
-                                    top: `${currentTimePosition - 7}px`,
-                                    zIndex: 20,
-                                }}
-                            >
-                                <div className="absolute top-[-6px] left-[-87px] px-3 py-1 flex items-center justify-center bg-[#002B5B] text-white font-medium rounded-full">
-                                    {manualTime}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div
-                                    className="absolute left-[-8px] right-0 h-2 w-2 rounded-full bg-[#002B5B]"
-                                    style={{ top: "5.4px" }}
-                                />
-                                <div
-                                    className="absolute top-2 left-0 right-0 bg-[#002B5B]"
-                                    style={{ height: "3px" }}
-                                />
-                            </div>
+                            ))}
+
+                            {/* Dynamic Time Indicator - only show if current time is within visible range */}
+                            {(() => {
+                                const [hours] = manualTime.split(":").map(Number);
+                                if (hours >= startHour && hours <= endHour) {
+                                    return (
+                                        <div
+                                            className="absolute left-[125px] right-4 z-20"
+                                            style={{
+                                                top: `${currentTimePosition - 1}px`,
+                                            }}
+                                        >
+                                            <div className="absolute top-[-12px] left-[-100px] px-2 py-1 bg-[#002B5B] text-white text-xs font-medium rounded-full">
+                                                {manualTime}
+                                            </div>
+                                            <div className="absolute left-[-6px] top-[-3px] w-3 h-3 rounded-full bg-[#002B5B]" />
+                                            <div className="w-full h-0.5 bg-[#002B5B]" />
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                         </div>
                     </div>
                 )}
@@ -810,7 +918,8 @@ const Timetable = () => {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </>
     );
 };
 
