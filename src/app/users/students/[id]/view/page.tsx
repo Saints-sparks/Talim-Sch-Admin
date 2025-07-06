@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   ChevronLeft,
@@ -68,6 +69,35 @@ const StudentProfile = () => {
   const params = useParams();
   const router = useRouter();
   const studentId = params.id as string;
+
+  // Animation variants
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.1,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  const tabContentVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 }
+  };
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -210,9 +240,22 @@ const StudentProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <motion.div 
+      className="min-h-screen bg-gray-50"
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+      <motion.div 
+        className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm"
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.1 }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 max-w-md mx-8">
             <div className="relative">
@@ -239,10 +282,16 @@ const StudentProfile = () => {
             </Avatar>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Navigation */}
-      <div className="bg-white px-6 py-4 border-b border-gray-100">
+      <motion.div 
+        className="bg-white px-6 py-4 border-b border-gray-100"
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.2 }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button 
@@ -266,11 +315,23 @@ const StudentProfile = () => {
             Edit Student
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Content */}
-      <div className="p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <motion.div 
+        className="p-6"
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.3 }}
+      >
+        <motion.div 
+          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.4 }}
+        >
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -301,8 +362,17 @@ const StudentProfile = () => {
             </TabsList>
 
             <CardContent className="p-8">
-              <TabsContent value="personal-details" className="mt-0">
-                <div className="space-y-8">
+              <AnimatePresence mode="wait">
+                <TabsContent value="personal-details" className="mt-0">
+                  <motion.div
+                    key="personal-details"
+                    variants={tabContentVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="space-y-8"
+                  >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <User className="w-5 h-5 text-blue-600" />
@@ -445,11 +515,19 @@ const StudentProfile = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
+                </motion.div>
+                </TabsContent>
 
-              <TabsContent value="parent-guardian" className="mt-0">
-                <div className="space-y-8">
+                <TabsContent value="parent-guardian" className="mt-0">
+                  <motion.div
+                    key="parent-guardian"
+                    variants={tabContentVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="space-y-8"
+                  >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-100 rounded-lg">
                       <Users className="w-5 h-5 text-emerald-600" />
@@ -523,11 +601,19 @@ const StudentProfile = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
+                </motion.div>
+                </TabsContent>
 
-              <TabsContent value="academic" className="mt-0">
-                <div className="space-y-8">
+                <TabsContent value="academic" className="mt-0">
+                  <motion.div
+                    key="academic"
+                    variants={tabContentVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="space-y-8"
+                  >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-100 rounded-lg">
                       <GraduationCap className="w-5 h-5 text-indigo-600" />
@@ -642,13 +728,14 @@ const StudentProfile = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
+                </motion.div>
+                </TabsContent>
+              </AnimatePresence>
             </CardContent>
           </Tabs>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 
