@@ -1,87 +1,136 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
-import { FiChevronRight, FiChevronDown, FiEdit, FiTrash, FiPlus } from "react-icons/fi"
+import { useState } from "react"
 import { Header } from "@/components/Header"
-import Image from "next/image"
-import { getClasses, createClass, type Class } from "../services/student.service"
-import { getSchoolId } from "../services/school.service"
+import { createClass } from "../services/student.service"
 import { toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { useRouter } from "next/navigation"
 import DashboardSkeleton from "@/components/DashboardSkeleton"
+import DashboardCard from "@/components/DashboardCard"
+import ClassTable from "@/components/ClassTable"
+import { useDashboard } from "@/hooks/useDashboard"
 
 const Dashboard = () => {
     const router = useRouter()
-    const [classes, setClasses] = useState<Class[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const { dashboardData, isLoading, error, refreshDashboard } = useDashboard()
+    
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
+    const [expandedCards, setExpandedCards] = useState<number[]>([])
     const [formData, setFormData] = useState({
         name: "",
         classDescription: "",
         classCapacity: "",
     })
 
-    // Cards data with dynamic counts
-    const cards = [
+    // Generate cards data from dashboard data
+    const cards = dashboardData ? [
         {
             id: 1,
             icon: "/icons/book-saved.svg",
-            count: classes.length.toString(),
+            count: dashboardData.totalClasses,
             label: "Total Number of Classes",
             details: (
                 <>
                     <p>Here you can see detailed information about all your classes.</p>
-                    <ul className="list-disc ml-6">
-                        {classes.slice(0, 3).map((cls) => (
-                            <li key={cls._id}>
-                                {cls.name}: {cls.classDescription || "No description"}
-                            </li>
-                        ))}
-                        {classes.length > 3 && <li>And {classes.length - 3} more...</li>}
-                    </ul>
+                    {dashboardData.recentClasses.length > 0 ? (
+                        <ul className="list-disc ml-6 mt-2">
+                            {dashboardData.recentClasses.slice(0, 3).map((cls) => (
+                                <li key={cls._id} className="mb-1">
+                                    <span className="font-medium">{cls.name}</span>
+                                    {cls.studentCount > 0 && (
+                                        <span className="text-sm text-blue-600 ml-2">
+                                            ({cls.studentCount} students)
+                                        </span>
+                                    )}
+                                    {cls.classDescription && (
+                                        <div className="text-sm text-gray-600 ml-2">
+                                            {cls.classDescription}
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                            {dashboardData.recentClasses.length > 3 && (
+                                <li className="text-sm text-gray-500">
+                                    And {dashboardData.recentClasses.length - 3} more...
+                                </li>
+                            )}
+                        </ul>
+                    ) : (
+                        <p className="text-gray-500 mt-2">No classes created yet.</p>
+                    )}
                 </>
             ),
         },
         {
             id: 2,
             icon: "/icons/profile-2user.svg",
-            count: "520", // This would be dynamic in a real implementation
+            count: dashboardData.totalStudents,
             label: "Total Number of Students",
             details: (
                 <>
                     <p>Here you can see detailed information about all your students.</p>
-                    <ul className="list-disc ml-6">
-                        <li>Grade 1: 100 students</li>
-                        <li>Grade 2: 150 students</li>
-                        <li>Grade 3: 270 students</li>
-                    </ul>
+                    {dashboardData.studentDistribution.length > 0 ? (
+                        <ul className="list-disc ml-6 mt-2">
+                            {dashboardData.studentDistribution.slice(0, 5).map((dist) => (
+                                <li key={dist.className} className="mb-1">
+                                    <span className="font-medium">{dist.className}</span>: 
+                                    <span className="text-blue-600 ml-1">{dist.studentCount} students</span>
+                                </li>
+                            ))}
+                            {dashboardData.studentDistribution.length > 5 && (
+                                <li className="text-sm text-gray-500">
+                                    And {dashboardData.studentDistribution.length - 5} more classes...
+                                </li>
+                            )}
+                        </ul>
+                    ) : (
+                        <p className="text-gray-500 mt-2">No students enrolled yet.</p>
+                    )}
                 </>
             ),
         },
         {
             id: 3,
-            icon: "/icons/book-saved.svg",
-            count: "234", // This would be dynamic in a real implementation
-            label: "Total Number of Subjects",
+            icon: "/icons/profile-2user.svg",
+            count: dashboardData.totalTeachers,
+            label: "Total Number of Teachers",
             details: (
                 <>
-                    <p>Here you can see detailed information about all your subjects.</p>
-                    <ul className="list-disc ml-6">
-                        <li>Mathematics</li>
-                        <li>Science</li>
-                        <li>History</li>
-                    </ul>
+                    <p>Here you can see information about your teaching staff.</p>
+                    <div className="mt-2 text-sm text-gray-600">
+                        <p>• Active teaching staff: {dashboardData.totalTeachers}</p>
+                        <p>• Average students per teacher: {
+                            dashboardData.totalTeachers > 0 
+                                ? Math.round(dashboardData.totalStudents / dashboardData.totalTeachers) 
+                                : 0
+                        }</p>
+                    </div>
                 </>
             ),
         },
-    ]
-
-    const [expandedCards, setExpandedCards] = useState<number[]>([])
+        {
+            id: 4,
+            icon: "/icons/book-saved.svg",
+            count: dashboardData.totalSubjects,
+            label: "Total Number of Subjects",
+            details: (
+                <>
+                    <p>Here you can see information about subjects offered.</p>
+                    <div className="mt-2 text-sm text-gray-600">
+                        <p>• Total subjects/courses: {dashboardData.totalSubjects}</p>
+                        <p>• Average subjects per class: {
+                            dashboardData.totalClasses > 0 
+                                ? Math.round(dashboardData.totalSubjects / dashboardData.totalClasses) 
+                                : 0
+                        }</p>
+                    </div>
+                </>
+            ),
+        },
+    ] : []
 
     const toggleExpand = (id: number) => {
         setExpandedCards((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
@@ -119,13 +168,10 @@ const Dashboard = () => {
         try {
             setIsCreating(true)
 
-            // Create class
             const classData = {
                 name: formData.name,
                 classCapacity: formData.classCapacity,
                 classDescription: formData.classDescription,
-                // schoolId: getSchoolId()!,
-                // assignedCourses: [],
             }
 
             await createClass(classData)
@@ -138,8 +184,8 @@ const Dashboard = () => {
                 classCapacity: "",
             })
 
-            // Refresh classes
-            fetchClasses()
+            // Refresh dashboard data
+            await refreshDashboard()
         } catch (error) {
             console.error("Error creating class:", error)
             if (error instanceof Error) {
@@ -152,31 +198,6 @@ const Dashboard = () => {
         }
     }
 
-    const fetchClasses = async () => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const schoolId = getSchoolId()
-            if (!schoolId) {
-                throw new Error("School ID is required")
-            }
-
-            const fetchedClasses = await getClasses()
-            setClasses(fetchedClasses)
-        } catch (error) {
-            console.error("Error fetching classes:", error)
-            const errorMessage = error instanceof Error ? error.message : "Failed to load classes. Please try again later."
-            setError(errorMessage)
-            toast.error(errorMessage)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchClasses()
-    }, [])
-
     const handleView = (classId: string) => {
         router.push(`/classes/view-class/${classId}`)
     }
@@ -186,59 +207,72 @@ const Dashboard = () => {
     }
 
     const handleDelete = (classId: string) => {
-        // Implement delete functionality
         console.log(`Deleting class with ID: ${classId}`)
-        // You would typically show a confirmation dialog and then call an API
+        // TODO: Implement delete functionality
+    }
+
+    if (isLoading) {
+        return <DashboardSkeleton />
+    }
+
+    if (error || !dashboardData) {
+        return (
+            <div className="flex h-screen bg-[#F8F8F8] p-2">
+                <main className="flex-grow overflow-y-auto">
+                    <Header />
+                    <div className="text-center py-12">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+                            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Dashboard</div>
+                            <p className="text-red-600 mb-4">{error || 'Failed to load dashboard data'}</p>
+                            <button
+                                onClick={refreshDashboard}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        )
     }
 
     return (
         <>
-            {isLoading ? (
-                <DashboardSkeleton />
-            ) : (
-                <div className="flex h-screen bg-[#F8F8F8] p-2">
-                    {/* Main Content */}
-                    <main className="flex-grow overflow-y-auto">
-                        {/* Header */}
-                        <Header />
-                        <h1 className="font-medium text-xl py-5 px-5 text-[#2F2F2F]">Class Overview</h1>
+            <div className="flex h-screen bg-[#F8F8F8] p-2">
+                {/* Main Content */}
+                <main className="flex-grow overflow-y-auto">
+                    {/* Header */}
+                    <Header />
+                    
+                    {/* School Info Header */}
+                    <div className="px-5 py-3 mb-4">
+                        <h1 className="font-medium text-xl text-[#2F2F2F]">
+                            {dashboardData.schoolInfo.name} - Dashboard Overview
+                        </h1>
+                        <p className="text-sm text-gray-600 mt-1">
+                            {dashboardData.schoolInfo.physicalAddress}
+                        </p>
+                    </div>
 
-                        {/* Class Overview Cards */}
-                        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 px-8 items-start">
-                            {cards.map((card) => (
-                                <div key={card.id} className="bg-white p-6 shadow rounded-2xl flex flex-col">
-                                    <div className="flex items-center gap-5 pt-5">
-                                        <div className="border-2 rounded-[10px] p-2 border-[#F1F1F1]">
-                                            <Image src={card.icon || "/placeholder.svg"} alt="icon" width={32} height={32} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <p className="text-[30px] font-medium text-[#030E18]">{card.count}</p>
-                                            <p className="text-[#878787] text-[16px] font-medium">{card.label}</p>
-                                        </div>
-                                    </div>
+                    {/* Dashboard Cards */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 px-8 items-start">
+                        {cards.map((card) => (
+                            <DashboardCard
+                                key={card.id}
+                                id={card.id}
+                                icon={card.icon}
+                                count={card.count}
+                                label={card.label}
+                                details={card.details}
+                                isExpanded={expandedCards.includes(card.id)}
+                                onToggle={toggleExpand}
+                            />
+                        ))}
 
-                                    <div className="pt-4 border-b-2 border-[#F1F1F1]"></div>
-
-                                    <div
-                                        onClick={() => toggleExpand(card.id)}
-                                        className="flex items-center justify-between mt-4 cursor-pointer text-gray-800"
-                                    >
-                                        <span className="font-bold text-[#606060] hover:text-blue-700 transition-colors duration-200">
-                                            {expandedCards.includes(card.id) ? "See less" : "See more"}
-                                        </span>
-                                        {expandedCards.includes(card.id) ? (
-                                            <FiChevronDown className="text-xl" />
-                                        ) : (
-                                            <FiChevronRight className="text-xl" />
-                                        )}
-                                    </div>
-
-                                    {expandedCards.includes(card.id) && <div className="mt-4 text-gray-800">{card.details}</div>}
-                                </div>
-                            ))}
-
-                            {/* See All / See Less button */}
-                            <div className="col-span-1 md:col-span-3 flex justify-center">
+                        {/* See All / See Less button */}
+                        {cards.length > 0 && (
+                            <div className="col-span-1 md:col-span-2 lg:col-span-4 flex justify-center">
                                 <button
                                     className="py-2 font-bold text-[#154473] hover:text-blue-500 transition duration-200"
                                     onClick={toggleExpandAll}
@@ -246,100 +280,21 @@ const Dashboard = () => {
                                     {expandedCards.length === cards.length ? "See less" : "See all"}
                                 </button>
                             </div>
-                        </section>
+                        )}
+                    </section>
 
-                        {/* Classes Table */}
-                        <div className="px-8">
-                            <section className="bg-white shadow rounded-[20px] p-6">
-                                <div className="">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-800">Classes</h3>
-                                        <button
-                                            className="flex items-center font-bold text-[#154473] hover:text-blue-500 transition duration-200"
-                                            onClick={toggleModal}
-                                        >
-                                            <FiPlus className="mr-2" /> Add Class
-                                        </button>
-                                    </div>
-
-                                    {error ? (
-                                        <div className="text-center py-12">
-                                            <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-                                                <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Classes</div>
-                                                <p className="text-red-600 mb-4">{error}</p>
-                                                <button
-                                                    onClick={fetchClasses}
-                                                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                                                >
-                                                    Try Again
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : classes.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                                                <div className="text-gray-400 text-6xl mb-4">📚</div>
-                                                <div className="text-gray-600 text-lg font-semibold mb-2">No Classes Found</div>
-                                                <p className="text-gray-500 mb-4">
-                                                    Get started by creating your first class to organize your students and curriculum.
-                                                </p>
-                                                <button
-                                                    onClick={toggleModal}
-                                                    className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
-                                                >
-                                                    Create First Class
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <table className="w-full border-collapse">
-                                            <thead>
-                                                <tr className="border-b">
-                                                    <th className="text-left py-2 px-4 text-gray-800">Class Name</th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">Capacity</th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">Description</th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {classes.map((item) => (
-                                                    <tr key={item._id} className="border-b hover:bg-gray-50 transition-colors duration-200">
-                                                        <td className="py-2 px-4 text-gray-800">{item.name}</td>
-                                                        <td className="py-2 px-4 text-gray-800">{item.classCapacity || "N/A"}</td>
-                                                        <td className="py-2 px-4 text-gray-800">{item.classDescription || "N/A"}</td>
-                                                        <td className="py-2 px-4 flex justify-between">
-                                                            <button
-                                                                className="px-9 py-1 bg-[#0033661A] border-[#00336626] border text-[#003366] rounded hover:bg-blue-600 hover:text-white transition-colors"
-                                                                onClick={() => handleView(item._id)}
-                                                            >
-                                                                View
-                                                            </button>
-                                                            <div>
-                                                                <button
-                                                                    className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors"
-                                                                    onClick={() => handleEdit(item._id)}
-                                                                >
-                                                                    <FiEdit className="text-xl" />
-                                                                </button>
-                                                                <button
-                                                                    className="ml-2 px-2 py-1 text-red-500 hover:text-red-700 transition-colors"
-                                                                    onClick={() => handleDelete(item._id)}
-                                                                >
-                                                                    <FiTrash className="text-xl" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    )}
-                                </div>
-                            </section>
-                        </div>
-                    </main>
-                </div>
-            )}
+                    {/* Classes Table */}
+                    <ClassTable
+                        classes={dashboardData.recentClasses}
+                        error={null}
+                        onAdd={toggleModal}
+                        onView={handleView}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onRetry={refreshDashboard}
+                    />
+                </main>
+            </div>
 
             {/* Add Class Modal */}
             {isModalOpen && (
@@ -378,7 +333,6 @@ const Dashboard = () => {
 
                                 <div className="flex-1">
                                     <label className="block text-gray-700 font-semibold mb-2">Class Capacity (Optional)</label>
-
                                     <select
                                         name="classCapacity"
                                         value={formData.classCapacity}

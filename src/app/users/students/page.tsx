@@ -57,7 +57,7 @@ const StudentPage: React.FC = () => {
     };
 
     const handleViewProfile = (studentId: string) => {
-        router.push(`/users/students/${studentId}`);
+        router.push(`/users/students/${studentId}/view`);
     };
 
     useEffect(() => {
