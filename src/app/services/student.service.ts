@@ -22,6 +22,16 @@ export interface Class {
   [key: string]: string | number | string[];
 }
 
+interface UpdateClassData {
+  name: string;
+  classDescription: string;
+  classCapacity: string;
+}
+
+interface AssignTeacherData {
+  teacherId: string;
+}
+
 interface ParentContact {
   _id: string;
   fullName: string;
@@ -404,6 +414,56 @@ export const studentService = {
     } catch (error) {
       throw error;
     }
+  }
+};
+
+export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+      body: JSON.stringify({
+        name: updateData.name,
+        classDescription: updateData.classDescription,
+        classCapacity: parseInt(updateData.classCapacity, 10),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update class');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error updating class:', error);
+    throw error;
+  }
+};
+
+export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.BASE_URL}/classes/${classId}/assign-teacher`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+      body: JSON.stringify({ teacherId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to assign teacher to class');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error assigning teacher to class:', error);
+    throw error;
   }
 };
 

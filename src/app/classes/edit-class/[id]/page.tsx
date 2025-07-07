@@ -5,18 +5,18 @@ import { Header } from "@/components/Header";
 import { FiSave, FiX } from "react-icons/fi";
 import { 
   BookOpen, 
-  GraduationCap, 
   Users, 
   User, 
   Info,
-  Calendar,
-  Settings,
   ChevronLeft,
-  Bell,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { getClass } from "../../../services/student.service";
+import { getClass, updateClass, assignTeacherToClass } from "../../../services/student.service";
+import { getTeachers, Teacher } from "../../../services/subjects.service";
 import "react-toastify/dist/ReactToastify.css";
 
 interface ClassDetails {
@@ -52,18 +52,6 @@ interface Course {
   createdAt?: string;
 }
 
-interface Teacher {
-  _id: string;
-  userId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  specialization: string;
-  isFormTeacher: boolean;
-}
-
 const EditClass: React.FC = () => {
   const router = useRouter();
   const params = useParams();
@@ -73,7 +61,9 @@ const EditClass: React.FC = () => {
   const [classData, setClassData] = useState<ClassDetails | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAssigningTeacher, setIsAssigningTeacher] = useState(false);
   const [error, setError] = useState<string>("");
   const [activeTab, setActiveTab] = useState("details");
   
@@ -82,26 +72,39 @@ const EditClass: React.FC = () => {
     name: "",
     classDescription: "",
     classCapacity: "",
-    classTeacherId: "",
   });
 
-  // Helper function to safely extract string values
-  const getStringValue = (value: any): string => {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return value.toString();
-    if (typeof value === 'object' && value !== null) {
-      return value.name || value.title || value._id || 'Unknown';
-    }
-    return value?.toString() || 'Unknown';
+  // Teacher assignment state
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [teacherSearch, setTeacherSearch] = useState("");
+  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
+
+  // Helper functions
+  const getTeacherName = (teacher: Teacher): string => {
+    return `${teacher.firstName} ${teacher.lastName}`;
   };
 
-  // Helper function to get teacher name
-  const getTeacherName = (teacher: any): string => {
-    if (teacher?.userId?.firstName && teacher?.userId?.lastName) {
-      return `${teacher.userId.firstName} ${teacher.userId.lastName}`;
-    }
-    return 'No teacher assigned';
+  const getTeacherEmail = (teacher: Teacher): string => {
+    return teacher.email;
   };
+
+  const getCurrentTeacherName = (): string => {
+    if (!classData?.classTeacherId) return "No teacher assigned";
+    return `${classData.classTeacherId.userId.firstName} ${classData.classTeacherId.userId.lastName}`;
+  };
+
+  const getCurrentTeacherEmail = (): string => {
+    if (!classData?.classTeacherId) return "";
+    return classData.classTeacherId.userId.email;
+  };
+
+  // Filter teachers based on search
+  const filteredTeachers = teachers.filter(teacher => {
+    const fullName = getTeacherName(teacher).toLowerCase();
+    const email = getTeacherEmail(teacher).toLowerCase();
+    const search = teacherSearch.toLowerCase();
+    return fullName.includes(search) || email.includes(search);
+  });
 
   // Fetch class data and teachers
   useEffect(() => {
@@ -121,17 +124,25 @@ const EditClass: React.FC = () => {
           name: data.name || "",
           classDescription: data.classDescription || "",
           classCapacity: data.classCapacity || "",
-          classTeacherId: data.classTeacherId?._id || "",
         });
 
-        // TODO: Fetch teachers list for dropdown
-        // const teachersData = await getTeachers();
-        // setTeachers(teachersData);
+        // Fetch teachers list
+        setIsLoadingTeachers(true);
+        try {
+          const teachersData = await getTeachers();
+          setTeachers(teachersData);
+        } catch (teacherError) {
+          console.warn("Failed to fetch teachers:", teacherError);
+          toast.warn("Failed to load teachers list");
+        } finally {
+          setIsLoadingTeachers(false);
+        }
 
       } catch (error: any) {
         console.error("❌ Error fetching data:", error);
         setError("Failed to load class details");
         toast.error("Failed to load class details");
+        setIsLoadingTeachers(false);
       } finally {
         setIsLoading(false);
       }
@@ -148,19 +159,91 @@ const EditClass: React.FC = () => {
     }));
   };
 
-  // Handle form submission
+  // Handle class update (Save Changes button)
   const handleSubmit = async () => {
     setIsSaving(true);
     try {
-      // TODO: Implement update API call
-      // await updateClass(classId, formData);
+      if (!classId) {
+        throw new Error("Class ID is required");
+      }
+
+      // Basic validation
+      if (!formData.name.trim()) {
+        throw new Error("Class name is required");
+      }
+      if (!formData.classCapacity || parseInt(formData.classCapacity) <= 0) {
+        throw new Error("Valid class capacity is required");
+      }
+
+      // Update class details only (no teacher assignment here)
+      await updateClass(classId, {
+        name: formData.name,
+        classDescription: formData.classDescription,
+        classCapacity: formData.classCapacity,
+      });
+
       toast.success("Class updated successfully!");
-      router.push(`/classes/${classId}`);
+      
+      // Refresh class details
+      const updatedData = await getClass(classId);
+      setClassData(updatedData);
     } catch (error: any) {
       console.error("Error updating class:", error);
-      toast.error("Failed to update class");
+      toast.error(error.message || "Failed to update class");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle teacher assignment (separate Assign Teacher button)
+  const handleAssignTeacher = async () => {
+    if (!selectedTeacher) {
+      toast.error("Please select a teacher to assign");
+      return;
+    }
+
+    setIsAssigningTeacher(true);
+    try {
+      if (!classId) {
+        throw new Error("Class ID is required");
+      }
+
+      // Attempt to assign teacher
+      const assignmentResult = await assignTeacherToClass(classId, selectedTeacher._id);
+      console.log("Teacher assignment result:", assignmentResult);
+      
+      // Refresh class details to show updated teacher
+      const updatedData = await getClass(classId);
+      
+      // Verify the teacher was actually assigned
+      if (!updatedData.classTeacherId) {
+        console.warn("Teacher assignment appeared successful but classTeacherId is null");
+        toast.warning("Teacher assignment may not have completed properly. Please refresh the page.");
+      } else {
+        toast.success("Teacher assigned successfully!");
+      }
+      
+      setClassData(updatedData);
+      
+      // Reset teacher selection
+      setSelectedTeacher(null);
+      setTeacherSearch("");
+      setShowTeacherDropdown(false);
+    } catch (error: any) {
+      console.error("Error assigning teacher:", error);
+      
+      // Provide specific error messages based on error type
+      if (error.message?.includes("not found")) {
+        toast.error("Teacher or class not found. Please try again.");
+      } else if (error.message?.includes("unauthorized") || error.message?.includes("forbidden")) {
+        toast.error("You don't have permission to assign teachers to this class.");
+      } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+        toast.error("Network error. Please check your connection and try again.");
+      } else {
+        toast.error(error.message || "Failed to assign teacher. Please try again.");
+      }
+    } finally {
+      setIsAssigningTeacher(false);
     }
   };
 
@@ -172,45 +255,9 @@ const EditClass: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header Skeleton */}
-        <div className="border-b border-gray-200 px-6 py-4 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 max-w-md mx-8">
-              <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Skeleton */}
-        <div className="p-6 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 w-28 bg-gray-200 rounded-md animate-pulse"></div>
-          </div>
-        </div>
-
-        {/* Main Content Skeleton */}
-        <div className="p-6">
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex space-x-8">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
-              ))}
-            </div>
-          </div>
+        <Header />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading class details...</div>
         </div>
       </div>
     );
@@ -299,7 +346,7 @@ const EditClass: React.FC = () => {
             <span className="mx-2">|</span>
             <span className="text-gray-900 font-medium">Edit Class</span>
             <span className="mx-2 text-gray-400">•</span>
-            <span className="text-gray-900 font-semibold text-lg">{getStringValue(classData.name)}</span>
+            <span className="text-gray-900 font-semibold text-lg">{classData.name}</span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -453,7 +500,7 @@ const EditClass: React.FC = () => {
                               <div>
                                 <p className="text-sm font-medium text-purple-700">Class Teacher</p>
                                 <p className="text-lg font-bold text-purple-900 truncate">
-                                  {getTeacherName(classData.classTeacherId)}
+                                  {getCurrentTeacherName()}
                                 </p>
                                 <p className="text-sm text-purple-600">assigned</p>
                               </div>
@@ -493,10 +540,10 @@ const EditClass: React.FC = () => {
                             </div>
                             <div className="flex-1">
                               <h4 className="text-xl font-bold text-purple-900 mb-1">
-                                {getTeacherName(classData.classTeacherId)}
+                                {getCurrentTeacherName()}
                               </h4>
                               <p className="text-purple-700 font-medium mb-2">Primary Class Teacher</p>
-                              <p className="text-purple-600">{classData.classTeacherId.userId.email}</p>
+                              <p className="text-purple-600">{getCurrentTeacherEmail()}</p>
                               {classData.classTeacherId.specialization && (
                                 <p className="text-sm text-purple-600 mt-1">
                                   Specialization: {classData.classTeacherId.specialization}
@@ -507,63 +554,145 @@ const EditClass: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Teacher Selection */}
+                      {/* Teacher Search and Selection */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select New Class Teacher
+                          Search and Select Teacher
                         </label>
-                        <select
-                          value={formData.classTeacherId}
-                          onChange={(e) => handleInputChange("classTeacherId", e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          <option value="">Select a teacher...</option>
-                          {teachers.map((teacher) => (
-                            <option key={teacher._id} value={teacher._id}>
-                              {getTeacherName(teacher)} - {teacher.specialization || 'No specialization'}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-sm text-gray-500 mt-2">
-                          Choose a teacher to assign as the primary class teacher. This teacher will be responsible for the overall management of this class.
-                        </p>
+                        <div className="relative">
+                          <div className="flex">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <input
+                                type="text"
+                                value={teacherSearch}
+                                onChange={(e) => setTeacherSearch(e.target.value)}
+                                onFocus={() => setShowTeacherDropdown(true)}
+                                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Search teachers by name or email..."
+                              />
+                              <button
+                                onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                              >
+                                {showTeacherDropdown ? (
+                                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Dropdown */}
+                          {showTeacherDropdown && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                              {isLoadingTeachers ? (
+                                <div className="p-4 text-center text-gray-500">Loading teachers...</div>
+                              ) : filteredTeachers.length > 0 ? (
+                                filteredTeachers.map((teacher) => (
+                                  <button
+                                    key={teacher._id}
+                                    onClick={() => {
+                                      setSelectedTeacher(teacher);
+                                      setTeacherSearch(getTeacherName(teacher));
+                                      setShowTeacherDropdown(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                  >
+                                    <div className="flex items-center">
+                                      <Search className="w-4 h-4 text-gray-400 mr-3" />
+                                      <div>
+                                        <div className="font-medium text-gray-900">
+                                          {getTeacherName(teacher)}
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                          {getTeacherEmail(teacher)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="p-4 text-center text-gray-500">
+                                  No teachers found matching your search
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Teacher Search/Filter */}
+                      {/* Selected Teacher Display */}
+                      {selectedTeacher && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <User className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">
+                                  Selected: {getTeacherName(selectedTeacher)}
+                                </h4>
+                                <p className="text-sm text-gray-600">{getTeacherEmail(selectedTeacher)}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedTeacher(null);
+                                setTeacherSearch("");
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <FiX className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Assign Teacher Button */}
+                      <div className="flex justify-end pt-4 border-t border-gray-200">
+                        <button
+                          onClick={handleAssignTeacher}
+                          disabled={!selectedTeacher || isAssigningTeacher}
+                          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isAssigningTeacher ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              Assigning Teacher...
+                            </>
+                          ) : (
+                            <>
+                              <User className="w-4 h-4 mr-2" />
+                              Assign Teacher
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Instructions */}
                       <div className="bg-gray-50 rounded-lg p-6">
-                        <h4 className="font-medium text-gray-900 mb-3">Teacher Requirements</h4>
+                        <h4 className="font-medium text-gray-900 mb-3">Teacher Assignment Guidelines</h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                           <li className="flex items-center">
                             <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                            Only active teachers are available for assignment
+                            Search teachers by name or email address
                           </li>
                           <li className="flex items-center">
                             <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                            Teachers can be assigned to multiple classes
+                            Select a teacher from the dropdown list
                           </li>
                           <li className="flex items-center">
                             <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                            Specialized teachers are recommended for subject-specific classes
+                            Click "Assign Teacher" to update the class teacher
+                          </li>
+                          <li className="flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                            Use "Save Changes" button for class details only
                           </li>
                         </ul>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex justify-between pt-6 border-t border-gray-200">
-                        <button
-                          onClick={() => setFormData(prev => ({ ...prev, classTeacherId: "" }))}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                          Remove Teacher
-                        </button>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => setActiveTab("details")}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                          >
-                            Back to Details
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -578,3 +707,4 @@ const EditClass: React.FC = () => {
 };
 
 export default EditClass;
+

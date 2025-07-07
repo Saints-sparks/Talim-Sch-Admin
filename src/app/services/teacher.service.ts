@@ -233,6 +233,36 @@ export const teacherService = {
     }
   },
 
+  async getAllTeachers(): Promise<Teacher[]> {
+    const userId = getLocalStorageItem("user")?.userId;
+
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    try {
+      // Fetch all teachers by setting a high limit
+      const response = await fetch(
+        `${API_ENDPOINTS.GET_TEACHERS}?page=1&limit=1000`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to fetch teachers");
+      }
+
+      const data: GetTeachersResponse = await response.json();
+      return data.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   async updateTeacherByCourse(
     teacherId: string, 
     assignedCourses: string[]
