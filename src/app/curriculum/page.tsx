@@ -8,16 +8,10 @@ import {
   BookOpen, 
   GraduationCap, 
   FileText, 
-  Settings, 
-  Plus,
+  Settings,
   Search,
-  Filter,
   Users,
-  Clock,
   ChevronRight,
-  BarChart3,
-  Target,
-  Calendar,
   Book
 } from "lucide-react";
 import { API_ENDPOINTS } from '../lib/api/config';
@@ -91,9 +85,9 @@ const CurriculumDashboardMain: React.FC = () => {
   const searchParams = useSearchParams();
   
   // Check for any query parameters that might affect initial state
-  const initialTab = searchParams?.get('tab') as "overview" | "structure" | "content" || "overview";
+  const initialTab = searchParams?.get('tab') as "overview" | "structure" || "overview";
   
-  const [activeTab, setActiveTab] = useState<"overview" | "structure" | "content">(initialTab);
+  const [activeTab, setActiveTab] = useState<"overview" | "structure">(initialTab);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [curriculumContents, setCurriculumContents] = useState<CurriculumContent[]>([]);
@@ -107,7 +101,6 @@ const CurriculumDashboardMain: React.FC = () => {
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClass, setSelectedClass] = useState<string>("all");
 
   useEffect(() => {
     fetchAllData();
@@ -116,7 +109,7 @@ const CurriculumDashboardMain: React.FC = () => {
   // Update tab when URL changes
   useEffect(() => {
     if (searchParams?.get('tab')) {
-      setActiveTab(searchParams.get('tab') as "overview" | "structure" | "content");
+      setActiveTab(searchParams.get('tab') as "overview" | "structure");
     }
   }, [searchParams]);
 
@@ -192,16 +185,10 @@ const CurriculumDashboardMain: React.FC = () => {
     });
   };
 
-  const getClassName = (classId: string) => {
-    const classItem = classes.find(c => c._id === classId);
-    return classItem ? classItem.name : "Unknown Class";
-  };
-
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          subject.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass === "all" || subject.classId === selectedClass;
-    return matchesSearch && matchesClass;
+    return matchesSearch;
   });
 
   const recentContent = curriculumContents
@@ -231,13 +218,6 @@ const CurriculumDashboardMain: React.FC = () => {
               <Settings className="w-4 h-4" />
               Manage Structure
             </button>
-            <button
-              onClick={() => router.push("/curriculum/content")}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add Content
-            </button>
           </div>
         </div>
 
@@ -262,16 +242,6 @@ const CurriculumDashboardMain: React.FC = () => {
             }`}
           >
             Structure
-          </button>
-          <button
-            onClick={() => setActiveTab("content")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-              activeTab === "content"
-                ? "bg-white text-[#154473] shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Content
           </button>
         </div>
       </div>
@@ -368,22 +338,6 @@ const CurriculumDashboardMain: React.FC = () => {
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                   </button>
-
-                  <button
-                    onClick={() => router.push("/curriculum/content?action=add")}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <FileText className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-gray-900">Add Content</p>
-                        <p className="text-sm text-gray-500">Create curriculum content</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </button>
                 </div>
               </div>
 
@@ -391,12 +345,6 @@ const CurriculumDashboardMain: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Recent Curriculum Content</h2>
-                  <button
-                    onClick={() => setActiveTab("content")}
-                    className="text-sm text-[#154473] hover:text-blue-700"
-                  >
-                    View all
-                  </button>
                 </div>
                 {recentContent.length > 0 ? (
                   <div className="space-y-3">
@@ -449,16 +397,6 @@ const CurriculumDashboardMain: React.FC = () => {
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <select
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All Classes</option>
-                    {classes.map(cls => (
-                      <option key={cls._id} value={cls._id}>{cls.name}</option>
-                    ))}
-                  </select>
                   <button
                     onClick={() => router.push("/curriculum/structure")}
                     className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
@@ -487,11 +425,6 @@ const CurriculumDashboardMain: React.FC = () => {
                               {subject.code}
                             </span>
                           </div>
-                          {subject.classId && (
-                            <p className="text-sm text-gray-600 mb-2">
-                              Class: {getClassName(subject.classId)}
-                            </p>
-                          )}
                           <p className="text-sm text-gray-500">
                             {subject.courses?.length || 0} courses
                           </p>
@@ -505,74 +438,6 @@ const CurriculumDashboardMain: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Content Tab */}
-          {activeTab === "content" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Curriculum Content</h2>
-                  <button
-                    onClick={() => router.push("/curriculum/content")}
-                    className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
-                  >
-                    Manage Content
-                  </button>
-                </div>
-                
-                {curriculumContents.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {curriculumContents.slice(0, 9).map((content) => (
-                      <div
-                        key={content._id}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-                      >
-                        <div className="mb-3">
-                          <h3 className="font-semibold text-gray-900">
-                            {content.course.code}
-                          </h3>
-                          <p className="text-sm text-gray-600">{content.course.name}</p>
-                        </div>
-                        
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span>{content.term.name} ({content.term.year})</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Users className="w-4 h-4" />
-                            <span>{content.teacherId.firstName} {content.teacherId.lastName}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                          {content.content}
-                        </p>
-
-                        {content.attachments.length > 0 && (
-                          <div className="flex items-center gap-2 text-sm text-blue-600">
-                            <FileText className="w-4 h-4" />
-                            <span>{content.attachments.length} attachment(s)</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No curriculum content created yet</p>
-                    <button
-                      onClick={() => router.push("/curriculum/content?action=add")}
-                      className="mt-4 px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
-                    >
-                      Create First Content
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}

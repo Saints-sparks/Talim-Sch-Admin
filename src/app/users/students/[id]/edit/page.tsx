@@ -347,31 +347,24 @@ const EditStudentProfile = () => {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-4 bg-gray-50 p-1 rounded-none border-b">
-              <TabsTrigger 
-                value="personal-details" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            <TabsList className="grid w-full grid-cols-3 bg-gray-50 border-b border-gray-200 rounded-none h-auto p-0">
+              <TabsTrigger
+                value="personal-details"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
                 <User className="w-4 h-4" />
                 Personal Details
               </TabsTrigger>
-              <TabsTrigger 
-                value="parent-guardian" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              <TabsTrigger
+                value="parent-guardian"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
                 <Users className="w-4 h-4" />
                 Parent/Guardian
               </TabsTrigger>
-              <TabsTrigger 
-                value="academic-info" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <BookOpen className="w-4 h-4" />
-                Academic Info
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              <TabsTrigger
+                value="settings"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all"
               >
                 <UserCheck className="w-4 h-4" />
                 Settings
@@ -583,84 +576,6 @@ const EditStudentProfile = () => {
                           value={student.parentContact.email || ''}
                           onChange={(e) => handleInputChange('email', e.target.value, 'parentContact')}
                           placeholder="Enter email address"
-                        />
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="academic-info" className="space-y-8 mt-0">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900">Academic Information</h2>
-                        <p className="text-gray-600 mt-1">Edit student's academic details and class information</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <School className="w-4 h-4" />
-                          Class
-                        </label>
-                        <Select
-                          value={student.classId?._id || ''}
-                          onValueChange={(value) => {
-                            const selectedClass = classes.find(c => c._id === value);
-                            setStudent(prev => prev ? {
-                              ...prev,
-                              classId: selectedClass ? { _id: selectedClass._id, name: selectedClass.name } : undefined
-                            } : null);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select class" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classes.map((cls) => (
-                              <SelectItem key={cls._id} value={cls._id}>
-                                {cls.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4" />
-                          Grade Level
-                        </label>
-                        <Input
-                          value={student.gradeLevel || ''}
-                          onChange={(e) => handleInputChange('gradeLevel', e.target.value)}
-                          placeholder="Enter grade level"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Enrollment Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={student.enrollmentDate || ''}
-                          onChange={(e) => handleInputChange('enrollmentDate', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <BookOpen className="w-4 h-4" />
-                          Assigned Subjects
-                        </label>
-                        <Input
-                          value={student.assignedSubjects?.join(', ') || ''}
-                          onChange={(e) => {
-                            const subjects = e.target.value.split(', ').filter(s => s.trim());
-                            handleInputChange('assignedSubjects', subjects);
-                          }}
-                          placeholder="Enter subjects separated by commas"
                         />
                       </div>
                     </div>
