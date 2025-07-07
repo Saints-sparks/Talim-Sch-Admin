@@ -91,9 +91,9 @@ const ViewClass: React.FC = () => {
 
   useEffect(() => {
     const fetchClassData = async () => {
-      console.log("🔍 ViewClass component loaded");
-      console.log("🔍 Params:", params);
-      console.log("🔍 Class ID:", classId);
+    //   console.log("🔍 ViewClass component loaded");
+    //   console.log("🔍 Params:", params);
+    //   console.log("🔍 Class ID:", classId);
 
       try {
         if (!classId) {
@@ -101,9 +101,9 @@ const ViewClass: React.FC = () => {
           return;
         }
 
-        console.log("🚀 Fetching class data for ID:", classId);
+       // console.log("🚀 Fetching class data for ID:", classId);
         const data = await getClass(classId);
-        console.log("✅ Class data received:", data);
+        //console.log("✅ Class data received:", data);
 
         setClassData(data);
       } catch (error: any) {

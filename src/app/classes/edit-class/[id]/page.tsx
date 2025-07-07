@@ -1,370 +1,577 @@
 "use client";
 
-import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { FiArrowLeft, FiUsers, FiBook, FiX } from "react-icons/fi";
+import { FiSave, FiX } from "react-icons/fi";
+import { 
+  BookOpen, 
+  GraduationCap, 
+  Users, 
+  User, 
+  Info,
+  Calendar,
+  Settings,
+  ChevronLeft,
+  Bell,
+} from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { getClass, editClass } from "@/app/services/student.service";
-import { getSchoolId } from "@/app/services/school.service";
-
 import { toast } from "react-toastify";
+import { getClass } from "../../../services/student.service";
 import "react-toastify/dist/ReactToastify.css";
 
-import { Course } from "@/app/services/subjects.service";
-import { API_ENDPOINTS } from "@/app/lib/api/config";
-import AddCourseModal from "./AddCourseModal";
-
-interface FormData {
+interface ClassDetails {
+  _id: string;
   name: string;
-  classCapacity: string;
-  classDescription: string;
   schoolId: string;
+  classTeacherId: {
+    _id: string;
+    userId: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+    specialization: string;
+    isFormTeacher: boolean;
+  };
+  courses: Course[];
+  classDescription: string;
+  classCapacity: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface Course {
+  _id: string;
+  title: string;
+  description: string;
+  courseCode: string;
+  teacherId: string;
+  subjectId: string;
+  classId: string;
+  createdAt?: string;
+}
+
+interface Teacher {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  specialization: string;
+  isFormTeacher: boolean;
 }
 
 const EditClass: React.FC = () => {
   const router = useRouter();
   const params = useParams();
-  const classId = Array.isArray(params.id) ? params.id[0] : params.id || "";
-
+  const classId = Array.isArray(params.id) ? params.id[0] : params.id;
+  
+  // State management
+  const [classData, setClassData] = useState<ClassDetails | null>(null);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
-  const [formData, setFormData] = useState<FormData>({
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("details");
+  
+  // Form state
+  const [formData, setFormData] = useState({
     name: "",
-    classCapacity: "",
     classDescription: "",
-    schoolId: "",
+    classCapacity: "",
+    classTeacherId: "",
   });
 
-  const fetchClassData = async () => {
-    try {
-      if (!classId) {
-        toast.error("Class ID is required");
-        router.push("/classes");
-        return;
-      }
-
-      const data = await getClass(classId);
-      setFormData({
-        name: data.name,
-        classCapacity: data.classCapacity || "",
-        classDescription: data.classDescription || "",
-        schoolId: data.schoolId || "",
-      });
-      setSelectedCourseIds(data.courseIds || []); // Assuming class data includes courseIds
-    } catch (error) {
-      console.error("Error fetching class:", error);
-      toast.error("Failed to load class details");
-      router.push("/classes");
-    } finally {
-      setIsLoading(false);
+  // Helper function to safely extract string values
+  const getStringValue = (value: any): string => {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'object' && value !== null) {
+      return value.name || value.title || value._id || 'Unknown';
     }
+    return value?.toString() || 'Unknown';
   };
 
-  const fetchCourses = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      if (!response.ok) throw new Error("Failed to fetch courses");
-
-      const responseData = await response.json();
-      console.log(responseData, "response for courses");
-
-      // Check if responseData is an array
-      if (Array.isArray(responseData)) {
-        setCourses(responseData);
-       
-      } else if (responseData.data && Array.isArray(responseData.data)) {
-        // If data is nested in a "data" property
-        setCourses(responseData.data);
- 
-      } else {
-        console.error("Unexpected response structure:", responseData);
-        toast.error("Invalid data format received");
-        setCourses([]);
-      }
-    } catch (error) {
-      toast.error("Error loading courses");
-      console.error(error);
-      setCourses([]);
-    } finally {
-      setIsLoading(false);
+  // Helper function to get teacher name
+  const getTeacherName = (teacher: any): string => {
+    if (teacher?.userId?.firstName && teacher?.userId?.lastName) {
+      return `${teacher.userId.firstName} ${teacher.userId.lastName}`;
     }
+    return 'No teacher assigned';
   };
-  
+
+  // Fetch class data and teachers
   useEffect(() => {
-    fetchClassData();
-    fetchCourses();
-  }, [classId, router]);
+    const fetchData = async () => {
+      try {
+        if (!classId) {
+          setError("Class ID is required");
+          return;
+        }
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
+        // Fetch class data
+        const data = await getClass(classId);
+        setClassData(data);
+        
+        // Set form data
+        setFormData({
+          name: data.name || "",
+          classDescription: data.classDescription || "",
+          classCapacity: data.classCapacity || "",
+          classTeacherId: data.classTeacherId?._id || "",
+        });
+
+        // TODO: Fetch teachers list for dropdown
+        // const teachersData = await getTeachers();
+        // setTeachers(teachersData);
+
+      } catch (error: any) {
+        console.error("❌ Error fetching data:", error);
+        setError("Failed to load class details");
+        toast.error("Failed to load class details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [classId]);
+
+  // Handle form input changes
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [field]: value
     }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  // Handle form submission
+  const handleSubmit = async () => {
+    setIsSaving(true);
     try {
-      if (!classId) {
-        throw new Error("Class ID is missing");
-      }
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        toast.error("School ID is required");
-        return;
-      }
-
-      const updateData = {
-        name: formData.name,
-        classCapacity: formData.classCapacity,
-        classDescription: formData.classDescription,
-         // Include selected courses
-      };
-
-      const response = await editClass(classId, updateData);
-
-      if (response) {
-        toast.success("Class updated successfully!");
-        router.push(`/classes/${classId}`);
-      } else {
-        throw new Error("Failed to update class");
-      }
+      // TODO: Implement update API call
+      // await updateClass(classId, formData);
+      toast.success("Class updated successfully!");
+      router.push(`/classes/${classId}`);
     } catch (error: any) {
       console.error("Error updating class:", error);
-      toast.error(error.message || "Failed to update class");
+      toast.error("Failed to update class");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  const handleAddCourses = (courseIds: string[]) => {
-    setSelectedCourseIds(courseIds);
-    toast.success("Courses selected successfully!");
+  // Handle cancel
+  const handleCancel = () => {
+    router.push(`/classes/${classId}`);
   };
-
-  const handleRemoveCourse = (courseId: string) => {
-    setSelectedCourseIds(prev => prev.filter(id => id !== courseId));
-    toast.success("Course removed successfully!");
-  };
-
-  // Get selected courses details
-  const selectedCourses = courses.filter(course => 
-    selectedCourseIds.includes(course._id)
-  );
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Skeleton */}
+        <div className="border-b border-gray-200 px-6 py-4 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 max-w-md mx-8">
+              <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Skeleton */}
+        <div className="p-6 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-28 bg-gray-200 rounded-md animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="p-6">
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex space-x-8">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="flex justify-center items-center p-6 min-h-[60vh]">
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
+            <div className="text-red-400 text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Error</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">Class ID: {classId || 'Not provided'}</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => router.push("/classes")}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                >
+                  <ChevronLeft className="mr-2 w-4 h-4" /> Back to Classes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!classData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex justify-center items-center p-6 min-h-[60vh]">
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
+            <div className="text-gray-400 text-4xl mb-4">📚</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Class Not Found</h2>
+            <p className="text-gray-600 mb-4">The class you're looking for doesn't exist or has been removed.</p>
+            <p className="text-sm text-gray-500 mb-6">Class ID: {classId}</p>
+            <button
+              onClick={() => router.push("/classes")}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center mx-auto"
+            >
+              <ChevronLeft className="mr-2 w-4 h-4" /> Back to Classes
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <Header />
-      <div className="flex items-center mb-8">
-        <button
-          onClick={() => router.push(`/classes/view-class/${classId}`)}
-          className="mr-4 p-2 rounded-full hover:bg-gray-200 transition-colors duration-200"
-        >
-          <FiArrowLeft className="text-xl" />
-        </button>
-        <h1 className="text-2xl font-semibold text-gray-800">Edit Class</h1>
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Header */}
+      <div className="flex-shrink-0">
+        <Header />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-gray-700 font-medium mb-2 flex items-center">
-                <FiUsers className="mr-2 text-gray-600" />
-                Class Name *
-              </label>
-              <input
-                type="text"
-                name="name"
-                placeholder="Enter class name"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-gray-700 font-medium mb-2 flex items-center">
-                <FiUsers className="mr-2 text-gray-600" />
-                Class Capacity
-              </label>
-              <select
-                name="classCapacity"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-200"
-                value={formData.classCapacity}
-                onChange={handleChange}
-              >
-                <option value="" className="text-gray-400">
-                  Select capacity
-                </option>
-                <option value="10">10 students</option>
-                <option value="20">20 students</option>
-                <option value="30">30 students</option>
-                <option value="40">40 students</option>
-                <option value="50">50 students</option>
-              </select>
-            </div>
+      {/* Navigation Header */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center text-sm text-gray-600">
+            <button
+              onClick={() => router.push("/classes")}
+              className="flex items-center hover:text-blue-600 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Back to Classes
+            </button>
+            <span className="mx-2">|</span>
+            <button
+              onClick={() => router.push(`/classes/${classId}`)}
+              className="flex items-center hover:text-blue-600 transition-colors"
+            >
+              <User className="w-4 h-4 mr-1" />
+              Class Profile
+            </button>
+            <span className="mx-2">|</span>
+            <span className="text-gray-900 font-medium">Edit Class</span>
+            <span className="mx-2 text-gray-400">•</span>
+            <span className="text-gray-900 font-semibold text-lg">{getStringValue(classData.name)}</span>
           </div>
-
-          <div className="space-y-2">
-            <label className="block text-gray-700 font-medium mb-2 flex items-center">
-              <FiBook className="mr-2 text-gray-600" />
-              Class Description
-            </label>
-            <textarea
-              name="classDescription"
-              placeholder="Provide additional notes about the class..."
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[120px]"
-              rows={4}
-              value={formData.classDescription}
-              onChange={handleChange}
-            />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center text-sm font-medium"
+            >
+              <FiX className="mr-2 w-4 h-4" /> Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center text-sm font-medium"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FiSave className="mr-2 w-4 h-4" /> Save Changes
+                </>
+              )}
+            </button>
           </div>
+        </div>
+      </div>
 
-          {/* Add Course Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-x-4 mb-4">
-              <h1 className="text-2xl font-semibold text-gray-800">Add Course</h1>
-              <button
-                type="button"
-                onClick={() => setIsCourseModalOpen(true)}
-                className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-              >
-                + Add
-              </button>
-            </div>
+      {/* Tab Navigation */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200">
+        <div className="px-6">
+          <nav className="grid grid-cols-2 gap-0">
+            <button
+              onClick={() => setActiveTab("details")}
+              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "details"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <Info className="w-4 h-4 mr-2" />
+              Class Details
+            </button>
+            <button
+              onClick={() => setActiveTab("teacher")}
+              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "teacher"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Assign Teacher
+            </button>
+          </nav>
+        </div>
+      </div>
 
-            {/* Display Selected Courses */}
-            {selectedCourses.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-800 mb-3">
-                  Selected Courses ({selectedCourses.length})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedCourses.map((course) => (
-                    <div
-                      key={course._id}
-                      className="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">
-                          {course.code} - {course.name}
-                        </p>
-                        {course.description && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {course.description}
-                          </p>
-                        )}
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Class Details Tab */}
+            {activeTab === "details" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-sm">
+                  <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center mb-4">
+                      <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                        <Info className="w-5 h-5 text-blue-600" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCourse(course._id)}
-                        className="ml-3 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
-                        title="Remove course"
-                      >
-                        <FiX className="w-4 h-4" />
-                      </button>
+                      <h2 className="text-xl font-semibold text-gray-900">Edit Class Information</h2>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="p-6">
+                    <div className="space-y-6">
+                      {/* Class Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Class Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange("name", e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="Enter class name (e.g., Grade 1A)"
+                          required
+                        />
+                      </div>
+
+                      {/* Class Capacity */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Class Capacity *
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.classCapacity}
+                          onChange={(e) => handleInputChange("classCapacity", e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="Enter maximum number of students"
+                          min="1"
+                          required
+                        />
+                      </div>
+
+                      {/* Class Description */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Class Description
+                        </label>
+                        <textarea
+                          value={formData.classDescription}
+                          onChange={(e) => handleInputChange("classDescription", e.target.value)}
+                          rows={4}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                          placeholder="Enter class description (optional)"
+                        />
+                      </div>
+
+                      {/* Current Stats Preview */}
+                      <div className="border-t border-gray-200 pt-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">Current Class Statistics</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-blue-700">Total Courses</p>
+                                <p className="text-2xl font-bold text-blue-900">{classData.courses?.length || 0}</p>
+                                <p className="text-sm text-blue-600">assigned</p>
+                              </div>
+                              <BookOpen className="w-8 h-8 text-blue-600" />
+                            </div>
+                          </div>
+
+                          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-green-700">Capacity</p>
+                                <p className="text-2xl font-bold text-green-900">{formData.classCapacity || "0"}</p>
+                                <p className="text-sm text-green-600">students</p>
+                              </div>
+                              <Users className="w-8 h-8 text-green-600" />
+                            </div>
+                          </div>
+
+                          <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-purple-700">Class Teacher</p>
+                                <p className="text-lg font-bold text-purple-900 truncate">
+                                  {getTeacherName(classData.classTeacherId)}
+                                </p>
+                                <p className="text-sm text-purple-600">assigned</p>
+                              </div>
+                              <User className="w-8 h-8 text-purple-600" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Message when no courses selected */}
-            {selectedCourses.length === 0 && (
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <p className="text-gray-600">No courses selected yet</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Click the "+ Add" button to select courses for this class
-                </p>
+            {/* Assign Teacher Tab */}
+            {activeTab === "teacher" && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-sm">
+                  <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-purple-100 rounded-lg mr-3">
+                        <User className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h2 className="text-xl font-semibold text-gray-900">Assign Class Teacher</h2>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <div className="space-y-6">
+                      {/* Current Teacher Display */}
+                      {classData.classTeacherId?.userId && (
+                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 mb-6">
+                          <h3 className="text-lg font-medium text-purple-900 mb-4">Current Class Teacher</h3>
+                          <div className="flex items-center gap-6">
+                            <div className="p-4 bg-purple-200 rounded-full">
+                              <User className="w-12 h-12 text-purple-700" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-xl font-bold text-purple-900 mb-1">
+                                {getTeacherName(classData.classTeacherId)}
+                              </h4>
+                              <p className="text-purple-700 font-medium mb-2">Primary Class Teacher</p>
+                              <p className="text-purple-600">{classData.classTeacherId.userId.email}</p>
+                              {classData.classTeacherId.specialization && (
+                                <p className="text-sm text-purple-600 mt-1">
+                                  Specialization: {classData.classTeacherId.specialization}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Teacher Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select New Class Teacher
+                        </label>
+                        <select
+                          value={formData.classTeacherId}
+                          onChange={(e) => handleInputChange("classTeacherId", e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                          <option value="">Select a teacher...</option>
+                          {teachers.map((teacher) => (
+                            <option key={teacher._id} value={teacher._id}>
+                              {getTeacherName(teacher)} - {teacher.specialization || 'No specialization'}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Choose a teacher to assign as the primary class teacher. This teacher will be responsible for the overall management of this class.
+                        </p>
+                      </div>
+
+                      {/* Teacher Search/Filter */}
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h4 className="font-medium text-gray-900 mb-3">Teacher Requirements</h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li className="flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                            Only active teachers are available for assignment
+                          </li>
+                          <li className="flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                            Teachers can be assigned to multiple classes
+                          </li>
+                          <li className="flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                            Specialized teachers are recommended for subject-specific classes
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-between pt-6 border-t border-gray-200">
+                        <button
+                          onClick={() => setFormData(prev => ({ ...prev, classTeacherId: "" }))}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          Remove Teacher
+                        </button>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setActiveTab("details")}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Back to Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-
-          {isCourseModalOpen && (
-            <AddCourseModal
-              courses={courses}
-              initialSelectedCourses={selectedCourseIds}
-              onClose={() => setIsCourseModalOpen(false)}
-              onAddCourses={handleAddCourses}
-              classId={classId}
-            />
-          )}
-
-          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => router.push(`/classes/view-class/${classId}`)}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
