@@ -11,6 +11,7 @@ import DashboardSkeleton from "@/components/DashboardSkeleton"
 import DashboardCard from "@/components/DashboardCard"
 import ClassTable from "@/components/ClassTable"
 import { useDashboard } from "@/hooks/useDashboard"
+import { FiBook, FiUsers, FiUser, FiBookOpen } from "react-icons/fi"
 
 const Dashboard = () => {
     const router = useRouter()
@@ -29,9 +30,13 @@ const Dashboard = () => {
     const cards = dashboardData ? [
         {
             id: 1,
-            icon: "/icons/book-saved.svg",
+            icon: FiBook,
             count: dashboardData.totalClasses,
             label: "Total Number of Classes",
+            bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
+            iconBg: "bg-blue-200",
+            iconColor: "text-blue-700",
+            textColor: "text-blue-900",
             details: (
                 <>
                     <p>Here you can see detailed information about all your classes.</p>
@@ -66,9 +71,13 @@ const Dashboard = () => {
         },
         {
             id: 2,
-            icon: "/icons/profile-2user.svg",
+            icon: FiUsers,
             count: dashboardData.totalStudents,
             label: "Total Number of Students",
+            bgColor: "bg-gradient-to-br from-green-50 to-green-100",
+            iconBg: "bg-green-200",
+            iconColor: "text-green-700",
+            textColor: "text-green-900",
             details: (
                 <>
                     <p>Here you can see detailed information about all your students.</p>
@@ -94,9 +103,13 @@ const Dashboard = () => {
         },
         {
             id: 3,
-            icon: "/icons/profile-2user.svg",
+            icon: FiUser,
             count: dashboardData.totalTeachers,
             label: "Total Number of Teachers",
+            bgColor: "bg-gradient-to-br from-orange-50 to-orange-100",
+            iconBg: "bg-orange-200",
+            iconColor: "text-orange-700",
+            textColor: "text-orange-900",
             details: (
                 <>
                     <p>Here you can see information about your teaching staff.</p>
@@ -113,9 +126,13 @@ const Dashboard = () => {
         },
         {
             id: 4,
-            icon: "/icons/book-saved.svg",
+            icon: FiBookOpen,
             count: dashboardData.totalSubjects,
             label: "Total Number of Subjects",
+            bgColor: "bg-gradient-to-br from-purple-50 to-purple-100",
+            iconBg: "bg-purple-200",
+            iconColor: "text-purple-700",
+            textColor: "text-purple-900",
             details: (
                 <>
                     <p>Here you can see information about subjects offered.</p>
@@ -267,6 +284,10 @@ const Dashboard = () => {
                                 details={card.details}
                                 isExpanded={expandedCards.includes(card.id)}
                                 onToggle={toggleExpand}
+                                bgColor={card.bgColor}
+                                iconBg={card.iconBg}
+                                iconColor={card.iconColor}
+                                textColor={card.textColor}
                             />
                         ))}
 
