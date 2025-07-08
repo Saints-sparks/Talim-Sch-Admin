@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { FiEdit, FiTrash, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiEdit, FiTrash, FiChevronLeft, FiChevronRight, FiUsers, FiBook } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
 import { getSchoolId } from "../services/school.service";
@@ -166,23 +166,31 @@ export default function Classes() {
                 <ClassesSkeleton />
             ) : (
                 <div className="flex h-screen bg-gray-100">
-                    <main className="flex-grow p-6 flex flex-col">
+                    <main className="flex-grow flex flex-col">
                         <Header />
                         
-                        {/* Header Section */}
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="font-semibold text-3xl text-gray-800">
-                                Classes
-                            </h1>
-                            <button
-                                className="flex items-center gap-2 font-bold text-[#154473] px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                                onClick={toggleModal}
-                            >
-                                <span className="text-lg">+</span>
-                                Add
-                            </button>
+                        {/* Navigation Header */}
+                        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center text-sm text-gray-600">
+                                    <FiBook className="w-4 h-4 mr-2" />
+                                    <span className="text-gray-900 font-medium">Class Management</span>
+                                    <span className="mx-2 text-gray-400">•</span>
+                                    <span className="text-gray-900 font-semibold text-lg">All Classes</span>
+                                    <span className="mx-2 text-gray-400">•</span>
+                                    <span className="text-gray-600">{classes.length} total</span>
+                                </div>
+                                <button
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium"
+                                    onClick={toggleModal}
+                                >
+                                    <span className="text-lg mr-2">+</span>
+                                    Add Class
+                                </button>
+                            </div>
                         </div>
 
+                        <div className="flex-1 p-6">
                         {error ? (
                             <div className="text-center py-12 flex-1 flex items-center justify-center">
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
@@ -226,22 +234,9 @@ export default function Classes() {
                                         return (
                                             <div
                                                 key={classItem._id}
-                                                className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 relative h-[250px] flex flex-col`}
+                                                className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 relative h-[250px] flex flex-col group`}
                                             >
-                                                {/* Edit/Delete Icons */}
-                                                <div className="absolute top-3 right-3 flex gap-1">
-                                                    <button
-                                                        onClick={() => router.push(`/classes/edit-class/${classItem._id}`)}
-                                                        className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
-                                                    >
-                                                        <FiEdit className="w-3 h-3" />
-                                                    </button>
-                                                    <button className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors">
-                                                        <FiTrash className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-
-                                                {/* Class Icon and Student Count */}
+                                                {/* Class Icon and Actions Header */}
                                                 <div className="flex items-center justify-between mb-4">
                                                     <div className="bg-white bg-opacity-20 rounded-lg p-2">
                                                         <svg
@@ -252,10 +247,26 @@ export default function Classes() {
                                                             <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                                                         </svg>
                                                     </div>
-                                                    <div className="bg-white bg-opacity-20 rounded-full px-2 py-1">
-                                                        <span className="text-xs font-medium">
-                                                            {classItem.classCapacity || '45'}
-                                                        </span>
+                                                    
+                                                    {/* Edit/Delete Icons - Show on hover */}
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/classes/edit-class/${classItem._id}`);
+                                                            }}
+                                                            className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
+                                                            title="Edit Class"
+                                                        >
+                                                            <FiEdit className="w-3 h-3" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
+                                                            title="Delete Class"
+                                                        >
+                                                            <FiTrash className="w-3 h-3" />
+                                                        </button>
                                                     </div>
                                                 </div>
 
@@ -269,11 +280,23 @@ export default function Classes() {
                                                     </p>
                                                 </div>
 
+                                                {/* Class Stats */}
+                                                <div className="flex items-center justify-between mb-4 text-xs opacity-90">
+                                                    <div className="flex items-center">
+                                                        <FiUsers className="w-3 h-3 mr-1" />
+                                                        <span>{classItem.classCapacity || '45'} capacity</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <FiBook className="w-3 h-3 mr-1" />
+                                                        <span>0 courses</span>
+                                                    </div>
+                                                </div>
+
                                                 {/* Action Button */}
                                                 <div className="mt-auto">
                                                     <button
                                                         onClick={() => router.push(`/classes/${classItem._id}`)}
-                                                        className={`w-full ${colorScheme.button} text-white py-2.5 px-3 rounded-lg font-medium transition-colors text-sm`}
+                                                        className={`w-full ${colorScheme.button} text-white py-2.5 px-3 rounded-lg font-medium transition-colors text-sm hover:transform hover:scale-[1.02]`}
                                                     >
                                                         Manage Class
                                                     </button>
@@ -319,6 +342,7 @@ export default function Classes() {
                                 )}
                             </div>
                         )}
+                        </div>
                     </main>
                 </div>
             )}
