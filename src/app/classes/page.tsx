@@ -2,13 +2,42 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { FiEdit, FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
 import { getSchoolId } from "../services/school.service";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ClassesSkeleton from "@/components/ClassesSkeleton";
+
+// Add custom styles for text truncation
+const customStyles = `
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
+
+// Rainbow color palette for cards with reduced thickness
+const rainbowColors = [
+    { bg: "bg-blue-400", text: "text-white", button: "bg-blue-500 hover:bg-blue-600" },
+    { bg: "bg-green-400", text: "text-white", button: "bg-green-500 hover:bg-green-600" },
+    { bg: "bg-yellow-400", text: "text-gray-800", button: "bg-yellow-500 hover:bg-yellow-600" },
+    { bg: "bg-purple-400", text: "text-white", button: "bg-purple-500 hover:bg-purple-600" },
+    { bg: "bg-pink-400", text: "text-white", button: "bg-pink-500 hover:bg-pink-600" },
+    { bg: "bg-red-400", text: "text-white", button: "bg-red-500 hover:bg-red-600" },
+    { bg: "bg-indigo-400", text: "text-white", button: "bg-indigo-500 hover:bg-indigo-600" },
+    { bg: "bg-teal-400", text: "text-white", button: "bg-teal-500 hover:bg-teal-600" },
+    { bg: "bg-orange-400", text: "text-white", button: "bg-orange-500 hover:bg-orange-600" },
+];
 
 export default function Classes() {
     const router = useRouter();
@@ -18,16 +47,15 @@ export default function Classes() {
         classCapacity: "",
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const cardsPerPage = 8; // Changed to 8 for better 4x2 grid per page
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
-    const [userId, setUserId] = useState<string | null>(null);
     const [classes, setClasses] = useState<Class[]>([]);
 
-    const totalPages = Math.ceil(classes.length / rowsPerPage);
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
+    const totalPages = Math.ceil(classes.length / cardsPerPage);
+    const startIndex = (currentPage - 1) * cardsPerPage;
+    const endIndex = startIndex + cardsPerPage;
     const displayedClasses = classes.slice(startIndex, endIndex);
 
     const handlePrevPage = () => {
@@ -50,10 +78,6 @@ export default function Classes() {
                 classCapacity: "",
             });
         }
-    };
-
-    const navigateToAddSubject = () => {
-        router.push("/add-subject");
     };
 
     const handleInputChange = (
@@ -131,158 +155,170 @@ export default function Classes() {
         }
     };
 
+    const getRandomColor = (index: number) => {
+        return rainbowColors[index % rainbowColors.length];
+    };
+
     return (
         <>
+            <style>{customStyles}</style>
             {isLoading ? (
                 <ClassesSkeleton />
             ) : (
                 <div className="flex h-screen bg-gray-100">
-                    <main className="flex-grow p-8 flex flex-col">
+                    <main className="flex-grow p-6 flex flex-col">
                         <Header />
-                        <h1 className="font-semibold text-3xl py-5 px-5 text-gray-800">
-                            Class Overview
-                        </h1>
+                        
+                        {/* Header Section */}
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="font-semibold text-3xl text-gray-800">
+                                Classes
+                            </h1>
+                            <button
+                                className="flex items-center gap-2 font-bold text-[#154473] px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                                onClick={toggleModal}
+                            >
+                                <span className="text-lg">+</span>
+                                Add
+                            </button>
+                        </div>
 
-                        {/* Classes Table */}
-                        <section className="bg-white shadow rounded p-6 flex-1 flex flex-col">
-                            <div className="flex items-center gap-x-4 mb-4">
-                                <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
-                                <button
-                                    className="font-bold text-[#154473] px-4 py-1 bg-gray-200 rounded"
-                                    onClick={toggleModal}
-                                >
-                                    + Add
-                                </button>
+                        {error ? (
+                            <div className="text-center py-12 flex-1 flex items-center justify-center">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
+                                    <div className="text-red-600 text-lg font-semibold mb-2">
+                                        Error Loading Classes
+                                    </div>
+                                    <p className="text-red-600 mb-4">{error}</p>
+                                    <button
+                                        onClick={() => window.location.reload()}
+                                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
                             </div>
-
-                            {error ? (
-                                <div className="text-center py-12 flex-1 flex items-center justify-center">
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-                                        <div className="text-red-600 text-lg font-semibold mb-2">
-                                            Error Loading Classes
-                                        </div>
-                                        <p className="text-red-600 mb-4">{error}</p>
-                                        <button
-                                            onClick={() => window.location.reload()}
-                                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                                        >
-                                            Try Again
-                                        </button>
+                        ) : classes.length === 0 ? (
+                            <div className="text-center py-12 flex-1 flex items-center justify-center">
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
+                                    <div className="text-gray-400 text-6xl mb-4">🏫</div>
+                                    <div className="text-gray-600 text-lg font-semibold mb-2">
+                                        No Classes Found
                                     </div>
+                                    <p className="text-gray-500 mb-4">
+                                        Get started by creating your first class to organize your
+                                        students.
+                                    </p>
+                                    <button
+                                        onClick={toggleModal}
+                                        className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
+                                    >
+                                        Create First Class
+                                    </button>
                                 </div>
-                            ) : classes.length === 0 ? (
-                                <div className="text-center py-12 flex-1 flex items-center justify-center">
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                                        <div className="text-gray-400 text-6xl mb-4">🏫</div>
-                                        <div className="text-gray-600 text-lg font-semibold mb-2">
-                                            No Classes Found
-                                        </div>
-                                        <p className="text-gray-500 mb-4">
-                                            Get started by creating your first class to organize your
-                                            students.
-                                        </p>
-                                        <button
-                                            onClick={toggleModal}
-                                            className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
-                                        >
-                                            Create First Class
-                                        </button>
-                                    </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col flex-1">
+                                {/* Classes Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+                                    {displayedClasses.map((classItem, index) => {
+                                        const colorScheme = getRandomColor(index);
+                                        return (
+                                            <div
+                                                key={classItem._id}
+                                                className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 relative h-[250px] flex flex-col`}
+                                            >
+                                                {/* Edit/Delete Icons */}
+                                                <div className="absolute top-3 right-3 flex gap-1">
+                                                    <button
+                                                        onClick={() => router.push(`/classes/edit-class/${classItem._id}`)}
+                                                        className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
+                                                    >
+                                                        <FiEdit className="w-3 h-3" />
+                                                    </button>
+                                                    <button className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors">
+                                                        <FiTrash className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Class Icon and Student Count */}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="bg-white bg-opacity-20 rounded-lg p-2">
+                                                        <svg
+                                                            className="w-5 h-5"
+                                                            fill="currentColor"
+                                                            viewBox="0 0 20 20"
+                                                        >
+                                                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="bg-white bg-opacity-20 rounded-full px-2 py-1">
+                                                        <span className="text-xs font-medium">
+                                                            {classItem.classCapacity || '45'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Class Info */}
+                                                <div className="flex-1 mb-4">
+                                                    <h3 className="text-lg font-bold mb-2 line-clamp-2">
+                                                        {classItem.name}
+                                                    </h3>
+                                                    <p className="text-sm opacity-90 line-clamp-3">
+                                                        {classItem.classDescription || 'No description provided'}
+                                                    </p>
+                                                </div>
+
+                                                {/* Action Button */}
+                                                <div className="mt-auto">
+                                                    <button
+                                                        onClick={() => router.push(`/classes/${classItem._id}`)}
+                                                        className={`w-full ${colorScheme.button} text-white py-2.5 px-3 rounded-lg font-medium transition-colors text-sm`}
+                                                    >
+                                                        Manage Class
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            ) : (
-                                <div className="flex flex-col flex-1">
-                                    <div className="flex-1">
-                                        <table className="w-full border-collapse">
-                                            <thead>
-                                                <tr className="border-b">
-                                                    <th className="text-left py-2 px-4  text-gray-800">
-                                                        Class Name
-                                                    </th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">
-                                                        Capacity
-                                                    </th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">
-                                                        Subjects Assigned
-                                                    </th>
-                                                    <th className="text-left py-2 px-4 text-gray-800">
-                                                        Actions
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {displayedClasses.map((item, index) => (
-                                                    <tr key={index} className="border-b hover:bg-gray-50">
-                                                        <td className="py-2 px-4 text-gray-800">{item.name}</td>
-                                                        <td className="py-2 px-4 text-gray-800">
-                                                            {item.classCapacity}
-                                                        </td>
-                                                        <td className="py-2 px-4 text-gray-800">
-                                                            {item.classDescription}
-                                                        </td>
-                                                        <td className="py-2 px-4">
-                                                            <button
-                                                                onClick={() => router.push(`/classes/${item._id}`)}
-                                                                className="px-3 py-1 bg-white text-[#154473] border border-[#154473] rounded hover:bg-gray-200"
-                                                            >
-                                                                View
-                                                            </button>
 
-                                                            <button
-                                                                onClick={() =>
-                                                                    router.push(`/classes/edit-class/${item._id}`)
-                                                                }
-                                                                className="ml-2 px-2 py-1 text-gray-500 hover:text-gray-700"
-                                                                aria-label="Edit class"
-                                                            >
-                                                                <FiEdit className="text-xl" />
-                                                            </button>
-
-                                                            <button className="ml-2 px-2 py-1 text-red-500 hover:text-red-700">
-                                                                <FiTrash className="text-xl" />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Pagination Controls - Now at the bottom */}
-                                    <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex justify-center items-center mt-6 gap-4">
+                                        <button
+                                            onClick={handlePrevPage}
+                                            disabled={currentPage === 1}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                                                currentPage === 1
+                                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                    : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                                            }`}
+                                        >
+                                            <FiChevronLeft className="w-4 h-4" />
+                                            Previous
+                                        </button>
+                                        
                                         <span className="text-sm text-gray-600">
-                                            Showing {startIndex + 1} to{" "}
-                                            {Math.min(endIndex, classes.length)} of {classes.length}{" "}
-                                            classes
+                                            Page {currentPage} of {totalPages}
                                         </span>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handlePrevPage}
-                                                disabled={currentPage === 1}
-                                                className={`px-3 py-1 border rounded bg-[#154473] text-white transition-colors ${currentPage === 1
-                                                        ? "opacity-50 cursor-not-allowed"
-                                                        : "hover:bg-blue-700"
-                                                    }`}
-                                            >
-                                                Previous
-                                            </button>
-                                            <span className="px-3 py-1 text-sm text-gray-600">
-                                                Page {currentPage} of {totalPages}
-                                            </span>
-                                            <button
-                                                onClick={handleNextPage}
-                                                disabled={currentPage === totalPages}
-                                                className={`px-3 py-1 border rounded bg-[#154473] text-white transition-colors ${currentPage === totalPages
-                                                        ? "opacity-50 cursor-not-allowed"
-                                                        : "hover:bg-blue-700"
-                                                    }`}
-                                            >
-                                                Next
-                                            </button>
-                                        </div>
+                                        
+                                        <button
+                                            onClick={handleNextPage}
+                                            disabled={currentPage === totalPages}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                                                currentPage === totalPages
+                                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                    : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                                            }`}
+                                        >
+                                            Next
+                                            <FiChevronRight className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                </div>
-                            )}
-                        </section>
+                                )}
+                            </div>
+                        )}
                     </main>
                 </div>
             )}
@@ -333,19 +369,19 @@ export default function Classes() {
                                     <label className="block text-gray-700 font-semibold mb-2">
                                         Class Capacity (Optional)
                                     </label>
-
                                     <select
                                         name="classCapacity"
                                         value={formData.classCapacity}
                                         onChange={handleInputChange}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
-                                        <option value="" disabled selected>
+                                        <option value="">
                                             Choose your class capacity
                                         </option>
                                         <option value="10">10</option>
                                         <option value="20">20</option>
                                         <option value="30">30</option>
+                                        <option value="45">45</option>
                                     </select>
                                 </div>
                             </div>
@@ -368,7 +404,7 @@ export default function Classes() {
                             <div className="flex justify-end gap-4 mt-6">
                                 <button
                                     type="button"
-                                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                                     onClick={toggleModal}
                                     disabled={isCreating}
                                 >
@@ -376,7 +412,7 @@ export default function Classes() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                                    className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition-colors"
                                     disabled={isCreating}
                                 >
                                     {isCreating ? (
