@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { EyeIcon, EyeSlashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/CustomToast';
+import { authService } from '../services/auth.service';
 import treelogo from '../../../public/img/treelogo.svg';
 import loginImage from '../../../public/img/Education-rafiki 1.svg';
 
@@ -35,13 +36,11 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('OTP sent to your email!');
+      const response = await authService.forgotPassword(email);
+      toast.success('Reset code sent to your email!');
       setCurrentStep('otp');
-    } catch (error) {
-      toast.error('Failed to send OTP. Please try again.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,9 +57,7 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Just validate OTP format for now, actual validation will be done in password reset
       toast.success('OTP verified successfully!');
       setCurrentStep('newPassword');
     } catch (error) {
@@ -86,10 +83,9 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authService.resetPassword(email, otp, newPassword);
       
-      // Don't show toast, just show the modal
+      // Show success modal
       setShowSuccessModal(true);
       
       // Hide modal and redirect after animation completes
@@ -99,8 +95,8 @@ export default function ForgotPassword() {
           router.push('/');
         }, 500);
       }, 3000);
-    } catch (error) {
-      toast.error('Failed to reset password. Please try again.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reset password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -217,7 +213,8 @@ export default function ForgotPassword() {
         <button
           type="button"
           onClick={() => {
-            toast.info('OTP resent to your email');
+            // Call the forgot password API again to resend OTP
+            handleEmailSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
           }}
           className="text-sm text-[#154473] hover:underline"
         >

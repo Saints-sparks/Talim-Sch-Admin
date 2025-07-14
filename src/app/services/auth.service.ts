@@ -86,6 +86,54 @@ export const authService = {
     }
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.FORGOT_PASSWORD}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send reset code');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (email: string, token: string, newPassword: string): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.RESET_PASSWORD}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email, token, newPassword }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to reset password');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  },
+
   async logout() {
     const cookies = nookies.get(null);
     const accessToken = cookies.access_token;
@@ -119,4 +167,4 @@ export const authService = {
       throw error;
     }
   },
-}; 
+};
