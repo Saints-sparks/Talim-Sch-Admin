@@ -1,15 +1,18 @@
 import exp from "constants";
 import { Geist_Mono } from "next/font/google";
 
-export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
- //export const API_BASE_URL = "http://localhost:5000"
+//export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+export const API_BASE_URL = "http://localhost:5000"
 
 export const API_URLS = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
     INTROSPECT: '/auth/introspect',
-    LOGOUT: '/auth/logout'
+    LOGOUT: '/auth/logout',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
+    CHANGE_PASSWORD: '/auth/change-password',
   },
   SCHOOL: {
     GET_CLASS: '/classes',
@@ -95,6 +98,8 @@ export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}${API_URLS.AUTH.LOGIN}`,
   INTROSPECT: `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
   LOGOUT: `${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`,
+  FORGOT_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.FORGOT_PASSWORD}`,
+RESET_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.RESET_PASSWORD}`,
   REGISTER: `${API_BASE_URL}${API_URLS.AUTH.REGISTER}`,
   GET_CLASS: `${API_BASE_URL}/classes`,
   GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
