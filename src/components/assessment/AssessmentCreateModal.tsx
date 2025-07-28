@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, FileText, AlertCircle } from 'lucide-react';
 import { Assessment, AssessmentForm, Term } from '@/components/assessment/AssessmentForm.types';
 import TermSelector from './TermSelector';
-import { assessmentService } from '@/services/assessmentService';
+import { assessmentService } from '@/app/services/assessment.service';
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;

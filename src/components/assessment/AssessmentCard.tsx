@@ -7,7 +7,7 @@ import { Assessment, AssessmentStatus } from '@/components/assessment/Assessment
 interface AssessmentCardProps {
   assessment: Assessment;
   onEdit: (assessment: Assessment) => void;
-  onDelete: (assessmentId: string) => void;
+  onDelete: (assessment: Assessment) => void;
   onView: (assessment: Assessment) => void;
 }
 
@@ -150,7 +150,7 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
           Edit
         </button>
         <button
-          onClick={() => onDelete(assessment._id)}
+          onClick={() => onDelete(assessment)}
           className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
         >
           <Trash2 className="h-3 w-3" />

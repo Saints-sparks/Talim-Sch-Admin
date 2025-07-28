@@ -6,42 +6,11 @@ import { motion } from 'framer-motion';
 import { FaSearch, FaEllipsisV } from 'react-icons/fa';
 import { ClipboardList, Plus, Calendar, Clock, CheckCircle, XCircle, AlertCircle, PlayCircle } from 'lucide-react';
 import { Assessment, Term } from '@/components/assessment/AssessmentForm.types';
-import { assessmentService } from '@/services/assessmentService';
+import { assessmentService } from '@/app/services/assessment.service';
 import AssessmentManagementPage from '@/components/assessment/AssessmentManagementPage';
 import { Header } from '@/components/Header';
 import { useToast } from '@/components/CustomToast';
 import { getTerms, TermResponse } from '../services/academic.service';
-
-// Mock terms data - replace with actual API call
-const mockTerms: Term[] = [
-  {
-    _id: '1',
-    name: 'First Term',
-    startDate: '2025-01-01',
-    endDate: '2025-04-15',
-    academicYearId: 'ay1',
-    schoolId: 'school1',
-    isCurrent: true,
-  },
-  {
-    _id: '2',
-    name: 'Second Term',
-    startDate: '2025-04-20',
-    endDate: '2025-08-15',
-    academicYearId: 'ay1',
-    schoolId: 'school1',
-    isCurrent: false,
-  },
-  {
-    _id: '3',
-    name: 'Third Term',
-    startDate: '2025-08-20',
-    endDate: '2025-12-15',
-    academicYearId: 'ay1',
-    schoolId: 'school1',
-    isCurrent: false,
-  },
-];
 
 const AssessmentPage: React.FC = () => {
   const [terms, setTerms] = useState<TermResponse[]>([]);
@@ -50,7 +19,7 @@ const AssessmentPage: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch terms from API (implement when terms API is ready)
+  // Fetch terms from API
   const fetchTerms = async () => {
     try {
       setIsLoading(true);

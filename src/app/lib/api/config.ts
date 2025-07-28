@@ -88,7 +88,14 @@ export const API_URLS = {
   LEAVE_REQUESTS: {
     GET_LEAVE_REQUESTS: '/leave-requests/school-admin/all',
     GET_LEAVE_REQUEST_BY_ID: '/leave-requests/school-admin/:requestId',
-  
+  },
+  ASSESSMENTS: {
+    CREATE_ASSESSMENT: '/assessments',
+    GET_ASSESSMENTS_BY_SCHOOL: '/assessments/school/:schoolId',
+    GET_ASSESSMENTS_BY_TERM: '/assessments/term/:termId',
+    GET_ASSESSMENT_BY_ID: '/assessments/:id',
+    UPDATE_ASSESSMENT: '/assessments/:id',
+    DELETE_ASSESSMENT: '/assessments/:id',
   }
 
 };
