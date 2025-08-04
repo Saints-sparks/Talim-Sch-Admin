@@ -92,6 +92,10 @@ export default function SignIn() {
       localStorage.setItem('user', JSON.stringify(userInfo.user))
       localStorage.setItem('accessToken', response.access_token); // Store access token
       localStorage.setItem('refreshToken', response.refresh_token)
+      
+      // Trigger custom auth event for WebSocket context
+      window.dispatchEvent(new CustomEvent('auth-changed', { detail: { type: 'login', user: userInfo.user } }));
+      
       toast.success('Login successful! Redirecting...');
 
       // Redirect to dashboard or home page on successful login

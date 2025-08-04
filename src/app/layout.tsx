@@ -4,6 +4,7 @@ import { Manrope } from "next/font/google";
 import "./globals.css";
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 import { TransitionProvider } from "@/context/TransitionContext";
+import { WebSocketProvider } from "@/context/WebSocketContext";
 
 import { usePathname, useRouter } from "next/navigation"; // Import usePathname and useRouter for routing
 
@@ -46,14 +47,23 @@ export default function RootLayout({
   const showSidebar = !noSidebarRoutes.includes(pathname);
 
   useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
+    // Only check auth status on protected routes
+    if (typeof window !== 'undefined' && !noSidebarRoutes.includes(pathname)) {
+      const checkAuthStatus = () => {
+        const accessToken = localStorage.getItem("accessToken");
+        
+        if (!accessToken) {
+          toast.info("Your session has expired. Please log in again.");
+          router.push("/");
+        }
+      };
 
-    if (!accessToken && !noSidebarRoutes.includes(pathname)) {
-      toast.info("Your session has expired. Please log in again.");
-
-      router.push("/");
+      // Small delay to prevent race conditions
+      const timeoutId = setTimeout(checkAuthStatus, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [pathname, router, toast]);
+  }, [pathname, router, toast, noSidebarRoutes]);
 
   return (
     <html lang="en">
@@ -63,10 +73,12 @@ export default function RootLayout({
         <TransitionProvider>
           <SidebarProvider>
             <PageIndicatorProvider>
-              <LayoutShell showSidebar={showSidebar}>
-                {children}
-              </LayoutShell>
-              <ToastContainer toasts={toasts} onRemove={removeToast} />
+              <WebSocketProvider>
+                <LayoutShell showSidebar={showSidebar}>
+                  {children}
+                </LayoutShell>
+                <ToastContainer toasts={toasts} onRemove={removeToast} />
+              </WebSocketProvider>
             </PageIndicatorProvider>
           </SidebarProvider>
         </TransitionProvider>
