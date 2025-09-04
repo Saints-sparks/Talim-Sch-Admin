@@ -28,7 +28,7 @@ import {
   type TeacherById,
 } from "@/app/services/teacher.service";
 import { toast } from "react-toastify";
-import { API_ENDPOINTS } from "@/app/lib/api/config";
+import { API_ENDPOINTS, API_BASE_URL } from "@/app/lib/api/config";
 import { Loader2 } from "lucide-react";
 
 interface Course {
@@ -165,14 +165,11 @@ export default function TeacherProfileForm() {
   const fetchClasses = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        "https://talimbe-v2-li38.onrender.com/classes",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) throw new Error("Failed to fetch classes");
 
@@ -278,7 +275,9 @@ export default function TeacherProfileForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update personal details");
+        throw new Error(
+          errorData.message || "Failed to update personal details"
+        );
       }
 
       toast.success("Personal details updated successfully!");

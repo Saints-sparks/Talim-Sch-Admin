@@ -4,17 +4,17 @@ import React, { useState, useEffect, Suspense } from "react";
 import { Header } from "@/components/Header";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { 
-  BookOpen, 
-  GraduationCap, 
-  FileText, 
+import {
+  BookOpen,
+  GraduationCap,
+  FileText,
   Settings,
   Search,
   Users,
   ChevronRight,
-  Book
+  Book,
 } from "lucide-react";
-import { API_ENDPOINTS } from '../lib/api/config';
+import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
 
 interface Class {
   _id: string;
@@ -52,11 +52,11 @@ interface CurriculumContent {
   };
   content: string;
   attachments: string[];
-  teacherId: {
+  teacherId?: {
     _id: string;
     firstName: string;
     lastName: string;
-  };
+  } | null;
   createdAt: string;
 }
 
@@ -83,20 +83,25 @@ const LoadingSpinner = () => (
 const CurriculumDashboardMain: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // Check for any query parameters that might affect initial state
-  const initialTab = searchParams?.get('tab') as "overview" | "structure" || "overview";
-  
-  const [activeTab, setActiveTab] = useState<"overview" | "structure">(initialTab);
+  const initialTab =
+    (searchParams?.get("tab") as "overview" | "structure") || "overview";
+
+  const [activeTab, setActiveTab] = useState<"overview" | "structure">(
+    initialTab
+  );
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [curriculumContents, setCurriculumContents] = useState<CurriculumContent[]>([]);
+  const [curriculumContents, setCurriculumContents] = useState<
+    CurriculumContent[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
     totalSubjects: 0,
     totalCourses: 0,
     totalContent: 0,
-    totalTeachers: 0
+    totalTeachers: 0,
   });
 
   // Search and filter states
@@ -108,8 +113,8 @@ const CurriculumDashboardMain: React.FC = () => {
 
   // Update tab when URL changes
   useEffect(() => {
-    if (searchParams?.get('tab')) {
-      setActiveTab(searchParams.get('tab') as "overview" | "structure");
+    if (searchParams?.get("tab")) {
+      setActiveTab(searchParams.get("tab") as "overview" | "structure");
     }
   }, [searchParams]);
 
@@ -119,7 +124,7 @@ const CurriculumDashboardMain: React.FC = () => {
       await Promise.all([
         fetchClasses(),
         fetchSubjects(),
-        fetchCurriculumContents()
+        fetchCurriculumContents(),
       ]);
       calculateStats();
     } catch (error) {
@@ -161,7 +166,7 @@ const CurriculumDashboardMain: React.FC = () => {
   const fetchCurriculumContents = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("https://talimbe-v2-li38.onrender.com/curriculum", {
+      const response = await fetch(`${API_BASE_URL}/curriculum`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -174,25 +179,36 @@ const CurriculumDashboardMain: React.FC = () => {
   };
 
   const calculateStats = () => {
-    const totalCourses = subjects.reduce((acc, subject) => acc + (subject.courses?.length || 0), 0);
-    const uniqueTeachers = new Set(curriculumContents.map(content => content.teacherId._id)).size;
+    const totalCourses = subjects.reduce(
+      (acc, subject) => acc + (subject.courses?.length || 0),
+      0
+    );
+    const uniqueTeachers = new Set(
+      curriculumContents
+        .filter((content) => content.teacherId?._id)
+        .map((content) => content.teacherId!._id)
+    ).size;
 
     setStats({
       totalSubjects: subjects.length,
       totalCourses,
       totalContent: curriculumContents.length,
-      totalTeachers: uniqueTeachers
+      totalTeachers: uniqueTeachers,
     });
   };
 
-  const filteredSubjects = subjects.filter(subject => {
-    const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.code.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSubjects = subjects.filter((subject) => {
+    const matchesSearch =
+      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.code.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
   const recentContent = curriculumContents
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
     .slice(0, 5);
 
   if (loading) {
@@ -209,7 +225,9 @@ const CurriculumDashboardMain: React.FC = () => {
       {/* Fixed Navigation */}
       <div className="flex-shrink-0 px-6 py-4 bg-white border-b">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold text-gray-900">Curriculum Management</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Curriculum Management
+          </h1>
           <div className="flex gap-2">
             <button
               onClick={() => router.push("/curriculum/structure")}
@@ -257,8 +275,12 @@ const CurriculumDashboardMain: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Subjects</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalSubjects}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Total Subjects
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stats.totalSubjects}
+                      </p>
                     </div>
                     <div className="p-3 bg-blue-100 rounded-full">
                       <BookOpen className="w-6 h-6 text-blue-600" />
@@ -269,8 +291,12 @@ const CurriculumDashboardMain: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalCourses}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Total Courses
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stats.totalCourses}
+                      </p>
                     </div>
                     <div className="p-3 bg-green-100 rounded-full">
                       <GraduationCap className="w-6 h-6 text-green-600" />
@@ -281,8 +307,12 @@ const CurriculumDashboardMain: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Curriculum Content</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalContent}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Curriculum Content
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stats.totalContent}
+                      </p>
                     </div>
                     <div className="p-3 bg-purple-100 rounded-full">
                       <FileText className="w-6 h-6 text-purple-600" />
@@ -293,8 +323,12 @@ const CurriculumDashboardMain: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Active Teachers</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalTeachers}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Active Teachers
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {stats.totalTeachers}
+                      </p>
                     </div>
                     <div className="p-3 bg-orange-100 rounded-full">
                       <Users className="w-6 h-6 text-orange-600" />
@@ -305,10 +339,14 @@ const CurriculumDashboardMain: React.FC = () => {
 
               {/* Quick Actions */}
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Quick Actions
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <button
-                    onClick={() => router.push("/curriculum/structure?action=add-subject")}
+                    onClick={() =>
+                      router.push("/curriculum/structure?action=add-subject")
+                    }
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                   >
                     <div className="flex items-center gap-3">
@@ -317,14 +355,18 @@ const CurriculumDashboardMain: React.FC = () => {
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-gray-900">Add Subject</p>
-                        <p className="text-sm text-gray-500">Create new subject</p>
+                        <p className="text-sm text-gray-500">
+                          Create new subject
+                        </p>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                   </button>
 
                   <button
-                    onClick={() => router.push("/curriculum/structure?action=add-course")}
+                    onClick={() =>
+                      router.push("/curriculum/structure?action=add-course")
+                    }
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                   >
                     <div className="flex items-center gap-3">
@@ -333,7 +375,9 @@ const CurriculumDashboardMain: React.FC = () => {
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-gray-900">Add Course</p>
-                        <p className="text-sm text-gray-500">Create new course</p>
+                        <p className="text-sm text-gray-500">
+                          Create new course
+                        </p>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -344,7 +388,9 @@ const CurriculumDashboardMain: React.FC = () => {
               {/* Recent Content */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Curriculum Content</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Recent Curriculum Content
+                  </h2>
                 </div>
                 {recentContent.length > 0 ? (
                   <div className="space-y-3">
@@ -362,7 +408,11 @@ const CurriculumDashboardMain: React.FC = () => {
                               {content.course.code} - {content.course.name}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {content.term.name} ({content.term.year}) • {content.teacherId.firstName} {content.teacherId.lastName}
+                              {content.term.name} ({content.term.year}) •{" "}
+                              {content.teacherId?.firstName &&
+                              content.teacherId?.lastName
+                                ? `${content.teacherId.firstName} ${content.teacherId.lastName}`
+                                : "No teacher assigned"}
                             </p>
                           </div>
                         </div>
@@ -375,7 +425,9 @@ const CurriculumDashboardMain: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No curriculum content created yet</p>
+                  <p className="text-gray-500 text-center py-4">
+                    No curriculum content created yet
+                  </p>
                 )}
               </div>
             </div>
@@ -409,7 +461,9 @@ const CurriculumDashboardMain: React.FC = () => {
               {/* Subjects List */}
               <div className="bg-white rounded-lg shadow-sm">
                 <div className="p-6 border-b">
-                  <h2 className="text-lg font-semibold text-gray-900">Subjects Overview</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Subjects Overview
+                  </h2>
                 </div>
                 <div className="p-6">
                   {filteredSubjects.length > 0 ? (
@@ -420,7 +474,9 @@ const CurriculumDashboardMain: React.FC = () => {
                           className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900">{subject.name}</h3>
+                            <h3 className="font-semibold text-gray-900">
+                              {subject.name}
+                            </h3>
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                               {subject.code}
                             </span>

@@ -111,3 +111,48 @@ a[href] {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom utility classes for improved UI */
+@layer utilities {
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  
+  /* Improved focus states */
+  .focus-visible\:ring-offset-background:focus-visible {
+    --tw-ring-offset-color: hsl(var(--background));
+  }
+  
+  /* Container improvements */
+  .container {
+    @apply mx-auto max-w-7xl;
+  }
+  
+  /* Backdrop blur support */
+  .backdrop-blur-supports {
+    backdrop-filter: blur(8px);
+  }
+  
+  @supports (backdrop-filter: blur(0)) {
+    .backdrop-blur-supports {
+      background-color: hsla(var(--background), 0.8);
+    }
+  }
+}

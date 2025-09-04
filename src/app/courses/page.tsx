@@ -40,15 +40,12 @@ const CourseManagement = () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
+      const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!response.ok) throw new Error("Failed to fetch courses");
 
       const responseData = await response.json();
@@ -82,7 +79,9 @@ const CourseManagement = () => {
 
   // Handle form input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -98,7 +97,7 @@ const CourseManagement = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const url = currentCourse
-        ? `http://localhost:5000/subjects-courses/courses/${currentCourse._id}`
+        ? `http://localhost:5005/subjects-courses/courses/${currentCourse._id}`
         : "http://localhost:5000/subjects-courses/courses";
 
       const method = currentCourse ? "PUT" : "POST";
@@ -115,12 +114,14 @@ const CourseManagement = () => {
       if (!response.ok) throw new Error(response.statusText);
 
       const data = await response.json();
-      
+
       // Get the actual course object from the response
       const newCourse = data.data || data;
 
       if (currentCourse) {
-        setCourses(courses.map((c) => (c._id === newCourse._id ? newCourse : c)));
+        setCourses(
+          courses.map((c) => (c._id === newCourse._id ? newCourse : c))
+        );
         toast.success("Course updated successfully", { id: loadingToast });
       } else {
         setCourses([...courses, newCourse]);
@@ -211,7 +212,6 @@ const CourseManagement = () => {
         </div>
 
         {/* Debug Information */}
-        
 
         {/* Course Table */}
         {isLoading ? (
@@ -319,7 +319,7 @@ const CourseManagement = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-sm p-8">
             <p className="text-gray-500 mb-4">No courses found</p>
-            <button 
+            <button
               onClick={fetchCourses}
               className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
             >

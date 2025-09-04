@@ -16,7 +16,7 @@ interface FormData {
 }
 
 const AddCourse: React.FC = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5005";
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [buttonLoader, setButtonLoader] = useState<boolean>(false);
@@ -84,7 +84,7 @@ const AddCourse: React.FC = () => {
       console.log("Request Data:", JSON.stringify(formData, null, 2));
 
       const response = await fetch(
-        `http://localhost:5000/subjects-courses/courses`,
+        `http://localhost:5005/subjects-courses/courses`,
         {
           method: "POST",
           headers: {
