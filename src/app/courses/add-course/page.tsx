@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, FormEvent, ChangeEvent } from "react";
-import { Header } from "@/components/Header";
+
 import { toast, Flip, ToastContainer } from "react-toastify";
 
 interface FormData {
@@ -139,9 +139,6 @@ const AddCourse: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <Header />
-
       <ToastContainer />
 
       <h1 className="text-2xl font-semibold text-gray-800">Add New Course</h1>

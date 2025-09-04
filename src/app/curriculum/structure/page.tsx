@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { Header } from "@/components/Header";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
@@ -73,9 +73,6 @@ interface NewCourse {
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
   <div className="flex flex-col h-screen bg-background">
-    <div className="flex-shrink-0">
-      <Header />
-    </div>
     <div className="flex-1 flex flex-col items-center justify-center space-y-4">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">
@@ -502,11 +499,6 @@ const CurriculumStructureMain: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
-
       {/* Fixed Title and Controls */}
       <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">

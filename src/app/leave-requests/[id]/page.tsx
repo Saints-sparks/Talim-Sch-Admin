@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
+
 import { useRouter, useParams } from "next/navigation";
 import {
   getLeaveRequestById,
@@ -103,13 +103,13 @@ const AdminRequestDetailPage: React.FC = () => {
 
         // Using your existing service function
         const response = await getLeaveRequestById(requestId);
-        
+
         // Handle response structure - check if it's wrapped or direct
         let data: ApiLeaveRequest;
-        if (response && typeof response === 'object') {
-          if ('data' in response && response.data) {
+        if (response && typeof response === "object") {
+          if ("data" in response && response.data) {
             data = response.data as ApiLeaveRequest;
-          } else if ('_id' in response) {
+          } else if ("_id" in response) {
             // First cast to unknown to bypass type checking, then to ApiLeaveRequest
             data = response as unknown as ApiLeaveRequest;
           } else {
@@ -141,7 +141,8 @@ const AdminRequestDetailPage: React.FC = () => {
     return {
       id: data._id,
       studentName: `${data.studentUser.firstName} ${data.studentUser.lastName}`,
-      studentImage: "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp",
+      studentImage:
+        "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp",
       leaveType: data.leaveType,
       gradeLevel: data.studentProfile.gradeLevel,
       parent: data.studentProfile.parentContact.fullName,
@@ -232,9 +233,6 @@ const AdminRequestDetailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
         <div className="flex-1 flex justify-center items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
         </div>
@@ -245,9 +243,6 @@ const AdminRequestDetailPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
         <div className="flex-1 px-6 py-4">
           <div className="flex items-center mb-6">
             <button
@@ -289,9 +284,6 @@ const AdminRequestDetailPage: React.FC = () => {
   if (!leaveRequest) {
     return (
       <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-shrink-0">
-          <Header />
-        </div>
         <div className="flex-1 flex justify-center items-center">
           <div className="text-center">
             <div className="text-gray-400 text-4xl mb-4">❌</div>
@@ -315,10 +307,7 @@ const AdminRequestDetailPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
+     
 
       {/* Fixed Back Button and Title */}
       <div className="flex-shrink-0 px-6 py-4 bg-gray-100">
@@ -355,7 +344,9 @@ const AdminRequestDetailPage: React.FC = () => {
                     <h2 className="text-xl font-semibold text-gray-800">
                       {leaveRequest.studentName}
                     </h2>
-                    <p className="text-gray-600">{leaveRequest.gradeLevel} • {leaveRequest.leaveType}</p>
+                    <p className="text-gray-600">
+                      {leaveRequest.gradeLevel} • {leaveRequest.leaveType}
+                    </p>
                   </div>
                 </div>
                 <span
@@ -381,7 +372,9 @@ const AdminRequestDetailPage: React.FC = () => {
                       <span className="text-sm font-medium text-gray-500">
                         Student Name:
                       </span>
-                      <p className="text-gray-800">{leaveRequest.studentName}</p>
+                      <p className="text-gray-800">
+                        {leaveRequest.studentName}
+                      </p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">
@@ -393,21 +386,27 @@ const AdminRequestDetailPage: React.FC = () => {
                       <span className="text-sm font-medium text-gray-500">
                         Student Email:
                       </span>
-                      <p className="text-gray-800">{leaveRequest.studentEmail}</p>
+                      <p className="text-gray-800">
+                        {leaveRequest.studentEmail}
+                      </p>
                     </div>
                     {leaveRequest.studentPhone && (
                       <div>
                         <span className="text-sm font-medium text-gray-500">
                           Student Phone:
                         </span>
-                        <p className="text-gray-800">{leaveRequest.studentPhone}</p>
+                        <p className="text-gray-800">
+                          {leaveRequest.studentPhone}
+                        </p>
                       </div>
                     )}
                     <div>
                       <span className="text-sm font-medium text-gray-500">
                         Student ID:
                       </span>
-                      <p className="text-gray-800">{leaveRequest.originalData.studentUser.userId}</p>
+                      <p className="text-gray-800">
+                        {leaveRequest.originalData.studentUser.userId}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -428,7 +427,9 @@ const AdminRequestDetailPage: React.FC = () => {
                         <span className="text-sm font-medium text-gray-500">
                           Parent Phone:
                         </span>
-                        <p className="text-gray-800">{leaveRequest.parentPhone}</p>
+                        <p className="text-gray-800">
+                          {leaveRequest.parentPhone}
+                        </p>
                       </div>
                     )}
                     {leaveRequest.parentEmail && (
@@ -436,7 +437,9 @@ const AdminRequestDetailPage: React.FC = () => {
                         <span className="text-sm font-medium text-gray-500">
                           Parent Email:
                         </span>
-                        <p className="text-gray-800">{leaveRequest.parentEmail}</p>
+                        <p className="text-gray-800">
+                          {leaveRequest.parentEmail}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -467,7 +470,9 @@ const AdminRequestDetailPage: React.FC = () => {
                     <span className="text-sm font-medium text-gray-500">
                       Request Submitted:
                     </span>
-                    <p className="text-gray-800">{leaveRequest.submittedDate}</p>
+                    <p className="text-gray-800">
+                      {leaveRequest.submittedDate}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500">
@@ -507,32 +512,33 @@ const AdminRequestDetailPage: React.FC = () => {
               </div>
 
               {/* Attachments */}
-              {leaveRequest.attachments && leaveRequest.attachments.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                    Attachments
-                  </h3>
-                  <div className="space-y-2">
-                    {leaveRequest.attachments.map((attachment, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-gray-50 rounded-md p-3"
-                      >
-                        <div className="flex items-center">
-                          <div className="text-blue-500 mr-3">📎</div>
-                          <span className="text-gray-800">{attachment}</span>
-                        </div>
-                        <button
-                          onClick={() => handleDownloadAttachment(attachment)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
+              {leaveRequest.attachments &&
+                leaveRequest.attachments.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      Attachments
+                    </h3>
+                    <div className="space-y-2">
+                      {leaveRequest.attachments.map((attachment, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-gray-50 rounded-md p-3"
                         >
-                          Download
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex items-center">
+                            <div className="text-blue-500 mr-3">📎</div>
+                            <span className="text-gray-800">{attachment}</span>
+                          </div>
+                          <button
+                            onClick={() => handleDownloadAttachment(attachment)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
+                          >
+                            Download
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Action Section - Only show for pending requests */}
               {leaveRequest.status === "pending" && (

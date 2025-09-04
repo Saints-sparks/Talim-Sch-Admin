@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
+
 import { FiSave, FiX } from "react-icons/fi";
-import { 
-  BookOpen, 
-  Users, 
-  User, 
+import {
+  BookOpen,
+  Users,
+  User,
   Info,
   ChevronLeft,
   Search,
@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { getClass, updateClass, assignTeacherToClass } from "../../../services/student.service";
+import {
+  getClass,
+  updateClass,
+  assignTeacherToClass,
+} from "../../../services/student.service";
 import { getTeachers, Teacher } from "../../../services/subjects.service";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -56,7 +60,7 @@ const EditClass: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const classId = Array.isArray(params.id) ? params.id[0] : params.id;
-  
+
   // State management
   const [classData, setClassData] = useState<ClassDetails | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -66,7 +70,7 @@ const EditClass: React.FC = () => {
   const [isAssigningTeacher, setIsAssigningTeacher] = useState(false);
   const [error, setError] = useState<string>("");
   const [activeTab, setActiveTab] = useState("details");
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
@@ -99,7 +103,7 @@ const EditClass: React.FC = () => {
   };
 
   // Filter teachers based on search
-  const filteredTeachers = teachers.filter(teacher => {
+  const filteredTeachers = teachers.filter((teacher) => {
     const fullName = getTeacherName(teacher).toLowerCase();
     const email = getTeacherEmail(teacher).toLowerCase();
     const search = teacherSearch.toLowerCase();
@@ -118,7 +122,7 @@ const EditClass: React.FC = () => {
         // Fetch class data
         const data = await getClass(classId);
         setClassData(data);
-        
+
         // Set form data
         setFormData({
           name: data.name || "",
@@ -137,7 +141,6 @@ const EditClass: React.FC = () => {
         } finally {
           setIsLoadingTeachers(false);
         }
-
       } catch (error: any) {
         console.error("❌ Error fetching data:", error);
         setError("Failed to load class details");
@@ -153,9 +156,9 @@ const EditClass: React.FC = () => {
 
   // Handle form input changes
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -183,7 +186,7 @@ const EditClass: React.FC = () => {
       });
 
       toast.success("Class updated successfully!");
-      
+
       // Refresh class details
       const updatedData = await getClass(classId);
       setClassData(updatedData);
@@ -209,38 +212,57 @@ const EditClass: React.FC = () => {
       }
 
       // Attempt to assign teacher
-      const assignmentResult = await assignTeacherToClass(classId, selectedTeacher._id);
+      const assignmentResult = await assignTeacherToClass(
+        classId,
+        selectedTeacher._id
+      );
       console.log("Teacher assignment result:", assignmentResult);
-      
+
       // Refresh class details to show updated teacher
       const updatedData = await getClass(classId);
-      
+
       // Verify the teacher was actually assigned
       if (!updatedData.classTeacherId) {
-        console.warn("Teacher assignment appeared successful but classTeacherId is null");
-        toast.warning("Teacher assignment may not have completed properly. Please refresh the page.");
+        console.warn(
+          "Teacher assignment appeared successful but classTeacherId is null"
+        );
+        toast.warning(
+          "Teacher assignment may not have completed properly. Please refresh the page."
+        );
       } else {
         toast.success("Teacher assigned successfully!");
       }
-      
+
       setClassData(updatedData);
-      
+
       // Reset teacher selection
       setSelectedTeacher(null);
       setTeacherSearch("");
       setShowTeacherDropdown(false);
     } catch (error: any) {
       console.error("Error assigning teacher:", error);
-      
+
       // Provide specific error messages based on error type
       if (error.message?.includes("not found")) {
         toast.error("Teacher or class not found. Please try again.");
-      } else if (error.message?.includes("unauthorized") || error.message?.includes("forbidden")) {
-        toast.error("You don't have permission to assign teachers to this class.");
-      } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
-        toast.error("Network error. Please check your connection and try again.");
+      } else if (
+        error.message?.includes("unauthorized") ||
+        error.message?.includes("forbidden")
+      ) {
+        toast.error(
+          "You don't have permission to assign teachers to this class."
+        );
+      } else if (
+        error.message?.includes("network") ||
+        error.message?.includes("fetch")
+      ) {
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
       } else {
-        toast.error(error.message || "Failed to assign teacher. Please try again.");
+        toast.error(
+          error.message || "Failed to assign teacher. Please try again."
+        );
       }
     } finally {
       setIsAssigningTeacher(false);
@@ -255,7 +277,6 @@ const EditClass: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading class details...</div>
         </div>
@@ -266,14 +287,15 @@ const EditClass: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex justify-center items-center p-6 min-h-[60vh]">
           <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
             <div className="text-red-400 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Error</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">Class ID: {classId || 'Not provided'}</p>
+              <p className="text-sm text-gray-500">
+                Class ID: {classId || "Not provided"}
+              </p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => window.location.reload()}
@@ -298,12 +320,15 @@ const EditClass: React.FC = () => {
   if (!classData) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex justify-center items-center p-6 min-h-[60vh]">
           <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
             <div className="text-gray-400 text-4xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Class Not Found</h2>
-            <p className="text-gray-600 mb-4">The class you're looking for doesn't exist or has been removed.</p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Class Not Found
+            </h2>
+            <p className="text-gray-600 mb-4">
+              The class you're looking for doesn't exist or has been removed.
+            </p>
             <p className="text-sm text-gray-500 mb-6">Class ID: {classId}</p>
             <button
               onClick={() => router.push("/classes")}
@@ -319,11 +344,6 @@ const EditClass: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
-
       {/* Navigation Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -346,7 +366,9 @@ const EditClass: React.FC = () => {
             <span className="mx-2">|</span>
             <span className="text-gray-900 font-medium">Edit Class</span>
             <span className="mx-2 text-gray-400">•</span>
-            <span className="text-gray-900 font-semibold text-lg">{classData.name}</span>
+            <span className="text-gray-900 font-semibold text-lg">
+              {classData.name}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -418,7 +440,9 @@ const EditClass: React.FC = () => {
                       <div className="p-2 bg-blue-100 rounded-lg mr-3">
                         <Info className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">Edit Class Information</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Edit Class Information
+                      </h2>
                     </div>
                   </div>
 
@@ -432,7 +456,9 @@ const EditClass: React.FC = () => {
                         <input
                           type="text"
                           value={formData.name}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("name", e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           placeholder="Enter class name (e.g., Grade 1A)"
                           required
@@ -447,7 +473,9 @@ const EditClass: React.FC = () => {
                         <input
                           type="number"
                           value={formData.classCapacity}
-                          onChange={(e) => handleInputChange("classCapacity", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("classCapacity", e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           placeholder="Enter maximum number of students"
                           min="1"
@@ -462,7 +490,12 @@ const EditClass: React.FC = () => {
                         </label>
                         <textarea
                           value={formData.classDescription}
-                          onChange={(e) => handleInputChange("classDescription", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "classDescription",
+                              e.target.value
+                            )
+                          }
                           rows={4}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
                           placeholder="Enter class description (optional)"
@@ -471,14 +504,22 @@ const EditClass: React.FC = () => {
 
                       {/* Current Stats Preview */}
                       <div className="border-t border-gray-200 pt-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Current Class Statistics</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Current Class Statistics
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm font-medium text-blue-700">Total Courses</p>
-                                <p className="text-2xl font-bold text-blue-900">{classData.courses?.length || 0}</p>
-                                <p className="text-sm text-blue-600">assigned</p>
+                                <p className="text-sm font-medium text-blue-700">
+                                  Total Courses
+                                </p>
+                                <p className="text-2xl font-bold text-blue-900">
+                                  {classData.courses?.length || 0}
+                                </p>
+                                <p className="text-sm text-blue-600">
+                                  assigned
+                                </p>
                               </div>
                               <BookOpen className="w-8 h-8 text-blue-600" />
                             </div>
@@ -487,9 +528,15 @@ const EditClass: React.FC = () => {
                           <div className="bg-green-50 rounded-lg p-6 border border-green-200">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm font-medium text-green-700">Capacity</p>
-                                <p className="text-2xl font-bold text-green-900">{formData.classCapacity || "0"}</p>
-                                <p className="text-sm text-green-600">students</p>
+                                <p className="text-sm font-medium text-green-700">
+                                  Capacity
+                                </p>
+                                <p className="text-2xl font-bold text-green-900">
+                                  {formData.classCapacity || "0"}
+                                </p>
+                                <p className="text-sm text-green-600">
+                                  students
+                                </p>
                               </div>
                               <Users className="w-8 h-8 text-green-600" />
                             </div>
@@ -498,11 +545,15 @@ const EditClass: React.FC = () => {
                           <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm font-medium text-purple-700">Class Teacher</p>
+                                <p className="text-sm font-medium text-purple-700">
+                                  Class Teacher
+                                </p>
                                 <p className="text-lg font-bold text-purple-900 truncate">
                                   {getCurrentTeacherName()}
                                 </p>
-                                <p className="text-sm text-purple-600">assigned</p>
+                                <p className="text-sm text-purple-600">
+                                  assigned
+                                </p>
                               </div>
                               <User className="w-8 h-8 text-purple-600" />
                             </div>
@@ -524,7 +575,9 @@ const EditClass: React.FC = () => {
                       <div className="p-2 bg-purple-100 rounded-lg mr-3">
                         <User className="w-5 h-5 text-purple-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">Assign Class Teacher</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Assign Class Teacher
+                      </h2>
                     </div>
                   </div>
 
@@ -533,7 +586,9 @@ const EditClass: React.FC = () => {
                       {/* Current Teacher Display */}
                       {classData.classTeacherId?.userId && (
                         <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 mb-6">
-                          <h3 className="text-lg font-medium text-purple-900 mb-4">Current Class Teacher</h3>
+                          <h3 className="text-lg font-medium text-purple-900 mb-4">
+                            Current Class Teacher
+                          </h3>
                           <div className="flex items-center gap-6">
                             <div className="p-4 bg-purple-200 rounded-full">
                               <User className="w-12 h-12 text-purple-700" />
@@ -542,11 +597,16 @@ const EditClass: React.FC = () => {
                               <h4 className="text-xl font-bold text-purple-900 mb-1">
                                 {getCurrentTeacherName()}
                               </h4>
-                              <p className="text-purple-700 font-medium mb-2">Primary Class Teacher</p>
-                              <p className="text-purple-600">{getCurrentTeacherEmail()}</p>
+                              <p className="text-purple-700 font-medium mb-2">
+                                Primary Class Teacher
+                              </p>
+                              <p className="text-purple-600">
+                                {getCurrentTeacherEmail()}
+                              </p>
                               {classData.classTeacherId.specialization && (
                                 <p className="text-sm text-purple-600 mt-1">
-                                  Specialization: {classData.classTeacherId.specialization}
+                                  Specialization:{" "}
+                                  {classData.classTeacherId.specialization}
                                 </p>
                               )}
                             </div>
@@ -566,13 +626,17 @@ const EditClass: React.FC = () => {
                               <input
                                 type="text"
                                 value={teacherSearch}
-                                onChange={(e) => setTeacherSearch(e.target.value)}
+                                onChange={(e) =>
+                                  setTeacherSearch(e.target.value)
+                                }
                                 onFocus={() => setShowTeacherDropdown(true)}
                                 className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="Search teachers by name or email..."
                               />
                               <button
-                                onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
+                                onClick={() =>
+                                  setShowTeacherDropdown(!showTeacherDropdown)
+                                }
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2"
                               >
                                 {showTeacherDropdown ? (
@@ -588,7 +652,9 @@ const EditClass: React.FC = () => {
                           {showTeacherDropdown && (
                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                               {isLoadingTeachers ? (
-                                <div className="p-4 text-center text-gray-500">Loading teachers...</div>
+                                <div className="p-4 text-center text-gray-500">
+                                  Loading teachers...
+                                </div>
                               ) : filteredTeachers.length > 0 ? (
                                 filteredTeachers.map((teacher) => (
                                   <button
@@ -635,7 +701,9 @@ const EditClass: React.FC = () => {
                                 <h4 className="font-medium text-gray-900">
                                   Selected: {getTeacherName(selectedTeacher)}
                                 </h4>
-                                <p className="text-sm text-gray-600">{getTeacherEmail(selectedTeacher)}</p>
+                                <p className="text-sm text-gray-600">
+                                  {getTeacherEmail(selectedTeacher)}
+                                </p>
                               </div>
                             </div>
                             <button
@@ -674,7 +742,9 @@ const EditClass: React.FC = () => {
 
                       {/* Instructions */}
                       <div className="bg-gray-50 rounded-lg p-6">
-                        <h4 className="font-medium text-gray-900 mb-3">Teacher Assignment Guidelines</h4>
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Teacher Assignment Guidelines
+                        </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                           <li className="flex items-center">
                             <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
@@ -707,4 +777,3 @@ const EditClass: React.FC = () => {
 };
 
 export default EditClass;
-

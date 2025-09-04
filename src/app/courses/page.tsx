@@ -9,7 +9,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
-import { Header } from "@/components/Header";
+
 import { API_ENDPOINTS } from "../lib/api/config";
 
 // Updated interface to match API response
@@ -191,8 +191,6 @@ const CourseManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <Toaster position="top-center" />
 
       <div className="container mx-auto p-6">

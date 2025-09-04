@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { Header } from "@/components/Header";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
@@ -70,9 +70,6 @@ interface Stats {
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
   <div className="flex flex-col h-screen bg-gray-100">
-    <div className="flex-shrink-0">
-      <Header />
-    </div>
     <div className="flex-1 flex justify-center items-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
     </div>
@@ -217,11 +214,6 @@ const CurriculumDashboardMain: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
-
       {/* Fixed Navigation */}
       <div className="flex-shrink-0 px-6 py-4 bg-white border-b">
         <div className="flex justify-between items-center mb-4">

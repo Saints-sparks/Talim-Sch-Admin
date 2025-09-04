@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
+
 import { FiEdit, FiArrowLeft } from "react-icons/fi";
-import { 
-  BookOpen, 
-  GraduationCap, 
-  Users, 
-  User, 
+import {
+  BookOpen,
+  GraduationCap,
+  Users,
+  User,
   Info,
   Calendar,
   Settings,
@@ -17,11 +17,11 @@ import {
   Phone,
   Mail,
   Badge,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,27 +73,30 @@ const ViewClass: React.FC = () => {
 
   // Helper function to safely extract string values from potentially nested objects
   const getStringValue = (value: any): string => {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return value.toString();
-    if (typeof value === 'object' && value !== null) {
-      return value.name || value.title || value._id || 'Unknown';
+    if (typeof value === "string") return value;
+    if (typeof value === "number") return value.toString();
+    if (typeof value === "object" && value !== null) {
+      return value.name || value.title || value._id || "Unknown";
     }
-    return value?.toString() || 'Unknown';
+    return value?.toString() || "Unknown";
   };
 
   // Helper function to get teacher name from populated data
   const getTeacherName = (classData: ClassDetails): string => {
-    if (classData.classTeacherId?.userId?.firstName && classData.classTeacherId?.userId?.lastName) {
+    if (
+      classData.classTeacherId?.userId?.firstName &&
+      classData.classTeacherId?.userId?.lastName
+    ) {
       return `${classData.classTeacherId.userId.firstName} ${classData.classTeacherId.userId.lastName}`;
     }
-    return 'No teacher assigned';
+    return "No teacher assigned";
   };
 
   useEffect(() => {
     const fetchClassData = async () => {
-    //   console.log("🔍 ViewClass component loaded");
-    //   console.log("🔍 Params:", params);
-    //   console.log("🔍 Class ID:", classId);
+      //   console.log("🔍 ViewClass component loaded");
+      //   console.log("🔍 Params:", params);
+      //   console.log("🔍 Class ID:", classId);
 
       try {
         if (!classId) {
@@ -101,7 +104,7 @@ const ViewClass: React.FC = () => {
           return;
         }
 
-       // console.log("🚀 Fetching class data for ID:", classId);
+        // console.log("🚀 Fetching class data for ID:", classId);
         const data = await getClass(classId);
         //console.log("✅ Class data received:", data);
 
@@ -150,11 +153,14 @@ const ViewClass: React.FC = () => {
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex space-x-8">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                  <div
+                    key={i}
+                    className="h-6 w-24 bg-gray-200 rounded animate-pulse"
+                  ></div>
                 ))}
               </div>
             </div>
-            
+
             {/* Content Skeleton */}
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -164,7 +170,10 @@ const ViewClass: React.FC = () => {
                 </div>
                 <div className="lg:col-span-2 space-y-4">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                    <div
+                      key={i}
+                      className="h-16 bg-gray-200 rounded animate-pulse"
+                    ></div>
                   ))}
                 </div>
               </div>
@@ -179,14 +188,15 @@ const ViewClass: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex justify-center items-center p-6 min-h-[60vh]">
           <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
             <div className="text-red-400 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Error</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">Class ID: {classId || 'Not provided'}</p>
+              <p className="text-sm text-gray-500">
+                Class ID: {classId || "Not provided"}
+              </p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => window.location.reload()}
@@ -212,12 +222,15 @@ const ViewClass: React.FC = () => {
   if (!classData) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex justify-center items-center p-6 min-h-[60vh]">
           <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
             <div className="text-gray-400 text-4xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Class Not Found</h2>
-            <p className="text-gray-600 mb-4">The class you're looking for doesn't exist or has been removed.</p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Class Not Found
+            </h2>
+            <p className="text-gray-600 mb-4">
+              The class you're looking for doesn't exist or has been removed.
+            </p>
             <p className="text-sm text-gray-500 mb-6">Class ID: {classId}</p>
             <button
               onClick={() => router.push("/classes")}
@@ -233,11 +246,6 @@ const ViewClass: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <div className="flex-shrink-0">
-        <Header />
-      </div>
-
       {/* Navigation Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -253,7 +261,9 @@ const ViewClass: React.FC = () => {
             <User className="w-4 h-4 mr-2" />
             <span className="text-gray-900 font-medium">Class Profile</span>
             <span className="mx-2 text-gray-400">•</span>
-            <span className="text-gray-900 font-semibold text-lg">{getStringValue(classData.name)}</span>
+            <span className="text-gray-900 font-semibold text-lg">
+              {getStringValue(classData.name)}
+            </span>
           </div>
           <button
             onClick={() => router.push(`/classes/edit-class/${classId}`)}
@@ -318,7 +328,9 @@ const ViewClass: React.FC = () => {
                       <div className="p-2 bg-blue-100 rounded-lg mr-3">
                         <Info className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">Class Information</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Class Information
+                      </h2>
                     </div>
                   </div>
 
@@ -331,7 +343,9 @@ const ViewClass: React.FC = () => {
                           Class Description
                         </label>
                         <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-gray-900">{getStringValue(classData.classDescription)}</p>
+                          <p className="text-gray-900">
+                            {getStringValue(classData.classDescription)}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -341,8 +355,12 @@ const ViewClass: React.FC = () => {
                       <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-blue-700">Total Courses</p>
-                            <p className="text-2xl font-bold text-blue-900">{classData.courses?.length || 0}</p>
+                            <p className="text-sm font-medium text-blue-700">
+                              Total Courses
+                            </p>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {classData.courses?.length || 0}
+                            </p>
                             <p className="text-sm text-blue-600">assigned</p>
                           </div>
                           <BookOpen className="w-8 h-8 text-blue-600" />
@@ -352,8 +370,12 @@ const ViewClass: React.FC = () => {
                       <div className="bg-green-50 rounded-lg p-6 border border-green-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-green-700">Class Capacity</p>
-                            <p className="text-2xl font-bold text-green-900">{getStringValue(classData.classCapacity)}</p>
+                            <p className="text-sm font-medium text-green-700">
+                              Class Capacity
+                            </p>
+                            <p className="text-2xl font-bold text-green-900">
+                              {getStringValue(classData.classCapacity)}
+                            </p>
                             <p className="text-sm text-green-600">students</p>
                           </div>
                           <Users className="w-8 h-8 text-green-600" />
@@ -363,9 +385,15 @@ const ViewClass: React.FC = () => {
                       <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-purple-700">Class Teacher</p>
-                            <p className="text-lg font-bold text-purple-900 truncate">{getTeacherName(classData)}</p>
-                            <p className="text-sm text-purple-600">instructor</p>
+                            <p className="text-sm font-medium text-purple-700">
+                              Class Teacher
+                            </p>
+                            <p className="text-lg font-bold text-purple-900 truncate">
+                              {getTeacherName(classData)}
+                            </p>
+                            <p className="text-sm text-purple-600">
+                              instructor
+                            </p>
                           </div>
                           <User className="w-8 h-8 text-purple-600" />
                         </div>
@@ -374,27 +402,43 @@ const ViewClass: React.FC = () => {
 
                     {/* Additional Information */}
                     <div className="border-t border-gray-200 pt-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">System Information</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        System Information
+                      </h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Class ID</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Class ID
+                          </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">{getStringValue(classData._id)}</span>
+                            <span className="text-gray-900 font-mono text-sm">
+                              {getStringValue(classData._id)}
+                            </span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">School ID</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            School ID
+                          </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">{getStringValue(classData.schoolId)}</span>
+                            <span className="text-gray-900 font-mono text-sm">
+                              {getStringValue(classData.schoolId)}
+                            </span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Created Date</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Created Date
+                          </label>
                           <div className="bg-gray-50 rounded-lg p-3">
                             <span className="text-gray-900">
-                              {classData.createdAt ? new Date(classData.createdAt).toLocaleDateString() : 'N/A'}
+                              {classData.createdAt
+                                ? new Date(
+                                    classData.createdAt
+                                  ).toLocaleDateString()
+                                : "N/A"}
                             </span>
                           </div>
                         </div>
@@ -435,14 +479,18 @@ const ViewClass: React.FC = () => {
                                 <GraduationCap className="w-4 h-4 text-green-600" />
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">{getStringValue(course.title)}</h3>
+                                <h3 className="font-semibold text-gray-900">
+                                  {getStringValue(course.title)}
+                                </h3>
                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                                   {getStringValue(course.courseCode)}
                                 </span>
                               </div>
                             </div>
                             {course.description && (
-                              <p className="text-sm text-gray-600">{getStringValue(course.description)}</p>
+                              <p className="text-sm text-gray-600">
+                                {getStringValue(course.description)}
+                              </p>
                             )}
                           </div>
                         ))}
@@ -450,8 +498,12 @@ const ViewClass: React.FC = () => {
                     ) : (
                       <div className="text-center py-12">
                         <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-medium mb-2">No courses assigned</p>
-                        <p className="text-sm text-gray-500">Courses can be assigned through the edit page.</p>
+                        <p className="text-gray-600 font-medium mb-2">
+                          No courses assigned
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Courses can be assigned through the edit page.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -468,7 +520,9 @@ const ViewClass: React.FC = () => {
                       <div className="p-2 bg-purple-100 rounded-lg mr-3">
                         <User className="w-5 h-5 text-purple-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">Class Teacher Information</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Class Teacher Information
+                      </h2>
                     </div>
                   </div>
 
@@ -485,9 +539,13 @@ const ViewClass: React.FC = () => {
                               <h3 className="text-2xl font-bold text-purple-900 mb-1">
                                 {getTeacherName(classData)}
                               </h3>
-                              <p className="text-purple-700 font-medium mb-2">Primary Class Teacher</p>
+                              <p className="text-purple-700 font-medium mb-2">
+                                Primary Class Teacher
+                              </p>
                               {classData.classTeacherId.userId.email && (
-                                <p className="text-purple-600">{classData.classTeacherId.userId.email}</p>
+                                <p className="text-purple-600">
+                                  {classData.classTeacherId.userId.email}
+                                </p>
                               )}
                             </div>
                           </div>
@@ -496,52 +554,78 @@ const ViewClass: React.FC = () => {
                         {/* Teacher Details Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">First Name</label>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              First Name
+                            </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">{classData.classTeacherId.userId.firstName}</span>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Last Name</label>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">{classData.classTeacherId.userId.lastName}</span>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Email Address</label>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">{classData.classTeacherId.userId.email}</span>
-                            </div>
-                          </div>
-
-                          {classData.classTeacherId.specialization && (
-                            <div>
-                              <label className="text-sm font-medium text-gray-700 mb-2 block">Specialization</label>
-                              <div className="bg-gray-50 rounded-lg p-3">
-                                <span className="text-gray-900">{classData.classTeacherId.specialization}</span>
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Form Teacher</label>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                classData.classTeacherId.isFormTeacher 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {classData.classTeacherId.isFormTeacher ? 'Yes' : 'No'}
+                              <span className="text-gray-900">
+                                {classData.classTeacherId.userId.firstName}
                               </span>
                             </div>
                           </div>
 
                           <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Teacher ID</label>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Last Name
+                            </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900 font-mono text-sm">{classData.classTeacherId.userId._id}</span>
+                              <span className="text-gray-900">
+                                {classData.classTeacherId.userId.lastName}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Email Address
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <span className="text-gray-900">
+                                {classData.classTeacherId.userId.email}
+                              </span>
+                            </div>
+                          </div>
+
+                          {classData.classTeacherId.specialization && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Specialization
+                              </label>
+                              <div className="bg-gray-50 rounded-lg p-3">
+                                <span className="text-gray-900">
+                                  {classData.classTeacherId.specialization}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Form Teacher
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${
+                                  classData.classTeacherId.isFormTeacher
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {classData.classTeacherId.isFormTeacher
+                                  ? "Yes"
+                                  : "No"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Teacher ID
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <span className="text-gray-900 font-mono text-sm">
+                                {classData.classTeacherId.userId._id}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -549,8 +633,12 @@ const ViewClass: React.FC = () => {
                     ) : (
                       <div className="text-center py-12">
                         <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-medium mb-2">No teacher assigned</p>
-                        <p className="text-sm text-gray-500">A teacher can be assigned through the edit page.</p>
+                        <p className="text-gray-600 font-medium mb-2">
+                          No teacher assigned
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          A teacher can be assigned through the edit page.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -567,7 +655,9 @@ const ViewClass: React.FC = () => {
                       <div className="p-2 bg-gray-100 rounded-lg mr-3">
                         <Settings className="w-5 h-5 text-gray-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">Class Settings</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Class Settings
+                      </h2>
                     </div>
                   </div>
 
@@ -576,33 +666,49 @@ const ViewClass: React.FC = () => {
                       {/* Class Information */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Class ID</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Class ID
+                          </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">{getStringValue(classData._id)}</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">School ID</label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">{getStringValue(classData.schoolId)}</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Created At</label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900">
-                              {classData.createdAt ? new Date(classData.createdAt).toLocaleString() : 'N/A'}
+                            <span className="text-gray-900 font-mono text-sm">
+                              {getStringValue(classData._id)}
                             </span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Last Updated</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            School ID
+                          </label>
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <span className="text-gray-900 font-mono text-sm">
+                              {getStringValue(classData.schoolId)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Created At
+                          </label>
                           <div className="bg-gray-50 rounded-lg p-3">
                             <span className="text-gray-900">
-                              {classData.updatedAt ? new Date(classData.updatedAt).toLocaleString() : 'N/A'}
+                              {classData.createdAt
+                                ? new Date(classData.createdAt).toLocaleString()
+                                : "N/A"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Last Updated
+                          </label>
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <span className="text-gray-900">
+                              {classData.updatedAt
+                                ? new Date(classData.updatedAt).toLocaleString()
+                                : "N/A"}
                             </span>
                           </div>
                         </div>
@@ -610,10 +716,14 @@ const ViewClass: React.FC = () => {
 
                       {/* Quick Actions */}
                       <div className="border-t border-gray-200 pt-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Quick Actions
+                        </h3>
                         <div className="flex flex-wrap gap-3">
                           <button
-                            onClick={() => router.push(`/classes/edit-class/${classId}`)}
+                            onClick={() =>
+                              router.push(`/classes/edit-class/${classId}`)
+                            }
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
                           >
                             <FiEdit className="mr-2 w-4 h-4" />

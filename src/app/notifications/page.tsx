@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Header } from "@/components/Header";
+
 import { FaSearch } from "react-icons/fa";
 
 const notifications = [
@@ -100,7 +100,7 @@ const NotificationsPage: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 h-full">
-      <Header />
+      
 
       <div className="flex justify-between items-center mb-6">
         {/* Title */}

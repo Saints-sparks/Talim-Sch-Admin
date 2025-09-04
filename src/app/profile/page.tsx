@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "@/components/Header";
+
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 
@@ -92,7 +92,7 @@ export default function Profile() {
     <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1">
         <div className="p-4 ">
-          <Header />
+          
 
           {/* Tabs */}
           <div className="border-b border-gray-200 mt-10">

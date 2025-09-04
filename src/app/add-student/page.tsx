@@ -1,8 +1,7 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { HiUserCircle, HiHome, HiPencil, HiTrash } from "react-icons/hi";
-import {Header} from "@/components/Header";
 
 export default function AddStudent() {
   const [formData, setFormData] = useState({
@@ -23,7 +22,9 @@ export default function AddStudent() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -50,12 +51,9 @@ export default function AddStudent() {
 
   return (
     <div className="p-6 space-y-1 bg-[F8F8F8]">
-        
-     <Header />
-
       {/* Main Content */}
       <main className="flex-1">
-      <h1 className="text-2xl p-5"> Add Student</h1>
+        <h1 className="text-2xl p-5"> Add Student</h1>
 
         <section className="bg-white p-10 rounded-lg shadow-md">
           {/* Photo Upload */}
@@ -63,13 +61,15 @@ export default function AddStudent() {
             {photoPreview ? (
               <div className="relative">
                 <img
-                src={photoPreview || '/img/profile.jpg'} // Use `photoPreview` if available, otherwise fallback
-                alt="Student Photo"
-                className="w-32 h-32 object-cover rounded-full mb-4"
+                  src={photoPreview || "/img/profile.jpg"} // Use `photoPreview` if available, otherwise fallback
+                  alt="Student Photo"
+                  className="w-32 h-32 object-cover rounded-full mb-4"
                 />
                 <div className="absolute top-0 right-0 flex gap-2">
                   <button
-                    onClick={() => document.getElementById("photoInput")?.click()}
+                    onClick={() =>
+                      document.getElementById("photoInput")?.click()
+                    }
                     className="bg-gray-100 p-2 rounded-full hover:bg-gray-200"
                   >
                     <HiPencil className="text-gray-600" />

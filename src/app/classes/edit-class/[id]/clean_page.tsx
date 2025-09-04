@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
+
 import { FiSave, FiX } from "react-icons/fi";
 import { 
   BookOpen, 
@@ -201,7 +201,7 @@ const EditClassPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading class details...</div>
         </div>
@@ -212,7 +212,7 @@ const EditClassPage: React.FC = () => {
   if (!classDetails) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="flex items-center justify-center h-64">
           <div className="text-lg text-red-500">Failed to load class details</div>
         </div>
@@ -222,7 +222,7 @@ const EditClassPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      
       
       <div className="flex">
         {/* Sidebar */}
@@ -248,7 +248,7 @@ const EditClassPage: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
-            {/* Header */}
+            
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Edit Class: {classDetails.name}
