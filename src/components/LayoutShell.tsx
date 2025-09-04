@@ -27,7 +27,7 @@ export default function LayoutShell({
       {showSidebar && <Sidebar />}
 
       <motion.div
-        className="flex-1 flex flex-col transition-all duration-300 w-screen overflow-none"
+        className="flex-1 flex flex-col transition-all duration-300 w-screen md:w-auto overflow-x-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}

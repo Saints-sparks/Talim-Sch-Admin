@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Search, Bell, Menu, CalendarRange } from "lucide-react";
+import { Bell, Menu, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
@@ -11,9 +10,9 @@ export function Header() {
   const { setMobileOpen } = useSidebar();
 
   return (
-    <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] pb-4 bg-[#F8F8F8]">
+    <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] py-2 bg-[#F8F8F8]">
       {/* Top row: Menu, Date, Notifications, Avatar */}
-      <div className="flex flex-col  sm:flex-row items-center w-full justify-between gap-4 py-3">
+      <div className="flex flex-col  sm:flex-row items-center w-full justify-between gap-4 py-3 md:justify-end">
         {/* Menu Button (Only on Mobile) */}
         <div className="flex items-center w-full sm:w-auto justify-between">
           <button
