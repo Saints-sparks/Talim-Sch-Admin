@@ -18,6 +18,7 @@ import {
   Mail,
   Badge,
   Calendar as CalendarIcon,
+  MoreVertical,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
@@ -245,71 +246,77 @@ const ViewClass: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-[#F8F8F8]">
       {/* Navigation Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center text-sm text-gray-600">
+      <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
             <button
               onClick={() => router.push("/classes")}
               className="flex items-center hover:text-blue-600 transition-colors"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Back to Classes
+              <span className="hidden sm:inline">Back to Classes</span>
+              <span className="sm:hidden">Back</span>
             </button>
-            <span className="mx-2">|</span>
-            <User className="w-4 h-4 mr-2" />
+            <span className="text-gray-400 hidden sm:inline">|</span>
+            <User className="w-4 h-4" />
             <span className="text-gray-900 font-medium">Class Profile</span>
-            <span className="mx-2 text-gray-400">•</span>
-            <span className="text-gray-900 font-semibold text-lg">
+            <span className="text-gray-400 hidden sm:inline">•</span>
+            <span className="text-gray-900 font-semibold">
               {getStringValue(classData.name)}
             </span>
           </div>
           <button
             onClick={() => router.push(`/classes/edit-class/${classId}`)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium"
+            className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium whitespace-nowrap"
           >
-            <FiEdit className="mr-2 w-4 h-4" /> Edit Class
+            <FiEdit className="mr-1 sm:mr-2 w-4 h-4" />
+            <span className="hidden sm:inline">Edit Class</span>
+            <span className="sm:hidden">Edit</span>
           </button>
         </div>
       </div>
 
       {/* Tab Navigation */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200">
-        <div className="px-6">
+        <div className="px-4 sm:px-6">
           <nav className="grid grid-cols-3 gap-0">
             <button
               onClick={() => setActiveTab("details")}
-              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+              className={`flex items-center justify-center py-3 sm:py-4 px-2 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                 activeTab === "details"
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              <Info className="w-4 h-4 mr-2" />
-              Class Details
+              <Info className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Class Details</span>
+              <span className="sm:hidden">Details</span>
             </button>
             <button
               onClick={() => setActiveTab("courses")}
-              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+              className={`flex items-center justify-center py-3 sm:py-4 px-2 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                 activeTab === "courses"
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Courses
+              <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Courses</span>
+              <span className="sm:hidden">Courses</span>
             </button>
             <button
               onClick={() => setActiveTab("teacher")}
-              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+              className={`flex items-center justify-center py-3 sm:py-4 px-2 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                 activeTab === "teacher"
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              <User className="w-4 h-4 mr-2" />
-              Class Teacher
+              <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Class Teacher</span>
+              <span className="sm:hidden">Teacher</span>
             </button>
           </nav>
         </div>
@@ -318,23 +325,23 @@ const ViewClass: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
             {/* Class Details Tab */}
             {activeTab === "details" && (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg shadow-sm">
-                  <div className="p-6 border-b border-gray-200">
+                  <div className="p-4 sm:p-6 border-b border-gray-200">
                     <div className="flex items-center mb-4">
                       <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                        <Info className="w-5 h-5 text-blue-600" />
+                        <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                         Class Information
                       </h2>
                     </div>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     {/* Description */}
                     {classData.classDescription && (
                       <div className="mb-6">
@@ -342,8 +349,8 @@ const ViewClass: React.FC = () => {
                           <Info className="w-4 h-4 mr-2" />
                           Class Description
                         </label>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-gray-900">
+                        <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                          <p className="text-gray-900 text-sm sm:text-base">
                             {getStringValue(classData.classDescription)}
                           </p>
                         </div>
@@ -351,67 +358,71 @@ const ViewClass: React.FC = () => {
                     )}
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+                      <div className="bg-blue-50 rounded-lg p-4 sm:p-6 border border-blue-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-blue-700">
+                            <p className="text-xs sm:text-sm font-medium text-blue-700">
                               Total Courses
                             </p>
-                            <p className="text-2xl font-bold text-blue-900">
+                            <p className="text-xl sm:text-2xl font-bold text-blue-900">
                               {classData.courses?.length || 0}
                             </p>
-                            <p className="text-sm text-blue-600">assigned</p>
+                            <p className="text-xs sm:text-sm text-blue-600">
+                              assigned
+                            </p>
                           </div>
-                          <BookOpen className="w-8 h-8 text-blue-600" />
+                          <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                         </div>
                       </div>
 
-                      <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                      <div className="bg-green-50 rounded-lg p-4 sm:p-6 border border-green-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-green-700">
+                            <p className="text-xs sm:text-sm font-medium text-green-700">
                               Class Capacity
                             </p>
-                            <p className="text-2xl font-bold text-green-900">
+                            <p className="text-xl sm:text-2xl font-bold text-green-900">
                               {getStringValue(classData.classCapacity)}
                             </p>
-                            <p className="text-sm text-green-600">students</p>
+                            <p className="text-xs sm:text-sm text-green-600">
+                              students
+                            </p>
                           </div>
-                          <Users className="w-8 h-8 text-green-600" />
+                          <Users className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
                         </div>
                       </div>
 
-                      <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                      <div className="bg-purple-50 rounded-lg p-4 sm:p-6 border border-purple-200 sm:col-span-2 lg:col-span-1">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-purple-700">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-purple-700">
                               Class Teacher
                             </p>
-                            <p className="text-lg font-bold text-purple-900 truncate">
+                            <p className="text-sm sm:text-lg font-bold text-purple-900 truncate">
                               {getTeacherName(classData)}
                             </p>
-                            <p className="text-sm text-purple-600">
+                            <p className="text-xs sm:text-sm text-purple-600">
                               instructor
                             </p>
                           </div>
-                          <User className="w-8 h-8 text-purple-600" />
+                          <User className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 flex-shrink-0 ml-2" />
                         </div>
                       </div>
                     </div>
 
                     {/* Additional Information */}
                     <div className="border-t border-gray-200 pt-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">
                         System Information
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         <div>
                           <label className="text-sm font-medium text-gray-700 mb-2 block">
                             Class ID
                           </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">
+                            <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
                               {getStringValue(classData._id)}
                             </span>
                           </div>
@@ -422,18 +433,18 @@ const ViewClass: React.FC = () => {
                             School ID
                           </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">
+                            <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
                               {getStringValue(classData.schoolId)}
                             </span>
                           </div>
                         </div>
 
-                        <div>
+                        <div className="sm:col-span-2 lg:col-span-1">
                           <label className="text-sm font-medium text-gray-700 mb-2 block">
                             Created Date
                           </label>
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900">
+                            <span className="text-gray-900 text-sm">
                               {classData.createdAt
                                 ? new Date(
                                     classData.createdAt
@@ -453,57 +464,78 @@ const ViewClass: React.FC = () => {
             {activeTab === "courses" && (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg shadow-sm">
-                  <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 sm:p-6 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-center">
                         <div className="p-2 bg-green-100 rounded-lg mr-3">
-                          <BookOpen className="w-5 h-5 text-green-600" />
+                          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">
-                          Assigned Courses ({classData.courses?.length || 0})
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                          Courses ({classData.courses?.length || 0})
                         </h2>
                       </div>
+                      <button className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                        <span className="hidden sm:inline">Add Course</span>
+                        <span className="sm:hidden">Add</span>
+                      </button>
                     </div>
                   </div>
 
-                  <div className="p-6">
-                    {classData.courses && classData.courses.length > 0 ? (
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {classData.courses.map((course, index) => (
-                          <div
-                            key={course._id || index}
-                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <GraduationCap className="w-4 h-4 text-green-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">
-                                  {getStringValue(course.title)}
-                                </h3>
-                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                  {getStringValue(course.courseCode)}
-                                </span>
-                              </div>
-                            </div>
-                            {course.description && (
-                              <p className="text-sm text-gray-600">
-                                {getStringValue(course.description)}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                  <div className="p-4 sm:p-6">
+                    {!classData.courses || classData.courses.length === 0 ? (
+                      <div className="text-center py-8 sm:py-12">
+                        <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+                          No courses assigned
+                        </h3>
+                        <p className="text-sm sm:text-base text-gray-500 mb-4 max-w-sm mx-auto">
+                          This class doesn't have any courses assigned yet. Add
+                          courses to get started.
+                        </p>
+                        <button className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                          Assign First Course
+                        </button>
                       </div>
                     ) : (
-                      <div className="text-center py-12">
-                        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-medium mb-2">
-                          No courses assigned
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Courses can be assigned through the edit page.
-                        </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        {classData.courses.map((course: any, index: number) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 rounded-lg p-4 sm:p-6 hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
+                                  {getStringValue(course.courseName)}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-600">
+                                  Course Code:{" "}
+                                  {getStringValue(course.courseCode)}
+                                </p>
+                              </div>
+                              <div className="ml-3 flex-shrink-0">
+                                <button className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {course.courseDescription && (
+                              <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
+                                {getStringValue(course.courseDescription)}
+                              </p>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-gray-200">
+                              <div className="text-xs text-gray-500">
+                                ID: {getStringValue(course._id).slice(0, 8)}...
+                              </div>
+                              <button className="text-xs sm:text-sm text-green-600 hover:text-green-700 font-medium self-start sm:self-auto">
+                                View Details
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -515,35 +547,37 @@ const ViewClass: React.FC = () => {
             {activeTab === "teacher" && (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg shadow-sm">
-                  <div className="p-6 border-b border-gray-200">
+                  <div className="p-4 sm:p-6 border-b border-gray-200">
                     <div className="flex items-center">
                       <div className="p-2 bg-purple-100 rounded-lg mr-3">
-                        <User className="w-5 h-5 text-purple-600" />
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                         Class Teacher Information
                       </h2>
                     </div>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     {classData.classTeacherId?.userId ? (
                       <div className="space-y-6">
                         {/* Teacher Profile Card */}
-                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
-                          <div className="flex items-center gap-6">
-                            <div className="p-4 bg-purple-200 rounded-full">
-                              <User className="w-12 h-12 text-purple-700" />
+                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4 sm:p-6">
+                          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                            <div className="flex-shrink-0">
+                              <div className="p-3 sm:p-4 bg-purple-200 rounded-full">
+                                <User className="w-8 h-8 sm:w-12 sm:h-12 text-purple-700" />
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <h3 className="text-2xl font-bold text-purple-900 mb-1">
+                            <div className="flex-1 text-center sm:text-left">
+                              <h3 className="text-xl sm:text-2xl font-bold text-purple-900 mb-1">
                                 {getTeacherName(classData)}
                               </h3>
-                              <p className="text-purple-700 font-medium mb-2">
+                              <p className="text-purple-700 font-medium mb-2 text-sm sm:text-base">
                                 Primary Class Teacher
                               </p>
                               {classData.classTeacherId.userId.email && (
-                                <p className="text-purple-600">
+                                <p className="text-purple-600 text-sm sm:text-base break-all">
                                   {classData.classTeacherId.userId.email}
                                 </p>
                               )}
@@ -552,13 +586,13 @@ const ViewClass: React.FC = () => {
                         </div>
 
                         {/* Teacher Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                           <div>
                             <label className="text-sm font-medium text-gray-700 mb-2 block">
                               First Name
                             </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">
+                              <span className="text-gray-900 text-sm sm:text-base">
                                 {classData.classTeacherId.userId.firstName}
                               </span>
                             </div>
@@ -569,18 +603,18 @@ const ViewClass: React.FC = () => {
                               Last Name
                             </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">
+                              <span className="text-gray-900 text-sm sm:text-base">
                                 {classData.classTeacherId.userId.lastName}
                               </span>
                             </div>
                           </div>
 
-                          <div>
+                          <div className="sm:col-span-2">
                             <label className="text-sm font-medium text-gray-700 mb-2 block">
                               Email Address
                             </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900">
+                              <span className="text-gray-900 text-sm sm:text-base break-all">
                                 {classData.classTeacherId.userId.email}
                               </span>
                             </div>
@@ -592,7 +626,7 @@ const ViewClass: React.FC = () => {
                                 Specialization
                               </label>
                               <div className="bg-gray-50 rounded-lg p-3">
-                                <span className="text-gray-900">
+                                <span className="text-gray-900 text-sm sm:text-base">
                                   {classData.classTeacherId.specialization}
                                 </span>
                               </div>
@@ -618,12 +652,12 @@ const ViewClass: React.FC = () => {
                             </div>
                           </div>
 
-                          <div>
+                          <div className="sm:col-span-2">
                             <label className="text-sm font-medium text-gray-700 mb-2 block">
                               Teacher ID
                             </label>
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900 font-mono text-sm">
+                              <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
                                 {classData.classTeacherId.userId._id}
                               </span>
                             </div>
@@ -631,12 +665,12 @@ const ViewClass: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-12">
-                        <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 font-medium mb-2">
+                      <div className="text-center py-8 sm:py-12">
+                        <User className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 font-medium mb-2 text-sm sm:text-base">
                           No teacher assigned
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
                           A teacher can be assigned through the edit page.
                         </p>
                       </div>

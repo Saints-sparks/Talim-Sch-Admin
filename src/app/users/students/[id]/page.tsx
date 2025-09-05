@@ -6,7 +6,6 @@ import { studentService, updateStudent } from "@/app/services/student.service";
 import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { Header } from "@/components/Header";
 
 interface ProfileData {
   firstName: string;
@@ -212,12 +211,14 @@ const StudentProfile = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2 sm:gap-0">
+          <div></div>
           <button
             onClick={() => setEditMode(!editMode)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center gap-2"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            <FiEdit2 /> {editMode ? "Cancel" : "Edit Profile"}
+            <FiEdit2 className="w-4 h-4" />{" "}
+            {editMode ? "Cancel" : "Edit Profile"}
           </button>
         </div>
 
@@ -228,8 +229,8 @@ const StudentProfile = () => {
               <h3 className="text-md font-medium text-gray-700 mb-3">
                 Profile Picture
               </h3>
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mx-auto sm:mx-0">
                   {profileData.profileImage ? (
                     <img
                       src={profileData.profileImage}
@@ -237,30 +238,34 @@ const StudentProfile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-gray-400 text-xl">
+                    <span className="text-gray-400 text-lg sm:text-xl">
                       {profileData.firstName?.charAt(0)}
                       {profileData.lastName?.charAt(0)}
                     </span>
                   )}
                 </div>
                 {editMode && (
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100">
-                      <FiUpload /> Upload Photo
-                    </div>
-                  </label>
+                  <div className="flex justify-center sm:justify-start">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                      <div className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm sm:text-base">
+                        <FiUpload className="w-4 h-4" />
+                        <span className="hidden sm:inline">Upload Photo</span>
+                        <span className="sm:hidden">Upload</span>
+                      </div>
+                    </label>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Personal Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 ">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
               {[
                 {
                   label: "First Name",
@@ -300,7 +305,7 @@ const StudentProfile = () => {
                 },
               ].map((field) => (
                 <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     {field.label}
                   </label>
                   {editMode ? (
@@ -309,7 +314,7 @@ const StudentProfile = () => {
                         name={field.name}
                         value={profileData?.[field.name] || ""}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black"
+                        className="w-full px-3 py-3 sm:px-4 sm:py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black text-base"
                       >
                         {field.options?.map((option) => (
                           <option key={option} value={option}>
@@ -323,12 +328,12 @@ const StudentProfile = () => {
                         name={field.name}
                         value={profileData?.[field.name] || ""}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black"
+                        className="w-full px-3 py-3 sm:px-4 sm:py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black text-base"
                         placeholder={field.placeholder}
                       />
                     )
                   ) : (
-                    <div className="px-4 py-2 bg-gray-50 rounded-md text-black">
+                    <div className="px-3 py-3 sm:px-4 sm:py-2 bg-gray-50 rounded-md text-black text-base">
                       {profileData?.[field.name] || "Not specified"}
                     </div>
                   )}
@@ -340,7 +345,7 @@ const StudentProfile = () => {
 
         {activeTab === "parent" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {[
                 { label: "Full Name", name: "parentName", type: "text" },
                 { label: "Phone Number", name: "parentPhone", type: "tel" },
@@ -350,11 +355,11 @@ const StudentProfile = () => {
                   label: "Address",
                   name: "parentAddress",
                   type: "text",
-                  colSpan: "md:col-span-2",
+                  colSpan: "sm:col-span-2",
                 },
               ].map((field) => (
                 <div key={field.name} className={field.colSpan || ""}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     {field.label}
                   </label>
                   {editMode ? (
@@ -363,10 +368,10 @@ const StudentProfile = () => {
                       name={field.name}
                       value={profileData?.[field.name] || ""}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black"
+                      className="w-full px-3 py-3 sm:px-4 sm:py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black text-base"
                     />
                   ) : (
-                    <div className="px-4 py-2 bg-gray-50 rounded-md text-black">
+                    <div className="px-3 py-3 sm:px-4 sm:py-2 bg-gray-50 rounded-md text-black text-base">
                       {profileData?.[field.name] || "Not specified"}
                     </div>
                   )}
@@ -378,7 +383,7 @@ const StudentProfile = () => {
 
         {activeTab === "academic" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {[
                 { label: "Student ID", name: "studentId", type: "text" },
                 { label: "Class Name", name: "className", type: "text" },
@@ -391,17 +396,17 @@ const StudentProfile = () => {
                   label: "Subjects",
                   name: "subjects",
                   type: "text",
-                  colSpan: "md:col-span-2",
+                  colSpan: "sm:col-span-2",
                 },
                 {
                   label: "Attendance",
                   name: "attendance",
                   type: "text",
-                  colSpan: "md:col-span-2",
+                  colSpan: "sm:col-span-2",
                 },
               ].map((field) => (
                 <div key={field.name} className={field.colSpan || ""}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     {field.label}
                   </label>
                   {editMode ? (
@@ -410,10 +415,10 @@ const StudentProfile = () => {
                       name={field.name}
                       value={profileData?.[field.name] || ""}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black"
+                      className="w-full px-3 py-3 sm:px-4 sm:py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-black text-base"
                     />
                   ) : (
-                    <div className="px-4 py-2 bg-gray-50 rounded-md text-black">
+                    <div className="px-3 py-3 sm:px-4 sm:py-2 bg-gray-50 rounded-md text-black text-base">
                       {profileData?.[field.name] || "Not specified"}
                     </div>
                   )}
@@ -424,12 +429,12 @@ const StudentProfile = () => {
         )}
 
         {editMode && (
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-center sm:justify-end mt-6">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center gap-2 text-gray-700"
+              className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center justify-center gap-2 text-gray-700 font-medium"
             >
-              <FiSave /> Save Changes
+              <FiSave className="w-4 h-4" /> Save Changes
             </button>
           </div>
         )}
@@ -438,14 +443,12 @@ const StudentProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
-
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+    <div className="min-h-screen bg-[#F8F8F8]">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-sm">
         {/* Horizontal Tabs */}
         {!isLoading && !error && profileData && (
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="-mb-px flex space-x-8">
+          <div className="border-b border-gray-200 mb-4 sm:mb-6">
+            <nav className="-mb-px flex flex-col sm:flex-row sm:space-x-8">
               {[
                 { id: "personal", label: "Personal Details" },
                 { id: "parent", label: "Parent/Guardian" },
@@ -454,13 +457,20 @@ const StudentProfile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-700 ${
+                  className={`whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm sm:text-base text-gray-700 w-full sm:w-auto text-center sm:text-left ${
                     activeTab === tab.id
                       ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 "
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">
+                    {tab.id === "personal"
+                      ? "Personal"
+                      : tab.id === "parent"
+                      ? "Guardian"
+                      : "Academic"}
+                  </span>
                 </button>
               ))}
             </nav>
@@ -468,21 +478,21 @@ const StudentProfile = () => {
         )}
 
         {/* Tab Content */}
-        <div className="p-4">{renderTabContent()}</div>
+        <div className="p-2 sm:p-4">{renderTabContent()}</div>
 
         {/* Footer */}
         {!isLoading && !error && profileData && (
-          <div className="mt-10 pt-6 border-t border-gray-200">
-            <div className="flex justify-between items-center">
+          <div className="mt-6 sm:mt-10 pt-4 sm:pt-6 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">
                   Last Updated
                 </h3>
-                <p className="text-lg font-semibold text-gray-800">
+                <p className="text-base sm:text-lg font-semibold text-gray-800">
                   {profileData.firstName} {profileData.lastName}
                 </p>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-xs sm:text-sm text-gray-500 font-mono">
                 Student ID: {profileData.studentId}
               </div>
             </div>

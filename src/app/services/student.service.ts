@@ -1,4 +1,5 @@
-import { API_ENDPOINTS } from '../lib/api/config';
+import { API_ENDPOINTS } from "../lib/api/config";
+import { PerformanceMonitor, performantFetch } from "../lib/performance";
 
 interface User {
   _id: string;
@@ -53,7 +54,14 @@ export interface Student {
   enrollmentDate?: string;
   assignedSubjects?: string[];
   attendance?: string;
-  [key: string]: string | boolean | string[] | User | Class | ParentContact | undefined;
+  [key: string]:
+    | string
+    | boolean
+    | string[]
+    | User
+    | Class
+    | ParentContact
+    | undefined;
 }
 
 export interface StudentById {
@@ -176,123 +184,135 @@ const getLocalStorageItem = (key: string) => {
 };
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
-  console.log('Registering student with payload:', payload);
-  
+  console.log("Registering student with payload:", payload);
+
   const response = await fetch(API_ENDPOINTS.REGISTER, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Registration failed:', errorData);
-    throw new Error(errorData.message || `Registration failed: ${response.status} ${response.statusText}`);
+    console.error("Registration failed:", errorData);
+    throw new Error(
+      errorData.message ||
+        `Registration failed: ${response.status} ${response.statusText}`
+    );
   }
 
   const result = await response.json();
-  console.log('Registration successful:', result);
+  console.log("Registration successful:", result);
   return result;
 };
 
-export const createStudentProfile = async (payload: CreateStudentProfilePayload) => {
-  console.log('Creating student profile with payload:', payload);
-  
+export const createStudentProfile = async (
+  payload: CreateStudentProfilePayload
+) => {
+  console.log("Creating student profile with payload:", payload);
+
   const response = await fetch(API_ENDPOINTS.CREATE_STUDENT, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Profile creation failed:', errorData);
-    throw new Error(errorData.message || `Profile creation failed: ${response.status} ${response.statusText}`);
+    console.error("Profile creation failed:", errorData);
+    throw new Error(
+      errorData.message ||
+        `Profile creation failed: ${response.status} ${response.statusText}`
+    );
   }
 
   const result = await response.json();
-  console.log('Profile creation successful:', result);
+  console.log("Profile creation successful:", result);
   return result;
 };
 
 export const getClasses = async (): Promise<Class[]> => {
   const response = await fetch(API_ENDPOINTS.GET_CLASSES, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'accept': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-    }
+      accept: "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch classes');
+    throw new Error("Failed to fetch classes");
   }
 
   return response.json();
 };
 
-export const createClass = async (payload: Omit<Class, '_id'>) => {
+export const createClass = async (payload: Omit<Class, "_id">) => {
   const response = await fetch(API_ENDPOINTS.CREATE_CLASS, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error('Class creation failed');
+    throw new Error("Class creation failed");
   }
 
   return response.json() as Promise<Class>;
 };
 
 export const editClass = async (classId: string, data: any) => {
-
   const url = API_ENDPOINTS.EDIT_CLASS(classId);
 
   const response = await fetch(url, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     try {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update class');
+      throw new Error(errorData.message || "Failed to update class");
     } catch (jsonError) {
       // If we can't parse JSON, use the status text
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Server error: ${response.status} ${response.statusText}`
+      );
     }
   }
 
   return response.json();
 };
 
-export const updateCoursesInClass = async (classId: string, courseIds: string[]) => {
+export const updateCoursesInClass = async (
+  classId: string,
+  courseIds: string[]
+) => {
   const response = await fetch(API_ENDPOINTS.UPDATE_COURSES_BY_CLASS(classId), {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
-    body: JSON.stringify({ courseIds })
+    body: JSON.stringify({ courseIds }),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to update courses in class');
+    throw new Error("Failed to update courses in class");
   }
 
   return response.json();
@@ -300,65 +320,71 @@ export const updateCoursesInClass = async (classId: string, courseIds: string[])
 
 export const getClass = async (classId: string) => {
   const response = await fetch(`${API_ENDPOINTS.GET_CLASS}/${classId}`, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
   });
- 
 
   console.log(response);
-  
-  
 
   if (!response.ok) {
-    throw new Error('Error fetching class details');
+    throw new Error("Error fetching class details");
   }
 
   return response.json();
 };
 
-export const updateStudent = async (studentId: string, data: Partial<Student>) => {
+export const updateStudent = async (
+  studentId: string,
+  data: Partial<Student>
+) => {
   try {
     const response = await fetch(`${API_ENDPOINTS.STUDENTS}/${studentId}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to update student profile');
+      throw new Error("Failed to update student profile");
     }
 
     return response.json();
   } catch (error) {
-    console.error('Error updating student:', error);
+    console.error("Error updating student:", error);
     throw error;
   }
 };
 
 export const studentService = {
-  async getStudents(page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
-    const userId = getLocalStorageItem('user')?.userId;
+  async getStudents(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<GetStudentsResponse> {
+    const userId = getLocalStorageItem("user")?.userId;
 
     if (!userId) {
-      throw new Error('User not authenticated');
+      throw new Error("User not authenticated");
     }
 
     try {
-      const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      const response = await fetch(
+        `${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch students');
+        throw new Error(error.message || "Failed to fetch students");
       }
 
       const data: GetStudentsResponse = await response.json();
@@ -370,43 +396,73 @@ export const studentService = {
 
   async getStudentById(studentId: string): Promise<StudentById> {
     try {
-      const response = await fetch(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
+      return await PerformanceMonitor.measureAsync(
+        `getStudentById-${studentId}`,
+        async () => {
+          const response = await performantFetch(
+            `${API_ENDPOINTS.GET_STUDENT}/${studentId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+              },
+              // Add signal for request timeout
+              signal: AbortSignal.timeout(8000), // 8 second timeout
+            }
+          );
 
-      if (!response.ok) {
-        // Handle 404 specifically
-        if (response.status === 404) {
-          throw new Error('Student not found');
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch student details');
-      }
+          if (!response.ok) {
+            // Handle 404 specifically
+            if (response.status === 404) {
+              throw new Error("Student not found");
+            }
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || "Failed to fetch student details"
+            );
+          }
 
-      const data = await response.json();
-      console.log('Student data:', data);
-      return data.data[0];
+          const data = await response.json();
+          console.log("Student data received:", {
+            id: studentId,
+            hasData: !!data,
+          });
+          return data.data[0];
+        }
+      );
     } catch (error) {
-      console.error('Error fetching student:', error);
+      if (error instanceof Error && error.name === "TimeoutError") {
+        console.error("❌ Student fetch timed out");
+        throw new Error(
+          "Request timed out. Please check your connection and try again."
+        );
+      }
+      console.error("❌ Error fetching student:", error);
       throw error;
     }
   },
 
-  async getStudentsByClass(classId: string, page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
+  async getStudentsByClass(
+    classId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<GetStudentsResponse> {
     try {
-      const response = await fetch(`${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?page=${page}&limit=${limit}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      const response = await fetch(
+        `${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(
+          classId
+        )}?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch students');
+        throw new Error(error.message || "Failed to fetch students");
       }
 
       const data: GetStudentsResponse = await response.json();
@@ -414,58 +470,67 @@ export const studentService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
 
-export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> => {
+export const updateClass = async (
+  classId: string,
+  updateData: UpdateClassData
+): Promise<Class> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-      body: JSON.stringify({
-        name: updateData.name,
-        classDescription: updateData.classDescription,
-        classCapacity: parseInt(updateData.classCapacity, 10),
-      }),
-    });
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/classes/${classId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({
+          name: updateData.name,
+          classDescription: updateData.classDescription,
+          classCapacity: parseInt(updateData.classCapacity, 10),
+        }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to update class');
+      throw new Error(error.message || "Failed to update class");
     }
 
     return response.json();
   } catch (error) {
-    console.error('Error updating class:', error);
+    console.error("Error updating class:", error);
     throw error;
   }
 };
 
-export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> => {
+export const assignTeacherToClass = async (
+  classId: string,
+  teacherId: string
+): Promise<Class> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.BASE_URL}/classes/${classId}/assign-teacher`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-      body: JSON.stringify({ teacherId }),
-    });
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/classes/${classId}/assign-teacher`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({ teacherId }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to assign teacher to class');
+      throw new Error(error.message || "Failed to assign teacher to class");
     }
 
     return response.json();
   } catch (error) {
-    console.error('Error assigning teacher to class:', error);
+    console.error("Error assigning teacher to class:", error);
     throw error;
   }
 };
-
-
-
