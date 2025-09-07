@@ -49,19 +49,19 @@ const Announcement: React.FC = () => {
   });
 
   const toggleAnnouncement = (id: string) => {
-    console.log('Toggling announcement:', id);
-    console.log('Current expanded:', Array.from(expandedAnnouncements));
-    
-    setExpandedAnnouncements(prevExpanded => {
+    console.log("Toggling announcement:", id);
+    console.log("Current expanded:", Array.from(expandedAnnouncements));
+
+    setExpandedAnnouncements((prevExpanded) => {
       const newExpanded = new Set(prevExpanded);
       if (newExpanded.has(id)) {
         newExpanded.delete(id);
-        console.log('Closing announcement:', id);
+        console.log("Closing announcement:", id);
       } else {
         newExpanded.add(id);
-        console.log('Opening announcement:', id);
+        console.log("Opening announcement:", id);
       }
-      console.log('New expanded state:', Array.from(newExpanded));
+      console.log("New expanded state:", Array.from(newExpanded));
       return newExpanded;
     });
   };
@@ -276,8 +276,10 @@ const Announcement: React.FC = () => {
                           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             {announcements.map((announcement, index) => {
                               // Use a more reliable identifier that combines id and index
-                              const uniqueId = announcement.id || `announcement-${index}`;
-                              const isExpanded = expandedAnnouncements.has(uniqueId);
+                              const uniqueId =
+                                announcement.id || `announcement-${index}`;
+                              const isExpanded =
+                                expandedAnnouncements.has(uniqueId);
 
                               return (
                                 <div

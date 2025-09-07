@@ -167,7 +167,9 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         try {
           const response = await fetch(
             `${
-              process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5005"
+              process.env.NEXT_PUBLIC_BASE_URL || 
+              // "http://localhost:5005"
+              "https://talim-be-dev.onrender.com"
             }/auth/logout`,
             {
               method: "POST",

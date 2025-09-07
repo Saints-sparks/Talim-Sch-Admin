@@ -97,7 +97,8 @@ const CourseManagement = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const url = currentCourse
-        ? `http://localhost:5005/subjects-courses/courses/${currentCourse._id}`
+        ? `https://talim-be-dev.onrender.com/subjects-courses/courses/${currentCourse._id}`
+        // ? `http://localhost:5005/subjects-courses/courses/${currentCourse._id}`
         : "http://localhost:5000/subjects-courses/courses";
 
       const method = currentCourse ? "PUT" : "POST";
