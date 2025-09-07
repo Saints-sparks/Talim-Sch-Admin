@@ -123,12 +123,10 @@ const ModernLoader: React.FC = () => {
                   />
                 ))}
               </div>
-              <span className="text-sm font-medium text-gray-600 ml-3">
-                Loading your experience...
-              </span>
+             
             </motion.div>
 
-            {/* Progress Bar */}
+            {/* Progress Bar
             <motion.div
               className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden"
               initial={{ opacity: 0, width: 0 }}
@@ -145,7 +143,7 @@ const ModernLoader: React.FC = () => {
                   repeat: Infinity,
                 }}
               />
-            </motion.div>
+            </motion.div> */}
           </div>
         </motion.div>
       )}

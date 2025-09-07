@@ -137,11 +137,11 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       icon: <Clock className="w-5 h-5 text-yellow-600" />,
       label: "Leave Requests",
     },
-    {
-      path: "/complaints",
-      icon: <AlertCircle className="w-5 h-5 text-rose-600" />,
-      label: "Complaints",
-    },
+    // {
+    //   path: "/complaints",
+    //   icon: <AlertCircle className="w-5 h-5 text-rose-600" />,
+    //   label: "Complaints",
+    // },
     {
       path: "/settings",
       icon: <Settings className="w-5 h-5 text-gray-600" />,
@@ -254,33 +254,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         </div>
       </div>
 
-      {/* School Information */}
-      <div className="px-3 pb-6">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">
-                {user?.schoolName || "School Name"}
-              </h3>
-              <p className="text-xs text-gray-500">
-                {user?.role === "school_admin"
-                  ? "School Administrator"
-                  : "Academic Year 2024/25"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-4">
-          Main Menu
-        </div>
-
         {menuItems.map((item, index) => (
           <motion.div
             key={item.path}

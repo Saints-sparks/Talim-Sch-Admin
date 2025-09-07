@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
+import {
+  FiPlus,
+  FiPaperclip,
+  FiCalendar,
+  FiRefreshCw,
+  FiChevronDown,
+  FiChevronUp,
+  FiMessageSquare,
+} from "react-icons/fi";
 import {
   createAnnouncement,
   AnnouncementResponse,
@@ -30,12 +38,33 @@ const Announcement: React.FC = () => {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<
+    Set<string>
+  >(new Set());
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
     lastPage: 1,
   });
+
+  const toggleAnnouncement = (id: string) => {
+    console.log('Toggling announcement:', id);
+    console.log('Current expanded:', Array.from(expandedAnnouncements));
+    
+    setExpandedAnnouncements(prevExpanded => {
+      const newExpanded = new Set(prevExpanded);
+      if (newExpanded.has(id)) {
+        newExpanded.delete(id);
+        console.log('Closing announcement:', id);
+      } else {
+        newExpanded.add(id);
+        console.log('Opening announcement:', id);
+      }
+      console.log('New expanded state:', Array.from(newExpanded));
+      return newExpanded;
+    });
+  };
 
   const fetchAnnouncements = async () => {
     try {
@@ -138,10 +167,10 @@ const Announcement: React.FC = () => {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 mx-1 rounded transition-colors ${
+          className={`px-4 py-2 mx-1 rounded-lg font-medium transition-all duration-300 ${
             pagination.page === i
-              ? "bg-[#154473] text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
           {i}
@@ -150,11 +179,11 @@ const Announcement: React.FC = () => {
     }
 
     return (
-      <div className="flex justify-center space-x-2 mt-4">
+      <div className="flex items-center justify-center space-x-2">
         <button
           onClick={() => handlePageChange(pagination.page - 1)}
           disabled={pagination.page === 1}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
         >
           Previous
         </button>
@@ -162,7 +191,7 @@ const Announcement: React.FC = () => {
         <button
           onClick={() => handlePageChange(pagination.page + 1)}
           disabled={pagination.page === pagination.lastPage}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
         >
           Next
         </button>
@@ -175,116 +204,201 @@ const Announcement: React.FC = () => {
       {loading ? (
         <AnnouncementsSkeleton />
       ) : (
-        <div className="p-6 bg-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-800">
-              Announcements
-            </h1>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Create Announcement
-            </button>
-          </div>
-
-          {error ? (
-            <div className="text-center py-12">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-                <div className="text-red-600 text-lg font-semibold mb-2">
-                  Error Loading Announcements
+        <div className="flex h-screen bg-[#F8F8F8]">
+          <main className="flex-grow flex flex-col">
+            {/* Navigation Header */}
+            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
+                  <FiMessageSquare className="w-5 h-5 mr-2" />
+                  <span className="text-gray-900 font-medium text-xl">
+                    Announcements
+                  </span>
+                  <span className="text-gray-500">
+                    • Keep your school community informed
+                  </span>
                 </div>
-                <p className="text-red-600 mb-4">{error}</p>
                 <button
-                  onClick={fetchAnnouncements}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
-                  Try Again
+                  <FiPlus className="h-4 w-4" />
+                  <span className="font-medium">New Announcement</span>
                 </button>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="space-y-6">
-                {announcements.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                      <div className="text-gray-400 text-6xl mb-4">📢</div>
-                      <div className="text-gray-600 text-lg font-semibold mb-2">
-                        No Announcements Found
-                      </div>
-                      <p className="text-gray-500 mb-4">
-                        Get started by creating your first announcement to keep
-                        everyone informed.
-                      </p>
-                      <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
-                      >
-                        Create First Announcement
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  announcements.map((announcement) => (
-                    <div
-                      key={announcement.id}
-                      className="bg-white rounded-lg shadow-md p-6 "
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h2 className="text-xl font-semibold mb-1 text-gray-800">
-                            {announcement.title}
-                          </h2>
-                          <p className="text-sm text-gray-500">
-                            {formatDateTime(announcement.createdAt)}
-                          </p>
-                        </div>
-                        {announcement.attachment && (
-                          <a
-                            href={announcement.attachment}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            View Attachment
-                          </a>
-                        )}
-                      </div>
-                      <div className="prose max-w-none mb-4 text-gray-800">
-                        <p>{announcement.content}</p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <button className="text-blue-500 hover:text-blue-700">
-                          👍
-                        </button>
-                        <button className="text-red-500 hover:text-red-700">
-                          ❤️
-                        </button>
-                        <button className="text-gray-500 hover:text-gray-700">
-                          👎
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
 
-              {/* Pagination */}
-              {pagination.lastPage > 1 && renderPagination()}
-            </>
-          )}
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto">
+                <div className="p-6">
+                  {error ? (
+                    <div className="max-w-2xl mx-auto">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                        <FiRefreshCw className="h-8 w-8 text-red-600 mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-red-800 mb-2">
+                          Error Loading Announcements
+                        </h3>
+                        <p className="text-red-600 mb-4">{error}</p>
+                        <button
+                          onClick={fetchAnnouncements}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {announcements.length === 0 ? (
+                        <div className="text-center py-16">
+                          <div className="bg-white border border-gray-200 rounded-lg p-8 max-w-md mx-auto shadow-sm">
+                            <FiMessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                              No Announcements Yet
+                            </h3>
+                            <p className="text-gray-600 mb-6">
+                              Create your first announcement to keep everyone
+                              informed.
+                            </p>
+                            <button
+                              onClick={() => setIsModalOpen(true)}
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300"
+                            >
+                              <FiPlus className="h-4 w-4" />
+                              <span>Create Announcement</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className=" mx-auto">
+                          {/* Announcements List */}
+                          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            {announcements.map((announcement, index) => {
+                              // Use a more reliable identifier that combines id and index
+                              const uniqueId = announcement.id || `announcement-${index}`;
+                              const isExpanded = expandedAnnouncements.has(uniqueId);
+
+                              return (
+                                <div
+                                  key={uniqueId}
+                                  className={`border-b border-gray-100 last:border-b-0 transition-all duration-300 ${
+                                    isExpanded
+                                      ? "bg-blue-50"
+                                      : "hover:bg-gray-50"
+                                  }`}
+                                >
+                                  {/* List Item Header */}
+                                  <div
+                                    className="p-4 cursor-pointer"
+                                    onClick={() => toggleAnnouncement(uniqueId)}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center space-x-3">
+                                          <div className="flex-shrink-0">
+                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                              <FiMessageSquare className="h-5 w-5 text-blue-600" />
+                                            </div>
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                              {announcement.title}
+                                            </h3>
+                                            <div className="flex items-center space-x-4 mt-1">
+                                              <div className="flex items-center text-sm text-gray-500">
+                                                <FiCalendar className="h-4 w-4 mr-1" />
+                                                {formatDateTime(
+                                                  announcement.createdAt
+                                                )}
+                                              </div>
+                                              {announcement.attachment && (
+                                                <div className="flex items-center text-sm text-blue-600">
+                                                  <FiPaperclip className="h-4 w-4 mr-1" />
+                                                  Has attachment
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        {isExpanded ? (
+                                          <FiChevronUp className="h-5 w-5 text-gray-400" />
+                                        ) : (
+                                          <FiChevronDown className="h-5 w-5 text-gray-400" />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Expandable Content */}
+                                  {isExpanded && (
+                                    <div className="px-4 pb-4 bg-white border-t border-blue-100">
+                                      <div className="pl-13">
+                                        <div className="bg-gray-50 rounded-lg p-4 mt-3">
+                                          <p className="text-gray-800 leading-relaxed">
+                                            {announcement.content}
+                                          </p>
+                                          {announcement.attachment && (
+                                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                              <a
+                                                href={announcement.attachment}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium"
+                                              >
+                                                <FiPaperclip className="h-4 w-4" />
+                                                <span>View Attachment</span>
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Pagination */}
+                          {pagination.lastPage > 1 && (
+                            <div className="mt-6 flex justify-center">
+                              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                {renderPagination()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
       )}
 
       {/* Create Announcement Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Create Announcement</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                Create Announcement
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Share important updates with your school community
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title
+                </label>
                 <input
                   type="text"
                   name="title"
@@ -295,12 +409,14 @@ const Announcement: React.FC = () => {
                       title: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter announcement title..."
                   required
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Content
                 </label>
                 <textarea
@@ -312,24 +428,26 @@ const Announcement: React.FC = () => {
                       content: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   rows={4}
+                  placeholder="Write your announcement content..."
                   required
                 />
               </div>
-              <div className="flex justify-end space-x-2">
+
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-500 hover:text-gray-700"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 font-medium"
                 >
-                  Create
+                  Create Announcement
                 </button>
               </div>
             </form>
