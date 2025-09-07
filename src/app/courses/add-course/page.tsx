@@ -16,7 +16,9 @@ interface FormData {
 }
 
 const AddCourse: React.FC = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5005";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+   || "  https://talim-be-dev.onrender.com";
+  //  || "http://localhost:5005";
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [buttonLoader, setButtonLoader] = useState<boolean>(false);
@@ -84,7 +86,10 @@ const AddCourse: React.FC = () => {
       console.log("Request Data:", JSON.stringify(formData, null, 2));
 
       const response = await fetch(
-        `http://localhost:5005/subjects-courses/courses`,
+        // `http://localhost:5005/subjects-courses/courses`,
+        `  https://talim-be-dev.onrender.com/subjects-courses/courses`,
+
+        
         {
           method: "POST",
           headers: {

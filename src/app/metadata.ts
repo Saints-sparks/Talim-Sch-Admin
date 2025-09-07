@@ -1,33 +1,9 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Manrope } from "next/font/google";
-import "./globals.css";
-import ClientLayout from "./client-layout";
-
-// Local Fonts
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-
-// Google Font: Manrope
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: {
     template: "%s | Talim School Admin",
-    default: "Talim School Admin - Complete School Management System",
+    default: "Talim School Admin",
   },
   description:
     "Talim School Admin is a comprehensive school management system designed to streamline administrative tasks, manage students, teachers, classes, assessments, and enhance educational operations with modern technology.",
@@ -53,23 +29,21 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "https://talim-admin.com"
-  ),
+  metadataBase: new URL("https://talim-admin.com"), // Replace with your actual domain
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
+    url: "https://talim-admin.com", // Replace with your actual domain
     siteName: "Talim School Admin",
     title: "Talim School Admin - Complete School Management System",
     description:
       "Streamline your school operations with Talim's comprehensive management system for students, teachers, classes, and assessments.",
     images: [
       {
-        url: "/img/talim.png",
+        url: "/img/talim-og-image.png", // We'll create this
         width: 1200,
         height: 630,
         alt: "Talim School Admin Dashboard",
@@ -81,8 +55,8 @@ export const metadata: Metadata = {
     title: "Talim School Admin - Complete School Management System",
     description:
       "Streamline your school operations with Talim's comprehensive management system.",
-    images: ["/img/talim.png"],
-    creator: "@talim_edu",
+    images: ["/img/talim-twitter-image.png"], // We'll create this
+    creator: "@talim_edu", // Replace with actual Twitter handle
   },
   robots: {
     index: true,
@@ -95,7 +69,12 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "your-google-verification-code", // Replace with actual verification code
+    yandex: "your-yandex-verification-code", // Replace with actual verification code
+  },
   category: "education",
+  classification: "School Management System",
   referrer: "origin-when-cross-origin",
   colorScheme: "light",
   themeColor: [
@@ -115,30 +94,28 @@ export const metadata: Metadata = {
   },
   applicationName: "Talim School Admin",
   generator: "Next.js",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icons/talim.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/talim.svg", sizes: "180x180", type: "image/svg+xml" },
+      {
+        url: "/icons/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
     ],
-    shortcut: "/favicon.ico",
+    other: [
+      {
+        rel: "apple-touch-icon-precomposed",
+        url: "/icons/apple-touch-icon-precomposed.png",
+      },
+    ],
   },
 };
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased`}
-      >
-        <ClientLayout>{children}</ClientLayout>
-      </body>
-    </html>
-  );
-}

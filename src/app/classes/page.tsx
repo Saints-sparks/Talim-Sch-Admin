@@ -208,34 +208,35 @@ export default function Classes() {
       {isLoading ? (
         <ClassesSkeleton />
       ) : (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-[#F8F8F8]">
           <main className="flex-grow flex flex-col">
             {/* Navigation Header */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center text-sm text-gray-600">
+            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
                   <FiBook className="w-4 h-4 mr-2" />
                   <span className="text-gray-900 font-medium">
                     Class Management
                   </span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="text-gray-900 font-semibold text-lg">
-                    All Classes
+                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  <span className="text-gray-900 ">All Classes</span>
+                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  <span className="text-gray-600 text-sm sm:text-base">
+                    {classes.length} total
                   </span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="text-gray-600">{classes.length} total</span>
                 </div>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium"
+                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium whitespace-nowrap"
                   onClick={toggleModal}
                 >
-                  <span className="text-lg mr-2">+</span>
-                  Add Class
+                  <span className="text-lg mr-1 sm:mr-2">+</span>
+                  <span className="hidden sm:inline">Add Class</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 p-6">
+            <div className="flex-1 p-4 sm:p-6">
               {error ? (
                 <div className="text-center py-12 flex-1 flex items-center justify-center">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
@@ -273,19 +274,19 @@ export default function Classes() {
               ) : (
                 <div className="flex flex-col flex-1">
                   {/* Classes Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 py-4">
                     {displayedClasses.map((classItem, index) => {
                       const colorScheme = getRandomColor(index);
                       return (
                         <div
                           key={classItem._id}
-                          className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 relative h-[250px] flex flex-col group`}
+                          className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 sm:p-6 shadow-md hover:shadow-lg transition-all duration-300 relative min-h-[220px] sm:min-h-[250px] flex flex-col group`}
                         >
                           {/* Class Icon and Actions Header */}
-                          <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4">
                             <div className="bg-white bg-opacity-20 rounded-lg p-2">
                               <svg
-                                className="w-5 h-5"
+                                className="w-4 h-4 sm:w-5 sm:h-5"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -293,8 +294,8 @@ export default function Classes() {
                               </svg>
                             </div>
 
-                            {/* Edit/Delete Icons - Show on hover */}
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            {/* Edit/Delete Icons - Show on hover on desktop, always visible on mobile */}
+                            <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -318,18 +319,18 @@ export default function Classes() {
                           </div>
 
                           {/* Class Info */}
-                          <div className="flex-1 mb-4">
-                            <h3 className="text-lg font-bold mb-2 line-clamp-2">
+                          <div className="flex-1 mb-3 sm:mb-4">
+                            <h3 className="text-base sm:text-lg font-bold mb-2 line-clamp-2">
                               {classItem.name}
                             </h3>
-                            <p className="text-sm opacity-90 line-clamp-3">
+                            <p className="text-xs sm:text-sm opacity-90 line-clamp-3">
                               {classItem.classDescription ||
                                 "No description provided"}
                             </p>
                           </div>
 
                           {/* Class Stats */}
-                          <div className="flex items-center justify-between mb-4 text-xs opacity-90">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4 text-xs opacity-90">
                             <div className="flex items-center">
                               <FiUsers className="w-3 h-3 mr-1" />
                               <span>
@@ -348,7 +349,7 @@ export default function Classes() {
                               onClick={() =>
                                 router.push(`/classes/${classItem._id}`)
                               }
-                              className={`w-full ${colorScheme.button} text-white py-2.5 px-3 rounded-lg font-medium transition-colors text-sm hover:transform hover:scale-[1.02]`}
+                              className={`w-full ${colorScheme.button} text-white py-2 sm:py-2.5 px-3 rounded-lg font-medium transition-colors text-xs sm:text-sm hover:transform hover:scale-[1.02]`}
                             >
                               Manage Class
                             </button>
@@ -360,34 +361,36 @@ export default function Classes() {
 
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center mt-6 gap-4">
+                    <div className="flex flex-col sm:flex-row justify-center items-center mt-6 gap-3 sm:gap-4">
                       <button
                         onClick={handlePrevPage}
                         disabled={currentPage === 1}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                        className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition-colors w-full sm:w-auto justify-center ${
                           currentPage === 1
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                             : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                         }`}
                       >
                         <FiChevronLeft className="w-4 h-4" />
-                        Previous
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
                       </button>
 
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 px-2">
                         Page {currentPage} of {totalPages}
                       </span>
 
                       <button
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                        className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition-colors w-full sm:w-auto justify-center ${
                           currentPage === totalPages
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                             : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
                         }`}
                       >
-                        Next
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
                         <FiChevronRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -402,20 +405,20 @@ export default function Classes() {
       {/* Add Class Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-end"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-center sm:justify-end items-end sm:items-stretch"
           onClick={toggleModal}
         >
           <div
-            className="h-full w-full md:w-1/2 bg-white p-6 shadow-lg overflow-y-auto"
+            className="h-full w-full sm:w-3/4 md:w-1/2 bg-white p-4 sm:p-6 shadow-lg overflow-y-auto rounded-t-lg sm:rounded-t-none"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-semibold text-gray-800">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">
                 Add Class
               </h3>
               <button
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl p-1"
                 onClick={toggleModal}
                 disabled={isCreating}
               >
@@ -425,9 +428,9 @@ export default function Classes() {
 
             {/* Modal Body */}
             <form onSubmit={handleCreateClass}>
-              <div className="mb-4 flex gap-4">
+              <div className="mb-4 flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
                     Class Name *
                   </label>
                   <input
@@ -437,19 +440,19 @@ export default function Classes() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
                     Class Capacity (Optional)
                   </label>
                   <select
                     name="classCapacity"
                     value={formData.classCapacity}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   >
                     <option value="">Choose your class capacity</option>
                     <option value="10">10</option>
@@ -461,7 +464,7 @@ export default function Classes() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
                   Class Description (Optional)
                 </label>
                 <textarea
@@ -469,16 +472,16 @@ export default function Classes() {
                   placeholder="Provide additional notes about the class."
                   value={formData.classDescription}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  rows={3}
                 ></textarea>
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end gap-4 mt-6">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   type="button"
-                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base order-2 sm:order-1"
                   onClick={toggleModal}
                   disabled={isCreating}
                 >
@@ -486,13 +489,13 @@ export default function Classes() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition-colors"
+                  className="px-4 sm:px-6 py-2 sm:py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition-colors text-sm sm:text-base order-1 sm:order-2"
                   disabled={isCreating}
                 >
                   {isCreating ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"

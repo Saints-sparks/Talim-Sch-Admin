@@ -4,7 +4,9 @@ import { toast } from "react-toastify";
 
 // WebSocket connection configuration
 const WEBSOCKET_URL =
-  process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:5005";
+  process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
+  // "http://localhost:5005";
+  "https://talim-be-dev.onrender.com";
 
 // Event types that match the backend gateway
 export interface ChatMessage {
