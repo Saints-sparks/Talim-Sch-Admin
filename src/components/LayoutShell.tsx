@@ -32,8 +32,8 @@ export default function LayoutShell({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Header - Included in layout */}
-        <Header />
+        {/* Header - Only show when sidebar is visible (authenticated pages) */}
+        {showSidebar && <Header />}
 
         {/* <SchoolAdminNavbar user="Jessica" title="School Admin" /> */}
         <main className="flex-1 overflow-y-auto bg-gray-50">
