@@ -2,9 +2,10 @@ import exp from "constants";
 import { Geist_Mono } from "next/font/google";
 
 //export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
+
 // export const API_BASE_URL = "http://localhost:5005";
-  
-export const API_BASE_URL = "https://talim-be-dev.onrender.com"
+
+export const API_BASE_URL = "https://talim-be-dev.onrender.com";
 
 export const API_URLS = {
   AUTH: {
