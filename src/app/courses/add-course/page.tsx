@@ -3,6 +3,7 @@
 import React, { useState, FormEvent, ChangeEvent } from "react";
 
 import { toast, Flip, ToastContainer } from "react-toastify";
+import { API_BASE_URL } from "../../lib/api/config";
 
 interface FormData {
   title: string;
@@ -16,9 +17,7 @@ interface FormData {
 }
 
 const AddCourse: React.FC = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-   || "  https://talim-be-dev.onrender.com";
-  //  || "http://localhost:5005";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || API_BASE_URL;
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [buttonLoader, setButtonLoader] = useState<boolean>(false);
@@ -85,20 +84,14 @@ const AddCourse: React.FC = () => {
     try {
       console.log("Request Data:", JSON.stringify(formData, null, 2));
 
-      const response = await fetch(
-        // `http://localhost:5005/subjects-courses/courses`,
-        `  https://talim-be-dev.onrender.com/subjects-courses/courses`,
-
-        
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const response = await fetch(`${baseUrl}/subjects-courses/courses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(formData),
+      });
 
       if (!response.ok) {
         const errorResponse = await response.json(); // Parse the error response

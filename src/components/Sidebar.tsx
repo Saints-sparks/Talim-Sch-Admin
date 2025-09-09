@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
 import { useSidebar } from "@/context/SidebarContext";
 import { authService } from "@/app/services/auth.service";
+import { API_BASE_URL } from "@/app/lib/api/config";
 
 interface MenuItem {
   path: string;
@@ -84,6 +85,17 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
+  // Auto-collapse Users submenu when navigating away from users pages
+  useEffect(() => {
+    if (!pathname.startsWith("/users") && expandedUsers) {
+      setExpandedUsers(false);
+    }
+    // Auto-expand Users submenu when navigating to users pages
+    if (pathname.startsWith("/users") && !expandedUsers) {
+      setExpandedUsers(true);
+    }
+  }, [pathname]);
 
   // Define menu items with better icons and organization
   const menuItems: MenuItem[] = [
@@ -149,7 +161,18 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     },
   ];
 
-  const handleLinkClick = () => {
+  const handleLinkClick = (itemPath?: string) => {
+    // Close Users submenu if navigating to a non-users page
+    if (itemPath && !itemPath.startsWith("/users") && expandedUsers) {
+      setExpandedUsers(false);
+    }
+
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
+
+  const handleMobileClick = () => {
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -166,11 +189,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         // Call the logout API
         try {
           const response = await fetch(
-            `${
-              process.env.NEXT_PUBLIC_BASE_URL || 
-              // "http://localhost:5005"
-              "https://talim-be-dev.onrender.com"
-            }/auth/logout`,
+            `${process.env.NEXT_PUBLIC_BASE_URL || API_BASE_URL}/auth/logout`,
             {
               method: "POST",
               headers: {
@@ -314,7 +333,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   )}
                   whileHover={{ scale: 1.02, x: 2 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleLinkClick}
+                  onClick={() => handleLinkClick(item.path)}
                 >
                   <div
                     className={cn(
@@ -375,7 +394,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                           )}
                           whileHover={{ scale: 1.02, x: 4 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={handleLinkClick}
+                          onClick={() => handleLinkClick(subItem.path)}
                         >
                           <div className="w-2 h-2 rounded-full bg-current opacity-40"></div>
                           <span className="text-sm">{subItem.label}</span>
