@@ -67,6 +67,28 @@ interface Stats {
   totalTeachers: number;
 }
 
+interface CurriculumKPIs {
+  totalSubjects: number;
+  totalCourses: number;
+  activeTeachers: number;
+  totalClasses: number;
+  totalStudents: number;
+  totalCurriculumItems: number;
+  averageCoursesPerClass: number;
+  subjectDistribution: Array<{
+    className: string;
+    subjectCount: number;
+  }>;
+  popularSubjects: Array<{
+    subjectName: string;
+    courseCount: number;
+  }>;
+  teacherDistribution: Array<{
+    teacherName: string;
+    subjectsCount: number;
+  }>;
+}
+
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
   <div className="flex flex-col h-screen bg-gray-100">
@@ -100,6 +122,8 @@ const CurriculumDashboardMain: React.FC = () => {
     totalContent: 0,
     totalTeachers: 0,
   });
+  const [kpis, setKpis] = useState<CurriculumKPIs | null>(null);
+  const [loadingKpis, setLoadingKpis] = useState(true);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -122,12 +146,39 @@ const CurriculumDashboardMain: React.FC = () => {
         fetchClasses(),
         fetchSubjects(),
         fetchCurriculumContents(),
+        fetchCurriculumKPIs(),
       ]);
       calculateStats();
     } catch (error) {
       toast.error("Failed to load curriculum data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurriculumKPIs = async () => {
+    setLoadingKpis(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(`${API_BASE_URL}/curriculum/kpis`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch curriculum KPIs");
+      }
+
+      const data = await response.json();
+      setKpis(data);
+    } catch (error) {
+      console.error("Error fetching curriculum KPIs:", error);
+      toast.error("Failed to load curriculum statistics");
+    } finally {
+      setLoadingKpis(false);
     }
   };
 
@@ -271,7 +322,11 @@ const CurriculumDashboardMain: React.FC = () => {
                         Total Subjects
                       </p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {stats.totalSubjects}
+                        {loadingKpis ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          kpis?.totalSubjects || stats.totalSubjects
+                        )}
                       </p>
                     </div>
                     <div className="p-3 bg-blue-100 rounded-full">
@@ -287,7 +342,11 @@ const CurriculumDashboardMain: React.FC = () => {
                         Total Courses
                       </p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {stats.totalCourses}
+                        {loadingKpis ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          kpis?.totalCourses || stats.totalCourses
+                        )}
                       </p>
                     </div>
                     <div className="p-3 bg-green-100 rounded-full">
@@ -300,10 +359,14 @@ const CurriculumDashboardMain: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">
-                        Curriculum Content
+                        Total Classes
                       </p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {stats.totalContent}
+                        {loadingKpis ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          kpis?.totalClasses || classes.length
+                        )}
                       </p>
                     </div>
                     <div className="p-3 bg-purple-100 rounded-full">
@@ -319,7 +382,11 @@ const CurriculumDashboardMain: React.FC = () => {
                         Active Teachers
                       </p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {stats.totalTeachers}
+                        {loadingKpis ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          kpis?.activeTeachers || stats.totalTeachers
+                        )}
                       </p>
                     </div>
                     <div className="p-3 bg-orange-100 rounded-full">
