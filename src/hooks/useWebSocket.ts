@@ -72,6 +72,66 @@ export const useWebSocket = (): WebSocketContextType => {
   const userIdRef = useRef<string | null>(null);
   const connectionAttemptRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Retry logic state
+  const retryCountRef = useRef<number>(0);
+  const lastRetryTimeRef = useRef<number>(0);
+  const isInCooldownRef = useRef<boolean>(false);
+  const cooldownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const MAX_RETRY_ATTEMPTS = 3;
+  const COOLDOWN_DURATION = 60000; // 1 minute in milliseconds
+
+  // Check if we're in cooldown period
+  const isInCooldown = useCallback(() => {
+    const now = Date.now();
+    return (
+      isInCooldownRef.current ||
+      now - lastRetryTimeRef.current < COOLDOWN_DURATION
+    );
+  }, []);
+
+  // Reset retry count and cooldown
+  const resetRetryLogic = useCallback(() => {
+    retryCountRef.current = 0;
+    isInCooldownRef.current = false;
+    if (cooldownTimeoutRef.current) {
+      clearTimeout(cooldownTimeoutRef.current);
+      cooldownTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Start cooldown period
+  const startCooldown = useCallback(() => {
+    isInCooldownRef.current = true;
+    lastRetryTimeRef.current = Date.now();
+
+    console.log(
+      `🚫 WebSocket connection failed ${MAX_RETRY_ATTEMPTS} times. Entering cooldown for 1 minute.`
+    );
+    toast.error("Connection failed multiple times. Will retry in 1 minute.");
+
+    cooldownTimeoutRef.current = setTimeout(() => {
+      console.log(
+        "✅ WebSocket cooldown period ended. Retries are now allowed."
+      );
+      resetRetryLogic();
+    }, COOLDOWN_DURATION);
+  }, []);
+
+  // Check if we can attempt connection
+  const canAttemptConnection = useCallback(() => {
+    if (isInCooldown()) {
+      const remainingTime = Math.ceil(
+        (COOLDOWN_DURATION - (Date.now() - lastRetryTimeRef.current)) / 1000
+      );
+      console.log(
+        `🚫 WebSocket in cooldown. ${remainingTime} seconds remaining.`
+      );
+      return false;
+    }
+    return retryCountRef.current < MAX_RETRY_ATTEMPTS;
+  }, [isInCooldown]);
+
   // Debug state changes
   useEffect(() => {
     console.log("🔍 WebSocket state changed:", {
@@ -80,9 +140,17 @@ export const useWebSocket = (): WebSocketContextType => {
     });
   }, [isConnected, connectionStatus]);
 
-  // Connect to WebSocket with debouncing
+  // Connect to WebSocket with debouncing and retry logic
   const connect = useCallback(
     (userId: string) => {
+      // Check if we can attempt connection
+      if (!canAttemptConnection()) {
+        console.log(
+          "🚫 Cannot attempt WebSocket connection: either in cooldown or max retries exceeded"
+        );
+        return;
+      }
+
       // Clear any pending connection attempts
       if (connectionAttemptRef.current) {
         clearTimeout(connectionAttemptRef.current);
@@ -122,20 +190,25 @@ export const useWebSocket = (): WebSocketContextType => {
         console.log("🔌 Attempting to connect to WebSocket...", {
           url: WEBSOCKET_URL,
           userId,
+          attempt: retryCountRef.current + 1,
+          maxAttempts: MAX_RETRY_ATTEMPTS,
           env: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
         });
 
         setConnectionStatus("connecting");
         userIdRef.current = userId;
 
+        // Increment retry count
+        retryCountRef.current += 1;
+
         try {
           const socket = io(WEBSOCKET_URL, {
             query: { userId },
             transports: ["websocket", "polling"],
             timeout: 20000,
-            reconnection: true,
+            reconnection: false, // Disable automatic reconnection
             reconnectionDelay: 1000,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: 0, // Disable Socket.IO's retry mechanism
           });
 
           // Connection successful
@@ -148,6 +221,9 @@ export const useWebSocket = (): WebSocketContextType => {
             setConnectionStatus("connected");
             toast.success("Connected to real-time services");
 
+            // Reset retry logic on successful connection
+            resetRetryLogic();
+
             // Clear any pending reconnection attempts
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);
@@ -157,10 +233,24 @@ export const useWebSocket = (): WebSocketContextType => {
 
           // Connection failed
           socket.on("connect_error", (error) => {
-            console.error("🔌 WebSocket connection error:", error);
+            console.error(
+              `🔌 WebSocket connection error (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}):`,
+              error
+            );
             setIsConnected(false);
             setConnectionStatus("error");
-            toast.error("Failed to connect to real-time services");
+
+            // Check if we've exceeded max attempts
+            if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
+              startCooldown();
+              toast.error(
+                "Failed to connect after multiple attempts. Will retry in 1 minute."
+              );
+            } else {
+              toast.error(
+                `Connection failed (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`
+              );
+            }
           });
 
           // Disconnection
@@ -173,12 +263,21 @@ export const useWebSocket = (): WebSocketContextType => {
             if (reason !== "io client disconnect") {
               toast.error("Connection lost");
 
-              // Attempt to reconnect after a delay
-              if (userIdRef.current && reason !== "io server disconnect") {
+              // Attempt to reconnect after a delay only if we haven't exceeded max attempts
+              if (
+                userIdRef.current &&
+                reason !== "io server disconnect" &&
+                canAttemptConnection()
+              ) {
                 reconnectTimeoutRef.current = setTimeout(() => {
                   console.log("🔄 Attempting to reconnect...");
                   reconnect();
                 }, 3000);
+              } else if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
+                console.log(
+                  "🚫 Max reconnection attempts reached, entering cooldown"
+                );
+                startCooldown();
               }
             }
           });
@@ -189,26 +288,6 @@ export const useWebSocket = (): WebSocketContextType => {
             toast.error("WebSocket error occurred");
           });
 
-          // Reconnection events
-          socket.on("reconnect", (attemptNumber) => {
-            console.log(
-              `🔄 WebSocket reconnected after ${attemptNumber} attempts`
-            );
-            toast.success("Reconnected to real-time services");
-          });
-
-          socket.on("reconnect_error", (error) => {
-            console.error("🔄 WebSocket reconnection failed:", error);
-          });
-
-          socket.on("reconnect_failed", () => {
-            console.error(
-              "🔄 WebSocket reconnection failed after max attempts"
-            );
-            toast.error("Unable to reconnect. Please refresh the page.");
-            setConnectionStatus("error");
-          });
-
           socketRef.current = socket;
         } catch (error) {
           console.error("Failed to create WebSocket connection:", error);
@@ -217,8 +296,8 @@ export const useWebSocket = (): WebSocketContextType => {
         }
       }, 300); // 300ms debounce
     },
-    [connectionStatus]
-  ); // Add connectionStatus as dependency
+    [connectionStatus, canAttemptConnection, resetRetryLogic, startCooldown]
+  ); // Add retry logic dependencies
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
@@ -233,6 +312,11 @@ export const useWebSocket = (): WebSocketContextType => {
       reconnectTimeoutRef.current = null;
     }
 
+    if (cooldownTimeoutRef.current) {
+      clearTimeout(cooldownTimeoutRef.current);
+      cooldownTimeoutRef.current = null;
+    }
+
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
@@ -241,8 +325,12 @@ export const useWebSocket = (): WebSocketContextType => {
     setIsConnected(false);
     setConnectionStatus("disconnected");
     userIdRef.current = null;
+
+    // Reset retry logic when manually disconnecting
+    resetRetryLogic();
+
     console.log("🔌 WebSocket manually disconnected");
-  }, []);
+  }, [resetRetryLogic]);
 
   // Reconnect to WebSocket
   const reconnect = useCallback(() => {
