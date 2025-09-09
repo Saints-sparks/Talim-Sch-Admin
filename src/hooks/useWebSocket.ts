@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "@/app/lib/api/config";
 
 // WebSocket connection configuration
-const WEBSOCKET_URL =
-  process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
-  // "http://localhost:5005";
-  "https://talim-be-dev.onrender.com";
+const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || API_BASE_URL;
 
 // Event types that match the backend gateway
 export interface ChatMessage {

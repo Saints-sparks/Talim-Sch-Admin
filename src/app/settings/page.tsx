@@ -13,7 +13,7 @@ import {
   setCurrentTerm,
 } from "@/app/services/academic.service";
 import { toast } from "react-toastify";
-import { getLocalStorageItem, User } from "../lib/localStorage";
+
 
 interface AcademicYear {
   year: string;

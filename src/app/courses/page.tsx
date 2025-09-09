@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
 
-import { API_ENDPOINTS } from "../lib/api/config";
+import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
 
 // Updated interface to match API response
 interface Course {
@@ -97,9 +97,8 @@ const CourseManagement = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const url = currentCourse
-        ? `https://talim-be-dev.onrender.com/subjects-courses/courses/${currentCourse._id}`
-        // ? `http://localhost:5005/subjects-courses/courses/${currentCourse._id}`
-        : "http://localhost:5000/subjects-courses/courses";
+        ? `${API_BASE_URL}/subjects-courses/courses/${currentCourse._id}`
+        : `${API_BASE_URL}/subjects-courses/courses`;
 
       const method = currentCourse ? "PUT" : "POST";
 
@@ -146,7 +145,7 @@ const CourseManagement = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `http://localhost:5000/subjects-courses/courses/${id}`,
+        `${API_BASE_URL}/subjects-courses/courses/${id}`,
         {
           method: "DELETE",
           headers: {

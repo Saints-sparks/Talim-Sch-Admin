@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
 import { useSidebar } from "@/context/SidebarContext";
 import { authService } from "@/app/services/auth.service";
+import { API_BASE_URL } from "@/app/lib/api/config";
 
 interface MenuItem {
   path: string;
@@ -166,11 +167,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         // Call the logout API
         try {
           const response = await fetch(
-            `${
-              process.env.NEXT_PUBLIC_BASE_URL || 
-              // "http://localhost:5005"
-              "https://talim-be-dev.onrender.com"
-            }/auth/logout`,
+            `${process.env.NEXT_PUBLIC_BASE_URL || API_BASE_URL}/auth/logout`,
             {
               method: "POST",
               headers: {
