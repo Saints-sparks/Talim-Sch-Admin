@@ -86,6 +86,17 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // Auto-collapse Users submenu when navigating away from users pages
+  useEffect(() => {
+    if (!pathname.startsWith("/users") && expandedUsers) {
+      setExpandedUsers(false);
+    }
+    // Auto-expand Users submenu when navigating to users pages
+    if (pathname.startsWith("/users") && !expandedUsers) {
+      setExpandedUsers(true);
+    }
+  }, [pathname]);
+
   // Define menu items with better icons and organization
   const menuItems: MenuItem[] = [
     {
@@ -150,7 +161,18 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     },
   ];
 
-  const handleLinkClick = () => {
+  const handleLinkClick = (itemPath?: string) => {
+    // Close Users submenu if navigating to a non-users page
+    if (itemPath && !itemPath.startsWith("/users") && expandedUsers) {
+      setExpandedUsers(false);
+    }
+
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
+
+  const handleMobileClick = () => {
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -311,7 +333,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   )}
                   whileHover={{ scale: 1.02, x: 2 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleLinkClick}
+                  onClick={() => handleLinkClick(item.path)}
                 >
                   <div
                     className={cn(
@@ -372,7 +394,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                           )}
                           whileHover={{ scale: 1.02, x: 4 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={handleLinkClick}
+                          onClick={() => handleLinkClick(subItem.path)}
                         >
                           <div className="w-2 h-2 rounded-full bg-current opacity-40"></div>
                           <span className="text-sm">{subItem.label}</span>
