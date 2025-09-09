@@ -311,20 +311,6 @@ const Dashboard = () => {
                 textColor={card.textColor}
               />
             ))}
-
-            {/* See All / See Less button */}
-            {cards.length > 0 && (
-              <div className="col-span-1 md:col-span-2 lg:col-span-4 flex justify-center">
-                <button
-                  className="py-2 font-bold text-[#154473] hover:text-blue-500 transition duration-200"
-                  onClick={toggleExpandAll}
-                >
-                  {expandedCards.length === cards.length
-                    ? "See less"
-                    : "See all"}
-                </button>
-              </div>
-            )}
           </section>
 
           {/* Classes Table */}
