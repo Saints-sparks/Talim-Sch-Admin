@@ -33,7 +33,30 @@ import "react-toastify/dist/ReactToastify.css";
 interface ClassDetails {
   _id: string;
   name: string;
-  schoolId: string;
+  schoolId: {
+    _id: string;
+    name: string;
+    email: string;
+    physicalAddress: string;
+    location: {
+      country: string;
+      state: string;
+      _id: string;
+    };
+    schoolPrefix: string;
+    primaryContacts: Array<{
+      name: string;
+      phone: string;
+      email: string;
+      role: string;
+      _id: string;
+    }>;
+    active: boolean;
+    logo: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  };
   classTeacherId: {
     _id: string;
     userId: {
@@ -41,26 +64,57 @@ interface ClassDetails {
       firstName: string;
       lastName: string;
       email: string;
+      id: string;
     };
-    specialization: string;
+    assignedClasses: string[];
+    assignedCourses: string[];
     isFormTeacher: boolean;
+    isActive: boolean;
+    highestAcademicQualification: string;
+    yearsOfExperience: number;
+    specialization: string;
+    employmentType: string;
+    employmentRole: string;
+    availabilityDays: string[];
+    availableTime: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
   };
   courses: Course[];
   classDescription: string;
   classCapacity: string;
+  assignedCourses: any[];
   createdAt?: string;
   updatedAt?: string;
+  __v: number;
 }
 
 interface Course {
   _id: string;
+  courseCode: string;
   title: string;
   description: string;
-  courseCode: string;
-  teacherId: string;
-  subjectId: string;
+  teacherId: {
+    _id: string;
+    userId: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  };
+  subjectId: {
+    _id: string;
+    name: string;
+    code: string;
+  };
   classId: string;
+  schoolId: string;
   createdAt?: string;
+  updatedAt?: string;
+  __v: number;
+  id: string;
 }
 
 const ViewClass: React.FC = () => {
@@ -410,51 +464,6 @@ const ViewClass: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Additional Information */}
-                    <div className="border-t border-gray-200 pt-6">
-                      <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">
-                        System Information
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Class ID
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
-                              {getStringValue(classData._id)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            School ID
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
-                              {getStringValue(classData.schoolId)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-2 lg:col-span-1">
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Created Date
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 text-sm">
-                              {classData.createdAt
-                                ? new Date(
-                                    classData.createdAt
-                                  ).toLocaleDateString()
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -500,18 +509,23 @@ const ViewClass: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {classData.courses.map((course: any, index: number) => (
                           <div
-                            key={index}
+                            key={course._id || index}
                             className="bg-gray-50 rounded-lg p-4 sm:p-6 hover:bg-gray-100 transition-colors border border-gray-200"
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
-                                  {getStringValue(course.courseName)}
+                                  {course.title || "Untitled Course"}
                                 </h4>
                                 <p className="text-xs sm:text-sm text-gray-600">
-                                  Course Code:{" "}
-                                  {getStringValue(course.courseCode)}
+                                  Course Code: {course.courseCode || "N/A"}
                                 </p>
+                                {course.subjectId && (
+                                  <p className="text-xs sm:text-sm text-purple-600 font-medium">
+                                    Subject: {course.subjectId.name} (
+                                    {course.subjectId.code})
+                                  </p>
+                                )}
                               </div>
                               <div className="ml-3 flex-shrink-0">
                                 <button className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -520,16 +534,26 @@ const ViewClass: React.FC = () => {
                               </div>
                             </div>
 
-                            {course.courseDescription && (
+                            {course.description && (
                               <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
-                                {getStringValue(course.courseDescription)}
+                                {course.description}
                               </p>
                             )}
 
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-gray-200">
-                              <div className="text-xs text-gray-500">
-                                ID: {getStringValue(course._id).slice(0, 8)}...
+                            {course.teacherId?.userId && (
+                              <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+                                <p className="text-xs text-blue-700 font-medium">
+                                  Instructor:{" "}
+                                  {course.teacherId.userId.firstName}{" "}
+                                  {course.teacherId.userId.lastName}
+                                </p>
+                                <p className="text-xs text-blue-600">
+                                  {course.teacherId.userId.email}
+                                </p>
                               </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-gray-200">
                               <button className="text-xs sm:text-sm text-green-600 hover:text-green-700 font-medium self-start sm:self-auto">
                                 View Details
                               </button>
@@ -651,17 +675,6 @@ const ViewClass: React.FC = () => {
                               </span>
                             </div>
                           </div>
-
-                          <div className="sm:col-span-2">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">
-                              Teacher ID
-                            </label>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-900 font-mono text-xs sm:text-sm break-all">
-                                {classData.classTeacherId.userId._id}
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     ) : (
@@ -716,7 +729,8 @@ const ViewClass: React.FC = () => {
                           </label>
                           <div className="bg-gray-50 rounded-lg p-3">
                             <span className="text-gray-900 font-mono text-sm">
-                              {getStringValue(classData.schoolId)}
+                              {classData.schoolId?._id ||
+                                getStringValue(classData.schoolId)}
                             </span>
                           </div>
                         </div>
