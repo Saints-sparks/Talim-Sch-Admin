@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
-import { createClass } from "../services/student.service";
+import { createClass, deleteClass } from "../services/student.service";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
@@ -237,16 +237,78 @@ const Dashboard = () => {
   };
 
   const handleView = (classId: string) => {
-    router.push(`/classes/view-class/${classId}`);
+    router.push(`/classes/${classId}`);
   };
 
   const handleEdit = (classId: string) => {
     router.push(`/classes/edit-class/${classId}`);
   };
 
-  const handleDelete = (classId: string) => {
-    console.log(`Deleting class with ID: ${classId}`);
-    // TODO: Implement delete functionality
+  const handleDelete = async (classId: string) => {
+    // Find the class name for better user experience
+    const classToDelete = dashboardData?.recentClasses.find(
+      (cls) => cls._id === classId
+    );
+    const className = classToDelete?.name || "this class";
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${className}"?\n\nThis action cannot be undone and will permanently remove the class and all associated data.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading(`Deleting ${className}...`);
+
+      // Call delete API
+      await deleteClass(classId);
+
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success(`${className} has been deleted successfully!`, {
+        position: "top-right",
+        autoClose: 4000,
+      });
+
+      // Refresh dashboard data to reflect the deletion
+      await refreshDashboard();
+    } catch (error: any) {
+      console.error("Error deleting class:", error);
+
+      // More detailed error handling
+      let errorMessage = `Failed to delete ${className}`;
+
+      if (error.message?.includes("not found")) {
+        errorMessage = `${className} not found. It may have already been deleted.`;
+      } else if (
+        error.message?.includes("unauthorized") ||
+        error.message?.includes("forbidden")
+      ) {
+        errorMessage = "You don't have permission to delete this class.";
+      } else if (
+        error.message?.includes("students enrolled") ||
+        error.message?.includes("cannot delete")
+      ) {
+        errorMessage = `Cannot delete ${className}. Please remove all students from the class first.`;
+      } else if (
+        error.message?.includes("network") ||
+        error.message?.includes("fetch")
+      ) {
+        errorMessage =
+          "Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 6000,
+      });
+    }
   };
 
   if (isLoading) {

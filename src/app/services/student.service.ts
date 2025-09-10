@@ -489,7 +489,7 @@ export const updateClass = async (
         body: JSON.stringify({
           name: updateData.name,
           classDescription: updateData.classDescription,
-          classCapacity: parseInt(updateData.classCapacity, 10),
+          classCapacity: updateData.classCapacity,
         }),
       }
     );
@@ -531,6 +531,34 @@ export const assignTeacherToClass = async (
     return response.json();
   } catch (error) {
     console.error("Error assigning teacher to class:", error);
+    throw error;
+  }
+};
+
+export const deleteClass = async (classId: string): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/classes/${classId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to delete class");
+    }
+
+    // Note: DELETE might return 204 No Content, so we don't always need to parse JSON
+    if (response.status !== 204) {
+      return response.json();
+    }
+  } catch (error) {
+    console.error("Error deleting class:", error);
     throw error;
   }
 };
