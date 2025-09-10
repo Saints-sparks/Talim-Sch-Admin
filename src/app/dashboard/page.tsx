@@ -245,70 +245,71 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (classId: string) => {
+    console.log("Delete class with ID:", classId);
     // Find the class name for better user experience
-    const classToDelete = dashboardData?.recentClasses.find(
-      (cls) => cls._id === classId
-    );
-    const className = classToDelete?.name || "this class";
+    // const classToDelete = dashboardData?.recentClasses.find(
+    //   (cls) => cls._id === classId
+    // );
+    // const className = classToDelete?.name || "this class";
 
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${className}"?\n\nThis action cannot be undone and will permanently remove the class and all associated data.`
-    );
+    // // Show confirmation dialog
+    // const confirmed = window.confirm(
+    //   `Are you sure you want to delete "${className}"?\n\nThis action cannot be undone and will permanently remove the class and all associated data.`
+    // );
 
-    if (!confirmed) {
-      return;
-    }
+    // if (!confirmed) {
+    //   return;
+    // }
 
-    try {
-      // Show loading toast
-      const loadingToast = toast.loading(`Deleting ${className}...`);
+    // try {
+    //   // Show loading toast
+    //   const loadingToast = toast.loading(`Deleting ${className}...`);
 
-      // Call delete API
-      await deleteClass(classId);
+    //   // Call delete API
+    //   await deleteClass(classId);
 
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToast);
-      toast.success(`${className} has been deleted successfully!`, {
-        position: "top-right",
-        autoClose: 4000,
-      });
+    //   // Dismiss loading toast and show success
+    //   toast.dismiss(loadingToast);
+    //   toast.success(`${className} has been deleted successfully!`, {
+    //     position: "top-right",
+    //     autoClose: 4000,
+    //   });
 
-      // Refresh dashboard data to reflect the deletion
-      await refreshDashboard();
-    } catch (error: any) {
-      console.error("Error deleting class:", error);
+    //   // Refresh dashboard data to reflect the deletion
+    //   await refreshDashboard();
+    // } catch (error: any) {
+    //   console.error("Error deleting class:", error);
 
-      // More detailed error handling
-      let errorMessage = `Failed to delete ${className}`;
+    //   // More detailed error handling
+    //   let errorMessage = `Failed to delete ${className}`;
 
-      if (error.message?.includes("not found")) {
-        errorMessage = `${className} not found. It may have already been deleted.`;
-      } else if (
-        error.message?.includes("unauthorized") ||
-        error.message?.includes("forbidden")
-      ) {
-        errorMessage = "You don't have permission to delete this class.";
-      } else if (
-        error.message?.includes("students enrolled") ||
-        error.message?.includes("cannot delete")
-      ) {
-        errorMessage = `Cannot delete ${className}. Please remove all students from the class first.`;
-      } else if (
-        error.message?.includes("network") ||
-        error.message?.includes("fetch")
-      ) {
-        errorMessage =
-          "Network error. Please check your connection and try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+    //   if (error.message?.includes("not found")) {
+    //     errorMessage = `${className} not found. It may have already been deleted.`;
+    //   } else if (
+    //     error.message?.includes("unauthorized") ||
+    //     error.message?.includes("forbidden")
+    //   ) {
+    //     errorMessage = "You don't have permission to delete this class.";
+    //   } else if (
+    //     error.message?.includes("students enrolled") ||
+    //     error.message?.includes("cannot delete")
+    //   ) {
+    //     errorMessage = `Cannot delete ${className}. Please remove all students from the class first.`;
+    //   } else if (
+    //     error.message?.includes("network") ||
+    //     error.message?.includes("fetch")
+    //   ) {
+    //     errorMessage =
+    //       "Network error. Please check your connection and try again.";
+    //   } else if (error.message) {
+    //     errorMessage = error.message;
+    //   }
 
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 6000,
-      });
-    }
+    //   toast.error(errorMessage, {
+    //     position: "top-right",
+    //     autoClose: 6000,
+    //   });
+    // }
   };
 
   if (isLoading) {

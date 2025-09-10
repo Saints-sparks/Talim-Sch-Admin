@@ -104,6 +104,10 @@ const StudentPage: React.FC = () => {
     setMenuOpen(menuOpen === studentId ? null : studentId);
   };
 
+  const handleEditStudent = (studentId: string) => {
+    router.push(`/users/students/${studentId}/edit`);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F8F8] p-4 sm:p-6 flex flex-col">
       {/* Title and Controls */}
@@ -225,7 +229,7 @@ const StudentPage: React.FC = () => {
                     </button>
                     {menuOpen === student._id && (
                       <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg">
+                        <button onClick={() => handleEditStudent(student._id)} className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg">
                           Edit
                         </button>
                         <button className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 rounded-b-lg">

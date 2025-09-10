@@ -28,6 +28,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { getClass } from "../../services/student.service";
+import {
+  updateCourseService,
+  deleteCourseService,
+} from "../../services/subjects.service";
+import CourseModal from "@/components/CourseModal";
 import "react-toastify/dist/ReactToastify.css";
 
 interface ClassDetails {
@@ -125,6 +130,15 @@ const ViewClass: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [activeTab, setActiveTab] = useState("details");
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [isDeletingCourse, setIsDeletingCourse] = useState<string | null>(null);
+
+  // Course modal states
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">(
+    "edit"
+  );
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   // Helper function to safely extract string values from potentially nested objects
   const getStringValue = (value: any): string => {
@@ -145,6 +159,120 @@ const ViewClass: React.FC = () => {
       return `${classData.classTeacherId.userId.firstName} ${classData.classTeacherId.userId.lastName}`;
     }
     return "No teacher assigned";
+  };
+
+  // Course management functions
+  const handleEditCourse = (courseId: string) => {
+    if (!classData) return;
+    const course = classData.courses.find((c) => c._id === courseId);
+    if (course) {
+      setSelectedCourse(course);
+      setCourseModalMode("edit");
+      setShowCourseModal(true);
+    }
+    setMenuOpen(null);
+  };
+
+  const handleCourseModalSuccess = async () => {
+    try {
+      // Refresh class data to reflect the changes
+      const updatedData = await getClass(classId!);
+      setClassData(updatedData);
+    } catch (error) {
+      console.error("Error refreshing class data:", error);
+    }
+  };
+
+  const handleAddCourse = () => {
+    setSelectedCourse(null);
+    setCourseModalMode("add");
+    setShowCourseModal(true);
+  };
+
+  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${courseTitle}"?\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      setMenuOpen(null);
+      return;
+    }
+
+    try {
+      setIsDeletingCourse(courseId);
+      setMenuOpen(null);
+
+      await deleteCourseService(courseId);
+
+      toast.success(`${courseTitle} has been deleted successfully!`, {
+        position: "top-right",
+        autoClose: 4000,
+      });
+
+      // Refresh class data to reflect the deletion
+      const updatedData = await getClass(classId!);
+      setClassData(updatedData);
+    } catch (error: any) {
+      console.error("Error deleting course:", error);
+
+      let errorMessage = `Failed to delete ${courseTitle}`;
+
+      if (error.message?.includes("not found")) {
+        errorMessage = `${courseTitle} not found. It may have already been deleted.`;
+      } else if (
+        error.message?.includes("unauthorized") ||
+        error.message?.includes("forbidden")
+      ) {
+        errorMessage = "You don't have permission to delete this course.";
+      } else if (
+        error.message?.includes("network") ||
+        error.message?.includes("fetch")
+      ) {
+        errorMessage =
+          "Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 6000,
+      });
+    } finally {
+      setIsDeletingCourse(null);
+    }
+  };
+
+  // Close menu when clicking outside
+  // Close menu when clicking outside (but ignore clicks inside the open dropdown)
+  useEffect(() => {
+    if (!menuOpen) return; // only attach when a menu is open
+
+    const handleClickOutside = (event: MouseEvent) => {
+      // find the currently open dropdown element
+      const dropdownEl = document.getElementById(`dropdown-${menuOpen}`);
+      // if no dropdown found, just close
+      if (!dropdownEl) {
+        setMenuOpen(null);
+        return;
+      }
+      // if click/mousedown was inside the dropdown, don't close it
+      if (dropdownEl.contains(event.target as Node)) {
+        return;
+      }
+      // otherwise close it
+      setMenuOpen(null);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const toggleMenu = (courseId: string) => {
+    setMenuOpen(menuOpen === courseId ? null : courseId);
   };
 
   useEffect(() => {
@@ -483,10 +611,6 @@ const ViewClass: React.FC = () => {
                           Courses ({classData.courses?.length || 0})
                         </h2>
                       </div>
-                      <button className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-                        <span className="hidden sm:inline">Add Course</span>
-                        <span className="sm:hidden">Add</span>
-                      </button>
                     </div>
                   </div>
 
@@ -501,7 +625,10 @@ const ViewClass: React.FC = () => {
                           This class doesn't have any courses assigned yet. Add
                           courses to get started.
                         </p>
-                        <button className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                        <button
+                          onClick={handleAddCourse}
+                          className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                        >
                           Assign First Course
                         </button>
                       </div>
@@ -510,7 +637,7 @@ const ViewClass: React.FC = () => {
                         {classData.courses.map((course: any, index: number) => (
                           <div
                             key={course._id || index}
-                            className="bg-gray-50 rounded-lg p-4 sm:p-6 hover:bg-gray-100 transition-colors border border-gray-200"
+                            className="bg-gray-50 rounded-lg p-4 sm:p-6 hover:bg-gray-100 transition-colors border border-gray-200 relative group"
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1 min-w-0">
@@ -527,10 +654,78 @@ const ViewClass: React.FC = () => {
                                   </p>
                                 )}
                               </div>
-                              <div className="ml-3 flex-shrink-0">
-                                <button className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                                  <MoreVertical className="w-4 h-4" />
+                              <div className="ml-3 flex-shrink-0 relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMenu(course._id);
+                                  }}
+                                  disabled={isDeletingCourse === course._id}
+                                  className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-200 disabled:opacity-50"
+                                >
+                                  {isDeletingCourse === course._id ? (
+                                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <MoreVertical className="w-4 h-4" />
+                                  )}
                                 </button>
+
+                                {/* Dropdown Menu */}
+                                {menuOpen === course._id && (
+                                  <div
+                                    id={`dropdown-${course._id}`}
+                                    className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden"
+                                  >
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditCourse(course._id);
+                                      }}
+                                      className="flex items-center w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors group"
+                                    >
+                                      <svg
+                                        className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                      </svg>
+                                      Edit Course
+                                    </button>
+                                    <div className="border-t border-gray-100"></div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteCourse(
+                                          course._id,
+                                          course.title || "Untitled Course"
+                                        );
+                                      }}
+                                      className="flex items-center w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group"
+                                    >
+                                      <svg
+                                        className="w-4 h-4 mr-3 text-red-400 group-hover:text-red-500"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                        />
+                                      </svg>
+                                      Delete Course
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -552,12 +747,6 @@ const ViewClass: React.FC = () => {
                                 </p>
                               </div>
                             )}
-
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-gray-200">
-                              <button className="text-xs sm:text-sm text-green-600 hover:text-green-700 font-medium self-start sm:self-auto">
-                                View Details
-                              </button>
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -794,6 +983,18 @@ const ViewClass: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Course Modal */}
+      <CourseModal
+        isOpen={showCourseModal}
+        onClose={() => setShowCourseModal(false)}
+        onSuccess={handleCourseModalSuccess}
+        mode={courseModalMode}
+        course={selectedCourse}
+        subjectId={selectedCourse?.subjectId?._id}
+        subjectName={selectedCourse?.subjectId?.name}
+        initialClassId={classId || ""}
+      />
     </div>
   );
 };

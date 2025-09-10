@@ -13,14 +13,85 @@ interface User {
   [key: string]: string | number | boolean;
 }
 
+interface Course {
+  _id: string;
+  courseCode: string;
+  title: string;
+  description: string;
+  teacherId: string | null;
+  subjectId: {
+    _id: string;
+    name: string;
+    code: string;
+  };
+  classId: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  schoolId?: string;
+  id: string;
+}
+
 export interface Class {
   _id: string;
   name: string;
-  classCapacity: number;
+  classCapacity: string;
   classDescription: string;
-  schoolId: string;
-  assignedCourses: string[];
-  [key: string]: string | number | string[];
+  schoolId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        physicalAddress: string;
+        location: {
+          country: string;
+          state: string;
+          _id: string;
+        };
+        schoolPrefix: string;
+        primaryContacts: Array<{
+          name: string;
+          phone: string;
+          email: string;
+          role: string;
+          _id: string;
+        }>;
+        active: boolean;
+        logo: string;
+        createdAt: string;
+        updatedAt: string;
+        __v: number;
+      };
+  assignedCourses: Course[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  classTeacherId?: {
+    _id: string;
+    userId: {
+      _id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      id: string;
+    };
+    assignedClasses: string[];
+    assignedCourses: string[];
+    isFormTeacher: boolean;
+    isActive: boolean;
+    highestAcademicQualification: string;
+    yearsOfExperience: number;
+    specialization: string;
+    employmentType: string;
+    employmentRole: string;
+    availabilityDays: string[];
+    availableTime: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  };
+  [key: string]: any;
 }
 
 interface UpdateClassData {

@@ -339,7 +339,9 @@ export default function Classes() {
                             </div>
                             <div className="flex items-center">
                               <FiBook className="w-3 h-3 mr-1" />
-                              <span>0 courses</span>
+                              <span>
+                                {classItem.assignedCourses?.length || 0} courses
+                              </span>
                             </div>
                           </div>
 
