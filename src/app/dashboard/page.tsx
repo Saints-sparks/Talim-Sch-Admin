@@ -18,7 +18,6 @@ const Dashboard = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     classDescription: "",
@@ -164,17 +163,23 @@ const Dashboard = () => {
       ]
     : [];
 
-  const toggleExpand = (id: number) => {
-    setExpandedCards((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleExpandAll = () => {
-    if (expandedCards.length === cards.length) {
-      setExpandedCards([]);
-    } else {
-      setExpandedCards(cards.map((card) => card.id));
+  // Navigation handlers for metric cards
+  const handleCardNavigation = (cardId: number) => {
+    switch (cardId) {
+      case 1: // Total Number of Classes
+        router.push("/classes");
+        break;
+      case 2: // Total Number of Students
+        router.push("/users/students");
+        break;
+      case 3: // Total Number of Teachers
+        router.push("/users/teachers");
+        break;
+      case 4: // Total Number of Subjects
+        router.push("/curriculum");
+        break;
+      default:
+        break;
     }
   };
 
@@ -366,8 +371,7 @@ const Dashboard = () => {
                 count={card.count}
                 label={card.label}
                 details={card.details}
-                isExpanded={expandedCards.includes(card.id)}
-                onToggle={toggleExpand}
+                onNavigate={handleCardNavigation}
                 bgColor={card.bgColor}
                 iconBg={card.iconBg}
                 iconColor={card.iconColor}
