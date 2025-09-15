@@ -16,6 +16,8 @@ export const API_URLS = {
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
     CHANGE_PASSWORD: "/auth/change-password",
+    GET_PROFILE: "/auth/profile/:userId",
+    UPDATE_PROFILE: "/auth/profile/update",
   },
   SCHOOL: {
     GET_CLASS: "/classes",
@@ -23,6 +25,7 @@ export const API_URLS = {
     CREATE_CLASS: "/classes",
     EDIT_CLASS: "/classes/:classId",
     UPDATE_COURSES: "/classes/:classId/courses",
+    UPDATE_SCHOOL: "/schools/update/:id",
   },
   STUDENT: {
     CREATE: "/students",
@@ -110,6 +113,9 @@ export const API_ENDPOINTS = {
   FORGOT_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.FORGOT_PASSWORD}`,
   RESET_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.RESET_PASSWORD}`,
   REGISTER: `${API_BASE_URL}${API_URLS.AUTH.REGISTER}`,
+  GET_USER_PROFILE: (userId: string) =>
+    `${API_BASE_URL}${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
+  UPDATE_USER_PROFILE: `${API_BASE_URL}${API_URLS.AUTH.UPDATE_PROFILE}`,
   GET_CLASS: `${API_BASE_URL}/classes`,
   GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
@@ -214,4 +220,6 @@ export const API_ENDPOINTS = {
     )}`,
 
   GET_LEAVE_REQUESTS: `${API_BASE_URL}${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
+  UPDATE_SCHOOL: (schoolId: string) =>
+    `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
 } as const;

@@ -633,3 +633,72 @@ export const deleteClass = async (classId: string): Promise<void> => {
     throw error;
   }
 };
+
+// Update student status (activate/deactivate)
+export const updateStudentStatus = async (
+  studentId: string,
+  isActive: boolean
+): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/students/${studentId}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({ isActive }),
+      }
+    );
+
+    if (!response.ok) {
+      // Try to parse error response if available
+      let errorMessage = `Failed to ${
+        isActive ? "activate" : "deactivate"
+      } student`;
+      try {
+        const error = await response.json();
+        errorMessage = error.message || errorMessage;
+      } catch (jsonError) {
+        // If JSON parsing fails, use status text
+        errorMessage = `${errorMessage}: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Handle successful response - check if there's content to parse
+    if (response.status === 204) {
+      // No content response, return success message
+      return {
+        message: `Student ${
+          isActive ? "activated" : "deactivated"
+        } successfully`,
+      };
+    }
+
+    // Try to parse JSON response
+    try {
+      const responseText = await response.text();
+      if (responseText.trim() === "") {
+        // Empty response, return success message
+        return {
+          message: `Student ${
+            isActive ? "activated" : "deactivated"
+          } successfully`,
+        };
+      }
+      return JSON.parse(responseText);
+    } catch (jsonError) {
+      // If JSON parsing fails, still return success since response was ok
+      return {
+        message: `Student ${
+          isActive ? "activated" : "deactivated"
+        } successfully`,
+      };
+    }
+  } catch (error) {
+    console.error("Error updating student status:", error);
+    throw error;
+  }
+};

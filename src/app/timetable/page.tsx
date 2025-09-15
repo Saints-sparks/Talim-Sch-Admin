@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "@/app/lib/api/config"; // adjust import if needed
 import { teacherService } from "../services/teacher.service";
 import { BookOpen, Calendar, Clock, MapPin, Users } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 interface TimetableEntry {
   time: string;
@@ -19,19 +20,16 @@ interface Teacher {
   _id: string;
   firstName: string;
   lastName: string;
-  // add other properties if needed
 }
 
 interface Course {
   _id: string;
   title: string;
-  // add other properties if needed
 }
 
 interface Class {
   _id: string;
   name: string;
-  // add other properties if needed
 }
 
 interface Subject {
@@ -41,21 +39,19 @@ interface Subject {
 
 const Timetable = () => {
   const hourHeight = 120; // Height for each hour (in pixels)
-  const [startHour, setStartHour] = useState(8); // Configurable start hour
-  const [endHour, setEndHour] = useState(17); // Configurable end hour (5 PM)
+  const [startHour, setStartHour] = useState(8);
+  const [endHour, setEndHour] = useState(17);
   const [visibleDays, setVisibleDays] = useState([
     "Monday",
     "Tuesday",
     "Wednesday",
     "Thursday",
     "Friday",
-  ]); // Configurable visible days
+  ]);
 
-  // For current time indicator, using manualTime in 24-hour "HH:mm" format
   const [manualTime, setManualTime] = useState("10:32");
   const [currentTimePosition, setCurrentTimePosition] = useState(0);
 
-  // States for fetched data
   const [timetableEntries, setTimetableEntries] = useState<
     Record<string, TimetableEntry[]>
   >({});
@@ -67,6 +63,10 @@ const Timetable = () => {
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [isLoadingTimetable, setIsLoadingTimetable] = useState(false);
   const [timetableError, setTimetableError] = useState<string | null>(null);
+
+  // NEW: friendly flag for "no timetable created" (404)
+  const [noTimetable, setNoTimetable] = useState(false);
+
   const TIME_SLOTS = [
     "08:00 AM - 09:00 AM",
     "09:00 AM - 10:00 AM",
@@ -94,7 +94,6 @@ const Timetable = () => {
     return hours + minutes / 60;
   };
 
-  // Fetch classes on component mount
   useEffect(() => {
     const fetchClasses = async () => {
       setIsLoadingClasses(true);
@@ -128,13 +127,24 @@ const Timetable = () => {
 
       setIsLoadingTimetable(true);
       setTimetableError(null);
-      console.log(selectedClassId);
+      setNoTimetable(false); // reset friendly flag when (re)fetching
+      console.log("Fetching timetable for class:", selectedClassId);
       const url = `${API_ENDPOINTS.GET_TIMETABLE_BY_CLASS}/${selectedClassId}`;
 
       try {
         const res = await fetch(url, {
           headers: getAuthHeaders(),
         });
+
+        if (res.status === 404) {
+          // Friendly handling for "no timetable created yet"
+          setTimetableEntries({});
+          setNoTimetable(true);
+          setTimetableError(null);
+          console.info("No timetable exists for this class (404).");
+          return;
+        }
+
         if (!res.ok) throw new Error("Failed to fetch timetable");
 
         const data = await res.json();
@@ -142,17 +152,15 @@ const Timetable = () => {
 
         // Mapping the data to fix key names and format if necessary:
         const formattedTimetable = Object.keys(data).reduce((acc, day) => {
-          // Transform each entry in the array
           acc[day] = data[day].map((entry: any) => ({
-            // Spread all original properties; then override keys if needed
             ...entry,
-            // Fix the key name from "startTIme" to "startTime"
             startTime: entry.startTIme || entry.startTime,
           }));
           return acc;
         }, {} as Record<string, TimetableEntry[]>);
 
         setTimetableEntries(formattedTimetable);
+        setNoTimetable(false);
       } catch (error: any) {
         console.error("Error fetching timetable:", error);
         setTimetableError(error.message || "Failed to fetch timetable");
@@ -166,22 +174,20 @@ const Timetable = () => {
   }, [selectedClassId]);
 
   // Modal state and form inputs.
-  // Note: "subject" now holds the selected subject's ID while "course" holds the selected course's name (or ID, as needed).
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     classId: "",
     day: "",
     startTime: "",
     endTime: "",
-    subject: "", // Selected subject ID
-    courseId: "", // Selected course name (or id) – dependent on subject selection
+    subject: "",
+    courseId: "",
   });
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Calculate current time indicator position
   useEffect(() => {
     const [hours, minutes] = manualTime.split(":").map(Number);
     if (hours >= startHour && hours <= endHour) {
@@ -190,7 +196,6 @@ const Timetable = () => {
     }
   }, [manualTime, hourHeight, startHour]);
 
-  // Generate time slots based on start and end hour
   const generateTimeSlots = () => {
     const slots = [];
     for (let hour = startHour; hour <= endHour; hour++) {
@@ -201,7 +206,6 @@ const Timetable = () => {
     return slots;
   };
 
-  // Helper: get auth headers
   const getAuthHeaders = () => {
     const token = localStorage.getItem("accessToken");
     return {
@@ -218,7 +222,6 @@ const Timetable = () => {
     );
   };
 
-  // Fetch teachers on mount
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
@@ -241,7 +244,6 @@ const Timetable = () => {
     fetchTeachers();
   }, []);
 
-  // When modal is open, fetch subjects only (classes are now loaded on mount)
   useEffect(() => {
     if (isModalOpen) {
       const fetchSubjects = async () => {
@@ -269,12 +271,11 @@ const Timetable = () => {
     }
   }, [isModalOpen]);
 
-  // Handler for subject change, which then fetches courses by subject
   const handleSubjectChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const subjectId = e.target.value;
-    setFormData({ ...formData, subject: subjectId, courseId: "" }); // Reset courseId when subject changes
+    setFormData({ ...formData, subject: subjectId, courseId: "" });
     try {
       const res = await fetch(
         `${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`,
@@ -301,12 +302,10 @@ const Timetable = () => {
     const ampm = hour >= 12 ? "PM" : "AM";
     hour = hour % 12;
     if (hour === 0) hour = 12;
-    // Ensure two-digit hour format if needed (e.g., "08" if required)
     const formattedHour = hour < 10 ? `0${hour}` : hour.toString();
     return `${formattedHour}:${minute} ${ampm}`;
   };
 
-  // Handle form submission to create a new timetable entry
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const { classId, day, startTime, endTime, courseId } = formData;
@@ -315,12 +314,11 @@ const Timetable = () => {
       return;
     }
 
-    // Prepare the payload per expected API schema
     const payload = {
       classId,
-      courseId, // Use the course id from formData.course
+      courseId,
       day,
-      startTime: formatTime(startTime), // Format to "hh:mm AM/PM"
+      startTime: formatTime(startTime),
       endTime: formatTime(endTime),
     };
 
@@ -334,6 +332,10 @@ const Timetable = () => {
         throw new Error("Failed to create timetable entry");
       }
       const newEntry = await res.json();
+
+      // After creating an entry, ensure noTimetable is cleared (a timetable now exists)
+      setNoTimetable(false);
+
       setTimetableEntries((prev) => {
         const updatedEntries = { ...prev };
         if (!updatedEntries[newEntry.day]) {
@@ -344,7 +346,6 @@ const Timetable = () => {
       });
       toast.success("Timetable entry created successfully");
       toggleModal();
-      // Reset form inputs and courses list
       setFormData({
         classId: "",
         day: "",
@@ -363,7 +364,6 @@ const Timetable = () => {
   const getTimetableEntry = (day: string, timeSlot: string) => {
     const dayEntries = timetableEntries[day] || [];
 
-    // First, try exact matches
     let entry = dayEntries.find((entry) => {
       const startTime = entry.startTime || "";
       const exactMatch =
@@ -374,10 +374,9 @@ const Timetable = () => {
 
     if (entry) return entry;
 
-    // If no exact match, try time-based matching
-    const slotStart = timeSlot.split(" - ")[0]; // e.g., "08:00 AM"
-    const slotStartHour = parseInt(slotStart.split(":")[0]); // e.g., 8
-    const slotStartMinute = parseInt(slotStart.split(":")[1].split(" ")[0]); // e.g., 0
+    const slotStart = timeSlot.split(" - ")[0];
+    const slotStartHour = parseInt(slotStart.split(":")[0]);
+    const slotStartMinute = parseInt(slotStart.split(":")[1].split(" ")[0]);
 
     entry = dayEntries.find((entry) => {
       const startTime = entry.startTime || "";
@@ -386,10 +385,9 @@ const Timetable = () => {
       const entryStartHour = parseInt(startTime.split(":")[0]);
       const entryStartMinute = parseInt(startTime.split(":")[1].split(" ")[0]);
 
-      // Check if the entry starts within this time slot (within same hour)
       const match =
         entryStartHour === slotStartHour &&
-        Math.abs(entryStartMinute - slotStartMinute) <= 30; // Allow 30-minute tolerance
+        Math.abs(entryStartMinute - slotStartMinute) <= 30;
 
       return match;
     });
@@ -399,7 +397,6 @@ const Timetable = () => {
 
   // Skeleton loader component
   const TimetableSkeleton = () => (
-    // Loading State
     <div className="flex flex-col items-center justify-center py-20 px-6 bg-gradient-to-br from-white to-blue-50 rounded-xl border border-[#F0F0F0] shadow-sm">
       <div className="relative mb-6">
         <div className="w-20 h-20 border-4 border-blue-100 rounded-full"></div>
@@ -427,7 +424,6 @@ const Timetable = () => {
     </div>
   );
 
-  // Empty state component
   const EmptyState = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
       <div className="flex flex-col items-center justify-center py-12 px-6">
@@ -480,6 +476,89 @@ const Timetable = () => {
     </div>
   );
 
+  // NEW: Friendly "no timetable yet" state — replace placeholder SVG with the one you'll provide
+  const NoTimetableState = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="flex flex-col items-center justify-center py-12 px-6">
+        <div className="mb-6">
+          {/* Replace the <svg> below with your provided empty-state SVG */}
+          <svg
+            width="160"
+            height="120"
+            viewBox="0 0 160 120"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden
+          >
+            <rect width="160" height="120" rx="12" fill="#F1F5F9" />
+            <g transform="translate(28,28)">
+              <rect width="104" height="16" rx="4" fill="#E6EEF9" />
+              <rect y="28" width="72" height="12" rx="3" fill="#EBF1F8" />
+              <rect y="48" width="84" height="12" rx="3" fill="#EBF1F8" />
+              <circle cx="90" cy="40" r="10" fill="#DDEFFD" />
+            </g>
+          </svg>
+        </div>
+
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">
+          No Timetable Yet
+        </h3>
+        <p className="text-gray-600 text-center max-w-md mb-6 leading-relaxed">
+          It looks like a timetable hasn't been created for this class yet. You
+          can create one now — it'll only take a moment.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={toggleModal}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 font-medium shadow-md"
+          >
+            Add Timetable Entry
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Error panel for real errors (not 404)
+  const TimetableErrorPanel = ({ message }: { message: string }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8">
+      <div className="flex flex-col items-center justify-center py-12 px-6">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+          <svg
+            className="w-10 h-10 text-red-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-red-700 mb-3">
+          Error Loading Timetable
+        </h3>
+        <p className="text-red-600 text-center max-w-md mb-8">{message}</p>
+        <button
+          onClick={() => {
+            // try reloading
+            setTimetableError(null);
+            if (selectedClassId) {
+              // trigger re-fetch by toggling selectedClassId (or simply call fetch)
+              setSelectedClassId((s) => s + "");
+            }
+          }}
+          className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <style jsx>{`
@@ -524,23 +603,26 @@ const Timetable = () => {
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Select Class
                   </label>
-                  <select
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    disabled={isLoadingClasses}
-                  >
-                    <option value="">
-                      {isLoadingClasses
-                        ? "Loading classes..."
-                        : "Choose a class"}
-                    </option>
-                    {classes.map((cls) => (
-                      <option key={cls._id} value={cls._id}>
-                        {cls.name}
+                  <div className="relative">
+                    <select
+                      value={selectedClassId}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      className="w-full px-4 py-3 pr-10 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none"
+                      disabled={isLoadingClasses}
+                    >
+                      <option value="">
+                        {isLoadingClasses
+                          ? "Loading classes..."
+                          : "Choose a class"}
                       </option>
-                    ))}
-                  </select>
+                      {classes.map((cls) => (
+                        <option key={cls._id} value={cls._id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
 
                 <button
@@ -578,38 +660,41 @@ const Timetable = () => {
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Days Filter
                   </label>
-                  <select
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "all") {
-                        setVisibleDays([
-                          "Monday",
-                          "Tuesday",
-                          "Wednesday",
-                          "Thursday",
-                          "Friday",
-                        ]);
-                      } else if (value === "weekdays") {
-                        setVisibleDays([
-                          "Monday",
-                          "Tuesday",
-                          "Wednesday",
-                          "Thursday",
-                          "Friday",
-                        ]);
-                      } else if (value === "mon-wed") {
-                        setVisibleDays(["Monday", "Tuesday", "Wednesday"]);
-                      } else if (value === "thu-fri") {
-                        setVisibleDays(["Thursday", "Friday"]);
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    <option value="all">All Days</option>
-                    <option value="weekdays">Weekdays</option>
-                    <option value="mon-wed">Mon - Wed</option>
-                    <option value="thu-fri">Thu - Fri</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "all") {
+                          setVisibleDays([
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                          ]);
+                        } else if (value === "weekdays") {
+                          setVisibleDays([
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                          ]);
+                        } else if (value === "mon-wed") {
+                          setVisibleDays(["Monday", "Tuesday", "Wednesday"]);
+                        } else if (value === "thu-fri") {
+                          setVisibleDays(["Thursday", "Friday"]);
+                        }
+                      }}
+                      className="w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none"
+                    >
+                      <option value="all">All Days</option>
+                      <option value="weekdays">Weekdays</option>
+                      <option value="mon-wed">Mon - Wed</option>
+                      <option value="thu-fri">Thu - Fri</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* Start Hour */}
@@ -617,21 +702,24 @@ const Timetable = () => {
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Start Hour
                   </label>
-                  <select
-                    value={startHour}
-                    onChange={(e) => setStartHour(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {i === 0
-                          ? "12 AM"
-                          : i > 12
-                          ? `${i - 12} PM`
-                          : `${i} ${i === 12 ? "PM" : "AM"}`}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={startHour}
+                      onChange={(e) => setStartHour(Number(e.target.value))}
+                      className="w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {i === 0
+                            ? "12 AM"
+                            : i > 12
+                            ? `${i - 12} PM`
+                            : `${i} ${i === 12 ? "PM" : "AM"}`}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* End Hour */}
@@ -639,75 +727,44 @@ const Timetable = () => {
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     End Hour
                   </label>
-                  <select
-                    value={endHour}
-                    onChange={(e) => setEndHour(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i} disabled={i <= startHour}>
-                        {i === 0
-                          ? "12 AM"
-                          : i > 12
-                          ? `${i - 12} PM`
-                          : `${i} ${i === 12 ? "PM" : "AM"}`}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={endHour}
+                      onChange={(e) => setEndHour(Number(e.target.value))}
+                      className="w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i} disabled={i <= startHour}>
+                          {i === 0
+                            ? "12 AM"
+                            : i > 12
+                            ? `${i - 12} PM`
+                            : `${i} ${i === 12 ? "PM" : "AM"}`}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {/* Timetable Content */}
+
           {!selectedClassId ? (
             <EmptyState />
           ) : isLoadingTimetable ? (
             <TimetableSkeleton />
+          ) : noTimetable ? (
+            // NEW: Friendly UI when API returned 404 / no timetable created yet
+            <NoTimetableState />
           ) : timetableError ? (
-            <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8">
-              <div className="flex flex-col items-center justify-center py-12 px-6">
-                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                  <svg
-                    className="w-10 h-10 text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-red-700 mb-3">
-                  Error Loading Timetable
-                </h3>
-                <p className="text-red-600 text-center max-w-md mb-8">
-                  {timetableError}
-                </p>
-                <button
-                  onClick={() => {
-                    setTimetableError(null);
-                    if (selectedClassId) {
-                      // Trigger refetch by changing the state
-                      const currentId = selectedClassId;
-                      setSelectedClassId("");
-                      setTimeout(() => setSelectedClassId(currentId), 100);
-                    }
-                  }}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
+            // Real error UI
+            <TimetableErrorPanel message={timetableError} />
           ) : (
-            // Timetable Grid
+            /* Desktop / Mobile timetable rendering (unchanged) */
             <div className="bg-white rounded-xl border border-[#F0F0F0] overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-              {/* Mobile Card View */}
               {isMobileView ? (
                 <div className="p-4 space-y-4">
                   {visibleDays.map((day) => {
@@ -715,7 +772,7 @@ const Timetable = () => {
                     const dayEntries = TIME_SLOTS.map((timeSlot) => ({
                       timeSlot,
                       entry: getTimetableEntry(day, timeSlot),
-                    })).filter((item) => item.entry); // Only show slots with classes
+                    })).filter((item) => item.entry);
 
                     return (
                       <div
@@ -742,7 +799,6 @@ const Timetable = () => {
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            {/* Show all entries for this day */}
                             {allDayEntries.map((entry, index) => (
                               <div
                                 key={index}
@@ -785,7 +841,6 @@ const Timetable = () => {
                   })}
                 </div>
               ) : (
-                /* Desktop Table View */
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[900px]">
                     <thead>
@@ -861,7 +916,6 @@ const Timetable = () => {
                                       </div>
                                     </div>
 
-                                    {/* Time indicator */}
                                     <div className="mt-2 pt-2 border-t border-blue-400/30">
                                       <div className="text-xs text-blue-200 flex items-center gap-1">
                                         <MapPin className="w-3 h-3" />
@@ -891,7 +945,6 @@ const Timetable = () => {
                 </div>
               )}
 
-              {/* Summary footer */}
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-t-2 border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-3 text-gray-700">
@@ -927,7 +980,7 @@ const Timetable = () => {
           )}
         </div>
 
-        {/* Modal for creating a new timetable entry */}
+        {/* Modal omitted for brevity — unchanged from your original component */}
         {isModalOpen && (
           <div
             className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 ease-in-out ${

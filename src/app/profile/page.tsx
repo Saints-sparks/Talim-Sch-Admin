@@ -27,7 +27,18 @@ import {
   getSchoolDashboard,
   type SchoolDashboardData,
 } from "../services/dashboard.service";
-import { getSchoolId } from "../services/school.service";
+import {
+  getSchoolId,
+  updateSchool,
+  type UpdateSchoolPayload,
+} from "../services/school.service";
+import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
+import { getLocalStorageItem } from "../utils/localStorage";
+import {
+  authService,
+  type UserProfile,
+  type UpdateUserProfilePayload,
+} from "../services/auth.service";
 
 type Tab = "school" | "admin";
 
@@ -39,9 +50,11 @@ interface FormData {
   state: string;
   country: string;
   logo: string | null;
-  adminName: string;
+  adminFirstName: string;
+  adminLastName: string;
   adminEmail: string;
   adminPhone: string;
+  adminAvatar: string | null;
 }
 
 export default function Profile() {
@@ -54,7 +67,12 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [adminAvatarPreview, setAdminAvatarPreview] = useState<string | null>(
+    null
+  );
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const [formData, setFormData] = useState<FormData>({
     schoolName: "",
@@ -64,9 +82,11 @@ export default function Profile() {
     state: "",
     country: "",
     logo: null,
-    adminName: "",
+    adminFirstName: "",
+    adminLastName: "",
     adminEmail: "",
     adminPhone: "",
+    adminAvatar: null,
   });
 
   // Load user data and school data on component mount
@@ -75,28 +95,66 @@ export default function Profile() {
       try {
         setIsLoadingData(true);
 
-        // Load user data from localStorage
+        // Load user data from API
         const userData = localStorage.getItem("user");
         if (userData) {
           const user = JSON.parse(userData);
-          // Construct full name from firstName and lastName
-          const fullName = `${user.firstName || ""} ${
-            user.lastName || ""
-          }`.trim();
+          const userId = user.userId;
 
-          setFormData((prev) => ({
-            ...prev,
-            adminName: fullName || user.name || "Administrator",
-            adminEmail: user.email || "",
-            adminPhone: user.phoneNumber || user.phone || "",
-          }));
+          try {
+            // Fetch detailed user profile from API
+            const userProfile: UserProfile = await authService.getUserProfile(
+              userId
+            );
+
+            // Update form data with API data
+            setFormData((prev) => ({
+              ...prev,
+              adminFirstName: userProfile.firstName || "",
+              adminLastName: userProfile.lastName || "",
+              adminEmail: userProfile.email || "",
+              adminPhone: userProfile.phoneNumber || "",
+              adminAvatar: userProfile.userAvatar || null,
+            }));
+
+            // Also extract school data from nested schoolId if available
+            if (userProfile.schoolId) {
+              setFormData((prev) => ({
+                ...prev,
+                schoolName: userProfile.schoolId.name || "",
+                schoolPrefix: userProfile.schoolId.schoolPrefix || "",
+                street: userProfile.schoolId.physicalAddress || "",
+                city: "", // You might need to parse this from physicalAddress or get from another field
+                state: userProfile.schoolId.location?.state || "",
+                country: userProfile.schoolId.location?.country || "",
+                logo: userProfile.schoolId.logo || null,
+              }));
+            }
+          } catch (apiError) {
+            console.error("Error loading user profile from API:", apiError);
+            // Fallback to localStorage data if API fails
+            const fullName = `${user.firstName || ""} ${
+              user.lastName || ""
+            }`.trim();
+            setFormData((prev) => ({
+              ...prev,
+              adminFirstName: user.firstName || user.name?.split(" ")[0] || "",
+              adminLastName:
+                user.lastName || user.name?.split(" ").slice(1).join(" ") || "",
+              adminEmail: user.email || "",
+              adminPhone: user.phoneNumber || user.phone || "",
+              adminAvatar: null,
+            }));
+          }
         } else {
           // Set default admin data if no user in localStorage
           setFormData((prev) => ({
             ...prev,
-            adminName: "Administrator",
+            adminFirstName: "Administrator",
+            adminLastName: "",
             adminEmail: "",
             adminPhone: "",
+            adminAvatar: null,
           }));
         }
 
@@ -117,6 +175,7 @@ export default function Profile() {
                 city: prev.city || "Lagos", // Keep existing or set default
                 state: prev.state || "Lagos State",
                 country: prev.country || "Nigeria",
+                logo: dashboardData.schoolInfo.logo || null,
               }));
             }
           } catch (schoolError) {
@@ -165,7 +224,8 @@ export default function Profile() {
       if (!formData.state) return "State is required";
       if (!formData.country) return "Country is required";
     } else {
-      if (!formData.adminName.trim()) return "Admin name is required";
+      if (!formData.adminFirstName.trim()) return "First name is required";
+      if (!formData.adminLastName.trim()) return "Last name is required";
       if (!formData.adminEmail.trim()) return "Admin email is required";
       if (!formData.adminPhone.trim()) return "Phone number is required";
 
@@ -211,31 +271,71 @@ export default function Profile() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size should be less than 5MB");
+      // Validate file using the utility function
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Invalid file");
+        e.target.value = ""; // Reset input
         return;
       }
 
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select a valid image file");
-        return;
-      }
-
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target) {
-          const imageUrl = event.target.result as string;
-          setFormData({ ...formData, logo: imageUrl });
-          setAvatarPreview(imageUrl);
+          if (activeTab === "school") {
+            setAvatarPreview(event.target.result as string);
+          } else {
+            setAdminAvatarPreview(event.target.result as string);
+          }
         }
       };
       reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      setIsUploadingImage(true);
+      setUploadProgress(0);
+
+      const uploadingToast = toast.loading("Uploading image...");
+
+      try {
+        const imageUrl = await uploadToCloudinary(file, (progress) => {
+          setUploadProgress(progress);
+        });
+
+        // Update form data with the Cloudinary URL based on active tab
+        if (activeTab === "school") {
+          setFormData({ ...formData, logo: imageUrl });
+        } else {
+          setFormData({ ...formData, adminAvatar: imageUrl });
+        }
+        toast.success("Image uploaded successfully!", { id: uploadingToast });
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to upload image",
+          {
+            id: uploadingToast,
+          }
+        );
+
+        // Reset preview on error
+        if (activeTab === "school") {
+          setAvatarPreview(null);
+          setFormData({ ...formData, logo: null });
+        } else {
+          setAdminAvatarPreview(null);
+          setFormData({ ...formData, adminAvatar: null });
+        }
+      } finally {
+        setIsUploadingImage(false);
+        setUploadProgress(0);
+        e.target.value = ""; // Reset input for potential re-upload
+      }
     }
   };
 
@@ -243,6 +343,12 @@ export default function Profile() {
     const validationError = validateForm();
     if (validationError) {
       toast.error(validationError);
+      return;
+    }
+
+    // Prevent submission if image is still uploading
+    if (isUploadingImage) {
+      toast.error("Please wait for image upload to complete");
       return;
     }
 
@@ -254,12 +360,116 @@ export default function Profile() {
     );
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (activeTab === "school") {
+        // Debug localStorage contents
+        console.log("=== DEBUGGING LOCALSTORAGE ===");
+        console.log(
+          "Raw user data from localStorage:",
+          localStorage.getItem("user")
+        );
+        console.log(
+          "Raw accessToken from localStorage:",
+          localStorage.getItem("accessToken")
+        );
+        console.log("Parsed user data:", getLocalStorageItem("user"));
+        console.log("================================");
 
-      console.log("Form data:", formData);
-      if (password) {
-        console.log("Password updated");
+        // Update school information
+        const schoolId = getSchoolId();
+        console.log("Retrieved school ID:", schoolId);
+
+        if (!schoolId) {
+          throw new Error(
+            "School ID not found. Please ensure you are logged in properly."
+          );
+        }
+
+        // Prepare school update payload according to API specification
+        const schoolPayload: UpdateSchoolPayload = {
+          name: formData.schoolName.trim(),
+          physicalAddress: formData.street.trim(),
+          location: {
+            country: formData.country,
+            state: formData.state,
+          },
+          // Add primary contacts - this might need to be customized based on your needs
+          primaryContacts: [
+            {
+              name: `${formData.adminFirstName} ${formData.adminLastName}`.trim(),
+              phone: formData.adminPhone,
+              email: formData.adminEmail,
+              role: "Administrator",
+            },
+          ],
+          active: true,
+        };
+
+        // Only include logo if it exists
+        if (formData.logo) {
+          schoolPayload.logo = formData.logo;
+        }
+
+        console.log("About to update school with payload:", schoolPayload);
+
+        try {
+          console.log("Calling updateSchool function...");
+          const updatedSchool = await updateSchool(schoolId, schoolPayload);
+          console.log("School updated successfully:", updatedSchool);
+        } catch (updateError) {
+          console.log("Error caught in updateSchool call:", updateError);
+          console.log("Error type:", typeof updateError);
+          if (updateError instanceof Error) {
+            console.log("Error message:", updateError.message);
+            console.log("Error stack:", updateError.stack);
+          }
+          console.log("Full error:", updateError);
+          throw updateError;
+        }
+      } else {
+        // Update administrator details
+        console.log("Administrator data to update:", {
+          firstName: formData.adminFirstName,
+          lastName: formData.adminLastName,
+          email: formData.adminEmail,
+          phone: formData.adminPhone,
+          avatar: formData.adminAvatar,
+          password: password ? "***" : "not changed",
+        });
+
+        // Get the current user ID from localStorage or user context
+        const currentUser = getLocalStorageItem("user");
+        if (!currentUser || !currentUser.userId) {
+          throw new Error(
+            "User ID not found. Please ensure you are logged in properly."
+          );
+        }
+
+        // Prepare admin profile update payload
+        const adminPayload: UpdateUserProfilePayload = {
+          firstName: formData.adminFirstName.trim(),
+          lastName: formData.adminLastName.trim(),
+          phoneNumber: formData.adminPhone.trim(),
+        };
+
+        // Only include avatar if it exists
+        if (formData.adminAvatar) {
+          adminPayload.userAvatar = formData.adminAvatar;
+        }
+
+        // Note: Email updates might require additional verification
+        // dateOfBirth, gender, and other optional fields can be added based on your form
+
+        console.log("About to update user profile with payload:", adminPayload);
+
+        try {
+          const updatedProfile = await authService.updateUserProfile(
+            adminPayload
+          );
+          console.log("User profile updated successfully:", updatedProfile);
+        } catch (updateError) {
+          console.log("Error caught in updateUserProfile call:", updateError);
+          throw updateError;
+        }
       }
 
       toast.success(
@@ -276,7 +486,9 @@ export default function Profile() {
       setConfirmPassword("");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile. Please try again.", {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(`Update failed: ${errorMessage}`, {
         id: loadingToast,
       });
     } finally {
@@ -455,8 +667,20 @@ export default function Profile() {
                               ) : (
                                 <School className="w-16 h-16 text-blue-600" />
                               )}
+
+                              {/* Upload Progress Overlay */}
+                              {isUploadingImage && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                  <div className="text-white text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                                    <div className="text-sm font-medium">
+                                      {uploadProgress}%
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            {isEditing && (
+                            {isEditing && !isUploadingImage && (
                               <motion.label
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
@@ -477,7 +701,9 @@ export default function Profile() {
                               School Logo
                             </h3>
                             <p className="text-sm text-gray-600">
-                              Upload your institution logo
+                              {isUploadingImage
+                                ? "Uploading image..."
+                                : "Upload your institution logo"}
                             </p>
                           </div>
                         </div>
@@ -685,13 +911,18 @@ export default function Profile() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={handleUpdate}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || isUploadingImage}
                           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                         >
                           {isSubmitting ? (
                             <>
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                               Updating...
+                            </>
+                          ) : isUploadingImage ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Uploading...
                             </>
                           ) : (
                             <>
@@ -747,11 +978,11 @@ export default function Profile() {
                         <div className="text-center">
                           <div className="relative inline-block">
                             <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                              {formData.logo || avatarPreview ? (
+                              {formData.adminAvatar || adminAvatarPreview ? (
                                 <img
                                   src={
-                                    formData.logo ||
-                                    avatarPreview ||
+                                    formData.adminAvatar ||
+                                    adminAvatarPreview ||
                                     "/placeholder.svg"
                                   }
                                   alt="Administrator Avatar"
@@ -760,8 +991,20 @@ export default function Profile() {
                               ) : (
                                 <User className="w-16 h-16 text-emerald-600" />
                               )}
+
+                              {/* Upload Progress Overlay */}
+                              {isUploadingImage && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                  <div className="text-white text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                                    <div className="text-sm font-medium">
+                                      {uploadProgress}%
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            {isEditing && (
+                            {isEditing && !isUploadingImage && (
                               <motion.label
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
@@ -782,7 +1025,9 @@ export default function Profile() {
                               Profile Picture
                             </h3>
                             <p className="text-sm text-gray-600">
-                              Upload your profile photo
+                              {isUploadingImage
+                                ? "Uploading image..."
+                                : "Upload your profile photo"}
                             </p>
                           </div>
                         </div>
@@ -793,15 +1038,35 @@ export default function Profile() {
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <User className="w-4 h-4 text-emerald-600" />
-                            Full Name
+                            First Name
                           </label>
                           <input
                             type="text"
-                            name="adminName"
-                            value={formData.adminName}
+                            name="adminFirstName"
+                            value={formData.adminFirstName}
                             onChange={handleInputChange}
                             disabled={!isEditing}
-                            placeholder="Enter your full name"
+                            placeholder="Enter your first name"
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                              isEditing
+                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                                : "border-gray-100 bg-gray-50"
+                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                            <User className="w-4 h-4 text-emerald-600" />
+                            Last Name
+                          </label>
+                          <input
+                            type="text"
+                            name="adminLastName"
+                            value={formData.adminLastName}
+                            onChange={handleInputChange}
+                            disabled={!isEditing}
+                            placeholder="Enter your last name"
                             className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
                               isEditing
                                 ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
@@ -950,13 +1215,18 @@ export default function Profile() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={handleUpdate}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || isUploadingImage}
                           className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                         >
                           {isSubmitting ? (
                             <>
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                               Updating...
+                            </>
+                          ) : isUploadingImage ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Uploading...
                             </>
                           ) : (
                             <>

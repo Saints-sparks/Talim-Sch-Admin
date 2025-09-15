@@ -2,7 +2,6 @@ import type React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiEdit,
-  FiTrash,
   FiPlus,
   FiUsers,
   FiBook,
@@ -23,7 +22,6 @@ interface ClassTableProps {
   onAdd: () => void;
   onView: (classId: string) => void;
   onEdit: (classId: string) => void;
-  onDelete: (classId: string) => void;
   onRetry: () => void;
 }
 
@@ -33,7 +31,6 @@ const ClassTable: React.FC<ClassTableProps> = ({
   onAdd,
   onView,
   onEdit,
-  onDelete,
   onRetry,
 }) => {
   const getCapacityStatus = (
@@ -291,15 +288,6 @@ const ClassTable: React.FC<ClassTableProps> = ({
                                 >
                                   <FiEdit className="w-5 h-5" />
                                 </motion.button>
-                                <motion.button
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                                  onClick={() => onDelete(item._id)}
-                                  title="Delete Class"
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                >
-                                  <FiTrash className="w-5 h-5" />
-                                </motion.button>
                               </div>
                             </td>
                           </motion.tr>
@@ -421,15 +409,6 @@ const ClassTable: React.FC<ClassTableProps> = ({
                           whileTap={{ scale: 0.9 }}
                         >
                           <FiEdit className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                          onClick={() => onDelete(item._id)}
-                          title="Delete"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <FiTrash className="w-4 h-4" />
                         </motion.button>
                       </div>
                     </motion.div>
