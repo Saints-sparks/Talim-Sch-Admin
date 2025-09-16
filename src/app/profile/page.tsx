@@ -534,7 +534,7 @@ export default function Profile() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-white border-b border-gray-200 shadow-sm"
+            className="bg-white border-b border-gray-200 shadow-sm mx-6 my-4 rounded-2xl"
           >
             <div className="container mx-auto p-6">
               <div className="flex items-center justify-between">
@@ -542,7 +542,7 @@ export default function Profile() {
                   <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
                     <User className="w-6 h-6 text-white" />
                   </div>
-                  <div>
+                  <div className="">
                     <h1 className="text-3xl font-bold text-gray-900">
                       Profile Settings
                     </h1>
