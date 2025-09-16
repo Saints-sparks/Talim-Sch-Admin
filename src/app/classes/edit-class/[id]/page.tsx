@@ -70,6 +70,8 @@ const EditClass: React.FC = () => {
   const [isAssigningTeacher, setIsAssigningTeacher] = useState(false);
   const [error, setError] = useState<string>("");
   const [activeTab, setActiveTab] = useState("details");
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -127,7 +129,10 @@ const EditClass: React.FC = () => {
         setFormData({
           name: data.name || "",
           classDescription: data.classDescription || "",
-          classCapacity: data.classCapacity || "",
+          classCapacity:
+            data.classCapacity !== undefined && data.classCapacity !== null
+              ? String(data.classCapacity)
+              : "",
         });
 
         // Fetch teachers list
@@ -165,6 +170,9 @@ const EditClass: React.FC = () => {
   // Handle class update (Save Changes button)
   const handleSubmit = async () => {
     setIsSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
     try {
       if (!classId) {
         throw new Error("Class ID is required");
@@ -185,14 +193,56 @@ const EditClass: React.FC = () => {
         classCapacity: formData.classCapacity,
       });
 
-      toast.success("Class updated successfully!");
+      // Show success message
+      const successMsg = "Class updated successfully!";
+      setSuccessMessage(successMsg);
+      toast.success(successMsg, {
+        position: "top-right",
+        autoClose: 3000,
+      });
 
-      // Refresh class details
+      // Refresh class details to show updated data
       const updatedData = await getClass(classId);
       setClassData(updatedData);
+
+      // Redirect to class profile after a short delay
+      setTimeout(() => {
+        router.push(`/classes/${classId}`);
+      }, 2000);
     } catch (error: any) {
       console.error("Error updating class:", error);
-      toast.error(error.message || "Failed to update class");
+
+      // More detailed error handling
+      let errorMessage = "Failed to update class";
+
+      if (error.message?.includes("Class name is required")) {
+        errorMessage = "Please enter a valid class name";
+      } else if (error.message?.includes("Valid class capacity is required")) {
+        errorMessage = "Please enter a valid class capacity (greater than 0)";
+      } else if (error.message?.includes("classCapacity must be a string")) {
+        errorMessage = "Class capacity format is invalid";
+      } else if (
+        error.message?.includes("unauthorized") ||
+        error.message?.includes("forbidden")
+      ) {
+        errorMessage = "You don't have permission to update this class";
+      } else if (error.message?.includes("not found")) {
+        errorMessage = "Class not found. It may have been deleted.";
+      } else if (
+        error.message?.includes("network") ||
+        error.message?.includes("fetch")
+      ) {
+        errorMessage =
+          "Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setErrorMessage(errorMessage);
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -201,7 +251,10 @@ const EditClass: React.FC = () => {
   // Handle teacher assignment (separate Assign Teacher button)
   const handleAssignTeacher = async () => {
     if (!selectedTeacher) {
-      toast.error("Please select a teacher to assign");
+      toast.error("Please select a teacher to assign", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
 
@@ -227,10 +280,22 @@ const EditClass: React.FC = () => {
           "Teacher assignment appeared successful but classTeacherId is null"
         );
         toast.warning(
-          "Teacher assignment may not have completed properly. Please refresh the page."
+          "Teacher assignment may not have completed properly. Please refresh the page.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
         );
       } else {
-        toast.success("Teacher assigned successfully!");
+        toast.success(
+          `${getTeacherName(
+            selectedTeacher
+          )} has been assigned as class teacher!`,
+          {
+            position: "top-right",
+            autoClose: 4000,
+          }
+        );
       }
 
       setClassData(updatedData);
@@ -242,28 +307,33 @@ const EditClass: React.FC = () => {
     } catch (error: any) {
       console.error("Error assigning teacher:", error);
 
-      // Provide specific error messages based on error type
+      // More detailed error messages
+      let errorMessage = "Failed to assign teacher";
+
       if (error.message?.includes("not found")) {
-        toast.error("Teacher or class not found. Please try again.");
+        errorMessage = "Teacher or class not found. Please try again.";
       } else if (
         error.message?.includes("unauthorized") ||
         error.message?.includes("forbidden")
       ) {
-        toast.error(
-          "You don't have permission to assign teachers to this class."
-        );
+        errorMessage =
+          "You don't have permission to assign teachers to this class.";
+      } else if (error.message?.includes("already assigned")) {
+        errorMessage = "This teacher is already assigned to another class.";
       } else if (
         error.message?.includes("network") ||
         error.message?.includes("fetch")
       ) {
-        toast.error(
-          "Network error. Please check your connection and try again."
-        );
-      } else {
-        toast.error(
-          error.message || "Failed to assign teacher. Please try again."
-        );
+        errorMessage =
+          "Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsAssigningTeacher(false);
     }
@@ -447,6 +517,82 @@ const EditClass: React.FC = () => {
                   </div>
 
                   <div className="p-6">
+                    {/* Success/Error Messages */}
+                    {successMessage && (
+                      <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="w-5 h-5 text-green-400"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-green-800">
+                              {successMessage}
+                            </p>
+                            <p className="text-sm text-green-700 mt-1">
+                              Redirecting you to the class profile...
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {errorMessage && (
+                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="w-5 h-5 text-red-400"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-red-800">
+                              Error
+                            </p>
+                            <p className="text-sm text-red-700 mt-1">
+                              {errorMessage}
+                            </p>
+                          </div>
+                          <div className="ml-auto pl-3">
+                            <button
+                              onClick={() => setErrorMessage("")}
+                              className="inline-flex text-red-400 hover:text-red-600"
+                            >
+                              <span className="sr-only">Dismiss</span>
+                              <svg
+                                className="w-5 h-5"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-6">
                       {/* Class Name */}
                       <div>

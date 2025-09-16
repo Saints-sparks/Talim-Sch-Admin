@@ -327,7 +327,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                 <motion.div
                   className={cn(
                     "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 relative",
-                    pathname === item.path
+                    pathname.startsWith(item.path)
                       ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-100"
                       : "text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
                   )}
@@ -338,7 +338,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   <div
                     className={cn(
                       "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300",
-                      pathname === item.path
+                      pathname.startsWith(item.path)
                         ? "bg-white shadow-sm"
                         : "group-hover:bg-white group-hover:shadow-sm"
                     )}
@@ -359,7 +359,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                     </motion.div>
                   )}
                   {/* Active indicator */}
-                  {pathname === item.path && (
+                  {pathname.startsWith(item.path) && (
                     <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"></div>
                   )}
                 </motion.div>

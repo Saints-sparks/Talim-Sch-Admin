@@ -54,20 +54,12 @@ import {
   Teacher,
   Course,
 } from "@/app/services/subjects.service";
+import CourseModal from "@/components/CourseModal";
 
 interface NewSubject {
   name: string;
   code: string;
   classId?: string;
-}
-
-interface NewCourse {
-  title: string;
-  description: string;
-  courseCode: string;
-  teacherId: string;
-  classId: string;
-  subjectId: string;
 }
 
 // Loading component for Suspense fallback
@@ -109,27 +101,10 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Course Modal States
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [courseMode, setCourseMode] = useState<"add" | "edit">("add");
+  const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">("add");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
-  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [activeSubjectForCourse, setActiveSubjectForCourse] =
     useState<Subject | null>(null);
-
-  // Search states for dropdowns
-  const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
-  const [classSearchTerm, setClassSearchTerm] = useState("");
-  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
-  const [showClassDropdown, setShowClassDropdown] = useState(false);
-
-  const [newCourse, setNewCourse] = useState<NewCourse>({
-    title: "",
-    description: "",
-    courseCode: "",
-    teacherId: "",
-    classId: "",
-    subjectId: "",
-  });
 
   useEffect(() => {
     setMounted(true);
@@ -150,16 +125,38 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Handle URL action after data is loaded
   useEffect(() => {
-    if (!loading && initialAction === "add-course" && subjects.length > 0) {
-      // Open course modal with the first available subject
-      const firstSubject = subjects[0];
-      if (firstSubject) {
-        openAddCourseModal(firstSubject);
-      } else {
-        toast.error("No subjects available. Please create a subject first.");
+    if (!loading && subjects.length > 0) {
+      if (initialAction === "add-course") {
+        // Open course modal with the first available subject
+        const firstSubject = subjects[0];
+        if (firstSubject) {
+          openAddCourseModal(firstSubject);
+        } else {
+          toast.error("No subjects available. Please create a subject first.");
+        }
+      } else if (initialAction === "edit-course") {
+        // Handle edit course from URL
+        const courseId = searchParams?.get("courseId");
+        if (courseId) {
+          // Find the course in all subjects
+          let foundCourse: Course | null = null;
+          for (const subject of subjects) {
+            if (subject.courses) {
+              foundCourse =
+                subject.courses.find((c) => c._id === courseId) || null;
+              if (foundCourse) break;
+            }
+          }
+
+          if (foundCourse) {
+            openEditCourseModal(foundCourse);
+          } else {
+            toast.error("Course not found.");
+          }
+        }
       }
     }
-  }, [loading, initialAction, subjects]);
+  }, [loading, initialAction, subjects, searchParams]);
 
   const fetchAllData = async () => {
     if (typeof window === "undefined" || !mounted) return;
@@ -277,99 +274,22 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Course Functions
   const openAddCourseModal = async (subject: Subject) => {
-    setCourseMode("add");
+    setCourseModalMode("add");
     setSelectedCourse(null);
     setActiveSubjectForCourse(subject);
-
-    // Reset search states
-    setTeacherSearchTerm("");
-    setClassSearchTerm("");
-    setShowTeacherDropdown(false);
-    setShowClassDropdown(false);
-
-    setNewCourse({
-      title: "",
-      description: "",
-      courseCode: "",
-      teacherId: "",
-      classId: subject.classId || "",
-      subjectId: subject._id,
-    });
-
     setShowCourseModal(true);
-
-    // Ensure teachers are always fetched when opening the modal
-    setIsLoadingTeachers(true);
-    try {
-      await fetchTeachers();
-    } catch (error) {
-      console.error("Error fetching teachers for course modal:", error);
-      toast.error("Failed to load teachers");
-    } finally {
-      setIsLoadingTeachers(false);
-    }
   };
 
   const openEditCourseModal = async (course: Course) => {
-    setCourseMode("edit");
+    setCourseModalMode("edit");
     setSelectedCourse(course);
-
-    // Reset search states
-    setTeacherSearchTerm("");
-    setClassSearchTerm("");
-    setShowTeacherDropdown(false);
-    setShowClassDropdown(false);
-
-    setNewCourse({
-      title: course.title,
-      description: course.description,
-      courseCode: course.courseCode,
-      teacherId: course.teacherId || "",
-      classId: course.classId || "",
-      subjectId: course.subjectId,
-    });
-
+    setActiveSubjectForCourse(null);
     setShowCourseModal(true);
-
-    // Ensure teachers are always fetched when opening the modal
-    setIsLoadingTeachers(true);
-    try {
-      await fetchTeachers();
-    } catch (error) {
-      console.error("Error fetching teachers for course modal:", error);
-      toast.error("Failed to load teachers");
-    } finally {
-      setIsLoadingTeachers(false);
-    }
   };
 
-  const handleCourseSubmit = async () => {
-    if (!newCourse.title || !newCourse.courseCode || !newCourse.subjectId) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    setIsSubmittingCourse(true);
-    try {
-      if (typeof window === "undefined" || !mounted) return;
-
-      if (courseMode === "add") {
-        await createCourse(newCourse);
-      } else if (selectedCourse) {
-        await updateCourseService(selectedCourse._id, newCourse);
-      }
-
-      toast.success(
-        `Course ${courseMode === "add" ? "created" : "updated"} successfully!`
-      );
-      closeCourseModal();
-      fetchSubjects(); // This will now fetch subjects with their courses
-    } catch (error: any) {
-      console.error(`Error ${courseMode}ing course:`, error);
-      toast.error(error.message || `Failed to ${courseMode} course`);
-    } finally {
-      setIsSubmittingCourse(false);
-    }
+  const handleCourseModalSuccess = () => {
+    setShowCourseModal(false);
+    fetchSubjects(); // Refresh the subjects with their courses
   };
 
   // Delete Functions
@@ -411,16 +331,6 @@ const CurriculumStructureMain: React.FC = () => {
     }
   };
 
-  // Course modal management
-  const closeCourseModal = () => {
-    setShowCourseModal(false);
-    setTeacherSearchTerm("");
-    setClassSearchTerm("");
-    setShowTeacherDropdown(false);
-    setShowClassDropdown(false);
-    setIsLoadingTeachers(false);
-  };
-
   // Helper Functions
   const getClassName = (classId: string) => {
     const classItem = classes.find((c) => c._id === classId);
@@ -436,52 +346,6 @@ const CurriculumStructureMain: React.FC = () => {
     return firstName || lastName
       ? `${firstName} ${lastName}`.trim()
       : "No Teacher Assigned";
-  };
-
-  // Filter functions for searchable dropdowns
-  const filteredTeachers = teachers.filter((teacher) => {
-    // Add null checks to prevent errors
-    if (!teacher) return false;
-
-    const firstName = teacher.firstName || "";
-    const lastName = teacher.lastName || "";
-    const email = teacher.email || "";
-
-    const fullName = `${firstName} ${lastName}`.toLowerCase();
-    const emailLower = email.toLowerCase();
-    const searchLower = teacherSearchTerm.toLowerCase();
-
-    return fullName.includes(searchLower) || emailLower.includes(searchLower);
-  });
-
-  const filteredClasses = classes.filter((cls) => {
-    if (!cls) return false;
-
-    const searchLower = classSearchTerm.toLowerCase();
-    const name = cls.name || "";
-    const gradeLevel = cls.gradeLevel || "";
-
-    return (
-      name.toLowerCase().includes(searchLower) ||
-      gradeLevel.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // Get selected teacher/class display names
-  const getSelectedTeacherDisplay = () => {
-    if (!newCourse.teacherId) return "";
-    const teacher = teachers.find((t) => t._id === newCourse.teacherId);
-    if (!teacher) return "";
-
-    const firstName = teacher.firstName || "";
-    const lastName = teacher.lastName || "";
-    return firstName || lastName ? `${firstName} ${lastName}`.trim() : "";
-  };
-
-  const getSelectedClassDisplay = () => {
-    if (!newCourse.classId) return "";
-    const cls = classes.find((c) => c._id === newCourse.classId);
-    return cls ? cls.name : "";
   };
 
   const filteredSubjects = subjects.filter((subject) => {
@@ -864,302 +728,16 @@ const CurriculumStructureMain: React.FC = () => {
       )}
 
       {/* Course Modal */}
-      {showCourseModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
-          <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold">
-                  {courseMode === "add" ? "Add New Course" : "Edit Course"}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {activeSubjectForCourse && courseMode === "add"
-                    ? `Create a new course for ${activeSubjectForCourse.name}`
-                    : courseMode === "add"
-                    ? "Create a new course for this subject"
-                    : "Update the course information"}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => closeCourseModal()}
-                className="h-6 w-6"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="course-title">
-                    Course Title <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="course-title"
-                    type="text"
-                    value={newCourse.title}
-                    onChange={(e) =>
-                      setNewCourse((prev) => ({
-                        ...prev,
-                        title: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., Algebra I"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="course-code">
-                    Course Code <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="course-code"
-                    type="text"
-                    value={newCourse.courseCode}
-                    onChange={(e) =>
-                      setNewCourse((prev) => ({
-                        ...prev,
-                        courseCode: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., MATH101"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="course-description">Description</Label>
-                <Textarea
-                  id="course-description"
-                  value={newCourse.description}
-                  onChange={(e) =>
-                    setNewCourse((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter course description..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="assigned-teacher">
-                  Assigned Teacher
-                  {isLoadingTeachers && (
-                    <span className="ml-2 text-sm text-primary">
-                      Loading...
-                    </span>
-                  )}
-                </Label>
-                <div className="relative">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      type="text"
-                      value={
-                        showTeacherDropdown
-                          ? teacherSearchTerm
-                          : getSelectedTeacherDisplay()
-                      }
-                      onChange={(e) => {
-                        setTeacherSearchTerm(e.target.value);
-                        setShowTeacherDropdown(true);
-                      }}
-                      onFocus={() => {
-                        setShowTeacherDropdown(true);
-                        setTeacherSearchTerm("");
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowTeacherDropdown(false), 150);
-                      }}
-                      placeholder={
-                        isLoadingTeachers
-                          ? "Loading teachers..."
-                          : teachers.length === 0
-                          ? "No teachers available"
-                          : "Search and select a teacher..."
-                      }
-                      className="pl-10"
-                      disabled={isLoadingTeachers || teachers.length === 0}
-                    />
-                  </div>
-                  {showTeacherDropdown &&
-                    !isLoadingTeachers &&
-                    teachers.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-y-auto">
-                        <div
-                          onClick={() => {
-                            setNewCourse((prev) => ({
-                              ...prev,
-                              teacherId: "",
-                            }));
-                            setTeacherSearchTerm("");
-                            setShowTeacherDropdown(false);
-                          }}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer border-b text-muted-foreground"
-                        >
-                          Clear selection
-                        </div>
-                        {filteredTeachers.length > 0 ? (
-                          filteredTeachers.map((teacher) => (
-                            <div
-                              key={teacher._id}
-                              onClick={() => {
-                                setNewCourse((prev) => ({
-                                  ...prev,
-                                  teacherId: teacher._id,
-                                }));
-                                setTeacherSearchTerm("");
-                                setShowTeacherDropdown(false);
-                              }}
-                              className="px-3 py-2 hover:bg-accent cursor-pointer"
-                            >
-                              <div className="font-medium">
-                                {teacher.firstName} {teacher.lastName}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {teacher.email}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-muted-foreground">
-                            No teachers found matching "{teacherSearchTerm}"
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-                {!isLoadingTeachers && teachers.length === 0 && (
-                  <div className="flex items-start space-x-2 mt-2 p-3 bg-muted rounded-md">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div className="text-sm text-muted-foreground">
-                      No teachers found. Please add teachers first.
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="assigned-class">Class</Label>
-                <div className="relative">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      type="text"
-                      value={
-                        showClassDropdown
-                          ? classSearchTerm
-                          : getSelectedClassDisplay()
-                      }
-                      onChange={(e) => {
-                        setClassSearchTerm(e.target.value);
-                        setShowClassDropdown(true);
-                      }}
-                      onFocus={() => {
-                        setShowClassDropdown(true);
-                        setClassSearchTerm("");
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowClassDropdown(false), 150);
-                      }}
-                      placeholder={
-                        classes.length === 0
-                          ? "No classes available"
-                          : "Search and select a class..."
-                      }
-                      className="pl-10"
-                      disabled={classes.length === 0}
-                    />
-                  </div>
-                  {showClassDropdown && classes.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-y-auto">
-                      <div
-                        onClick={() => {
-                          setNewCourse((prev) => ({ ...prev, classId: "" }));
-                          setClassSearchTerm("");
-                          setShowClassDropdown(false);
-                        }}
-                        className="px-3 py-2 hover:bg-accent cursor-pointer border-b text-muted-foreground"
-                      >
-                        Clear selection
-                      </div>
-                      {filteredClasses.length > 0 ? (
-                        filteredClasses.map((cls) => (
-                          <div
-                            key={cls._id}
-                            onClick={() => {
-                              setNewCourse((prev) => ({
-                                ...prev,
-                                classId: cls._id,
-                              }));
-                              setClassSearchTerm("");
-                              setShowClassDropdown(false);
-                            }}
-                            className="px-3 py-2 hover:bg-accent cursor-pointer"
-                          >
-                            <div className="font-medium">{cls.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Grade {cls.gradeLevel}{" "}
-                              {cls.section ? `- Section ${cls.section}` : ""}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-3 py-2 text-muted-foreground">
-                          No classes found matching "{classSearchTerm}"
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {classes.length === 0 && (
-                  <div className="flex items-start space-x-2 mt-2 p-3 bg-muted rounded-md">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div className="text-sm text-muted-foreground">
-                      No classes found. Please add classes first.
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => closeCourseModal()}
-                disabled={isSubmittingCourse}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCourseSubmit}
-                disabled={
-                  isSubmittingCourse ||
-                  !newCourse.title ||
-                  !newCourse.courseCode
-                }
-              >
-                {isSubmittingCourse ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {courseMode === "add" ? "Creating..." : "Updating..."}
-                  </>
-                ) : (
-                  <>
-                    {courseMode === "add" ? "Create Course" : "Update Course"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CourseModal
+        isOpen={showCourseModal}
+        onClose={() => setShowCourseModal(false)}
+        onSuccess={handleCourseModalSuccess}
+        mode={courseModalMode}
+        course={selectedCourse}
+        subjectId={activeSubjectForCourse?._id}
+        subjectName={activeSubjectForCourse?.name}
+        initialClassId={activeSubjectForCourse?.classId || ""}
+      />
     </div>
   );
 };

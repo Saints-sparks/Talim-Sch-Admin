@@ -13,14 +13,85 @@ interface User {
   [key: string]: string | number | boolean;
 }
 
+interface Course {
+  _id: string;
+  courseCode: string;
+  title: string;
+  description: string;
+  teacherId: string | null;
+  subjectId: {
+    _id: string;
+    name: string;
+    code: string;
+  };
+  classId: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  schoolId?: string;
+  id: string;
+}
+
 export interface Class {
   _id: string;
   name: string;
-  classCapacity: number;
+  classCapacity: string;
   classDescription: string;
-  schoolId: string;
-  assignedCourses: string[];
-  [key: string]: string | number | string[];
+  schoolId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        physicalAddress: string;
+        location: {
+          country: string;
+          state: string;
+          _id: string;
+        };
+        schoolPrefix: string;
+        primaryContacts: Array<{
+          name: string;
+          phone: string;
+          email: string;
+          role: string;
+          _id: string;
+        }>;
+        active: boolean;
+        logo: string;
+        createdAt: string;
+        updatedAt: string;
+        __v: number;
+      };
+  assignedCourses: Course[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  classTeacherId?: {
+    _id: string;
+    userId: {
+      _id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      id: string;
+    };
+    assignedClasses: string[];
+    assignedCourses: string[];
+    isFormTeacher: boolean;
+    isActive: boolean;
+    highestAcademicQualification: string;
+    yearsOfExperience: number;
+    specialization: string;
+    employmentType: string;
+    employmentRole: string;
+    availabilityDays: string[];
+    availableTime: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  };
+  [key: string]: any;
 }
 
 interface UpdateClassData {
@@ -489,7 +560,7 @@ export const updateClass = async (
         body: JSON.stringify({
           name: updateData.name,
           classDescription: updateData.classDescription,
-          classCapacity: parseInt(updateData.classCapacity, 10),
+          classCapacity: updateData.classCapacity,
         }),
       }
     );
@@ -531,6 +602,103 @@ export const assignTeacherToClass = async (
     return response.json();
   } catch (error) {
     console.error("Error assigning teacher to class:", error);
+    throw error;
+  }
+};
+
+export const deleteClass = async (classId: string): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/classes/${classId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to delete class");
+    }
+
+    // Note: DELETE might return 204 No Content, so we don't always need to parse JSON
+    if (response.status !== 204) {
+      return response.json();
+    }
+  } catch (error) {
+    console.error("Error deleting class:", error);
+    throw error;
+  }
+};
+
+// Update student status (activate/deactivate)
+export const updateStudentStatus = async (
+  studentId: string,
+  isActive: boolean
+): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.BASE_URL}/students/${studentId}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({ isActive }),
+      }
+    );
+
+    if (!response.ok) {
+      // Try to parse error response if available
+      let errorMessage = `Failed to ${
+        isActive ? "activate" : "deactivate"
+      } student`;
+      try {
+        const error = await response.json();
+        errorMessage = error.message || errorMessage;
+      } catch (jsonError) {
+        // If JSON parsing fails, use status text
+        errorMessage = `${errorMessage}: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Handle successful response - check if there's content to parse
+    if (response.status === 204) {
+      // No content response, return success message
+      return {
+        message: `Student ${
+          isActive ? "activated" : "deactivated"
+        } successfully`,
+      };
+    }
+
+    // Try to parse JSON response
+    try {
+      const responseText = await response.text();
+      if (responseText.trim() === "") {
+        // Empty response, return success message
+        return {
+          message: `Student ${
+            isActive ? "activated" : "deactivated"
+          } successfully`,
+        };
+      }
+      return JSON.parse(responseText);
+    } catch (jsonError) {
+      // If JSON parsing fails, still return success since response was ok
+      return {
+        message: `Student ${
+          isActive ? "activated" : "deactivated"
+        } successfully`,
+      };
+    }
+  } catch (error) {
+    console.error("Error updating student status:", error);
     throw error;
   }
 };

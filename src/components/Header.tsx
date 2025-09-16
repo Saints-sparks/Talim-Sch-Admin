@@ -44,8 +44,30 @@ export function Header() {
       <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
         {/* Left Side: School Name */}
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-            <GraduationCap className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl  flex items-center justify-center  overflow-hidden">
+            {user?.schoolLogo ? (
+              <img
+                src={user.schoolLogo}
+                alt="School Logo"
+                className="w-full h-full object-cover rounded-xl"
+                onError={(e) => {
+                  // Fallback to graduation cap if image fails to load
+                  e.currentTarget.style.display = "none";
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const fallback = parent.querySelector(".fallback-icon");
+                    if (fallback) {
+                      (fallback as HTMLElement).style.display = "block";
+                    }
+                  }
+                }}
+              />
+            ) : null}
+            <GraduationCap
+              className={`w-5 h-5 text-white fallback-icon ${
+                user?.schoolLogo ? "hidden" : "block"
+              }`}
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">
@@ -75,11 +97,11 @@ export function Header() {
             <div className="flex items-center">
               <WebSocketStatus />
             </div>
-            <Link href="/notifications">
+            {/* <Link href="/notifications">
               <Button className="bg-white shadow-none border border-[#F0F0F0] hover:bg-gray-200 h-full rounded-lg p-3">
                 <Bell className="h-5 w-5 text-gray-600" />
               </Button>
-            </Link>
+            </Link> */}
             <Link href="/profile">
               <Avatar>
                 <AvatarImage src="/placeholder.svg" alt="User avatar" />

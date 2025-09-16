@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import DashboardCard from "@/components/DashboardCard";
 import ClassTable from "@/components/ClassTable";
+import AddClassModal from "@/components/AddClassModal";
 import { useDashboard } from "@/hooks/useDashboard";
 import { FiBook, FiUsers, FiUser, FiBookOpen } from "react-icons/fi";
 
@@ -18,12 +19,6 @@ const Dashboard = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [expandedCards, setExpandedCards] = useState<number[]>([]);
-  const [formData, setFormData] = useState({
-    name: "",
-    classDescription: "",
-    classCapacity: "",
-  });
 
   // Generate cards data from dashboard data
   const cards = dashboardData
@@ -164,63 +159,42 @@ const Dashboard = () => {
       ]
     : [];
 
-  const toggleExpand = (id: number) => {
-    setExpandedCards((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleExpandAll = () => {
-    if (expandedCards.length === cards.length) {
-      setExpandedCards([]);
-    } else {
-      setExpandedCards(cards.map((card) => card.id));
+  // Navigation handlers for metric cards
+  const handleCardNavigation = (cardId: number) => {
+    switch (cardId) {
+      case 1: // Total Number of Classes
+        router.push("/classes");
+        break;
+      case 2: // Total Number of Students
+        router.push("/users/students");
+        break;
+      case 3: // Total Number of Teachers
+        router.push("/users/teachers");
+        break;
+      case 4: // Total Number of Subjects
+        router.push("/curriculum");
+        break;
+      default:
+        break;
     }
   };
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
-    if (!isModalOpen) {
-      setFormData({
-        name: "",
-        classDescription: "",
-        classCapacity: "",
-      });
-    }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleCreateClass = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateClass = async (classData: {
+    name: string;
+    classCapacity: string;
+    classDescription: string;
+  }) => {
     try {
       setIsCreating(true);
-
-      const classData = {
-        name: formData.name,
-        classCapacity: formData.classCapacity,
-        classDescription: formData.classDescription,
-      };
 
       await createClass(classData);
 
       toast.success("Class created successfully!");
       setIsModalOpen(false);
-      setFormData({
-        name: "",
-        classDescription: "",
-        classCapacity: "",
-      });
 
       // Refresh dashboard data
       await refreshDashboard();
@@ -231,22 +205,18 @@ const Dashboard = () => {
       } else {
         toast.error("An unexpected error occurred. Please try again.");
       }
+      throw error; // Re-throw so the modal can handle it
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleView = (classId: string) => {
-    router.push(`/classes/view-class/${classId}`);
+    router.push(`/classes/${classId}`);
   };
 
   const handleEdit = (classId: string) => {
     router.push(`/classes/edit-class/${classId}`);
-  };
-
-  const handleDelete = (classId: string) => {
-    console.log(`Deleting class with ID: ${classId}`);
-    // TODO: Implement delete functionality
   };
 
   if (isLoading) {
@@ -303,8 +273,7 @@ const Dashboard = () => {
                 count={card.count}
                 label={card.label}
                 details={card.details}
-                isExpanded={expandedCards.includes(card.id)}
-                onToggle={toggleExpand}
+                onNavigate={handleCardNavigation}
                 bgColor={card.bgColor}
                 iconBg={card.iconBg}
                 iconColor={card.iconColor}
@@ -320,136 +289,18 @@ const Dashboard = () => {
             onAdd={toggleModal}
             onView={handleView}
             onEdit={handleEdit}
-            onDelete={handleDelete}
             onRetry={refreshDashboard}
           />
         </main>
       </div>
 
       {/* Add Class Modal */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-end"
-          onClick={toggleModal}
-        >
-          <div
-            className="h-full w-full md:w-1/2 bg-white p-6 shadow-lg overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-semibold text-gray-800">
-                Add Class
-              </h3>
-              <button
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-                onClick={toggleModal}
-                disabled={isCreating}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleCreateClass}>
-              <div className="mb-4 flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2">
-                    Class Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter class name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2">
-                    Class Capacity (Optional)
-                  </label>
-                  <select
-                    name="classCapacity"
-                    value={formData.classCapacity}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="" disabled>
-                      Choose your class capacity
-                    </option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-700 font-semibold mb-2">
-                  Class Description (Optional)
-                </label>
-                <textarea
-                  name="classDescription"
-                  placeholder="Provide additional notes about the class."
-                  value={formData.classDescription}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
-                ></textarea>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  type="button"
-                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                  onClick={toggleModal}
-                  disabled={isCreating}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition-colors"
-                  disabled={isCreating}
-                >
-                  {isCreating ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Creating...
-                    </>
-                  ) : (
-                    "Create"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AddClassModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateClass}
+        isCreating={isCreating}
+      />
     </>
   );
 };

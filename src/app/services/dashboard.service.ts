@@ -26,6 +26,7 @@ export interface SchoolDashboardData {
     schoolPrefix: string
     physicalAddress: string
     active: boolean
+    logo: string
   }
 }
 
