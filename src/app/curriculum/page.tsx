@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import ModernLoader from "@/components/ModernLoader";
 import { toast } from "react-toastify";
 import {
   BookOpen,
@@ -28,6 +29,7 @@ interface Subject {
   code: string;
   classId?: string;
   courses?: Course[];
+  courseCount?: number;
 }
 
 interface Course {
@@ -90,13 +92,7 @@ interface CurriculumKPIs {
 }
 
 // Loading component for Suspense fallback
-const LoadingSpinner = () => (
-  <div className="flex flex-col h-screen bg-gray-100">
-    <div className="flex-1 flex justify-center items-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
-    </div>
-  </div>
-);
+const LoadingSpinner = () => <ModernLoader />;
 
 // Main dashboard component
 const CurriculumDashboardMain: React.FC = () => {
@@ -260,7 +256,7 @@ const CurriculumDashboardMain: React.FC = () => {
     .slice(0, 5);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <ModernLoader />;
   }
 
   return (
@@ -271,15 +267,6 @@ const CurriculumDashboardMain: React.FC = () => {
           <h1 className="text-2xl font-semibold text-gray-900">
             Curriculum Management
           </h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push("/curriculum/structure")}
-              className="flex items-center gap-2 px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
-            >
-              <Settings className="w-4 h-4" />
-              Manage Structure
-            </button>
-          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -510,8 +497,9 @@ const CurriculumDashboardMain: React.FC = () => {
                   </div>
                   <button
                     onClick={() => router.push("/curriculum/structure")}
-                    className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
+                    className="px-4 flex items-center gap-2 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
                   >
+                    <Settings className="w-4 h-4" />
                     Manage Structure
                   </button>
                 </div>
@@ -541,7 +529,7 @@ const CurriculumDashboardMain: React.FC = () => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-500">
-                            {subject.courses?.length || 0} courses
+                            {subject.courseCount || 0} courses
                           </p>
                         </div>
                       ))}
