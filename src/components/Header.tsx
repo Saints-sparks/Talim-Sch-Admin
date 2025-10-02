@@ -38,6 +38,16 @@ export function Header() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // Generate user initials from first and last name
+  const getUserInitials = () => {
+    if (!user?.firstName && !user?.lastName) return "U";
+
+    const firstInitial = user?.firstName?.charAt(0).toUpperCase() || "";
+    const lastInitial = user?.lastName?.charAt(0).toUpperCase() || "";
+
+    return `${firstInitial}${lastInitial}` || "U";
+  };
+
   return (
     <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] py-2 bg-white">
       {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
@@ -104,8 +114,15 @@ export function Header() {
             </Link> */}
             <Link href="/profile">
               <Avatar>
-                <AvatarImage src="/placeholder.svg" alt="User avatar" />
-                <AvatarFallback className="bg-green-300">OA</AvatarFallback>
+                <AvatarImage
+                  src={user?.userAvatar || ""}
+                  alt={`${user?.firstName || "User"} ${
+                    user?.lastName || ""
+                  } avatar`}
+                />
+                <AvatarFallback className="bg-blue-500 text-white font-semibold">
+                  {getUserInitials()}
+                </AvatarFallback>
               </Avatar>
             </Link>
           </div>

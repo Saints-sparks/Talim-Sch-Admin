@@ -2,6 +2,8 @@
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 import { TransitionProvider } from "@/context/TransitionContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
+import { ToastContainer as ReactToastifyContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import { usePathname, useRouter } from "next/navigation";
 
@@ -23,8 +25,7 @@ export default function ClientLayout({
     "/",
     "/account-section-1",
     "/account-section-2",
-    "/signup",
-    "/signin",
+
     "/forgot-password",
   ];
   const showSidebar = !noSidebarRoutes.includes(pathname);
@@ -55,6 +56,19 @@ export default function ClientLayout({
           <WebSocketProvider>
             <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
+            {/* Fallback react-toastify container */}
+            <ReactToastifyContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
           </WebSocketProvider>
         </PageIndicatorProvider>
       </SidebarProvider>

@@ -22,14 +22,8 @@ import {
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Label } from "@/components/ui/label";
 import { getClass } from "../../services/student.service";
 import {
-  updateCourseService,
   deleteCourseService,
 } from "../../services/subjects.service";
 import CourseModal from "@/components/CourseModal";

@@ -614,7 +614,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   subtitle: "Academic information",
                 },
               ].map((step, index) => (
-                <div key={step.step} className="relative bg-blue-600 px-4">
+                <div key={step.step} className="relative px-4">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                       currentStep >= step.step
@@ -641,8 +641,24 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     )}
                   </div>
                   <div className="mt-2 text-center">
-                    <div className="text-sm font-medium">{step.title}</div>
-                    <div className="text-xs text-blue-100">{step.subtitle}</div>
+                    <div
+                      className={`text-sm font-medium ${
+                        currentStep >= step.step
+                          ? "text-white"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {step.title}
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        currentStep >= step.step
+                          ? "text-blue-100"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {step.subtitle}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModernLoader from "@/components/ModernLoader";
 import {
   FiPlus,
   FiRefreshCw,
@@ -13,6 +14,9 @@ import {
   FiTrash2,
   FiEye,
   FiSearch,
+  FiFilter,
+  FiTarget,
+  FiArrowLeft,
 } from "react-icons/fi";
 import {
   Assessment,
@@ -306,229 +310,216 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
   };
 
   return (
-    <div className="flex bg-[#F8F8F8]">
-      <main className="flex-grow flex flex-col">
-        {/* Modern Header Section */}
-        <div className="flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FiClipboard className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Assessment Management
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Create, manage and track student assessments
-                  </p>
-                </div>
-              </div>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {loading && <ModernLoader />}
 
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setError(null);
-                    loadAssessments(pagination.currentPage);
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm disabled:opacity-50"
-                  disabled={loading || isRetrying}
-                >
-                  <FiRefreshCw
-                    className={`h-4 w-4 mr-2 ${
-                      loading || isRetrying ? "animate-spin" : ""
-                    }`}
-                  />
-                  {loading || isRetrying ? "Refreshing..." : "Refresh"}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setEditingAssessment(null);
-                    setShowCreateModal(true);
-                  }}
-                  className="inline-flex items-center px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <FiPlus className="h-4 w-4 mr-2" />
-                  Create Assessment
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto">
+      {!loading && (
+        <>
+          {/* Enhanced Header with Talim Styling */}
+          <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 m-6 rounded-2xl">
             <div className="px-6 py-6">
-              {/* Stats Dashboard Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-center">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <FiClipboard className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">
-                        Total Assessments
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {assessmentStats.total}
-                      </p>
-                    </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <FiTarget className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">
+                      Assessment Management
+                    </h1>
+                    <p className="text-blue-100 mt-1">
+                      Create, manage and track student assessments
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-center">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <FiTrendingUp className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">
-                        Active
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {assessmentStats.active}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-center">
-                    <div className="p-3 bg-yellow-100 rounded-lg">
-                      <FiCalendar className="h-6 w-6 text-yellow-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">
-                        Pending
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {assessmentStats.pending}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-center">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <FiUsers className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">
-                        Completed
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {assessmentStats.completed}
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      setEditingAssessment(null);
+                      setShowCreateModal(true);
+                    }}
+                    className="inline-flex items-center px-6 py-2.5 bg-white text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <FiPlus className="h-4 w-4 mr-2" />
+                    Create Assessment
+                  </button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Enhanced Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-                  <div className="flex items-start">
-                    <FiAlertTriangle className="h-5 w-5 text-red-400 mt-0.5" />
-                    <div className="ml-3 flex-1">
-                      <h3 className="text-sm font-semibold text-red-800">
-                        Something went wrong
-                      </h3>
-                      <p className="mt-1 text-sm text-red-700">{error}</p>
-
-                      <div className="mt-4 flex space-x-3">
-                        <button
-                          onClick={handleRetry}
-                          disabled={isRetrying}
-                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-red-800 bg-red-100 hover:bg-red-200 rounded-lg transition-all duration-300 disabled:opacity-50"
-                        >
-                          {isRetrying ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-800 mr-2"></div>
-                              Retrying...
-                            </>
-                          ) : (
-                            <>
-                              <FiRefreshCw className="h-4 w-4 mr-2" />
-                              Try Again
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={clearError}
-                          className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-
-                      {retryCount > 0 && (
-                        <p className="mt-2 text-xs text-red-600">
-                          Retry attempts: {retryCount}
+          {/* Enhanced Content Area */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full overflow-y-auto">
+              <div className="px-6 ">
+                {/* Enhanced Stats Dashboard Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">
+                          Total Assessments
                         </p>
-                      )}
+                        <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                          {assessmentStats.total}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg group-hover:shadow-blue-200">
+                        <FiClipboard className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">
+                          Active
+                        </p>
+                        <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+                          {assessmentStats.active}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl shadow-lg group-hover:shadow-emerald-200">
+                        <FiTrendingUp className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">
+                          Pending
+                        </p>
+                        <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
+                          {assessmentStats.pending}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg group-hover:shadow-amber-200">
+                        <FiCalendar className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">
+                          Completed
+                        </p>
+                        <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">
+                          {assessmentStats.completed}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-purple-200">
+                        <FiUsers className="h-6 w-6 text-white" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
 
-              
+                {error && (
+                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-sm">
+                    <div className="flex items-start">
+                      <div className="p-2 bg-red-100 rounded-xl">
+                        <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <h3 className="text-lg font-semibold text-red-800 mb-2">
+                          Something went wrong
+                        </h3>
+                        <p className="text-red-700 mb-4">{error}</p>
 
-              {/* Assessment Content */}
-              {!loading && !error && filteredAssessments.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FiClipboard className="h-10 w-10 text-gray-400" />
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={handleRetry}
+                            disabled={isRetrying}
+                            className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 shadow-lg"
+                          >
+                            {isRetrying ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Retrying...
+                              </>
+                            ) : (
+                              <>
+                                <FiRefreshCw className="h-4 w-4 mr-2" />
+                                Try Again
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={clearError}
+                            className="px-5 py-2.5 text-red-600 hover:text-red-800 font-medium bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-300"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+
+                        {retryCount > 0 && (
+                          <p className="mt-3 text-sm text-red-600 bg-red-100 px-3 py-1 rounded-lg inline-block">
+                            Retry attempts: {retryCount}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                    {searchQuery || filterStatus !== "all"
-                      ? "No assessments found"
-                      : "No assessments created yet"}
-                  </h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    {searchQuery || filterStatus !== "all"
-                      ? "Try adjusting your search or filter criteria"
-                      : "Get started by creating your first assessment to evaluate student performance."}
-                  </p>
-                  {!searchQuery && filterStatus === "all" && (
-                    <button
-                      onClick={() => {
-                        setEditingAssessment(null);
-                        setShowCreateModal(true);
+                )}
+
+                {/* Enhanced Assessment Content */}
+                {!error && filteredAssessments.length === 0 ? (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-8">
+                      <FiClipboard className="h-12 w-12 text-blue-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                      {searchQuery || filterStatus !== "all"
+                        ? "No assessments found"
+                        : "No assessments created yet"}
+                    </h3>
+                    <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
+                      {searchQuery || filterStatus !== "all"
+                        ? "Try adjusting your search or filter criteria to find what you're looking for."
+                        : "Get started by creating your first assessment to evaluate student performance and track academic progress."}
+                    </p>
+                    {!searchQuery && filterStatus === "all" && (
+                      <button
+                        onClick={() => {
+                          setEditingAssessment(null);
+                          setShowCreateModal(true);
+                        }}
+                        className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                      >
+                        <FiPlus className="h-5 w-5 mr-3" />
+                        Create Your First Assessment
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <AssessmentList
+                      assessments={filteredAssessments}
+                      terms={terms}
+                      loading={false}
+                      pagination={pagination}
+                      onPageChange={handlePageChange}
+                      onEdit={openEditModal}
+                      onDelete={openDeleteConfirm}
+                      onView={handleViewAssessment}
+                      onRefresh={() => {
+                        setError(null);
+                        loadAssessments(pagination.currentPage);
                       }}
-                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-lg"
-                    >
-                      <FiPlus className="h-5 w-5 mr-2" />
-                      Create Your First Assessment
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <AssessmentList
-                    assessments={filteredAssessments}
-                    terms={terms}
-                    loading={loading}
-                    pagination={pagination}
-                    onPageChange={handlePageChange}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteConfirm}
-                    onView={handleViewAssessment}
-                    onRefresh={() => {
-                      setError(null);
-                      loadAssessments(pagination.currentPage);
-                    }}
-                  />
-                </div>
-              )}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </>
+      )}
 
       {/* Create/Edit Assessment Modal */}
       <AssessmentCreateModal
@@ -545,36 +536,36 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
         loading={loading}
       />
 
-      {/* Enhanced Delete Confirmation Modal */}
+      {/* Enhanced Delete Confirmation Modal with Talim Styling */}
       {deleteConfirm.isOpen && deleteConfirm.assessment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300">
-            <div className="p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                  <FiAlertTriangle className="h-6 w-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
+            <div className="p-8">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mr-4">
+                  <FiAlertTriangle className="h-7 w-7 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-xl font-bold text-gray-900">
                     Delete Assessment
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-gray-500 mt-1">
                     This action cannot be undone
                   </p>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-700">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 mb-8">
+                <p className="text-gray-700">
                   Are you sure you want to delete{" "}
-                  <span className="font-semibold">
+                  <span className="font-bold text-gray-900">
                     "{deleteConfirm.assessment?.name}"
                   </span>
                   ? All associated data will be permanently removed.
                 </p>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-4">
                 <button
                   onClick={() =>
                     setDeleteConfirm({
@@ -583,14 +574,14 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                       loading: false,
                     })
                   }
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300"
+                  className="px-6 py-3 text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-all duration-300"
                   disabled={deleteConfirm.loading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteAssessment}
-                  className="px-6 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3 text-white bg-gradient-to-r from-red-600 to-red-700 rounded-xl hover:from-red-700 hover:to-red-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   disabled={deleteConfirm.loading}
                 >
                   {deleteConfirm.loading ? (

@@ -230,7 +230,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       }
 
       // Redirect to signin page
-      router.push("/signin");
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("An error occurred during logout. Please try again.");

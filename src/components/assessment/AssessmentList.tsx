@@ -9,7 +9,6 @@ import {
   FiMoreVertical,
   FiEdit,
   FiTrash2,
-  FiEye,
   FiCalendar,
   FiClock,
   FiCheckCircle,
@@ -211,19 +210,19 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
   };
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Enhanced Search and Filter Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="space-y-6 p-6">
+      {/* Search and Filter Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Bar */}
           <div className="flex-1">
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="relative group">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white text-gray-900 placeholder-gray-500"
                 placeholder="Search assessments by name or description..."
               />
             </div>
@@ -233,52 +232,45 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-lg transition-all duration-300 ${
-                hasActiveFilters
-                  ? "bg-blue-50 border-blue-300 text-blue-700"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
+              className="inline-flex items-center bg-white border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-3 border text-sm font-medium rounded-lg transition-all duration-300"
             >
               <FiFilter className="h-4 w-4 mr-2" />
               Filters
-              {hasActiveFilters && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Active
-                </span>
-              )}
             </button>
           </div>
         </div>
 
-        {/* Advanced Filter Panel */}
+        {/* Filter Panel */}
         {showFilters && (
-          <div className="mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Term Filter */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filter by Term
                 </label>
-                <TermSelector
-                  terms={terms}
-                  selectedTermId={filters.termId}
-                  onTermSelect={(termId) =>
-                    handleFilterChange("termId", termId)
-                  }
-                  placeholder="All terms"
-                  allowEmpty
-                />
+                <div className="border border-gray-300 rounded-lg">
+                  <TermSelector
+                    terms={terms}
+                    selectedTermId={filters.termId}
+                    onTermSelect={(termId) =>
+                      handleFilterChange("termId", termId)
+                    }
+                    placeholder="All terms"
+                    allowEmpty
+                  />
+                </div>
               </div>
 
               {/* Status Filter */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filter by Status
                 </label>
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white"
                 >
                   <option value="">All statuses</option>
                   <option value="pending">Pending</option>
@@ -293,7 +285,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                 <button
                   onClick={clearFilters}
                   disabled={!hasActiveFilters}
-                  className="w-full px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Clear All Filters
                 </button>
@@ -361,103 +353,105 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
           </div>
         ) : (
           <>
-            {/* Enhanced Assessment Grid */}
+            {/* Assessment Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAssessments.map((assessment, index) => (
-                <div
-                  key={assessment._id}
-                  className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animation: "fadeInUp 0.6s ease-out forwards",
-                  }}
-                >
-                  <div className="p-6">
-                    {/* Assessment Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">
-                          {assessment.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                          <FiCalendar className="h-4 w-4" />
-                          <span>
-                            {new Date(
-                              assessment.startDate
-                            ).toLocaleDateString()}
-                          </span>
-                          <span>-</span>
-                          <span>
-                            {new Date(assessment.endDate).toLocaleDateString()}
+              {filteredAssessments.map((assessment, index) => {
+                const duration = Math.ceil(
+                  (new Date(assessment.endDate).getTime() -
+                    new Date(assessment.startDate).getTime()) /
+                    (1000 * 60 * 60 * 24)
+                );
+                const durationText =
+                  duration === 1 ? "1 day" : `${duration} days`;
+
+                return (
+                  <div
+                    key={assessment._id}
+                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      animation: "fadeInUp 0.6s ease-out forwards",
+                    }}
+                  >
+                    <div className="p-6">
+                      {/* Assessment Header */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">
+                            {assessment.name}
+                          </h3>
+                          <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                            <FiCalendar className="h-4 w-4" />
+                            <span>
+                              {new Date(
+                                assessment.startDate
+                              ).toLocaleDateString()}
+                            </span>
+                            <span>-</span>
+                            <span>
+                              {new Date(
+                                assessment.endDate
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {assessment.description ||
+                              "No description provided"}
+                          </p>
+                        </div>
+                        <div className="flex items-center ml-4">
+                          <span className={getStatusBadge(assessment.status)}>
+                            {getStatusIcon(assessment.status)}
+                            <span className="ml-1 capitalize">
+                              {assessment.status}
+                            </span>
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {assessment.description || "No description provided"}
-                        </p>
                       </div>
-                      <div className="flex items-center ml-4">
-                        <span className={getStatusBadge(assessment.status)}>
-                          {getStatusIcon(assessment.status)}
-                          <span className="ml-1 capitalize">
-                            {assessment.status}
+
+                      {/* Assessment Details */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Term:</span>
+                          <span className="font-medium text-gray-900">
+                            {typeof assessment.termId === "object"
+                              ? assessment.termId.name
+                              : "Unknown Term"}
                           </span>
-                        </span>
-                      </div>
-                    </div>
+                        </div>
 
-                    {/* Assessment Details */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Term:</span>
-                        <span className="font-medium text-gray-900">
-                          {typeof assessment.termId === "object"
-                            ? assessment.termId.name
-                            : "Unknown Term"}
-                        </span>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Duration:</span>
+                          <span className="font-medium text-gray-900">
+                            {durationText}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Duration:</span>
-                        <span className="font-medium text-gray-900">
-                          {Math.ceil(
-                            (new Date(assessment.endDate).getTime() -
-                              new Date(assessment.startDate).getTime()) /
-                              (1000 * 60 * 60 * 24)
-                          )}{" "}
-                          days
-                        </span>
+                      {/* Action Buttons */}
+                      <div className="flex justify-center space-x-2 pt-4 mt-4 border-t border-gray-100">
+                        <button
+                          onClick={() => onEdit(assessment)}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-all duration-300"
+                          title="Edit Assessment"
+                        >
+                          <FiEdit className="h-4 w-4 mr-1" />
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => onDelete(assessment)}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-300"
+                          title="Delete Assessment"
+                        >
+                          <FiTrash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </button>
                       </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-center space-x-2 pt-4 mt-4 border-t border-gray-100">
-                      <button
-                        onClick={() => onView(assessment)}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-all duration-300"
-                        title="View Assessment"
-                      >
-                        <FiEye className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        onClick={() => onEdit(assessment)}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-all duration-300"
-                        title="Edit Assessment"
-                      >
-                        <FiEdit className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        onClick={() => onDelete(assessment)}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-300"
-                        title="Delete Assessment"
-                      >
-                        <FiTrash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Enhanced Pagination */}
