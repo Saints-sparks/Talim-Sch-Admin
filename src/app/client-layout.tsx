@@ -25,8 +25,7 @@ export default function ClientLayout({
     "/",
     "/account-section-1",
     "/account-section-2",
-    "/signup",
-    "/signin",
+
     "/forgot-password",
   ];
   const showSidebar = !noSidebarRoutes.includes(pathname);

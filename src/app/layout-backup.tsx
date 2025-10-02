@@ -44,7 +44,7 @@ export default function RootLayout({
   const router = useRouter();
   const { toast, toasts, removeToast } = useToast();
 
-  const noSidebarRoutes = ["/", "/account-section-1", "/account-section-2", "/signup", "/signin", "/forgot-password"];
+  const noSidebarRoutes = ["/", "/account-section-1", "/account-section-2", "/forgot-password"];
   const showSidebar = !noSidebarRoutes.includes(pathname);
 
   useEffect(() => {

@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/signin'); // Redirect to login if not authenticated
+      router.push('/'); // Redirect to login if not authenticated
     }
   }, [isAuthenticated, router]);
 
