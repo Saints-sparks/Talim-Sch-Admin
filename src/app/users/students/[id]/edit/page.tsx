@@ -146,7 +146,7 @@ const EditStudentProfile = () => {
       setIsSaving(true);
 
       const updateData = {
-        userId: {
+        userInfo: {
           firstName: student.userId.firstName,
           lastName: student.userId.lastName,
           phoneNumber: student.userId.phoneNumber,
@@ -163,30 +163,35 @@ const EditStudentProfile = () => {
           email: student.parentContact.email,
           relationship: student.parentContact.relationship,
         },
-        enrollmentDate: student.enrollmentDate,
-        assignedSubjects: student.assignedSubjects,
-        attendance: student.attendance,
         isActive: student.isActive,
       };
 
       await updateStudent(studentId, updateData as any);
 
-      toast.success("Student profile updated successfully", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success("Student profile updated successfully");
 
       // Navigate back to view mode
       router.push(`/users/students/${studentId}/view`);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to update student profile";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      console.error("Error updating student:", error);
+
+      let errorMessage = "Failed to update student profile";
+
+      // Handle different types of errors
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "object" && error !== null) {
+        // Handle fetch errors or other structured errors
+        const err = error as any;
+        if (err.message) {
+          errorMessage = err.message;
+        } else if (err.error) {
+          errorMessage = err.error;
+        }
+      }
+
+      // Show the specific error message to the user
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

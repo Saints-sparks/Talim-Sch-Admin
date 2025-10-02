@@ -422,7 +422,28 @@ export const updateStudent = async (
     });
 
     if (!response.ok) {
-      throw new Error("Failed to update student profile");
+      // Parse the error response to get detailed error information
+      const errorData = await response.json().catch(() => null);
+
+      if (errorData && errorData.message) {
+        // Handle array of error messages
+        if (Array.isArray(errorData.message)) {
+          throw new Error(errorData.message.join(", "));
+        }
+        // Handle single error message
+        throw new Error(errorData.message);
+      }
+
+      // Fallback error message based on status code
+      if (response.status === 400) {
+        throw new Error("Invalid data provided. Please check your input.");
+      } else if (response.status === 404) {
+        throw new Error("Student not found.");
+      } else if (response.status === 401) {
+        throw new Error("You are not authorized to update this student.");
+      } else {
+        throw new Error("Failed to update student profile. Please try again.");
+      }
     }
 
     return response.json();
