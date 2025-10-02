@@ -46,7 +46,6 @@ interface FormData {
   schoolName: string;
   schoolPrefix: string;
   street: string;
-  city: string;
   state: string;
   country: string;
   logo: string | null;
@@ -78,7 +77,6 @@ export default function Profile() {
     schoolName: "",
     schoolPrefix: "",
     street: "",
-    city: "",
     state: "",
     country: "",
     logo: null,
@@ -124,7 +122,6 @@ export default function Profile() {
                 schoolName: userProfile.schoolId.name || "",
                 schoolPrefix: userProfile.schoolId.schoolPrefix || "",
                 street: userProfile.schoolId.physicalAddress || "",
-                city: "", // You might need to parse this from physicalAddress or get from another field
                 state: userProfile.schoolId.location?.state || "",
                 country: userProfile.schoolId.location?.country || "",
                 logo: userProfile.schoolId.logo || null,
@@ -147,10 +144,10 @@ export default function Profile() {
             }));
           }
         } else {
-          // Set default admin data if no user in localStorage
+          // Set empty defaults if no user in localStorage
           setFormData((prev) => ({
             ...prev,
-            adminFirstName: "Administrator",
+            adminFirstName: "",
             adminLastName: "",
             adminEmail: "",
             adminPhone: "",
@@ -166,41 +163,36 @@ export default function Profile() {
             if (dashboardData.schoolInfo) {
               setFormData((prev) => ({
                 ...prev,
-                schoolName:
-                  dashboardData.schoolInfo.name || "Unity Secondary School",
-                schoolPrefix: dashboardData.schoolInfo.schoolPrefix || "USS",
-                street:
-                  dashboardData.schoolInfo.physicalAddress ||
-                  "123 Education Street",
-                city: prev.city || "Lagos", // Keep existing or set default
-                state: prev.state || "Lagos State",
-                country: prev.country || "Nigeria",
+                schoolName: dashboardData.schoolInfo.name || "",
+                schoolPrefix: dashboardData.schoolInfo.schoolPrefix || "",
+                street: dashboardData.schoolInfo.physicalAddress || "",
+                city: "", // Will be extracted from physicalAddress if needed
+                state: dashboardData.schoolInfo.location?.state || "",
+                country: dashboardData.schoolInfo.location?.country || "",
                 logo: dashboardData.schoolInfo.logo || null,
               }));
             }
           } catch (schoolError) {
             console.error("Error loading school data:", schoolError);
-            // Set default school data if API fails
+            // Set empty defaults if API fails, don't hardcode values
             setFormData((prev) => ({
               ...prev,
-              schoolName: prev.schoolName || "Unity Secondary School",
-              schoolPrefix: prev.schoolPrefix || "USS",
-              street: prev.street || "123 Education Street",
-              city: prev.city || "Lagos",
-              state: prev.state || "Lagos State",
-              country: prev.country || "Nigeria",
+              schoolName: prev.schoolName || "",
+              schoolPrefix: prev.schoolPrefix || "",
+              street: prev.street || "",
+              state: prev.state || "",
+              country: prev.country || "",
             }));
           }
         } else {
-          // Set default school data if no schoolId
+          // Set empty defaults if no schoolId, don't hardcode values
           setFormData((prev) => ({
             ...prev,
-            schoolName: "Unity Secondary School",
-            schoolPrefix: "USS",
-            street: "123 Education Street",
-            city: "Lagos",
-            state: "Lagos State",
-            country: "Nigeria",
+            schoolName: "",
+            schoolPrefix: "",
+            street: "",
+            state: "",
+            country: "",
           }));
         }
       } catch (error) {
@@ -220,7 +212,6 @@ export default function Profile() {
       if (!formData.schoolName.trim()) return "School name is required";
       if (!formData.schoolPrefix.trim()) return "School prefix is required";
       if (!formData.street.trim()) return "Street address is required";
-      if (!formData.city) return "City is required";
       if (!formData.state) return "State is required";
       if (!formData.country) return "Country is required";
     } else {
@@ -543,7 +534,7 @@ export default function Profile() {
                     <User className="w-6 h-6 text-white" />
                   </div>
                   <div className="">
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-semibold text-gray-900">
                       Profile Settings
                     </h1>
                     <p className="text-gray-600 mt-1">
@@ -774,50 +765,6 @@ export default function Profile() {
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <MapPin className="w-4 h-4 text-blue-600" />
-                            City
-                          </label>
-                          <div className="relative">
-                            <select
-                              name="city"
-                              value={formData.city}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
-                                isEditing
-                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                                  : "border-gray-100 bg-gray-50"
-                              } text-gray-900 font-medium disabled:cursor-not-allowed pr-12`}
-                            >
-                              <option value="">Choose your city</option>
-                              <option value="Lagos">Lagos</option>
-                              <option value="Abuja">Abuja</option>
-                              <option value="Port Harcourt">
-                                Port Harcourt
-                              </option>
-                              <option value="Kano">Kano</option>
-                              <option value="Ibadan">Ibadan</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <MapPin className="w-4 h-4 text-blue-600" />
                             State
                           </label>
                           <div className="relative">
@@ -1034,7 +981,7 @@ export default function Profile() {
                       </div>
 
                       {/* Form Fields */}
-                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <User className="w-4 h-4 text-emerald-600" />
@@ -1115,11 +1062,8 @@ export default function Profile() {
                           />
                         </div>
 
-                        {/* Empty div for grid alignment */}
-                        <div></div>
-
                         {/* Password Fields - Only show when editing */}
-                        {isEditing && (
+                        {isEditing ? (
                           <>
                             <div className="space-y-2">
                               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -1176,6 +1120,12 @@ export default function Profile() {
                                 </button>
                               </div>
                             </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Empty divs to maintain grid alignment when not editing */}
+                            <div></div>
+                            <div></div>
                           </>
                         )}
                       </div>
