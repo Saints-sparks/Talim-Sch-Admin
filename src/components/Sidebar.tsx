@@ -7,14 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useAuth } from "@/context/AuthContext";
 import {
-  BookOpen,
   Calendar,
   ChevronDown,
   Home,
   LogOut,
   MessageSquare,
   AlertCircle,
-  Settings,
   Speaker,
   Ticket,
   Users,
@@ -36,6 +34,15 @@ import SmoothLink from "./SmoothLink";
 import { useSidebar } from "@/context/SidebarContext";
 import { authService } from "@/app/services/auth.service";
 import { API_BASE_URL } from "@/app/lib/api/config";
+import {
+  BookOpen,
+  Calendar2,
+  ClipboardClose,
+  Dashboard,
+  Settings,
+  UserGroup,
+  VolumeHigh,
+} from "./Icons";
 
 interface MenuItem {
   path: string;
@@ -75,32 +82,46 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const menuItems: MenuItem[] = [
     {
       path: "/dashboard",
-      icon: <Home className="w-5 h-5 text-blue-600" />,
+      icon: <Dashboard isActive={pathname.startsWith("/dashboard")} />,
       label: "Dashboard",
     },
     {
       path: "/classes",
-      icon: <School className="w-5 h-5 text-emerald-600" />,
+      icon: <BookOpen isActive={pathname.startsWith("/classes")} />,
       label: "Classes",
     },
     {
       path: "/curriculum",
-      icon: <BookOpen className="w-5 h-5 text-teal-600" />,
+      icon: (
+        <GraduationCap
+         
+          style={{
+            color: pathname.startsWith("/curriculum") ? "#003366" : "#929292",
+          }}
+        />
+      ),
       label: "Curriculum",
     },
     {
       path: "/assessments",
-      icon: <BarChart3 className="w-5 h-5 text-purple-600" />,
+      icon: (
+        <BarChart3
+          className="w-5 h-5"
+          style={{
+            color: pathname.startsWith("/assessments") ? "#003366" : "#929292",
+          }}
+        />
+      ),
       label: "Assessments",
     },
     {
       path: "/timetable",
-      icon: <Calendar className="w-5 h-5 text-indigo-600" />,
+      icon: <Calendar2 isActive={pathname.startsWith("/timetable")} />,
       label: "Timetable",
     },
     {
       path: "/users",
-      icon: <Users className="w-5 h-5 text-orange-600" />,
+      icon: <UserGroup isActive={pathname.startsWith("/users")} />,
       label: "Users",
       hasDropdown: true,
       expanded: expandedUsers,
@@ -115,12 +136,14 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     },
     {
       path: "/announcements",
-      icon: <Megaphone className="w-5 h-5 text-red-600" />,
+      icon: <VolumeHigh isActive={pathname.startsWith("/announcements")} />,
       label: "Announcements",
     },
     {
       path: "/leave-requests",
-      icon: <Clock className="w-5 h-5 text-yellow-600" />,
+      icon: (
+        <ClipboardClose isActive={pathname.startsWith("/leave-requests")} />
+      ),
       label: "Leave Requests",
     },
     // {
@@ -130,7 +153,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     // },
     {
       path: "/settings",
-      icon: <Settings className="w-5 h-5 text-gray-600" />,
+      icon: <Settings isActive={pathname.startsWith("/settings")} />,
       label: "Settings",
     },
   ];
@@ -192,10 +215,10 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       )}
 
       {/* Logo Section */}
-      <div className={cn("p-6", isMobile && "pt-4")}>
+      <div className="p-[21px] border-b-2 border-[#F3F3F3]">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 bg-blue-600 rounded-lg blur-sm opacity-20"></div>
+            <div className="absolute inset-0 bg-blue-600 rounded-lg opacity-20"></div>
             <div className="relative bg-[#003366] p-2 rounded-lg">
               <Image
                 src="/img/treelogo.svg"
@@ -208,13 +231,12 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
           </div>
           <div>
             <h1 className="text-[18px] font-semibold text-[#030E18]">Talim</h1>
-            
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 space-y-3 mt-4">
         {menuItems.map((item, index) => (
           <motion.div
             key={item.path}
@@ -228,8 +250,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 relative",
                   pathname.startsWith("/users") ||
                     (item.hasDropdown && item.expanded)
-                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-100"
-                    : "text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
+                    ? "bg-[#BFCCD9] text-[#003366]  border border-[#003366]/20"
+                    : "text-[#929292] hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
                 )}
                 onClick={item.onClick}
                 whileHover={{ scale: 1.02 }}
@@ -237,11 +259,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
               >
                 <div
                   className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300",
-                    pathname.startsWith("/users") ||
-                      (item.hasDropdown && item.expanded)
-                      ? "bg-white shadow-sm"
-                      : "group-hover:bg-white group-hover:shadow-sm"
+                    "flex items-center justify-center w-10  rounded-lg transition-all duration-300"
                   )}
                 >
                   {item.icon}
@@ -255,19 +273,15 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   <ChevronDown className="w-4 h-4" />
                 </motion.div>
                 {/* Active indicator */}
-                {(pathname.startsWith("/users") ||
-                  (item.hasDropdown && item.expanded)) && (
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"></div>
-                )}
               </motion.div>
             ) : (
               <SmoothLink href={item.path}>
                 <motion.div
                   className={cn(
-                    "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 relative",
+                    "group flex items-center gap-3 px-3 py-1 rounded-xl cursor-pointer transition-all duration-300 relative",
                     pathname.startsWith(item.path)
-                      ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-100"
-                      : "text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
+                      ? "bg-[#BFCCD9] text-[#003366] border border-[#003366]/20"
+                      : "text-[#929292] hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
                   )}
                   whileHover={{ scale: 1.02, x: 2 }}
                   whileTap={{ scale: 0.98 }}
@@ -275,31 +289,12 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                 >
                   <div
                     className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300",
-                      pathname.startsWith(item.path)
-                        ? "bg-white shadow-sm"
-                        : "group-hover:bg-white group-hover:shadow-sm"
+                      "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300"
                     )}
                   >
                     {item.icon}
                   </div>
                   <span className="font-medium">{item.label}</span>
-                  {item.badge && (
-                    <motion.div
-                      className="ml-auto w-6 h-6 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.3, type: "spring" }}
-                    >
-                      <span className="text-xs text-white font-semibold">
-                        {item.badge}
-                      </span>
-                    </motion.div>
-                  )}
-                  {/* Active indicator */}
-                  {pathname.startsWith(item.path) && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full"></div>
-                  )}
                 </motion.div>
               </SmoothLink>
             )}
@@ -327,8 +322,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                           className={cn(
                             "flex items-center gap-3 py-2 px-4 rounded-lg transition-all duration-200 relative",
                             pathname === subItem.path
-                              ? "text-blue-700 bg-blue-50 font-medium"
-                              : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                              ? "text-[#003366] bg-blue-50 font-medium"
+                              : "text-[#929292] hover:text-gray-900 hover:bg-gray-50"
                           )}
                           whileHover={{ scale: 1.02, x: 4 }}
                           whileTap={{ scale: 0.98 }}
