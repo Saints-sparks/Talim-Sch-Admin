@@ -1,5 +1,6 @@
-import { API_ENDPOINTS } from '../lib/api/config';
-import { getLocalStorageItem } from '../lib/localStorage';
+import { API_ENDPOINTS } from "../lib/api/config";
+import { getLocalStorageItem } from "../lib/localStorage";
+import { apiClient } from "@/lib/apiClient";
 
 export interface CreateAssessmentRequest {
   name: string;
@@ -7,7 +8,7 @@ export interface CreateAssessmentRequest {
   termId: string;
   startDate: string;
   endDate: string;
-  status?: 'pending' | 'active' | 'completed' | 'cancelled';
+  status?: "pending" | "active" | "completed" | "cancelled";
 }
 
 export interface UpdateAssessmentRequest {
@@ -15,7 +16,7 @@ export interface UpdateAssessmentRequest {
   description?: string;
   startDate?: string;
   endDate?: string;
-  status?: 'pending' | 'active' | 'completed' | 'cancelled';
+  status?: "pending" | "active" | "completed" | "cancelled";
 }
 
 export interface AssessmentResponse {
@@ -31,7 +32,7 @@ export interface AssessmentResponse {
   schoolId: string;
   startDate: string;
   endDate: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  status: "pending" | "active" | "completed" | "cancelled";
   createdBy: {
     _id: string;
     name: string;
@@ -52,36 +53,29 @@ export interface AssessmentsResponse {
 }
 
 class AssessmentService {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('accessToken')
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-  }
-
-  
+  // Note: Authorization headers are now handled automatically by apiClient
 
   /**
    * Create a new assessment
    */
-  async createAssessment(data: CreateAssessmentRequest): Promise<AssessmentResponse> {
+  async createAssessment(
+    data: CreateAssessmentRequest
+  ): Promise<AssessmentResponse> {
     try {
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/assessments`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post(
+        `${API_ENDPOINTS.BASE_URL}/assessments`,
+        data
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create assessment');
+        throw new Error(errorData.message || "Failed to create assessment");
       }
 
       const result = await response.json();
       return result.assessment;
     } catch (error) {
-      console.error('Error creating assessment:', error);
+      console.error("Error creating assessment:", error);
       throw error;
     }
   }
@@ -89,24 +83,23 @@ class AssessmentService {
   /**
    * Get assessments by school with pagination
    */
-  async getAssessmentsBySchool(page: number = 1, limit: number = 10): Promise<AssessmentsResponse> {
+  async getAssessmentsBySchool(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<AssessmentsResponse> {
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/assessments/school/?page=${page}&limit=${limit}`,
-        {
-          method: 'GET',
-          headers: this.getAuthHeaders(),
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.BASE_URL}/assessments/school/?page=${page}&limit=${limit}`
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch assessments');
+        throw new Error(errorData.message || "Failed to fetch assessments");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching assessments:', error);
+      console.error("Error fetching assessments:", error);
       throw error;
     }
   }
@@ -116,22 +109,20 @@ class AssessmentService {
    */
   async getAssessmentsByTerm(termId: string): Promise<AssessmentResponse[]> {
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/assessments/term/${termId}`,
-        {
-          method: 'GET',
-          headers: this.getAuthHeaders(),
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.BASE_URL}/assessments/term/${termId}`
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch assessments for term');
+        throw new Error(
+          errorData.message || "Failed to fetch assessments for term"
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching assessments by term:', error);
+      console.error("Error fetching assessments by term:", error);
       throw error;
     }
   }
@@ -141,22 +132,18 @@ class AssessmentService {
    */
   async getAssessmentById(id: string): Promise<AssessmentResponse> {
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`,
-        {
-          method: 'GET',
-          headers: this.getAuthHeaders(),
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch assessment');
+        throw new Error(errorData.message || "Failed to fetch assessment");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching assessment:', error);
+      console.error("Error fetching assessment:", error);
       throw error;
     }
   }
@@ -164,23 +151,25 @@ class AssessmentService {
   /**
    * Update an assessment
    */
-  async updateAssessment(id: string, data: UpdateAssessmentRequest): Promise<AssessmentResponse> {
+  async updateAssessment(
+    id: string,
+    data: UpdateAssessmentRequest
+  ): Promise<AssessmentResponse> {
     try {
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`,
+        data
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update assessment');
+        throw new Error(errorData.message || "Failed to update assessment");
       }
 
       const result = await response.json();
       return result.assessment;
     } catch (error) {
-      console.error('Error updating assessment:', error);
+      console.error("Error updating assessment:", error);
       throw error;
     }
   }
@@ -190,17 +179,16 @@ class AssessmentService {
    */
   async deleteAssessment(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`, {
-        method: 'DELETE',
-        headers: this.getAuthHeaders(),
-      });
+      const response = await apiClient.delete(
+        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete assessment');
+        throw new Error(errorData.message || "Failed to delete assessment");
       }
     } catch (error) {
-      console.error('Error deleting assessment:', error);
+      console.error("Error deleting assessment:", error);
       throw error;
     }
   }
@@ -208,18 +196,21 @@ class AssessmentService {
   /**
    * Date validation utilities
    */
-  validateAssessmentDates(startDate: string, endDate: string): { isValid: boolean; error?: string } {
+  validateAssessmentDates(
+    startDate: string,
+    endDate: string
+  ): { isValid: boolean; error?: string } {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     if (start >= end) {
-      return { isValid: false, error: 'End date must be after start date' };
+      return { isValid: false, error: "End date must be after start date" };
     }
 
     if (start < today) {
-      return { isValid: false, error: 'Start date cannot be in the past' };
+      return { isValid: false, error: "Start date cannot be in the past" };
     }
 
     return { isValid: true };
@@ -238,16 +229,16 @@ class AssessmentService {
    */
   getStatusColor(status: string): string {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'active':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "active":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   }
 }
