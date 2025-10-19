@@ -21,7 +21,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     // Don't proceed if auth is still loading
     if (authLoading) return;
 
-    const userId = user?._id;
+    const userId = user?.userId;
 
     console.log("🔍 WebSocket connection effect triggered:", {
       isAuthenticated,
@@ -42,7 +42,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       console.log("🔌 Auto-disconnecting WebSocket - user not authenticated");
       webSocket.disconnect();
     }
-  }, [isAuthenticated, user?._id, webSocket, authLoading]);
+  }, [isAuthenticated, user?.userId, webSocket, authLoading]);
 
   return (
     <WebSocketContext.Provider value={webSocket}>

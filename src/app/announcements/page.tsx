@@ -17,8 +17,8 @@ import {
   CreateAnnouncementResponse,
 } from "../services/announcement.service";
 import { toast } from "react-toastify";
-import { getLocalStorageItem } from "../lib/localStorage";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
+import { useAuth } from "@/context/AuthContext";
 import TalimModal from "@/components/ui/TalimModal";
 import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
 import { FiCamera, FiX, FiFile, FiFileText } from "react-icons/fi";
@@ -30,6 +30,7 @@ interface Announcement {
 }
 
 const Announcement: React.FC = () => {
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -80,13 +81,12 @@ const Announcement: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const userId = getLocalStorageItem("user")?.userId;
-      if (!userId) {
-        throw new Error("User ID not found");
+      if (!user?.userId) {
+        throw new Error("User not authenticated");
       }
 
       const response = await getAnnouncementsBySender(
-        userId,
+        user.userId,
         pagination.page,
         pagination.limit
       );

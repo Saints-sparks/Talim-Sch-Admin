@@ -1,6 +1,6 @@
-import { API_BASE_URL, API_ENDPOINTS } from '../lib/api/config';
-import { getLocalStorageItem } from '../lib/localStorage';
-import { toast } from 'react-toastify';
+import { API_BASE_URL, API_ENDPOINTS } from "../lib/api/config";
+import { toast } from "react-toastify";
+import { apiClient } from "@/lib/apiClient";
 
 export interface LeaveRequest {
   title: string;
@@ -39,122 +39,68 @@ export interface LeaveRequestsResponse {
   meta: LeaveMeta;
 }
 
-export const createLeaveRequest = async (leave: LeaveRequest): Promise<LeaveResponse> => {
-  const senderId = getLocalStorageItem('user')?.userId;
-
-  if (!senderId) {
-    throw new Error('User not authenticated');
-  }
-
+export const createLeaveRequest = async (
+  leave: LeaveRequest
+): Promise<LeaveResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/leave/requests`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      },
-      body: JSON.stringify({
-        ...leave,
-        senderId,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create leave request');
-    }
+    const response = await apiClient.post(
+      `${API_BASE_URL}/leave/requests`,
+      leave
+    );
 
     const data: LeaveResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to create leave request. Please try again.');
+    console.error("Failed to create leave request:", error);
     throw error;
   }
 };
 
-export const getLeaveRequests = async (page: number = 1, limit: number = 10): Promise<LeaveRequestsResponse> => {
-  const token = localStorage.getItem('accessToken');
-
-  console.log(`Fetching leave requests with token: ${token}`);
-
+export const getLeaveRequests = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<LeaveRequestsResponse> => {
   try {
-    const response = await fetch(API_ENDPOINTS.GET_LEAVE_REQUESTS, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        
-      }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch leave requests');
-    }
+    const response = await apiClient.get(API_ENDPOINTS.GET_LEAVE_REQUESTS);
 
     const data: LeaveRequestsResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to fetch leave requests. Please try again.');
+    console.error("Failed to fetch leave requests:", error);
     throw error;
   }
 };
 
-export const getLeaveRequestById = async (leaveId: string): Promise<LeaveResponse> => {
-  const token = localStorage.getItem('accessToken');
-
-  if (!token) {
-    throw new Error('User not authenticated');
-  }
-
+export const getLeaveRequestById = async (
+  leaveId: string
+): Promise<LeaveResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/leave-requests/${leaveId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch leave request details');
-    }
+    const response = await apiClient.get(
+      `${API_BASE_URL}/leave-requests/${leaveId}`
+    );
 
     const data: LeaveResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to fetch leave request details. Please try again.');
+    console.error("Failed to fetch leave request details:", error);
     throw error;
   }
 };
 
-export const updateLeaveRequestStatus = async (leaveId: string, status: string): Promise<LeaveResponse> => {
-  const token = localStorage.getItem('accessToken');
-
-  if (!token) {
-    throw new Error('User not authenticated');
-  }
-
+export const updateLeaveRequestStatus = async (
+  leaveId: string,
+  status: string
+): Promise<LeaveResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/leave-requests/${leaveId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ status }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update leave request status');
-    }
+    const response = await apiClient.put(
+      `${API_BASE_URL}/leave-requests/${leaveId}/status`,
+      { status }
+    );
 
     const data: LeaveResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error('Failed to update leave request status. Please try again.');
+    console.error("Failed to update leave request status:", error);
     throw error;
   }
 };

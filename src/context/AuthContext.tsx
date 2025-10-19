@@ -12,16 +12,22 @@ import { toast } from "react-toastify";
 import { apiClient } from "@/lib/apiClient";
 
 interface User {
-  _id: string;
+  userId: string;
   email: string;
-  name: string;
   firstName?: string;
   lastName?: string;
   role: string;
-  school?: any;
+  schoolId?: string;
   schoolName?: string;
   schoolLogo?: string;
   userAvatar?: string;
+  phoneNumber?: string;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
+  studentId?: string | null;
+  classId?: string | null;
+  className?: string | null;
+  termId?: string;
   // Add other user properties as needed
 }
 
@@ -77,14 +83,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Introspect token to get user info using access token
   const introspectToken = async (token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // Use access token for introspection
-        },
-        credentials: "include", // Still include for CORS/cookie support
-      });
+      const response = await fetch(
+        `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Use access token for introspection
+          },
+          credentials: "include", // Still include for CORS/cookie support
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -133,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json();
       const { access_token } = data;
-      
+
       // Store access token in memory only (not localStorage)
       setAccessToken(access_token);
 
@@ -154,10 +163,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Create new refresh promise
     refreshPromiseRef.current = (async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.REFRESH}`, {
-          method: "POST",
-          credentials: "include", // Sends httpOnly cookie automatically
-        });
+        const response = await fetch(
+          `${API_BASE_URL}${API_URLS.AUTH.REFRESH}`,
+          {
+            method: "POST",
+            credentials: "include", // Sends httpOnly cookie automatically
+          }
+        );
 
         if (response.ok) {
           const data = await response.json();
