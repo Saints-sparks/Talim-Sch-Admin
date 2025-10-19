@@ -196,7 +196,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="absolute inset-0 bg-blue-600 rounded-lg blur-sm opacity-20"></div>
-            <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-lg">
+            <div className="relative bg-[#003366] p-2 rounded-lg">
               <Image
                 src="/img/treelogo.svg"
                 alt="Talim Logo"
@@ -207,8 +207,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
             </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Talim</h1>
-            <p className="text-xs text-gray-500">Admin Portal</p>
+            <h1 className="text-[18px] font-semibold text-[#030E18]">Talim</h1>
+            
           </div>
         </div>
       </div>
