@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../lib/api/config";
 import { PerformanceMonitor, performantFetch } from "../lib/performance";
+import { apiClient } from "@/lib/apiClient";
 
 interface User {
   _id: string;
@@ -309,13 +310,7 @@ export const createStudentProfile = async (
 };
 
 export const getClasses = async (): Promise<Class[]> => {
-  const response = await fetch(API_ENDPOINTS.GET_CLASSES, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-  });
+  const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
 
   if (!response.ok) {
     throw new Error("Failed to fetch classes");
@@ -325,15 +320,7 @@ export const getClasses = async (): Promise<Class[]> => {
 };
 
 export const createClass = async (payload: Omit<Class, "_id">) => {
-  const response = await fetch(API_ENDPOINTS.CREATE_CLASS, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await apiClient.post(API_ENDPOINTS.CREATE_CLASS, payload);
 
   if (!response.ok) {
     throw new Error("Class creation failed");
@@ -345,14 +332,7 @@ export const createClass = async (payload: Omit<Class, "_id">) => {
 export const editClass = async (classId: string, data: any) => {
   const url = API_ENDPOINTS.EDIT_CLASS(classId);
 
-  const response = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await apiClient.put(url, data);
 
   if (!response.ok) {
     try {
