@@ -7,6 +7,7 @@ import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
+import { Calendar } from "./Icons";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
@@ -23,7 +24,7 @@ export function Header() {
   };
 
   return (
-    <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] py-2 bg-white">
+    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] py-2 bg-[#FAFAFA]">
       {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
       <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
         {/* Left Side: School Name */}
@@ -71,11 +72,11 @@ export function Header() {
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="flex gap-2 items-center text-sm text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white cursor-pointer hover:bg-gray-100">
-              <p className="text-[14px] sm:text-[16px]">
+            <div className="flex gap-2 items-center text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white cursor-pointer hover:bg-gray-100">
+              <p className="font-medium leading-[24px]">
                 {format(new Date(), "dd MMM, yyyy")}
               </p>
-              <CalendarRange size={24} />
+              <Calendar />
             </div>
             {/* WebSocket Status - Always visible but compact on mobile */}
             <div className="flex items-center">
