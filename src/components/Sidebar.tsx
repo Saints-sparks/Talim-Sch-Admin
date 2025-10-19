@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
 import {
   BookOpen,
   Calendar,
@@ -56,35 +57,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const router = useRouter();
   const [expandedUsers, setExpandedUsers] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, logout } = useAuth();
   const { isMobile, isMobileOpen, setMobileOpen } = useSidebar();
-
-  // Get user information from localStorage
-  useEffect(() => {
-    const getUserFromStorage = () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        }
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-      }
-    };
-
-    getUserFromStorage();
-
-    // Listen for storage changes (in case user data is updated elsewhere)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "user") {
-        getUserFromStorage();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
 
   // Auto-collapse Users submenu when navigating away from users pages
   useEffect(() => {
@@ -182,44 +156,8 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     try {
       setIsLoggingOut(true);
 
-      // Get the access token from localStorage
-      const accessToken = localStorage.getItem("accessToken");
-
-      if (accessToken) {
-        // Call the logout API
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_BASE_URL || API_BASE_URL}/auth/logout`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-            }
-          );
-
-          if (!response.ok) {
-            console.warn(
-              "Logout API call failed, but proceeding with local cleanup"
-            );
-          }
-        } catch (apiError) {
-          console.warn(
-            "Logout API call failed, but proceeding with local cleanup:",
-            apiError
-          );
-        }
-      }
-
-      // Clear all authentication data from localStorage
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-
-      // Clear any other stored user data
-      localStorage.clear();
+      // Use AuthContext logout method
+      await logout();
 
       // Show success message
       toast.success("Logged out successfully!");

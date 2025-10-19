@@ -12,6 +12,7 @@ export const API_URLS = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     INTROSPECT: "/auth/introspect",
+    REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",

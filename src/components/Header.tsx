@@ -5,38 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
-  const [user, setUser] = useState<any>(null);
-
-  // Get user information from localStorage
-  useEffect(() => {
-    const getUserFromStorage = () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        }
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-      }
-    };
-
-    getUserFromStorage();
-
-    // Listen for storage changes (in case user data is updated elsewhere)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "user") {
-        getUserFromStorage();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  const { user } = useAuth();
 
   // Generate user initials from first and last name
   const getUserInitials = () => {

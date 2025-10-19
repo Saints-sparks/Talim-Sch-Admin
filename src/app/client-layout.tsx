@@ -2,6 +2,7 @@
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 import { TransitionProvider } from "@/context/TransitionContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { ToastContainer as ReactToastifyContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -30,48 +31,33 @@ export default function ClientLayout({
   ];
   const showSidebar = !noSidebarRoutes.includes(pathname);
 
-  useEffect(() => {
-    // Only check auth status on protected routes
-    if (typeof window !== "undefined" && !noSidebarRoutes.includes(pathname)) {
-      const checkAuthStatus = () => {
-        const accessToken = localStorage.getItem("accessToken");
-
-        if (!accessToken) {
-          toast.info("Your session has expired. Please log in again.");
-          router.push("/");
-        }
-      };
-
-      // Small delay to prevent race conditions
-      const timeoutId = setTimeout(checkAuthStatus, 100);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [pathname, router, toast, noSidebarRoutes]);
+  // Auth check is now handled by AuthContext, no need for manual localStorage check
 
   return (
-    <TransitionProvider>
-      <SidebarProvider>
-        <PageIndicatorProvider>
-          <WebSocketProvider>
-            <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
-            <ToastContainer toasts={toasts} onRemove={removeToast} />
-            {/* Fallback react-toastify container */}
-            <ReactToastifyContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </WebSocketProvider>
-        </PageIndicatorProvider>
-      </SidebarProvider>
-    </TransitionProvider>
+    <AuthProvider>
+      <TransitionProvider>
+        <SidebarProvider>
+          <PageIndicatorProvider>
+            <WebSocketProvider>
+              <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
+              <ToastContainer toasts={toasts} onRemove={removeToast} />
+              {/* Fallback react-toastify container */}
+              <ReactToastifyContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+              />
+            </WebSocketProvider>
+          </PageIndicatorProvider>
+        </SidebarProvider>
+      </TransitionProvider>
+    </AuthProvider>
   );
 }

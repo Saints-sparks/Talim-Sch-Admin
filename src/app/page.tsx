@@ -4,11 +4,10 @@ import Image from "next/legacy/image";
 import { useState } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify"; // Import toast from react-toastify
-import { authService } from "./services/auth.service";
-import nookies from "nookies";
-import treelogo from "../../public/img/treelogo.svg"; // Adjust the path as necessary
-import loginImage from "../../public/img/Education-rafiki 1.svg"; // Adjust the path as necessary
+import { toast } from "react-toastify";
+import { useAuth } from "@/context/AuthContext";
+import treelogo from "../../public/img/treelogo.svg";
+import loginImage from "../../public/img/Education-rafiki 1.svg";
 
 interface DashboardCardProps {
   title: string;
@@ -47,12 +46,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 
 export default function SignIn() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // Loading state
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const [loading, setLoading] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -69,57 +68,25 @@ export default function SignIn() {
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Set loading to true when the form is submitted
     setLoading(true);
 
-    //console.log('Login request:', { email, password });
     try {
-      // Prepare the request body
-      const requestBody = {
-        email,
-        password,
-        deviceToken: "123456", // Replace with actual device token
-        platform: "web", // Replace with actual platform (e.g., 'web', 'ios', 'android')
-      };
+      const success = await login(email, password);
 
-      // Send login request to the backend
-      const response = await authService.login(requestBody);
+      if (success) {
+        toast.success("Login successful! Redirecting...");
 
-      nookies.set(null, "access_token", response.access_token, {
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-        path: "/",
-      });
-      nookies.set(null, "refresh_token", response.refresh_token, {
-        maxAge: 30 * 24 * 60 * 60,
-        path: "/",
-      });
-
-      // Get user info
-      const userInfo = await authService.introspectToken(response.access_token);
-
-      // Store user info in localStorage
-      localStorage.setItem("user", JSON.stringify(userInfo.user));
-      localStorage.setItem("accessToken", response.access_token); // Store access token
-      localStorage.setItem("refreshToken", response.refresh_token);
-
-      // Trigger custom auth event for WebSocket context
-      window.dispatchEvent(
-        new CustomEvent("auth-changed", {
-          detail: { type: "login", user: userInfo.user },
-        })
-      );
-
-      toast.success("Login successful! Redirecting...");
-
-      // Redirect to dashboard or home page on successful login
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000); // Delay redirect to allow toast to be seen
-    } catch (err) {
-      // Display error toast
-      toast.error("An error occurred. Please try again.");
+        // Redirect to dashboard on successful login
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
+      } else {
+        toast.error("Invalid credentials. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      toast.error(err.message || "An error occurred. Please try again.");
     } finally {
-      // Reset loading state
       setLoading(false);
     }
   };
