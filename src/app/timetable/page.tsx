@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from "@/app/lib/api/config"; // adjust import if needed
 import { teacherService } from "../services/teacher.service";
 import { BookOpen, Calendar, Clock, MapPin, Users } from "lucide-react";
 import { ChevronDown } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
 
 interface TimetableEntry {
   time: string;
@@ -98,9 +99,7 @@ const Timetable = () => {
     const fetchClasses = async () => {
       setIsLoadingClasses(true);
       try {
-        const response = await fetch(API_ENDPOINTS.GET_CLASSES, {
-          headers: getAuthHeaders(),
-        });
+        const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
 
         if (!response.ok) throw new Error("Failed to fetch classes");
 
@@ -132,9 +131,7 @@ const Timetable = () => {
       const url = `${API_ENDPOINTS.GET_TIMETABLE_BY_CLASS}/${selectedClassId}`;
 
       try {
-        const res = await fetch(url, {
-          headers: getAuthHeaders(),
-        });
+        const res = await apiClient.get(url);
 
         if (res.status === 404) {
           // Friendly handling for "no timetable created yet"
@@ -206,13 +203,7 @@ const Timetable = () => {
     return slots;
   };
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("accessToken");
-    return {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-    };
-  };
+  // Auth headers are now handled automatically by apiClient
 
   const getTotalScheduledClasses = () => {
     return Object.values(timetableEntries).reduce(
@@ -248,11 +239,8 @@ const Timetable = () => {
     if (isModalOpen) {
       const fetchSubjects = async () => {
         try {
-          const subjectsRes = await fetch(
-            API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL,
-            {
-              headers: getAuthHeaders(),
-            }
+          const subjectsRes = await apiClient.get(
+            API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL
           );
 
           const subjectsData = await subjectsRes.json();
@@ -277,12 +265,8 @@ const Timetable = () => {
     const subjectId = e.target.value;
     setFormData({ ...formData, subject: subjectId, courseId: "" });
     try {
-      const res = await fetch(
-        `${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`,
-        {
-          method: "GET",
-          headers: getAuthHeaders(),
-        }
+      const res = await apiClient.get(
+        `${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`
       );
       if (!res.ok) throw new Error("Failed to fetch courses by subject");
       const coursesData = await res.json();
@@ -323,11 +307,10 @@ const Timetable = () => {
     };
 
     try {
-      const res = await fetch(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
+      const res = await apiClient.post(
+        API_ENDPOINTS.CREATE_TIMETABLE_ENTRY,
+        payload
+      );
       if (!res.ok) {
         throw new Error("Failed to create timetable entry");
       }
