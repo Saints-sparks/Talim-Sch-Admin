@@ -383,7 +383,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   if (!isMobile) {
     return (
       <motion.div
-        className="h-screen w-72 bg-white border-r border-gray-200 flex flex-col shadow-sm"
+        className="h-screen w-[266px] bg-white border-r border-gray-200 flex flex-col shadow-sm"
         initial={{ x: -288 }}
         animate={{ x: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -419,7 +419,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
             animate={{ x: 0 }}
             exit={{ x: -288 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed left-0 top-0 h-full w-72 bg-white border-r border-gray-200 flex flex-col z-50 md:hidden shadow-2xl"
+            className="fixed left-0 top-0 h-full bg-white border-r border-[#F3F3F3] flex flex-col z-50 md:hidden shadow-2xl"
           >
             {sidebarContent}
           </motion.div>
