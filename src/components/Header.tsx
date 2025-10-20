@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { Bell, Menu, CalendarRange, GraduationCap } from "lucide-react";
+import { Menu, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Button } from "./ui/button";
 import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
 import { Calendar } from "./Icons";
 
 export function Header() {
