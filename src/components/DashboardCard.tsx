@@ -1,5 +1,4 @@
 import React from "react";
-import { FiChevronRight } from "react-icons/fi";
 import { ChevronRight } from "./Icons";
 
 interface DashboardCardProps {

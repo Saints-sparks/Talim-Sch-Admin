@@ -11,7 +11,6 @@ import DashboardCard from "@/components/DashboardCard";
 import ClassTable from "@/components/ClassTable";
 import AddClassModal from "@/components/AddClassModal";
 import { useDashboard } from "@/hooks/useDashboard";
-import { FiBook, FiUsers, FiUser, FiBookOpen } from "react-icons/fi";
 import { Book, BookOpen, Profile, Profile2User } from "@/components/Icons";
 
 const Dashboard = () => {

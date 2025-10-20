@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus } from "react-icons/fi";
-import { School, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { ChevronLeft, ChevronRight, Edit2, Eye, Search } from "./Icons";
 import { ChevronDown } from "./Icons";
 import { useState } from "react";
