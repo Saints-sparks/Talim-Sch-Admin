@@ -10,7 +10,6 @@ import {
   Calendar,
   ChevronDown,
   Home,
-  LogOut,
   MessageSquare,
   AlertCircle,
   Speaker,
@@ -37,8 +36,11 @@ import { API_BASE_URL } from "@/app/lib/api/config";
 import {
   BookOpen,
   Calendar2,
+  Chart2,
   ClipboardClose,
   Dashboard,
+  Note,
+  Power,
   Settings,
   UserGroup,
   VolumeHigh,
@@ -93,24 +95,14 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     {
       path: "/curriculum",
       icon: (
-        <GraduationCap
-         
-          style={{
-            color: pathname.startsWith("/curriculum") ? "#003366" : "#929292",
-          }}
-        />
+        <Note isActive={pathname.startsWith("/curriculum")} />
       ),
       label: "Curriculum",
     },
     {
       path: "/assessments",
       icon: (
-        <BarChart3
-          className="w-5 h-5"
-          style={{
-            color: pathname.startsWith("/assessments") ? "#003366" : "#929292",
-          }}
-        />
+        <Chart2 isActive={pathname.startsWith("/assessments")} />
       ),
       label: "Assessments",
     },
@@ -347,10 +339,10 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       </div>
 
       {/* Logout Section */}
-      <div className=" border-t border-gray-100">
+      <div className=" border-t border-[#F4F4F4]">
         <motion.div
           className={cn(
-            "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300",
+            "group flex items-center gap-1 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300",
             isLoggingOut
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
               : "text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 hover:text-red-600"
@@ -368,10 +360,10 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
             {isLoggingOut ? (
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
             ) : (
-              <LogOut className="w-5 h-5" />
+              <Power />
             )}
           </div>
-          <span className="font-medium">
+          <span className="font-medium text-[#929292]">
             {isLoggingOut ? "Logging out..." : "Logout Account"}
           </span>
         </motion.div>

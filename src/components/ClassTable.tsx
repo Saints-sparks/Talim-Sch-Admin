@@ -1,9 +1,10 @@
-import type React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus } from "react-icons/fi";
 import { School, AlertTriangle } from "lucide-react";
 import { ChevronLeft, ChevronRight, Edit2, Eye, Search } from "./Icons";
 import { ChevronDown } from "./Icons";
+import { useState } from "react";
+import Image from "next/image";
 
 interface ClassTableProps {
   classes: Array<{
@@ -52,6 +53,20 @@ const ClassTable: React.FC<ClassTableProps> = ({
     }
   };
 
+  // Search state
+  const [search, setSearch] = useState("");
+
+  // Filtered classes based on search
+  const filteredClasses = classes.filter((item) => {
+    const searchLower = search.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(searchLower) ||
+      (item.classDescription?.toLowerCase().includes(searchLower) ?? false) ||
+      (item.classCapacity !== undefined &&
+        String(item.classCapacity).includes(searchLower))
+    );
+  });
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 leading-[120%]">
       <motion.section
@@ -75,13 +90,15 @@ const ClassTable: React.FC<ClassTableProps> = ({
             </button>
           </div>
           <div className="flex w-[300px] h-[40px] border border-[#E0E0E0] gap-2 bg-white items-center p-2 rounded-xl text-[#898989]">
-                <Search />
-                <input
-                  type="search"
-                  placeholder="Search"
-                  className="flex-1 border-none shadow-none placeholder-[#B3B3B3] placeholder:font-medium placeholder:text-[15px] focus:outline-none focus-visible:ring-0"
-                />
-              </div>
+            <Search />
+            <input
+              type="search"
+              placeholder="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 border-none shadow-none placeholder-[#B3B3B3] placeholder:font-medium placeholder:text-[15px] text-[#2F2F2F] focus:outline-none focus-visible:ring-0"
+            />
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -111,36 +128,28 @@ const ClassTable: React.FC<ClassTableProps> = ({
                 </motion.button>
               </div>
             </motion.div>
-          ) : classes.length === 0 ? (
-            <motion.div
-              className="text-center py-16"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-12 max-w-lg mx-auto shadow-sm">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <School className="w-10 h-10 text-white" />
-                </div>
-                <h4 className="text-gray-800 text-2xl font-bold mb-3">
-                  No Classes Yet
-                </h4>
-                <p className="text-gray-600 mb-8 leading-relaxed text-lg">
-                  Get started by creating your first class to organize your
-                  students and curriculum effectively.
+          ) : filteredClasses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Image
+                src="/class-empty.svg"
+                alt="No data illustration"
+                className="object-contain"
+                width={300}
+                height={300}
+              />
+              <div className="text-center flex justify-center flex-col">
+                <p className="text-[#525252]  font-medium mb-3">
+                  There are no classes yet.
                 </p>
-                <motion.button
+                <button
                   onClick={onAdd}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center justify-center gap-2 px-2 py-1 bg-[#D8D8D8]/22 border border-[#D6D6D6] rounded-xl max-w-[161px] mx-auto leading-[30px] font-medium hover:bg-gray-50 transition-all duration-200"
                 >
-                  <FiPlus className="inline w-5 h-5 mr-2" />
-                  Create Your First Class
-                </motion.button>
+                  <FiPlus className="w-6 h-6" />
+                  Create Class
+                </button>
               </div>
-            </motion.div>
+            </div>
           ) : (
             <motion.div
               className="space-y-4"
@@ -169,7 +178,7 @@ const ClassTable: React.FC<ClassTableProps> = ({
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {classes.map((item, index) => (
+                      {filteredClasses.map((item, index) => (
                         <tr
                           key={item._id}
                           className="border-b border-[#F0F0F0] hover:bg-gray-50 transition-colors duration-200"
@@ -249,7 +258,7 @@ const ClassTable: React.FC<ClassTableProps> = ({
                         <ChevronDown />
                       </span>
                     </div>
-                    
+
                     <span className="text-[#979797] text-[15px]">
                       of page 2
                     </span>
