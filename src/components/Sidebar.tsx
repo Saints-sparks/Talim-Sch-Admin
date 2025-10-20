@@ -7,36 +7,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useAuth } from "@/context/AuthContext";
 import {
-  Calendar,
-  ChevronDown,
-  Home,
-  MessageSquare,
-  AlertCircle,
-  Speaker,
-  Ticket,
-  Users,
-  Bell,
-  CircleUser,
-  ClipboardList,
-  X,
-  GraduationCap,
-  School,
-  UserCheck,
-  Clock,
-  Megaphone,
-  FileText,
-  BarChart3,
+  X
 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
 import { useSidebar } from "@/context/SidebarContext";
-import { authService } from "@/app/services/auth.service";
-import { API_BASE_URL } from "@/app/lib/api/config";
 import {
   BookOpen,
   Calendar2,
   Chart2,
+  ChevronDown,
   ClipboardClose,
   Dashboard,
   Note,
@@ -262,7 +242,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   transition={{ duration: 0.3 }}
                   className="ml-auto"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown />
                 </motion.div>
                 {/* Active indicator */}
               </motion.div>
