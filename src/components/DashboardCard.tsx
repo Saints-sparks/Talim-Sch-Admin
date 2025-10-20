@@ -26,7 +26,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             : React.createElement(icon as React.ComponentType<any>)}
         </div>
         <div className="flex flex-col">
-          <p className="text-[23px] leading-[120%] font-medium">
+          <p className="text-[23px] leading-[120%] font-semibold">
             {count.toLocaleString()}
           </p>
           <p className="text-[#B3B3B3] text-[13px] font-medium">{label}</p>

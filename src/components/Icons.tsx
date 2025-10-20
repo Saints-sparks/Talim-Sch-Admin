@@ -511,3 +511,136 @@ export const ChevronRight = () => {
     </svg>
   );
 };
+
+export const Eye = () => {
+  return (
+    <svg
+      width="19"
+      height="18"
+      viewBox="0 0 19 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12.1849 9.00043C12.1849 10.4854 10.9849 11.6854 9.49994 11.6854C8.01494 11.6854 6.81494 10.4854 6.81494 9.00043C6.81494 7.51543 8.01494 6.31543 9.49994 6.31543C10.9849 6.31543 12.1849 7.51543 12.1849 9.00043Z"
+        stroke="#003366"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.49988 15.2025C12.1474 15.2025 14.6149 13.6425 16.3324 10.9425C17.0074 9.88504 17.0074 8.10754 16.3324 7.05004C14.6149 4.35004 12.1474 2.79004 9.49988 2.79004C6.85238 2.79004 4.38488 4.35004 2.66738 7.05004C1.99238 8.10754 1.99238 9.88504 2.66738 10.9425C4.38488 13.6425 6.85238 15.2025 9.49988 15.2025Z"
+        stroke="#003366"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+export const Edit2 = () => {
+  return (
+    <svg
+      width="19"
+      height="18"
+      viewBox="0 0 19 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10.445 2.70041L4.28751 9.21791C4.05501 9.46541 3.83001 9.95291 3.78501 10.2904L3.50751 12.7204C3.41001 13.5979 4.04001 14.1979 4.91001 14.0479L7.32501 13.6354C7.66251 13.5754 8.13501 13.3279 8.36751 13.0729L14.525 6.55541C15.59 5.43041 16.07 4.14791 14.4125 2.58041C12.7625 1.02791 11.51 1.57541 10.445 2.70041Z"
+        stroke="#1A1A1A"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.41748 3.78711C9.73998 5.85711 11.42 7.43961 13.505 7.64961"
+        stroke="#1A1A1A"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M2.75 16.5H16.25"
+        stroke="#1A1A1A"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+export const ChevronLeft = () => {
+  return (
+    <svg
+      width="9"
+      height="16"
+      viewBox="0 0 9 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M7.50003 1.39961L2.0667 6.83294C1.42503 7.47461 1.42503 8.52461 2.0667 9.16628L7.50003 14.5996"
+        stroke="#808080"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+export const ChevronDown = () => {
+  return (
+    <svg
+      width="19"
+      height="18"
+      viewBox="0 0 19 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M15.4401 6.71203L10.5501 11.602C9.97256 12.1795 9.02756 12.1795 8.45006 11.602L3.56006 6.71203"
+        stroke="#898989"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+export const Search = () => {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 22 22"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10.5416 19.2497C15.3511 19.2497 19.2499 15.3508 19.2499 10.5413C19.2499 5.73186 15.3511 1.83301 10.5416 1.83301C5.73211 1.83301 1.83325 5.73186 1.83325 10.5413C1.83325 15.3508 5.73211 19.2497 10.5416 19.2497Z"
+        stroke="#B3B3B3"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M20.1666 20.1663L18.3333 18.333"
+        stroke="#B3B3B3"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};

@@ -24,7 +24,7 @@ export function Header() {
   };
 
   return (
-    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] py-2 bg-[#FAFAFA]">
+    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] py-2 bg-white">
       {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
       <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
         {/* Left Side: School Name */}
@@ -55,7 +55,7 @@ export function Header() {
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+            <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
               {user?.schoolName || "School Name"}
             </h1>
           </div>
