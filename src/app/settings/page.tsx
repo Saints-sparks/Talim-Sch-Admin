@@ -346,18 +346,18 @@ const Settings: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-base font-semibold text-gray-700">
+                <h1 className="text-xl font-semibold text-[#2F2F2F]">
                   Academic Settings
                 </h1>
                 <button
                   onClick={() => setIsAcademicYearModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-gray-200 border border-gray-200 hover:bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full text-xs transition-colors"
+                  className="inline-flex items-center gap-2 bg-gray-200 border border-[#E4E4E4] px-2 py-0.5 rounded-full text-base transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>
                 </button>
               </div>
-              <p className="text-xs text-[#979797]">
+              <p className="text-base text-[#979797]">
                 Manage academic year and term settings across the platform
               </p>
             </div>
@@ -373,7 +373,7 @@ const Settings: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Academic Year Selection */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">
+                <label className="block text-lg font-medium text-[#676767] mb-2">
                   Academic Year
                 </label>
                 <div className="relative">
@@ -400,7 +400,7 @@ const Settings: React.FC = () => {
                   </select>
                   <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                <p className="text-xs text-[#979797] mt-1.5">
+                <p className="text-xs text-[#727272] mt-1.5">
                   Changes will affect all sections including dashboard, reports,
                   and records
                 </p>
@@ -408,7 +408,7 @@ const Settings: React.FC = () => {
 
               {/* Term Selection */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">
+                <label className="block text-lg font-medium text-[#676767] mb-2">
                   Select Term
                 </label>
                 <div className="relative">
@@ -430,7 +430,7 @@ const Settings: React.FC = () => {
                   </select>
                   <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                <p className="text-xs text-gray-500 mt-1.5">
+                <p className="text-xs text-[#727272] mt-1.5">
                   Select term to view period-specific data and reports
                 </p>
               </div>
@@ -440,7 +440,7 @@ const Settings: React.FC = () => {
               {/* Current Academic Year Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                  <label className="block text-lg font-medium text-[#676767] mb-2">
                     Current Academic Year
                   </label>
                   <div className="relative">
@@ -466,7 +466,7 @@ const Settings: React.FC = () => {
 
                 {/* Current Term Section */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                  <label className="block text-lg font-medium text-[#676767] mb-2">
                     Current Term
                   </label>
                   <div className="relative">
@@ -493,16 +493,16 @@ const Settings: React.FC = () => {
 
               {/* Current Selection Display */}
               <div className="bg-gray-50 rounded px-4 py-3 mb-4">
-                <h3 className="text-xs font-semibold text-gray-600 mb-2">
+                <h3 className="text-lg font-semibold text-[#676767] mb-2">
                   Current Selection
                 </h3>
-                <div className="space-y-1 text-sm text-gray-700">
+                <div className="space-y-1 text-base text-black">
                   <p>
-                    <span className="font-semibold">Academic Year:</span>{" "}
+                    <span className="font-base text-black">Academic Year:</span>{" "}
                     {currentAcademicYear?.year || "—"}
                   </p>
                   <p>
-                    <span className="font-semibold">Term:</span>{" "}
+                    <span className="font-base text-black">Term:</span>{" "}
                     {currentTerm?.name || "—"}
                   </p>
                 </div>
@@ -513,7 +513,7 @@ const Settings: React.FC = () => {
                 <button
                   onClick={handleSave}
                   disabled={loading || !selectedTerm || submitting}
-                  className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#003366] hover:bg-blue-950 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Saving..." : "Save Changes"}
                 </button>
