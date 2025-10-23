@@ -342,7 +342,7 @@ const Announcement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#003366]-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#003366] transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <FiPlus className="h-4 w-4" />
                   <span className="font-medium">New Announcement</span>
