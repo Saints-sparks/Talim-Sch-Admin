@@ -291,7 +291,7 @@ const Announcement: React.FC = () => {
           onClick={() => handlePageChange(i)}
           className={`px-4 py-2 mx-1 rounded-lg font-medium transition-all duration-300 ${
             pagination.page === i
-              ? "bg-blue-600 text-white shadow-lg"
+              ? "bg-[#003366] text-white shadow-lg"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
@@ -342,7 +342,7 @@ const Announcement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#003366]-700 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <FiPlus className="h-4 w-4" />
                   <span className="font-medium">New Announcement</span>
@@ -385,7 +385,7 @@ const Announcement: React.FC = () => {
                             </p>
                             <button
                               onClick={() => setIsModalOpen(true)}
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300"
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-[#003366] transition-all duration-300"
                             >
                               <FiPlus className="h-4 w-4" />
                               <span>Create Announcement</span>
@@ -397,86 +397,86 @@ const Announcement: React.FC = () => {
                           {/* Announcements List */}
                           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             {announcements.map((announcement, index) => {
-                              // Use a more reliable identifier that combines id and index
-                              const uniqueId =
-                                announcement.id || `announcement-${index}`;
-                              const isExpanded =
-                                expandedAnnouncements.has(uniqueId);
+                              const uniqueId = announcement.id || `announcement-${index}`;
+                              const isExpanded = expandedAnnouncements.has(uniqueId);
+
+                              const isImageAttachment =
+                                announcement.attachment &&
+                                /\.(jpg|jpeg|png|gif|webp)$/i.test(announcement.attachment);
 
                               return (
                                 <div
                                   key={uniqueId}
-                                  className={`border-b border-gray-100 last:border-b-0 transition-all duration-300 ${
-                                    isExpanded
-                                      ? "bg-blue-50"
-                                      : "hover:bg-gray-50"
-                                  }`}
+                                  className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 shadow-sm hover:shadow-md transition-all duration-300"
                                 >
-                                  {/* List Item Header */}
+                                  {/* Header */}
                                   <div
-                                    className="p-4 cursor-pointer"
                                     onClick={() => toggleAnnouncement(uniqueId)}
+                                    className="flex items-start justify-between cursor-pointer"
                                   >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center space-x-3">
-                                          <div className="flex-shrink-0">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                              <FiMessageSquare className="h-5 w-5 text-blue-600" />
-                                            </div>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                              {announcement.title}
-                                            </h3>
-                                            <div className="flex items-center space-x-4 mt-1">
-                                              <div className="flex items-center text-sm text-gray-500">
-                                                <FiCalendar className="h-4 w-4 mr-1" />
-                                                {formatDateTime(
-                                                  announcement.createdAt
-                                                )}
-                                              </div>
-                                              {announcement.attachment && (
-                                                <div className="flex items-center text-sm text-blue-600">
-                                                  <FiPaperclip className="h-4 w-4 mr-1" />
-                                                  Has attachment
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg">
+                                        {announcement.title?.charAt(0).toUpperCase()}
                                       </div>
-                                      <div className="flex items-center space-x-2">
-                                        {isExpanded ? (
-                                          <FiChevronUp className="h-5 w-5 text-gray-400" />
-                                        ) : (
-                                          <FiChevronDown className="h-5 w-5 text-gray-400" />
-                                        )}
+                                      <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                          {announcement.title}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mt-0.5">
+                                          {formatDateTime(announcement.createdAt)}
+                                        </p>
                                       </div>
+                                    </div>
+                                    <div>
+                                      {isExpanded ? (
+                                        <FiChevronUp className="w-5 h-5 text-gray-400" />
+                                      ) : (
+                                        <FiChevronDown className="w-5 h-5 text-gray-400" />
+                                      )}
                                     </div>
                                   </div>
 
+                                  {/* Optional Image */}
+                                  {isImageAttachment && (
+                                    <div className="mt-4 rounded-xl overflow-hidden border border-gray-100">
+                                      <img
+                                        src={announcement.attachment}
+                                        alt="Announcement Attachment"
+                                        className="w-full h-48 object-cover"
+                                      />
+                                    </div>
+                                  )}
+
                                   {/* Expandable Content */}
                                   {isExpanded && (
-                                    <div className="px-4 pb-4 bg-white border-t border-blue-100">
-                                      <div className="pl-13">
-                                        <div className="bg-gray-50 rounded-lg p-4 mt-3">
-                                          <p className="text-gray-800 leading-relaxed">
-                                            {announcement.content}
-                                          </p>
-                                          {announcement.attachment && (
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                              <a
-                                                href={announcement.attachment}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium"
-                                              >
-                                                <FiPaperclip className="h-4 w-4" />
-                                                <span>View Attachment</span>
-                                              </a>
-                                            </div>
-                                          )}
+                                    <div className="mt-4 border-t border-gray-100 pt-4">
+                                      <p className="text-gray-700 leading-relaxed">{announcement.content}</p>
+
+                                      {/* Attachment (if not image) */}
+                                      {!isImageAttachment && announcement.attachment && (
+                                        <div className="mt-4">
+                                          <a
+                                            href={announcement.attachment}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#003366] transition-all duration-300"
+                                          >
+                                            <FiPaperclip className="w-4 h-4" />
+                                            <span>View Attachment</span>
+                                          </a>
+                                        </div>
+                                      )}
+
+                                      {/* Engagement Row */}
+                                      <div className="mt-4 flex items-center gap-6 text-gray-500 text-sm">
+                                        <div className="flex items-center gap-1">
+                                          <span>💬</span> <span>12</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <span>❤️</span> <span>34</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <span>👀</span> <span>58</span>
                                         </div>
                                       </div>
                                     </div>
@@ -527,7 +527,7 @@ const Announcement: React.FC = () => {
               type="submit"
               form="announcement-form"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-gradient-to-r from-[#003366] to-[#003366] text-white rounded-xl hover:from-[#003366]-700 hover:to-[#003366]-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -629,7 +629,7 @@ const Announcement: React.FC = () => {
                     <div className="mt-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-[#003366] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         ></div>
                       </div>
