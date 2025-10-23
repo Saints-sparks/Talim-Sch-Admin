@@ -13,7 +13,8 @@ import { toast } from "react-toastify";
 import AddStudentModal from "@/components/AddStudentModal";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
 import Avatar from "@/components/Avatar";
-import { ErrorState, EmptyState } from "@/components/StateComponents";
+import Image from "next/image";
+import { ErrorState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
 
 const StudentPage: React.FC = () => {
@@ -121,7 +122,7 @@ const StudentPage: React.FC = () => {
         </div>
         <button
           onClick={toggleModal}
-          className="mt-4 sm:mt-0 bg-[#003366] leading-[120%] hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold text-[15px] flex items-center gap-2 shadow-sm"
+          className="mt-4 sm:mt-0 bg-[#003366] leading-[120%] hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold text-[15px] flex items-center gap-2 "
         >
           <span className="text-lg font-bold">+</span> Add Student
         </button>
@@ -134,7 +135,7 @@ const StudentPage: React.FC = () => {
             {/* Search Bar */}
             <div className="relative flex-1 w-[220px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-               <Search />
+                <Search />
               </span>
               <input
                 type="text"
@@ -209,30 +210,21 @@ const StudentPage: React.FC = () => {
             message={error}
             onRetry={fetchStudents}
           />
-        ) : students.length === 0 ? (
-          <EmptyState
-            icon="👨‍🎓"
-            title="No Students Found"
-            message={
-              searchTerm || selectedClass
-                ? "No students match your current search or filter criteria."
-                : "There are no students in the system yet."
-            }
-            actionText={
-              searchTerm || selectedClass
-                ? "Clear Filters"
-                : "Add First Student"
-            }
-            onAction={
-              searchTerm || selectedClass
-                ? () => {
-                    setSearchTerm("");
-                    setSelectedClass(null);
-                    setCurrentPage(1);
-                  }
-                : toggleModal
-            }
-          />
+        ) : filteredStudents.length === 0 ? (
+          <div className="flex flex-col justify-center items-center">
+            <Image
+              src="/empty-state.svg"
+              alt="No classes found"
+              width={300}
+              height={300}
+            />
+            <button
+              onClick={toggleModal}
+              className="mt-4 sm:mt-0 bg-[#D6D6D6] border border-[#D8D8D8]/22  hover:bg-blue-800  px-6 py-2 rounded-lg font-medium leading-[30px] flex items-center gap-2 "
+            >
+              <span className="text-lg font-bold">+</span> Add Student
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {currentStudents.map((student, index) => (
@@ -257,9 +249,7 @@ const StudentPage: React.FC = () => {
                     <span className="bg-[#F2F2F2] border border-[#E0E0E0] text-[12px] px-3 py-1 rounded-xl">
                       {student.gradeLevel}
                     </span>
-                    <span
-                      className="text-[12px] font-semibold px-2 py-1 border border-[#003366]/30 rounded-xl text-[#003366] bg-[#003366]/10"
-                    >
+                    <span className="text-[12px] font-semibold px-2 py-1 border border-[#003366]/30 rounded-xl text-[#003366] bg-[#003366]/10">
                       {student.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
