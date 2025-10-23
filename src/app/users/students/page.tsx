@@ -4,20 +4,15 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   studentService,
-  StudentById,
   Class,
   getClasses,
   Student,
-  updateStudentStatus,
 } from "@/app/services/student.service";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-
 import AddStudentModal from "@/components/AddStudentModal";
-import { FaSearch } from "react-icons/fa";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
 import Avatar from "@/components/Avatar";
-import SmoothButton from "@/components/SmoothButton";
 import { ErrorState, EmptyState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
 
