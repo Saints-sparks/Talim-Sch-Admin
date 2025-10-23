@@ -9,6 +9,10 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiMessageSquare,
+  FiCamera,
+  FiX,
+  FiFile,
+  FiFileText,
 } from "react-icons/fi";
 import {
   createAnnouncement,
@@ -20,8 +24,7 @@ import { toast } from "react-toastify";
 import { getLocalStorageItem } from "../lib/localStorage";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 import TalimModal from "@/components/ui/TalimModal";
-import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
-import { FiCamera, FiX, FiFile, FiFileText } from "react-icons/fi";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 interface Announcement {
   title: string;
@@ -34,22 +37,16 @@ const Announcement: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(
-    null
-  );
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [newAnnouncement, setNewAnnouncement] = useState<Announcement>({
     title: "",
     content: "",
     attachment: undefined,
   });
-  const [announcements, setAnnouncements] = useState<
-    CreateAnnouncementResponse[]
-  >([]);
+  const [announcements, setAnnouncements] = useState<CreateAnnouncementResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedAnnouncements, setExpandedAnnouncements] = useState<
-    Set<string>
-  >(new Set());
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -58,19 +55,13 @@ const Announcement: React.FC = () => {
   });
 
   const toggleAnnouncement = (id: string) => {
-    console.log("Toggling announcement:", id);
-    console.log("Current expanded:", Array.from(expandedAnnouncements));
-
     setExpandedAnnouncements((prevExpanded) => {
       const newExpanded = new Set(prevExpanded);
       if (newExpanded.has(id)) {
         newExpanded.delete(id);
-        console.log("Closing announcement:", id);
       } else {
         newExpanded.add(id);
-        console.log("Opening announcement:", id);
       }
-      console.log("New expanded state:", Array.from(newExpanded));
       return newExpanded;
     });
   };
@@ -97,7 +88,6 @@ const Announcement: React.FC = () => {
         lastPage: response.meta.lastPage,
       }));
     } catch (error) {
-      console.error("Error fetching announcements:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -140,16 +130,12 @@ const Announcement: React.FC = () => {
         throw new Error("Failed to create announcement");
       }
 
-      console.log("Announcement created:");
       toast.success("Announcement created successfully!");
-
-      // Refresh the announcements list
       fetchAnnouncements();
       setNewAnnouncement({ title: "", content: "", attachment: undefined });
       setAttachmentPreview(null);
       setIsModalOpen(false);
     } catch (error: any) {
-      console.error("Error creating announcement:", error);
       toast.error(
         "Failed to create announcement. Please try again.",
         error.message
@@ -159,16 +145,13 @@ const Announcement: React.FC = () => {
     }
   };
 
-  // Validate file for attachments (supports multiple types)
   const validateAttachmentFile = (file: File) => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-      // Images
       "image/jpeg",
       "image/png",
       "image/gif",
       "image/webp",
-      // Documents
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -176,10 +159,8 @@ const Announcement: React.FC = () => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-powerpoint",
       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      // Text files
       "text/plain",
       "text/csv",
-      // Archives
       "application/zip",
       "application/x-rar-compressed",
     ];
@@ -199,20 +180,16 @@ const Announcement: React.FC = () => {
     return { valid: true };
   };
 
-  // Handle file upload for attachments
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-
-      // Validate file using the new validation function
       const validation = validateAttachmentFile(file);
       if (!validation.valid) {
         toast.error(validation.error || "Invalid file");
-        e.target.value = ""; // Reset input
+        e.target.value = "";
         return;
       }
 
-      // Show preview immediately for images, or file info for other types
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -222,7 +199,6 @@ const Announcement: React.FC = () => {
         };
         reader.readAsDataURL(file);
       } else {
-        // For non-image files, store file info
         setAttachmentPreview(
           JSON.stringify({
             name: file.name,
@@ -232,7 +208,6 @@ const Announcement: React.FC = () => {
         );
       }
 
-      // Upload to Cloudinary
       setIsUploadingImage(true);
       setUploadProgress(0);
 
@@ -243,29 +218,24 @@ const Announcement: React.FC = () => {
           setUploadProgress(progress);
         });
 
-        // Update form data with the Cloudinary URL
         setNewAnnouncement((prev) => ({ ...prev, attachment: imageUrl }));
         toast.dismiss(uploadingToast);
         toast.success("Attachment uploaded successfully!");
       } catch (error) {
-        console.error("Error uploading attachment:", error);
         toast.dismiss(uploadingToast);
         toast.error(
           error instanceof Error ? error.message : "Failed to upload attachment"
         );
-
-        // Reset preview on error
         setAttachmentPreview(null);
         setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
       } finally {
         setIsUploadingImage(false);
         setUploadProgress(0);
-        e.target.value = ""; // Reset input for potential re-upload
+        e.target.value = "";
       }
     }
   };
 
-  // Remove attachment
   const removeAttachment = () => {
     setAttachmentPreview(null);
     setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
@@ -328,11 +298,10 @@ const Announcement: React.FC = () => {
       ) : (
         <div className="flex h-screen bg-[#F8F8F8]">
           <main className="flex-grow flex flex-col">
-            {/* Navigation Header */}
             <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
-                  <FiMessageSquare className="w-5 h-5 mr-2" />
+                  <FiMessageSquare className="w-5 h-5 mr-2 text-[#003366]" />
                   <span className="text-gray-900 font-medium text-xl">
                     Announcements
                   </span>
@@ -342,7 +311,7 @@ const Announcement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#003366] transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#003366]/90 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <FiPlus className="h-4 w-4" />
                   <span className="font-medium">New Announcement</span>
@@ -350,7 +319,6 @@ const Announcement: React.FC = () => {
               </div>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto">
                 <div className="p-6">
@@ -380,12 +348,11 @@ const Announcement: React.FC = () => {
                               No Announcements Yet
                             </h3>
                             <p className="text-gray-600 mb-6">
-                              Create your first announcement to keep everyone
-                              informed.
+                              Create your first announcement to keep everyone informed.
                             </p>
                             <button
                               onClick={() => setIsModalOpen(true)}
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-[#003366] transition-all duration-300"
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white transition-all duration-300"
                             >
                               <FiPlus className="h-4 w-4" />
                               <span>Create Announcement</span>
@@ -393,16 +360,19 @@ const Announcement: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className=" mx-auto">
+                        <div className="mx-auto">
                           {/* Announcements List */}
                           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             {announcements.map((announcement, index) => {
-                              const uniqueId = announcement.id || `announcement-${index}`;
+                              const uniqueId =
+                                announcement.id || `announcement-${index}`;
                               const isExpanded = expandedAnnouncements.has(uniqueId);
 
                               const isImageAttachment =
                                 announcement.attachment &&
-                                /\.(jpg|jpeg|png|gif|webp)$/i.test(announcement.attachment);
+                                /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                                  announcement.attachment
+                                );
 
                               return (
                                 <div
@@ -415,7 +385,7 @@ const Announcement: React.FC = () => {
                                     className="flex items-start justify-between cursor-pointer"
                                   >
                                     <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg">
+                                      <div className="w-10 h-10 rounded-full bg-[#003366]/10 flex items-center justify-center text-[#003366] font-semibold text-lg">
                                         {announcement.title?.charAt(0).toUpperCase()}
                                       </div>
                                       <div>
@@ -429,16 +399,15 @@ const Announcement: React.FC = () => {
                                     </div>
                                     <div>
                                       {isExpanded ? (
-                                        <FiChevronUp className="w-5 h-5 text-gray-400" />
+                                        <FiChevronUp className="w-5 h-5 text-[#003366]" />
                                       ) : (
-                                        <FiChevronDown className="w-5 h-5 text-gray-400" />
+                                        <FiChevronDown className="w-5 h-5 text-[#003366]" />
                                       )}
                                     </div>
                                   </div>
 
-                                  {/* Optional Image */}
                                   {isImageAttachment && (
-                                    <div className="mt-4 rounded-xl overflow-hidden border border-gray-100">
+                                    <div className="mt-4 rounded-xl overflow-hidden border border-[#003366]/30">
                                       <img
                                         src={announcement.attachment}
                                         alt="Announcement Attachment"
@@ -447,27 +416,24 @@ const Announcement: React.FC = () => {
                                     </div>
                                   )}
 
-                                  {/* Expandable Content */}
                                   {isExpanded && (
-                                    <div className="mt-4 border-t border-gray-100 pt-4">
-                                      <p className="text-gray-700 leading-relaxed">{announcement.content}</p>
-
-                                      {/* Attachment (if not image) */}
+                                    <div className="mt-4 border-t border-[#003366]/30 pt-4">
+                                      <p className="text-gray-700 leading-relaxed">
+                                        {announcement.content}
+                                      </p>
                                       {!isImageAttachment && announcement.attachment && (
                                         <div className="mt-4">
                                           <a
                                             href={announcement.attachment}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#003366] transition-all duration-300"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#003366]/90 transition-all duration-300"
                                           >
                                             <FiPaperclip className="w-4 h-4" />
                                             <span>View Attachment</span>
                                           </a>
                                         </div>
                                       )}
-
-                                      {/* Engagement Row */}
                                       <div className="mt-4 flex items-center gap-6 text-gray-500 text-sm">
                                         <div className="flex items-center gap-1">
                                           <span>💬</span> <span>12</span>
@@ -486,7 +452,6 @@ const Announcement: React.FC = () => {
                             })}
                           </div>
 
-                          {/* Pagination */}
                           {pagination.lastPage > 1 && (
                             <div className="mt-6 flex justify-center">
                               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -511,7 +476,7 @@ const Announcement: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title="Create Announcement"
         subtitle="Share important updates with your school community"
-        icon={<FiMessageSquare className="w-6 h-6" />}
+        icon={<FiMessageSquare className="w-6 h-6 text-white" />}
         isSubmitting={isSubmitting}
         footer={
           <div className="flex justify-end space-x-4">
@@ -527,7 +492,7 @@ const Announcement: React.FC = () => {
               type="submit"
               form="announcement-form"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-gradient-to-r from-[#003366] to-[#003366] text-white rounded-xl hover:from-[#003366]-700 hover:to-[#003366]-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-[#003366] text-white rounded-xl hover:bg-[#003366]/90 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -544,46 +509,35 @@ const Announcement: React.FC = () => {
           </div>
         }
       >
-        <form
-          id="announcement-form"
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
+        {/* Modal Form */}
+        <form id="announcement-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Title
-            </label>
+            <label className="block text-sm font-semibold text-gray-700">Title</label>
             <input
               type="text"
               name="title"
               value={newAnnouncement.title}
               onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  title: e.target.value,
-                }))
+                setNewAnnouncement((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+              className="w-full px-4 py-3 border border-[#003366] rounded-xl focus:ring-2 focus:ring-[#003366] focus:border-[#003366] transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="Enter announcement title..."
               required
               disabled={isSubmitting}
             />
           </div>
 
+          {/* Content */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Content
-            </label>
+            <label className="block text-sm font-semibold text-gray-700">Content</label>
             <textarea
               name="content"
               value={newAnnouncement.content}
               onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  content: e.target.value,
-                }))
+                setNewAnnouncement((prev) => ({ ...prev, content: e.target.value }))
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
+              className="w-full px-4 py-3 border border-[#003366] rounded-xl focus:ring-2 focus:ring-[#003366] focus:border-[#003366] resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
               rows={4}
               placeholder="Write your announcement content..."
               required
@@ -591,15 +545,11 @@ const Announcement: React.FC = () => {
             />
           </div>
 
-          {/* Attachment Upload Section */}
+          {/* Attachment Upload */}
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700">
-              Attachment (Optional)
-            </label>
-
-            {/* Upload Area */}
+            <label className="block text-sm font-semibold text-gray-700">Attachment (Optional)</label>
             {!attachmentPreview && !newAnnouncement.attachment ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-[#003366] rounded-xl p-6 text-center hover:border-[#003366]/80 transition-colors">
                 <input
                   type="file"
                   id="attachment-upload"
@@ -612,152 +562,58 @@ const Announcement: React.FC = () => {
                   htmlFor="attachment-upload"
                   className="cursor-pointer flex flex-col items-center gap-2"
                 >
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <FiFile className="w-6 h-6 text-gray-400" />
+                  <div className="w-12 h-12 bg-[#003366]/10 rounded-lg flex items-center justify-center">
+                    <FiFile className="w-6 h-6 text-[#003366]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {isUploadingImage
-                        ? "Uploading..."
-                        : "Click to upload a file"}
+                    <p className="text-sm font-medium text-[#003366]">
+                      {isUploadingImage ? "Uploading..." : "Click to upload a file"}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[#003366]/70 mt-1">
                       Images, PDFs, Documents up to 10MB
                     </p>
                   </div>
                   {isUploadingImage && (
                     <div className="mt-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div className="w-32 bg-[#003366]/10 rounded-full h-2">
                         <div
                           className="bg-[#003366] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         ></div>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {uploadProgress}%
-                      </p>
+                      <p className="text-xs text-[#003366] mt-1">{uploadProgress}%</p>
                     </div>
                   )}
                 </label>
               </div>
             ) : (
-              /* Preview Area */
-              <div className="border border-gray-300 rounded-xl p-4">
+              <div className="border border-[#003366] rounded-xl p-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
-                    {(() => {
-                      // Check if it's an image preview (data URL) or file info (JSON string)
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          // It's file info, show appropriate icon
-                          const getFileIcon = (type: string) => {
-                            if (type.includes("pdf"))
-                              return (
-                                <FiFileText className="w-8 h-8 text-red-600" />
-                              );
-                            if (
-                              type.includes("word") ||
-                              type.includes("document")
-                            )
-                              return (
-                                <FiFileText className="w-8 h-8 text-blue-600" />
-                              );
-                            if (
-                              type.includes("excel") ||
-                              type.includes("sheet")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-green-600" />
-                              );
-                            if (
-                              type.includes("powerpoint") ||
-                              type.includes("presentation")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-orange-600" />
-                              );
-                            if (type.includes("zip") || type.includes("rar"))
-                              return (
-                                <FiFile className="w-8 h-8 text-purple-600" />
-                              );
-                            return <FiFile className="w-8 h-8 text-gray-600" />;
-                          };
-                          return (
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                              {getFileIcon(fileInfo.type)}
-                            </div>
-                          );
-                        } catch {
-                          // It's an image preview
-                          return (
-                            <img
-                              src={attachmentPreview}
-                              alt="Attachment preview"
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          );
-                        }
-                      } else if (newAnnouncement.attachment) {
-                        // Existing attachment URL - assume it's an image
-                        return (
-                          <img
-                            src={newAnnouncement.attachment}
-                            alt="Attachment preview"
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
+                    {attachmentPreview ? (
+                      <img
+                        src={attachmentPreview}
+                        alt="Attachment preview"
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    ) : newAnnouncement.attachment ? (
+                      <img
+                        src={newAnnouncement.attachment}
+                        alt="Attachment preview"
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    ) : null}
                   </div>
                   <div className="flex-1">
-                    {(() => {
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                {fileInfo.name}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {(fileInfo.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                                {fileInfo.type}
-                              </p>
-                            </>
-                          );
-                        } catch {
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                Image attachment ready
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                This image will be included with your
-                                announcement
-                              </p>
-                            </>
-                          );
-                        }
-                      }
-                      return (
-                        <>
-                          <p className="text-sm font-medium text-gray-700">
-                            File attachment ready
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            This file will be included with your announcement
-                          </p>
-                        </>
-                      );
-                    })()}
+                    <p className="text-sm font-medium text-[#003366]">
+                      File ready for upload
+                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={removeAttachment}
                     disabled={isSubmitting || isUploadingImage}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                    className="flex-shrink-0 p-2 text-[#003366]/70 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
                   >
                     <FiX className="w-4 h-4" />
                   </button>
@@ -766,16 +622,14 @@ const Announcement: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center space-x-2 text-blue-600">
+          <div className="bg-[#003366]/10 border border-[#003366]/20 rounded-xl p-4">
+            <div className="flex items-center space-x-2 text-[#003366]">
               <FiPaperclip className="h-4 w-4" />
               <span className="text-sm font-medium">About Attachments</span>
             </div>
-            <p className="text-blue-700 text-sm mt-1">
-              You can optionally include a file attachment with your
-              announcement. Supported formats include images (PNG, JPG, GIF),
-              documents (PDF, Word, Excel, PowerPoint), text files, and
-              archives.
+            <p className="text-[#003366]/80 text-sm mt-1">
+              You can optionally include a file attachment with your announcement.
+              Supported formats include images (PNG, JPG, GIF), documents (PDF, Word, Excel, PowerPoint), text files, and archives.
             </p>
           </div>
         </form>
