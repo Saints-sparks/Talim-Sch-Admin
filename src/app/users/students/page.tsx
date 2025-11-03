@@ -218,6 +218,7 @@ const StudentPage: React.FC = () => {
               width={300}
               height={300}
             />
+            <p className="mb-4 text-[#525252] leading-[24px]">There are no students yet.</p>
             <button
               onClick={toggleModal}
               className="mt-4 sm:mt-0 bg-[#D6D6D6] border border-[#D8D8D8]/22  hover:bg-blue-800  px-6 py-2 rounded-lg font-medium leading-[30px] flex items-center gap-2 "
