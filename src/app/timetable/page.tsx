@@ -403,14 +403,44 @@ const Timetable = () => {
   const removeEntry = async (day: string, timeSlot: (typeof timeSlots)[0]) => {
     try {
       const dayEntries = timetableEntries[day] || [];
-      const entryToDelete = dayEntries.find(
-        (entry) =>
-          entry.startTime === timeSlot.start && entry.endTime === timeSlot.end
-      );
 
-      if (!entryToDelete || !entryToDelete._id) {
+      // Find the entry that matches this time slot using the same logic as getEntryForSlot
+      const entryToDelete = dayEntries.find((entry) => {
+        const entryStart = normalizeTime(entry.startTIme || entry.startTime);
+        const entryEnd = normalizeTime(entry.endTime);
+        const slotStart = timeSlot.start;
+        const slotEnd = timeSlot.end;
+
+        return entryStart === slotStart && entryEnd === slotEnd;
+      });
+
+      if (!entryToDelete) {
         toast.error("Entry not found");
         return;
+      }
+
+      // Helper function to normalize time format (same as in getEntryForSlot)
+      function normalizeTime(timeStr: string) {
+        if (!timeStr) return "";
+        // Handle AM/PM format
+        if (timeStr.includes("AM") || timeStr.includes("PM")) {
+          const [time, modifier] = timeStr.split(" ");
+          let [hours, minutes] = time.split(":");
+          if (hours === "12") {
+            hours = "00";
+          }
+          if (modifier === "PM" && hours !== "12") {
+            hours = (parseInt(hours, 10) + 12).toString();
+          }
+          if (modifier === "AM" && hours === "12") {
+            hours = "00";
+          }
+          // Remove leading zero for single digit hours to match our timeSlot format
+          return `${parseInt(hours, 10)}:${minutes}`;
+        }
+        // Handle 24-hour format - remove leading zeros
+        const [hours, minutes] = timeStr.split(":");
+        return `${parseInt(hours, 10)}:${minutes}`;
       }
 
       // Delete from backend first (if endpoint exists)
@@ -419,16 +449,10 @@ const Timetable = () => {
       //   throw new Error("Failed to delete timetable entry");
       // }
 
-      // Update local state
+      // Update local state - remove the specific entry
       setTimetableEntries((prev) => ({
         ...prev,
-        [day]: (prev[day] || []).filter(
-          (entry) =>
-            !(
-              entry.startTime === timeSlot.start &&
-              entry.endTime === timeSlot.end
-            )
-        ),
+        [day]: (prev[day] || []).filter((entry) => entry !== entryToDelete),
       }));
 
       toast.success("Entry removed from timetable");
