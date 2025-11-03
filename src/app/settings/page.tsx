@@ -332,425 +332,205 @@ const Settings: React.FC = () => {
     }
   };
 
+  // Get current academic year and term
+  const currentAcademicYear = academicYears.find((y) => y.isCurrent);
+  const currentTerm = terms.find((t) => t.isCurrent);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" />
 
-      {/* Header Section */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white border-b border-gray-200 shadow-sm"
-      >
-        <div className="container mx-auto p-6">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
-              <SettingsIcon className="w-6 h-6 text-white" />
-            </div>
+      {/* Simple Header */}
+      <div className="bg-gray-50">
+        <div className="max-w-7xl mx-auto px-10 pt-10">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Academic Settings
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Manage academic years and terms for your institution
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-xl font-semibold text-[#2F2F2F]">
+                  Academic Settings
+                </h1>
+                <button
+                  onClick={() => setIsAcademicYearModalOpen(true)}
+                  className="inline-flex items-center gap-2 bg-gray-200 border border-[#E4E4E4] px-2 py-0.5 rounded-full text-base transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add</span>
+                </button>
+              </div>
+              <p className="text-base text-[#979797]">
+                Manage academic year and term settings across the platform
               </p>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <div className="container mx-auto p-6 space-y-8">
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex flex-wrap gap-4"
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsAcademicYearModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300"
-          >
-            <Plus className="w-5 h-5" />
-            Create Academic Year
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsTermModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300"
-          >
-            <Calendar className="w-5 h-5" />
-            Create Term
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              fetchAcademicYears();
-              fetchTerms();
-            }}
-            disabled={loading}
-            className="flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </motion.button>
-        </motion.div>
-
-        {/* Current Status Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          {/* Current Academic Year Card */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6 shadow-lg"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="bg-blue-200 p-3 rounded-xl">
-                <School className="w-6 h-6 text-blue-700" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-blue-900">
-                  Current Academic Year
-                </h3>
-                <p className="text-blue-600 text-sm">Active academic session</p>
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-blue-900 mb-2">
-              {academicYears.find((y) => y.isCurrent)?.year || "Not set"}
-            </div>
-            {!academicYears.find((y) => y.isCurrent) && (
-              <div className="flex items-center gap-2 text-amber-600">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-sm">No current academic year set</span>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Current Term Card */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-6 shadow-lg"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="bg-emerald-200 p-3 rounded-xl">
-                <Clock className="w-6 h-6 text-emerald-700" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-emerald-900">
-                  Current Term
-                </h3>
-                <p className="text-emerald-600 text-sm">Active academic term</p>
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-emerald-900 mb-2">
-              {terms.find((t) => t.isCurrent)?.name || "Not set"}
-            </div>
-            {!terms.find((t) => t.isCurrent) && (
-              <div className="flex items-center gap-2 text-amber-600">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-sm">No current term set</span>
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-
-        {/* Main Settings Panel */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
-        >
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-6 h-6 text-gray-700" />
-              <h2 className="text-xl font-bold text-gray-900">
-                Academic Configuration
-              </h2>
-            </div>
-            <p className="text-gray-600 mt-2">
-              Set the current academic year and term for your institution
-            </p>
-          </div>
-
-          <div className="p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Main Settings Card */}
+        <div className="bg-gray-50 rounded  overflow-hidden">
+          <div className="p-4">
+            {/* Top Section - Two Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Academic Year Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <School className="w-5 h-5 text-blue-700" />
-                  </div>
-                  <label className="text-lg font-semibold text-gray-900">
-                    Select Academic Year
-                  </label>
-                </div>
+              <div>
+                <label className="block text-lg font-medium text-[#676767] mb-2">
+                  Academic Year
+                </label>
                 <div className="relative">
                   <select
-                    value={selectedAcademicYear}
+                    value={
+                      selectedAcademicYear ||
+                      currentAcademicYear?.year ||
+                      academicYears[0]?.year ||
+                      ""
+                    }
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
                     disabled={loading}
-                    className="w-full appearance-none bg-white border-2 border-gray-200 rounded-xl px-4 py-4 pr-12 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Choose Academic Year</option>
-                    {academicYears.map((year) => (
-                      <option
-                        key={year._id}
-                        value={year.year}
-                        className={year.isCurrent ? "font-bold" : ""}
-                      >
-                        {year.year} {year.isCurrent ? "(Current)" : ""}
-                      </option>
-                    ))}
+                    {academicYears.length === 0 ? (
+                      <option value="">No academic years available</option>
+                    ) : (
+                      academicYears.map((year) => (
+                        <option key={year._id} value={year.year}>
+                          {year.year} {year.isCurrent ? "(Current)" : ""}
+                        </option>
+                      ))
+                    )}
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                {academicYears.length === 0 && !loading && (
-                  <div className="text-amber-600 text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    No academic years available. Create one first.
-                  </div>
-                )}
+                <p className="text-xs text-[#727272] mt-1.5">
+                  Changes will affect all sections including dashboard, reports,
+                  and records
+                </p>
               </div>
 
               {/* Term Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-emerald-100 p-2 rounded-lg">
-                    <Calendar className="w-5 h-5 text-emerald-700" />
-                  </div>
-                  <label className="text-lg font-semibold text-gray-900">
-                    Select Term
-                  </label>
-                </div>
+              <div>
+                <label className="block text-lg font-medium text-[#676767] mb-2">
+                  Select Term
+                </label>
                 <div className="relative">
                   <select
-                    value={selectedTerm}
+                    value={selectedTerm || currentTerm?._id || ""}
                     onChange={(e) => setSelectedTerm(e.target.value)}
                     disabled={loading}
-                    className="w-full appearance-none bg-white border-2 border-gray-200 rounded-xl px-4 py-4 pr-12 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300 text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Choose Term</option>
-                    {terms.map((term) => (
-                      <option
-                        key={term._id}
-                        value={term._id}
-                        className={term.isCurrent ? "font-bold" : ""}
-                      >
-                        {term.name} {term.isCurrent ? "(Current)" : ""}
-                      </option>
-                    ))}
+                    {terms.length === 0 ? (
+                      <option value="">No terms available</option>
+                    ) : (
+                      terms.map((term) => (
+                        <option key={term._id} value={term._id}>
+                          {term.name} {term.isCurrent ? "(Current)" : ""}
+                        </option>
+                      ))
+                    )}
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                {terms.length === 0 && !loading && (
-                  <div className="text-amber-600 text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    No terms available. Create one first.
-                  </div>
-                )}
+                <p className="text-xs text-[#727272] mt-1.5">
+                  Select term to view period-specific data and reports
+                </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200">
-              <motion.button
-                whileHover={!submitting && !loading ? { scale: 1.02 } : {}}
-                whileTap={!submitting && !loading ? { scale: 0.98 } : {}}
-                onClick={handleSave}
-                disabled={loading || !selectedTerm || submitting}
-                title="Save changes (Ctrl/Cmd + S)"
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none min-w-[140px] justify-center"
-              >
-                {submitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    Save Changes
-                  </>
-                )}
-              </motion.button>
-              <motion.button
-                whileHover={!loading ? { scale: 1.02 } : {}}
-                whileTap={!loading ? { scale: 0.98 } : {}}
-                onClick={() => {
-                  setSelectedAcademicYear("");
-                  setSelectedTerm("");
-                }}
-                disabled={loading || submitting}
-                className="flex items-center gap-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <X className="w-5 h-5" />
-                Reset
-              </motion.button>
-
-              {/* Helper text for keyboard shortcut */}
-              {selectedTerm && !loading && !submitting && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center text-sm text-gray-500 ml-4"
-                >
-                  <kbd className="px-2 py-1 bg-gray-100 border border-gray-200 rounded text-xs font-mono">
-                    Ctrl + S
-                  </kbd>
-                  <span className="ml-2">to save quickly</span>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Academic Years and Terms Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-        >
-          {/* Academic Years List */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
-                <School className="w-5 h-5" />
-                Academic Years ({academicYears.length})
-              </h3>
-            </div>
-            <div className="p-6 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="animate-pulse bg-gray-200 h-16 rounded-lg"
-                    ></div>
-                  ))}
-                </div>
-              ) : academicYears.length > 0 ? (
-                <div className="space-y-3">
-                  {academicYears.map((year) => (
-                    <motion.div
-                      key={year._id}
-                      whileHover={{ scale: 1.02 }}
-                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                        year.isCurrent
-                          ? "border-blue-200 bg-blue-50"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                      }`}
+            <div className="border-t border-gray-200 pt-4">
+              {/* Current Academic Year Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-lg font-medium text-[#676767] mb-2">
+                    Current Academic Year
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={currentAcademicYear?.year || ""}
+                      onChange={() => { }}
+                      disabled={loading}
+                      className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold text-gray-900">
+                      {academicYears.length === 0 ? (
+                        <option value="">No academic years available</option>
+                      ) : (
+                        academicYears.map((year) => (
+                          <option key={year._id} value={year.year}>
                             {year.year}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {new Date(year.startDate).toLocaleDateString()} -{" "}
-                            {new Date(year.endDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        {year.isCurrent && (
-                          <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Current
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <School className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No academic years created yet</p>
-                  <button
-                    onClick={() => setIsAcademicYearModalOpen(true)}
-                    className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Create your first academic year
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Terms List */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Terms ({terms.length})
-              </h3>
-            </div>
-            <div className="p-6 max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="animate-pulse bg-gray-200 h-16 rounded-lg"
-                    ></div>
-                  ))}
-                </div>
-              ) : terms.length > 0 ? (
-                <div className="space-y-3">
-                  {terms.map((term) => (
-                    <motion.div
-                      key={term._id}
-                      whileHover={{ scale: 1.02 }}
-                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                        term.isCurrent
-                          ? "border-emerald-200 bg-emerald-50"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                      }`}
+                {/* Current Term Section */}
+                <div>
+                  <label className="block text-lg font-medium text-[#676767] mb-2">
+                    Current Term
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={currentTerm?._id || ""}
+                      onChange={() => { }}
+                      disabled={loading}
+                      className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold text-gray-900">
+                      {terms.length === 0 ? (
+                        <option value="">No terms available</option>
+                      ) : (
+                        terms.map((term) => (
+                          <option key={term._id} value={term._id}>
                             {term.name}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {new Date(term.startDate).toLocaleDateString()} -{" "}
-                            {new Date(term.endDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        {term.isCurrent && (
-                          <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Current
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No terms created yet</p>
-                  <button
-                    onClick={() => setIsTermModalOpen(true)}
-                    className="mt-3 text-emerald-600 hover:text-emerald-700 font-medium"
-                  >
-                    Create your first term
-                  </button>
+              </div>
+
+              {/* Current Selection Display */}
+              <div className="bg-gray-50 rounded px-4 py-3 mb-4">
+                <h3 className="text-lg font-semibold text-[#676767] mb-2">
+                  Current Selection
+                </h3>
+                <div className="space-y-1 text-base text-black">
+                  <p>
+                    <span className="font-base text-black">Academic Year:</span>{" "}
+                    {currentAcademicYear?.year || "—"}
+                  </p>
+                  <p>
+                    <span className="font-base text-black">Term:</span>{" "}
+                    {currentTerm?.name || "—"}
+                  </p>
                 </div>
-              )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !selectedTerm || submitting}
+                  className="bg-[#003366] hover:bg-blue-950 text-white px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedAcademicYear("");
+                    setSelectedTerm("");
+                  }}
+                  disabled={loading || submitting}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Academic Year Modal */}
@@ -768,20 +548,19 @@ const Settings: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="bg-white px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <School className="w-6 h-6" />
+                  <h2 className="text-lg font-semibold text-gray-900">
                     Create Academic Year
                   </h2>
                   <button
                     onClick={() => setIsAcademicYearModalOpen(false)}
-                    className="text-white hover:text-gray-200 transition-colors"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -791,7 +570,7 @@ const Settings: React.FC = () => {
                 className="p-6 space-y-4"
               >
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Academic Year
                   </label>
                   <input
@@ -803,7 +582,7 @@ const Settings: React.FC = () => {
                         year: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="e.g., 2025-2026"
                     required
                   />
@@ -811,7 +590,7 @@ const Settings: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Date
                     </label>
                     <input
@@ -823,13 +602,13 @@ const Settings: React.FC = () => {
                           startDate: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       End Date
                     </label>
                     <input
@@ -841,13 +620,13 @@ const Settings: React.FC = () => {
                           endDate: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
+                <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="currentYear"
@@ -858,11 +637,11 @@ const Settings: React.FC = () => {
                         isCurrent: e.target.checked,
                       })
                     }
-                    className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label
                     htmlFor="currentYear"
-                    className="text-sm font-medium text-blue-900"
+                    className="text-sm font-medium text-gray-700"
                   >
                     Set as current academic year
                   </label>
@@ -873,23 +652,16 @@ const Settings: React.FC = () => {
                     type="button"
                     onClick={() => setIsAcademicYearModalOpen(false)}
                     disabled={submitting}
-                    className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Year"
-                    )}
+                    {submitting ? "Creating..." : "Create Year"}
                   </button>
                 </div>
               </form>
@@ -913,27 +685,26 @@ const Settings: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+              <div className="bg-white px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Calendar className="w-6 h-6" />
+                  <h2 className="text-lg font-semibold text-gray-900">
                     Create Term
                   </h2>
                   <button
                     onClick={() => setIsTermModalOpen(false)}
-                    className="text-white hover:text-gray-200 transition-colors"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               <form onSubmit={handleTermSubmit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Term Name
                   </label>
                   <input
@@ -942,7 +713,7 @@ const Settings: React.FC = () => {
                     onChange={(e) =>
                       setTermForm({ ...termForm, name: e.target.value })
                     }
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                     placeholder="e.g., First Term"
                     required
                   />
@@ -950,7 +721,7 @@ const Settings: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Date
                     </label>
                     <input
@@ -959,13 +730,13 @@ const Settings: React.FC = () => {
                       onChange={(e) =>
                         setTermForm({ ...termForm, startDate: e.target.value })
                       }
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       End Date
                     </label>
                     <input
@@ -974,21 +745,21 @@ const Settings: React.FC = () => {
                       onChange={(e) =>
                         setTermForm({ ...termForm, endDate: e.target.value })
                       }
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Academic Year
                   </label>
                   <div className="relative">
                     <select
                       value={selectedAcademicYear}
                       onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                      className="w-full appearance-none px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300 pr-12"
+                      className="w-full appearance-none px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all pr-10"
                       required
                     >
                       <option value="">Select Academic Year</option>
@@ -998,11 +769,11 @@ const Settings: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl">
+                <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="currentTerm"
@@ -1010,11 +781,11 @@ const Settings: React.FC = () => {
                     onChange={(e) =>
                       setTermForm({ ...termForm, isCurrent: e.target.checked })
                     }
-                    className="w-5 h-5 text-emerald-600 border-2 border-gray-300 rounded focus:ring-emerald-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label
                     htmlFor="currentTerm"
-                    className="text-sm font-medium text-emerald-900"
+                    className="text-sm font-medium text-gray-700"
                   >
                     Set as current term
                   </label>
@@ -1025,23 +796,17 @@ const Settings: React.FC = () => {
                     type="button"
                     onClick={() => setIsTermModalOpen(false)}
                     disabled={submitting}
-                    className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5
+                    bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Term"
-                    )}
+                    {submitting ? "Creating..." : "Create Term"}
                   </button>
                 </div>
               </form>
