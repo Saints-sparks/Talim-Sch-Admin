@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../lib/api/config";
 import { getLocalStorageItem } from "../lib/localStorage";
+import { apiClient } from "@/lib/apiClient";
 
 export interface SchoolDashboardData {
   totalClasses: number;
@@ -53,20 +54,8 @@ export const getSchoolDashboard = async (
   schoolId: string
 ): Promise<SchoolDashboardData> => {
   try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      throw new Error("No access token found");
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/schools/${schoolId}/dashboard`,
-      {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.get(
+      `${API_BASE_URL}/schools/${schoolId}/dashboard`
     );
 
     if (!response.ok) {

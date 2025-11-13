@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
+import { apiClient } from "@/lib/apiClient";
 import { getLocalStorageItem } from "../lib/localStorage";
 
 // Types
@@ -300,31 +301,20 @@ export const getClasses = async (): Promise<Class[]> => {
 
 // Teachers API functions
 export const getTeachers = async (): Promise<Teacher[]> => {
-  if (typeof window === "undefined") {
-    throw new Error("Not available during SSR");
-  }
-
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(API_ENDPOINTS.GET_TEACHERS, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  // Use apiClient for consistent authentication and error handling
+  const response = await apiClient.get(API_ENDPOINTS.GET_TEACHERS);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch teachers: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      (errorData && errorData.message) ||
+        `Failed to fetch teachers: ${response.statusText}`
+    );
   }
 
   const data = await response.json();
-
   // Handle the response structure from your API
   const teachersArray = Array.isArray(data) ? data : data.data || [];
-
   return teachersArray;
 };
 

@@ -16,6 +16,7 @@ import {
   Book,
 } from "lucide-react";
 import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
+import { apiClient } from "@/lib/apiClient";
 
 interface Class {
   _id: string;
@@ -155,14 +156,7 @@ const CurriculumDashboardMain: React.FC = () => {
   const fetchCurriculumKPIs = async () => {
     setLoadingKpis(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_BASE_URL}/curriculum/kpis`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiClient.get(`${API_BASE_URL}/curriculum/kpis`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch curriculum KPIs");
@@ -180,11 +174,7 @@ const CurriculumDashboardMain: React.FC = () => {
 
   const fetchClasses = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_ENDPOINTS.GET_CLASSES}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASSES}`);
       if (!response.ok) throw new Error("Failed to fetch classes");
       const data = await response.json();
       setClasses(Array.isArray(data) ? data : data.data || []);
@@ -195,10 +185,9 @@ const CurriculumDashboardMain: React.FC = () => {
 
   const fetchSubjects = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL}`
+      );
       if (!response.ok) throw new Error("Failed to fetch subjects");
       const data = await response.json();
       setSubjects(Array.isArray(data) ? data : data.data || []);
@@ -209,11 +198,7 @@ const CurriculumDashboardMain: React.FC = () => {
 
   const fetchCurriculumContents = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_BASE_URL}/curriculum`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(`${API_BASE_URL}/curriculum`);
       if (!response.ok) throw new Error("Failed to fetch curriculum contents");
       const data = await response.json();
       setCurriculumContents(Array.isArray(data) ? data : data.data || []);

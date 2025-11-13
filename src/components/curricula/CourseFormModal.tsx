@@ -100,27 +100,38 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({
       // Extract the schoolId from the user in local storage.
       // This assumes the schoolId is stored in a format like:
       // "ObjectId('679129f2b04329dea7b1f5f4')"
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const schoolIdMatch = user.schoolId?.match(/ObjectId\('(.+?)'\)/);
-      const extractedSchoolId = schoolIdMatch ? schoolIdMatch[1] : null;
+      try {
+        const userString = localStorage.getItem("user");
+        if (!userString) {
+          toast.error("User data not found. Please log in again.");
+          return;
+        }
 
-      if (!extractedSchoolId) {
-        toast.error("Could not determine school ID");
-        return;
+        const user = JSON.parse(userString);
+        const schoolIdMatch = user.schoolId?.match(/ObjectId\('(.+?)'\)/);
+        const extractedSchoolId = schoolIdMatch ? schoolIdMatch[1] : null;
+
+        if (!extractedSchoolId) {
+          toast.error("Could not determine school ID");
+          return;
+        }
+
+        // Compose the payload with the schoolId added.
+        onSubmit({
+          title,
+          description,
+          courseCode,
+          teacherId: selectedTeacherId,
+          classId: selectedClassId,
+          subjectId,
+          // schoolId: extractedSchoolId,
+        });
+
+        onClose();
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        toast.error("Error accessing user data. Please log in again.");
       }
-
-      // Compose the payload with the schoolId added.
-      onSubmit({
-        title,
-        description,
-        courseCode,
-        teacherId: selectedTeacherId,
-        classId: selectedClassId,
-        subjectId,
-        // schoolId: extractedSchoolId,
-      });
-
-      onClose();
     } else {
       toast.error("Please fill in all required fields.");
     }

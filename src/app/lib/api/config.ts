@@ -1,17 +1,17 @@
-import exp from "constants";
-import { Geist_Mono } from "next/font/google";
-
 //export const API_BASE_URL = 'https://talimbe-v2-li38.onrender.com';
 
 // export const API_BASE_URL = "http://localhost:5005";
 
-export const API_BASE_URL = "https://talim-be-dev.onrender.com";
+export const API_BASE_URL = "https://talimbe-v2-bru9.onrender.com"
+
+// export const API_BASE_URL = "https://talim-be-dev.onrender.com";
 
 export const API_URLS = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     INTROSPECT: "/auth/introspect",
+    REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
@@ -49,6 +49,7 @@ export const API_URLS = {
     UPDATE_COURSE: "/courses",
     GET_COURSES_BY_SUBJECT: "/subjects-courses/courses/subject",
     GET_COURSES_BY_SCHOOL: "/subjects-courses/courses/school",
+    GET_COURSES_BY_CLASS: "/subjects-courses/courses/class",
     DELETE_COURSE: "",
     GET_COURSE_BY_ID: "",
   },
@@ -212,6 +213,8 @@ export const API_ENDPOINTS = {
   GET_COURSE_BY_ID: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSE_BY_ID}`,
   GET_COURSES_BY_SUBJECT: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SUBJECT}`,
   GET_COURSES_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
+  GET_COURSES_BY_CLASS: (classId: string) =>
+    `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_CLASS}/${classId}`,
   GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
   GET_STUDENTS_BY_CLASS_ID: (classId: string) =>
     `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(

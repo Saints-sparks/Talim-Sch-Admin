@@ -1,18 +1,12 @@
 import React from "react";
-import { FiChevronRight } from "react-icons/fi";
-import Image from "next/image";
+import { ChevronRight } from "./Icons";
 
 interface DashboardCardProps {
   id: number;
-  icon: string | React.ComponentType<any>;
+  icon: React.ComponentType<any> | React.ReactElement;
   count: number;
   label: string;
-  details?: React.ReactNode;
   onNavigate: (id: number) => void;
-  bgColor?: string;
-  iconBg?: string;
-  iconColor?: string;
-  textColor?: string;
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
@@ -20,56 +14,28 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   icon,
   count,
   label,
-  details,
   onNavigate,
-  bgColor = "bg-white",
-  iconBg = "bg-gray-100",
-  iconColor = "text-gray-700",
-  textColor = "text-gray-900",
 }) => {
   return (
-    <div
-      className={`${bgColor} p-6 shadow rounded-2xl flex flex-col border border-gray-100 hover:shadow-lg transition-shadow duration-300`}
-    >
-      <div className="flex items-center gap-5 pt-5">
-        <div className={`${iconBg} rounded-[10px] p-3 ${iconColor}`}>
-          {typeof icon === "string" ? (
-            <Image
-              src={icon}
-              alt="icon"
-              width={28}
-              height={28}
-              className={iconColor}
-            />
-          ) : (
-            React.createElement(icon, { size: 28, className: iconColor })
-          )}
+    <div className="h-[168px] px-6 rounded-xl border border-[#F2F2F2] flex flex-col justify-between  bg-white transition-shadow duration-300">
+      <div className="flex items-start gap-5 mt-6">
+        <div className="border border-[#F1F1F1] rounded-[10px] p-3 ">
+          {React.isValidElement(icon)
+            ? icon
+            : React.createElement(icon as React.ComponentType<any>)}
         </div>
         <div className="flex flex-col">
-          <p className={`text-[30px] font-medium ${textColor}`}>
+          <p className="text-[23px] leading-[120%] font-semibold">
             {count.toLocaleString()}
           </p>
-          <p className="text-gray-600 text-[16px] font-medium">{label}</p>
+          <p className="text-[#B3B3B3] text-[13px] font-medium">{label}</p>
         </div>
       </div>
 
-      <div className="pt-4 border-b border-gray-200"></div>
-
-      {details && (
-        <>
-          <div
-            onClick={() => onNavigate(id)}
-            className="flex items-center justify-between mt-4 cursor-pointer "
-          >
-            <span
-              className={`font-bold ${textColor} hover:opacity-70 transition-opacity duration-200`}
-            >
-              See more
-            </span>
-            <FiChevronRight className={`text-xl ${textColor}`} />
-          </div>
-        </>
-      )}
+      <div className="pt-4 border-b border-[#EBEBEB] -mx-6"></div>
+      <div className="mt-3 mb-5 text-[#808080] font-medium leading-[120%] text-[15px] flex justify-between items-center">
+        <span>See more</span> <ChevronRight />
+      </div>
     </div>
   );
 };

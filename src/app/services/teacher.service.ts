@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../lib/api/config";
+import { apiClient } from "@/lib/apiClient";
 
 // Reusing your existing User and Class interfaces
 interface User {
@@ -40,7 +41,7 @@ export interface Teacher {
   phoneNumber: string;
   email: string;
   role: string;
-  
+
   highestAcademicQualification: string;
   yearsOfExperience: number;
   specialization: string;
@@ -113,7 +114,6 @@ export interface TeacherById {
   __v: number;
 }
 
-
 interface GetTeachersResponse {
   data: Teacher[];
   meta: {
@@ -184,11 +184,9 @@ export const createTeacherProfile = async (
       Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       "Content-Type": "application/json",
     },
-    
-    body: JSON.stringify(payload),
-    
-  });
 
+    body: JSON.stringify(payload),
+  });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
@@ -205,20 +203,9 @@ export const teacherService = {
     page: number = 1,
     limit: number = 10
   ): Promise<GetTeachersResponse> {
-    const userId = getLocalStorageItem("user")?.userId;
-
-    if (!userId) {
-      throw new Error("User not authenticated");
-    }
-
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.GET_TEACHERS}?page=${page}&limit=${limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.GET_TEACHERS}?page=${page}&limit=${limit}`
       );
 
       if (!response.ok) {
@@ -264,81 +251,86 @@ export const teacherService = {
   },
 
   async updateTeacherByCourse(
-    teacherId: string, 
+    teacherId: string,
     assignedCourses: string[]
   ): Promise<TeacherById> {
     try {
       // Construct the correct endpoint URL
       const url = `${API_ENDPOINTS.BASE_URL}/teachers/${teacherId}/class-course-assignments`;
-      
+
       const requestBody = {
         assignedCourses: assignedCourses,
         // Include other fields if needed
         assignedClasses: [], // Add existing classes if you don't want to remove them
-        isFormTeacher: false // or get this from current teacher data
+        isFormTeacher: false, // or get this from current teacher data
       };
 
       const response = await fetch(url, {
-        method: 'PATCH', // Use PATCH for partial updates
+        method: "PATCH", // Use PATCH for partial updates
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         // Handle different error statuses
         if (response.status === 401) {
-          throw new Error('Authentication failed. Please login again.');
+          throw new Error("Authentication failed. Please login again.");
         }
         if (response.status === 404) {
-          throw new Error('Teacher not found');
+          throw new Error("Teacher not found");
         }
-        
+
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to update teacher courses (${response.status})`);
+        throw new Error(
+          errorData.message ||
+            `Failed to update teacher courses (${response.status})`
+        );
       }
 
       const data = await response.json();
-      console.log('Teacher courses updated:', data);
+      console.log("Teacher courses updated:", data);
 
       return data;
     } catch (error) {
-      console.error('Error updating teacher courses:', error);
+      console.error("Error updating teacher courses:", error);
       throw error;
     }
   },
 
   async getTeacherById(teacherId: string): Promise<TeacherById> {
     try {
-    const response = await fetch(`${API_ENDPOINTS.GET_TEACHER}/${teacherId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      const response = await fetch(
+        `${API_ENDPOINTS.GET_TEACHER}/${teacherId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        // Handle 404 specifically
+        if (response.status === 404) {
+          throw new Error("Teacher not found");
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch student details");
       }
-    });
 
-    if (!response.ok) {
-      // Handle 404 specifically
-      if (response.status === 404) {
-        throw new Error('Teacher not found');
-      }
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch student details');
-    }
+      const data = await response.json();
+      console.log("Teacher data:", data);
 
-    const data = await response.json();
-    console.log('Teacher data:', data);
-
-    return data;
+      return data;
     } catch (error) {
-      console.error('Error fetching teachers:', error);
+      console.error("Error fetching teachers:", error);
       throw error;
     }
   },
-
 
   async updateTeacher(
     teacherId: string,

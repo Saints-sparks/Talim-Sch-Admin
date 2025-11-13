@@ -10,7 +10,7 @@ export const getLocalStorageItem = (key: string): any | null => {
   try {
     // Try to get from localStorage first
     const localStorageData = localStorage.getItem(key);
-    if (localStorageData) {
+    if (localStorageData !== null && localStorageData !== undefined) {
       // Special handling for token keys - return raw if JWT
       if (
         (key === "accessToken" || key === "token" || key === "refreshToken") &&
@@ -19,34 +19,58 @@ export const getLocalStorageItem = (key: string): any | null => {
         return localStorageData; // Return raw token if it's a JWT token key
       }
       // For user data and other keys, always try to parse as JSON
-      return JSON.parse(localStorageData);
+      try {
+        return JSON.parse(localStorageData);
+      } catch (parseError) {
+        // If parsing fails, return raw data for tokens
+        if (
+          key === "accessToken" ||
+          key === "token" ||
+          key === "refreshToken"
+        ) {
+          return localStorageData;
+        }
+        return null;
+      }
     }
 
     // If not in localStorage, try cookies
     const cookies = document.cookie;
-    const parsedCookies = parse(cookies);
-    const cookieData = parsedCookies[key];
+    if (cookies) {
+      const parsedCookies = parse(cookies);
+      const cookieData = parsedCookies[key];
 
-    if (cookieData) {
-      // Special handling for token keys - return raw if JWT
-      if (
-        (key === "accessToken" || key === "token" || key === "refreshToken") &&
-        cookieData.startsWith("eyJ")
-      ) {
-        return cookieData; // Return raw token if it's a JWT token key
+      if (cookieData !== null && cookieData !== undefined) {
+        // Special handling for token keys - return raw if JWT
+        if (
+          (key === "accessToken" ||
+            key === "token" ||
+            key === "refreshToken") &&
+          cookieData.startsWith("eyJ")
+        ) {
+          return cookieData; // Return raw token if it's a JWT token key
+        }
+        // For user data and other keys, always try to parse as JSON
+        try {
+          return JSON.parse(cookieData);
+        } catch (parseError) {
+          // If parsing fails, return raw data for tokens
+          if (
+            key === "accessToken" ||
+            key === "token" ||
+            key === "refreshToken"
+          ) {
+            return cookieData;
+          }
+          return null;
+        }
       }
-      // For user data and other keys, always try to parse as JSON
-      return JSON.parse(cookieData);
     }
   } catch (error) {
-    console.error(`Error parsing localStorage item '${key}':`, error);
-    // If JSON.parse fails, return the raw value for token keys only
-    if (key === "accessToken" || key === "token" || key === "refreshToken") {
-      const rawData = localStorage.getItem(key);
-      if (rawData && rawData.startsWith("eyJ")) {
-        return rawData;
-      }
-    }
+    console.error(
+      `Error accessing localStorage/cookies for key '${key}':`,
+      error
+    );
     return null;
   }
 

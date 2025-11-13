@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "../lib/api/config";
-import { getLocalStorageItem } from "../lib/localStorage";
 import { uploadImage } from "./files.service";
+import { apiClient } from "@/lib/apiClient";
 
 /**
  * Interface for an announcement
@@ -95,34 +95,16 @@ export interface AnnouncementResponse {
 export const createAnnouncement = async (
   announcement: Announcement
 ): Promise<CreateAnnouncementResponse> => {
-  const senderId = getLocalStorageItem("user")?.userId;
-
-  if (!senderId) {
-    throw new Error("User not authenticated");
-  }
-
   try {
-    const response = await fetch(`${API_ENDPOINTS.CREATE_ANNOUNCEMENT}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
-      body: JSON.stringify({
-        ...announcement,
-        senderId,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to create announcement");
-    }
+    const response = await apiClient.post(
+      `${API_ENDPOINTS.CREATE_ANNOUNCEMENT}`,
+      announcement
+    );
 
     const data: CreateAnnouncementResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error("Failed to create announcement. Please try again.");
+    console.error("Failed to create announcement:", error);
     throw error;
   }
 };
@@ -139,33 +121,15 @@ export const getAnnouncementsBySender = async (
   page: number = 1,
   limit: number = 10
 ): Promise<AnnouncementResponse> => {
-  const token = localStorage.getItem("accessToken");
-
-  if (!token) {
-    throw new Error("User not authenticated");
-  }
-
   try {
-    const response = await fetch(
-      API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId, page, limit),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.get(
+      API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId, page, limit)
     );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch announcements");
-    }
 
     const data: AnnouncementResponse = await response.json();
     return data;
   } catch (error) {
-    toast.error("Failed to fetch announcements. Please try again.");
+    console.error("Failed to fetch announcements:", error);
     throw error;
   }
 };

@@ -71,7 +71,12 @@ export const getClasses = async (): Promise<Class[]> => {
 
 export const getSchoolId = (): string | null => {
   const user: any = getLocalStorageItem("user");
-  if (!user) return null;
+
+  // Return null if no user data or user is undefined
+  if (!user || user === null || user === undefined) {
+    console.warn("No user data found in storage");
+    return null;
+  }
 
   try {
     // Check if user is a JWT token string instead of parsed user object

@@ -1,42 +1,15 @@
 import Link from "next/link";
-import { Bell, Menu, CalendarRange, GraduationCap } from "lucide-react";
+import { Menu, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Button } from "./ui/button";
 import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { Calendar } from "./Icons";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
-  const [user, setUser] = useState<any>(null);
-
-  // Get user information from localStorage
-  useEffect(() => {
-    const getUserFromStorage = () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        }
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-      }
-    };
-
-    getUserFromStorage();
-
-    // Listen for storage changes (in case user data is updated elsewhere)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "user") {
-        getUserFromStorage();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  const { user } = useAuth();
 
   // Generate user initials from first and last name
   const getUserInitials = () => {
@@ -49,7 +22,7 @@ export function Header() {
   };
 
   return (
-    <header className="font-manrope px-5 border-b sm:border-b-2 border-b-[#F0F0F0] py-2 bg-white">
+    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] py-2 bg-white">
       {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
       <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
         {/* Left Side: School Name */}
@@ -80,7 +53,7 @@ export function Header() {
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+            <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
               {user?.schoolName || "School Name"}
             </h1>
           </div>
@@ -97,11 +70,11 @@ export function Header() {
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="flex gap-2 items-center text-sm text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white cursor-pointer hover:bg-gray-100">
-              <p className="text-[14px] sm:text-[16px]">
+            <div className="flex gap-2 items-center text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white cursor-pointer hover:bg-gray-100">
+              <p className="font-medium leading-[24px]">
                 {format(new Date(), "dd MMM, yyyy")}
               </p>
-              <CalendarRange size={24} />
+              <Calendar />
             </div>
             {/* WebSocket Status - Always visible but compact on mobile */}
             <div className="flex items-center">
