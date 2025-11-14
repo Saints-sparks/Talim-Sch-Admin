@@ -9,6 +9,8 @@ import {
   FiChevronRight,
   FiUsers,
   FiBook,
+  FiCalendar,
+  FiClock,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
@@ -211,29 +213,25 @@ export default function Classes() {
         <div className="flex h-screen bg-[#F8F8F8]">
           <main className="flex-grow flex flex-col">
             {/* Navigation Header */}
-            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
-                  <FiBook className="w-4 h-4 mr-2" />
-                  <span className="text-gray-900 font-medium">
-                    Class Management
-                  </span>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <span className="text-gray-900 ">All Classes</span>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <span className="text-gray-600 text-sm sm:text-base">
-                    {classes.length} total
-                  </span>
-                </div>
-                <button
-                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm font-medium whitespace-nowrap"
-                  onClick={toggleModal}
-                >
-                  <span className="text-lg mr-1 sm:mr-2">+</span>
-                  <span className="hidden sm:inline">Add Class</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
+            <div className="flex items-center justify-between bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
+              {/* Left Side - Title & Count */}
+              <div className="flex items-center space-x-3">
+                <h1 className="font-semibold font-manrope text-[19px]">
+                  My classes
+                </h1>
+                <span className="text-[15px] font-semibold bg-white px-3 py-1 rounded-md">
+                  {classes.length} Class
+                </span>
               </div>
+
+              {/* Right Side - Edit Button */}
+              <button
+                onClick={() => router.push("/classes/edit")}
+                className="flex items-center space-x-2 bg-[#003366] hover:bg-[#002244] text-white font-medium text-sm sm:text-base px-4 py-2 rounded-lg transition"
+              >
+                <span>Edit Class</span>
+                <FiEdit className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="flex-1 p-4 sm:p-6">
@@ -274,91 +272,109 @@ export default function Classes() {
               ) : (
                 <div className="flex flex-col flex-1">
                   {/* Classes Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 py-4">
-                    {displayedClasses.map((classItem, index) => {
-                      const colorScheme = getRandomColor(index);
-                      return (
-                        <div
-                          key={classItem._id}
-                          className={`${colorScheme.bg} ${colorScheme.text} rounded-xl p-4 sm:p-6 shadow-md hover:shadow-lg transition-all duration-300 relative min-h-[220px] sm:min-h-[250px] flex flex-col group`}
-                        >
-                          {/* Class Icon and Actions Header */}
-                          <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="bg-white bg-opacity-20 rounded-lg p-2">
-                              <svg
-                                className="w-4 h-4 sm:w-5 sm:h-5"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                              </svg>
-                            </div>
-
-                            {/* Edit/Delete Icons - Show on hover on desktop, always visible on mobile */}
-                            <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(
-                                    `/classes/edit-class/${classItem._id}`
-                                  );
-                                }}
-                                className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
-                                title="Edit Class"
-                              >
-                                <FiEdit className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-colors"
-                                title="Delete Class"
-                              >
-                                <FiTrash className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Class Info */}
-                          <div className="flex-1 mb-3 sm:mb-4">
-                            <h3 className="text-base sm:text-lg font-bold mb-2 line-clamp-2">
-                              {classItem.name}
-                            </h3>
-                            <p className="text-xs sm:text-sm opacity-90 line-clamp-3">
-                              {classItem.classDescription ||
-                                "No description provided"}
-                            </p>
-                          </div>
-
-                          {/* Class Stats */}
-                          <div className="flex items-center justify-between mb-3 sm:mb-4 text-xs opacity-90">
-                            <div className="flex items-center">
-                              <FiUsers className="w-3 h-3 mr-1" />
-                              <span>
-                                {classItem.classCapacity || "45"} capacity
-                              </span>
-                            </div>
-                            <div className="flex items-center">
-                              <FiBook className="w-3 h-3 mr-1" />
-                              <span>
-                                {classItem.assignedCourses?.length || 0} courses
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Action Button */}
-                          <div className="mt-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ">
+                    {displayedClasses.map((classItem) => (
+                      <div
+                        key={classItem._id}
+                        className="bg-white rounded-2xl border border-gray-100 shadow-md transition-all duration-300"
+                      >
+                        {/* Top Section */}
+                        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
+                          <h3 className="font-semibold text-[15px]">Class 1</h3>
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() =>
-                                router.push(`/classes/${classItem._id}`)
+                                router.push(
+                                  `/classes/edit-class/${classItem._id}`
+                                )
                               }
-                              className={`w-full ${colorScheme.button} text-white py-2 sm:py-2.5 px-3 rounded-lg font-medium transition-colors text-xs sm:text-sm hover:transform hover:scale-[1.02]`}
+                              className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 transition"
+                              title="Edit"
                             >
-                              Manage Class
+                              <FiEdit className="w-4 h-4 text-gray-700" />
+                            </button>
+                            <button
+                              onClick={() => console.log("delete")}
+                              className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 transition"
+                              title="Delete"
+                            >
+                              <FiTrash className="w-4 h-4 text-gray-700" />
                             </button>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        {/* Details Section */}
+                        <div className="px-4 py-3 space-y-3 text-sm text-gray-700">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[15px] font-semibold">
+                              Class Name
+                            </span>
+                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
+                              <FiCalendar className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
+                              Grade 1
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-[15px] font-semibold">
+                              Courses
+                            </span>
+                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
+                              <FiBook className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
+                              9 courses
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-[15px] font-semibold">
+                              Students
+                            </span>
+                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
+                              <span>40/50</span>
+                              <div className="flex ml-2 -space-x-2">
+                                <img
+                                  src="/img/classdetail-student1.png"
+                                  alt="student image"
+                                  className="w-5 h-5 rounded-full border border-white"
+                                />
+                                <img
+                                  src="/img/classdetail-student2.png"
+                                  alt="student image"
+                                  className="w-5 h-5 rounded-full border border-white"
+                                />
+                                <img
+                                  src="/img/classdetail-student3.png"
+                                  alt="student image"
+                                  className="w-5 h-5 rounded-full border border-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-[15px] font-semibold">
+                              Last Updated
+                            </span>
+                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
+                              <FiClock className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
+                              9/27/2025
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Manage Button */}
+                        <div className="px-4 pb-4">
+                          <button
+                            onClick={() =>
+                              router.push(`/classes/${classItem._id}`)
+                            }
+                            className="w-full bg-[#E0E0E0] hover:bg-gray-300 text-[15px] font-semibold py-2 rounded-md transition"
+                          >
+                            Manage Class
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Pagination Controls */}
