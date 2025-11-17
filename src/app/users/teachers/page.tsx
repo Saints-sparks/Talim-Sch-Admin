@@ -12,11 +12,13 @@ import { toast } from "react-toastify";
 import Avatar from "@/components/Avatar";
 import SmoothButton from "@/components/SmoothButton";
 import { ErrorState, EmptyState } from "@/components/StateComponents";
+import { ChevronDown, Search } from "@/components/Icons";
 
 const TeachersPage: React.FC = () => {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [totalTeachers, setTotalTeachers] = useState(0);
@@ -37,8 +39,12 @@ const TeachersPage: React.FC = () => {
         currentPage,
         teachersPerPage
       );
-      console.log(response.data);
       setTeachers(response.data);
+      if (response.meta && typeof response.meta.total === "number") {
+        setTotalTeachers(response.meta.total);
+      } else {
+        setTotalTeachers(response.data.length);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teachers");
       toast.error("Failed to fetch teachers");
@@ -74,7 +80,7 @@ const TeachersPage: React.FC = () => {
     router.push(`/users/teachers/${teacherId}`);
   };
 
-  // Filter teachers based on search term and selected class
+  // Filter teachers based on search term, selected class, and status
   const filteredTeachers = teachers.filter((teacher) => {
     const nameMatch = `${teacher.userId?.firstName || teacher.firstName} ${
       teacher.userId?.lastName || teacher.lastName
@@ -87,7 +93,13 @@ const TeachersPage: React.FC = () => {
       (teacher.assignedClasses?.some((cls) => cls._id === selectedClass) ??
         false);
 
-    return nameMatch && classMatch;
+    // Use isActive boolean for status
+    const statusMatch =
+      !statusFilter ||
+      (statusFilter === "active" && teacher.isActive) ||
+      (statusFilter === "inactive" && !teacher.isActive);
+
+    return nameMatch && classMatch && statusMatch;
   });
 
   // Calculate pagination values for filtered results
@@ -99,58 +111,83 @@ const TeachersPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] p-4 sm:p-6 flex flex-col">
-      {/* Title and Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 mt-5 gap-4 sm:gap-0">
-        <div className="flex items-center gap-x-4">
-          <h1 className="text-lg sm:text-xl font-medium text-gray-800">
-            Teachers
-          </h1>
-          <SmoothButton
+    <div className="min-h-screen bg-[#F8F8F8] p-4 leading-[120%] flex flex-col">
+      {/* Title and Controls - Redesigned */}
+      <div className="bg-[#F8F8F8] pt-4 x-2 sm:px-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-[19px] font-semibold ">My Teachers</h1>
+            <span className="bg-white border border-[#E4E4E4] text-[15px] font-medium px-3 py-1 rounded-full">
+              {totalTeachers} teachers
+            </span>
+          </div>
+          <button
             onClick={toggleModal}
-            variant="ghost"
-            size="sm"
-            className="flex items-center gap-2 text-gray-600 font-medium hover:text-gray-900"
+            className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
           >
-            <span className="text-lg">+</span>
-            <span className="hidden sm:inline">Add</span>
-          </SmoothButton>
+            <span className="text-lg font-bold">+</span> Add Teacher
+          </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-          {/* Search Bar */}
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
-              <FaSearch size={16} />
-            </span>
-            <input
-              type="text"
-              placeholder="Search for teacher"
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+        {/* Filters Row */}
+        <div className="bg-white rounded-2xl py-3 mt-4 w-fit">
+          <div className="flex flex-col md:flex-row gap-3 px-6 py-4">
+            {/* Search */}
+            <div className="relative flex-1 w-[220px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search />
+              </span>
+              <input
+                type="text"
+                placeholder="Search"
+                className="w-full pl-10 placeholder-[#B3B3B3] placeholder:font-medium pr-4 py-2 bg-white border border-[#E0E0E0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+            {/* Class Filter */}
+            <div className="relative w-[220px]">
+              <select
+                className="appearance-none bg-white border border-[#E0E0E0] h-[40px] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold w-[220px] text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedClass || ""}
+                onChange={(e) => {
+                  setSelectedClass(e.target.value || null);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">All Classes</option>
+                {classes.map((cls) => (
+                  <option key={cls._id} value={cls._id}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <ChevronDown />
+              </span>
+            </div>
+            {/* Status Filter */}
+            <div className="relative w-[220px]">
+              <select
+                className="appearance-none bg-white border border-[#E0E0E0] h-[40px] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold w-[220px] text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <ChevronDown />
+              </span>
+            </div>
           </div>
-
-          {/* Class Filter */}
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
-            value={selectedClass || ""}
-            onChange={(e) => {
-              setSelectedClass(e.target.value || null);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">Select class</option>
-            {classes.map((cls) => (
-              <option key={cls._id} value={cls._id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -196,31 +233,45 @@ const TeachersPage: React.FC = () => {
         ) : (
           <>
             {/* Teachers Grid - Takes available space */}
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 flex-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              {currentTeachers.map((teacher, index) => (
-                <motion.div
-                  key={teacher._id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 relative h-fit hover:shadow-md transition-shadow duration-200"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.2 }}
-                  whileHover={{ y: -2 }}
-                >
-                  {/* Three dots menu */}
-                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+              {currentTeachers.map((teacher) => {
+                // Use initials if no avatar
+                // Prefer teacher.userAvatar, fallback to teacher.userId?.userAvatar, fallback to initials
+                const avatarUrl = teacher.userAvatar || teacher.userId?.userAvatar;
+                const initials = `${(
+                  teacher.firstName || teacher.userId?.firstName || ""
+                ).charAt(0)}${(
+                  teacher.lastName || teacher.userId?.lastName || ""
+                ).charAt(0)}`.toUpperCase();
+                // Pick a color for initials avatar (hash by name)
+                const colorList = [
+                  "bg-[#154473] text-white",
+                  "bg-green-600 text-white",
+                  "bg-orange-400 text-white",
+                  "bg-purple-500 text-white",
+                  "bg-pink-500 text-white",
+                  "bg-gray-400 text-white",
+                ];
+                const colorIdx =
+                  Math.abs(
+                    (teacher.firstName || teacher.userId?.firstName || "").charCodeAt(0) +
+                    (teacher.lastName || teacher.userId?.lastName || "").charCodeAt(0)
+                  ) % colorList.length;
+                const colorClass = colorList[colorIdx];
+                return (
+                  <div
+                    key={teacher._id}
+                    className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center relative group transition-shadow hover:shadow-lg"
+                  >
+                    {/* Three dots menu */}
                     <button
-                      className="text-gray-400 hover:text-gray-600 p-1"
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1"
                       onClick={() => toggleMenu(teacher._id)}
                     >
-                      <span className="text-lg font-bold">⋮</span>
+                      <span className="text-xl font-bold">⋮</span>
                     </button>
                     {menuOpen === teacher._id && (
-                      <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      <div className="absolute right-4 top-12 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <button
                           className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
                           onClick={() => {
@@ -241,40 +292,50 @@ const TeachersPage: React.FC = () => {
                         </button>
                       </div>
                     )}
+                    {/* Avatar or Initials */}
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={teacher.firstName || teacher.userId?.firstName || "Avatar"}
+                        className="w-16 h-16 rounded-full object-cover mb-3"
+                      />
+                    ) : (
+                      <div
+                        className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mb-3 ${colorClass}`}
+                      >
+                        {initials}
+                      </div>
+                    )}
+                    <div className="text-center flex flex-col items-center flex-1 w-full">
+                      <h3 className="font-semibold text-gray-900 text-base mb-1">
+                        {teacher.userId?.firstName || teacher.firstName}{" "}
+                        {teacher.userId?.lastName || teacher.lastName}
+                      </h3>
+                      <div className="flex gap-2 mb-3">
+                        <span className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded">
+                          Grade 2
+                        </span>
+                        <span
+                          className={`text-xs font-medium px-2 py-1 rounded ${
+                            teacher.isActive
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-200 text-gray-500"
+                          }`}
+                        >
+                          {teacher.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleViewProfile(teacher._id)}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg py-2 mt-auto transition"
+                      >
+                        View Profile
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Teacher Avatar */}
-                  <div className="flex justify-center mb-3 sm:mb-4">
-                    <Avatar
-                      src={teacher.userId?.userAvatar}
-                      firstName={teacher.userId?.firstName || teacher.firstName}
-                      lastName={teacher.userId?.lastName || teacher.lastName}
-                      size="md"
-                    />
-                  </div>
-
-                  {/* Teacher Info */}
-                  <div className="text-center">
-                    <h3 className="font-medium text-gray-900 mb-1 text-sm sm:text-base">
-                      {teacher.userId?.firstName || teacher.firstName}{" "}
-                      {teacher.userId?.lastName || teacher.lastName}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                      {teacher.email} • {teacher.role}
-                    </p>
-
-                    {/* View Profile Button */}
-                    <SmoothButton
-                      onClick={() => handleViewProfile(teacher._id)}
-                      variant="outline"
-                      className="w-full text-gray-700 border-gray-300 hover:bg-[#BFCCD9] text-xs sm:text-sm py-2"
-                    >
-                      View Profile
-                    </SmoothButton>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                );
+              })}
+            </div>
 
             {/* Pagination - Modern design */}
             <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-gray-200 gap-4 bg-white rounded-lg p-4 shadow-sm">

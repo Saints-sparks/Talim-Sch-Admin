@@ -41,6 +41,7 @@ export interface Teacher {
   phoneNumber: string;
   email: string;
   role: string;
+  userAvatar?: string; // <-- Add this line to match backend
 
   highestAcademicQualification: string;
   yearsOfExperience: number;

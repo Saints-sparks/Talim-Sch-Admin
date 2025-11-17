@@ -131,8 +131,7 @@ const StudentPage: React.FC = () => {
       <div className="bg-white rounded-2xl py-3 mb-6 w-fit">
         <div className="px-6 py-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-            {/* Clean Search Bar */}
-            {/* Search Bar */}
+            
             <div className="relative flex-1 w-[220px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <Search />

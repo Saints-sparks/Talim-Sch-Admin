@@ -195,7 +195,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen  p-4">
         <div className="pt-4">
           <LeaveRequestSkeleton />
         </div>
@@ -205,7 +205,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen p-4">
         <div className="pt-4">
           <div className="flex flex-col items-center justify-center py-20 px-6 bg-white rounded-lg border-2 border-red-200">
             <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -243,7 +243,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4">
       <div className="pt-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
