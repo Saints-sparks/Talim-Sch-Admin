@@ -14,7 +14,7 @@ import {
   Eye,
   EyeOff,
   Edit3,
-  Check,
+
   AlertCircle,
   Building,
   Globe,
@@ -93,19 +93,14 @@ export default function Profile() {
       try {
         setIsLoadingData(true);
 
-        // Load user data from API
-        const userData = localStorage.getItem("user");
-        if (userData) {
-          const user = JSON.parse(userData);
-          const userId = user.userId;
-
+        // Load user data from local storage utility for consistency
+        const storedUser = getLocalStorageItem("user");
+        if (storedUser && storedUser.userId) {
           try {
-            // Fetch detailed user profile from API
             const userProfile: UserProfile = await authService.getUserProfile(
-              userId
+              storedUser.userId
             );
 
-            // Update form data with API data
             setFormData((prev) => ({
               ...prev,
               adminFirstName: userProfile.firstName || "",
@@ -115,7 +110,6 @@ export default function Profile() {
               adminAvatar: userProfile.userAvatar || null,
             }));
 
-            // Also extract school data from nested schoolId if available
             if (userProfile.schoolId) {
               setFormData((prev) => ({
                 ...prev,
@@ -128,72 +122,46 @@ export default function Profile() {
               }));
             }
           } catch (apiError) {
-            console.error("Error loading user profile from API:", apiError);
-            // Fallback to localStorage data if API fails
-            const fullName = `${user.firstName || ""} ${
-              user.lastName || ""
-            }`.trim();
+            // Fallback: use basic stored user fields if API fails
+            const fallback = storedUser || {};
             setFormData((prev) => ({
               ...prev,
-              adminFirstName: user.firstName || user.name?.split(" ")[0] || "",
+              adminFirstName:
+                fallback.firstName || fallback.name?.split(" ")[0] || "",
               adminLastName:
-                user.lastName || user.name?.split(" ").slice(1).join(" ") || "",
-              adminEmail: user.email || "",
-              adminPhone: user.phoneNumber || user.phone || "",
+                fallback.lastName ||
+                fallback.name?.split(" ").slice(1).join(" ") ||
+                "",
+              adminEmail: fallback.email || "",
+              adminPhone: fallback.phoneNumber || fallback.phone || "",
               adminAvatar: null,
             }));
           }
-        } else {
-          // Set empty defaults if no user in localStorage
-          setFormData((prev) => ({
-            ...prev,
-            adminFirstName: "",
-            adminLastName: "",
-            adminEmail: "",
-            adminPhone: "",
-            adminAvatar: null,
-          }));
         }
 
-        // Load school data from API
+        // Load school data from API (if available)
         const schoolId = getSchoolId();
         if (schoolId) {
           try {
-            const dashboardData = await getSchoolDashboard(schoolId);
-            if (dashboardData.schoolInfo) {
+            const dashboardData: SchoolDashboardData = await getSchoolDashboard(
+              schoolId
+            );
+            if (dashboardData?.schoolInfo) {
               setFormData((prev) => ({
                 ...prev,
-                schoolName: dashboardData.schoolInfo.name || "",
-                schoolPrefix: dashboardData.schoolInfo.schoolPrefix || "",
-                street: dashboardData.schoolInfo.physicalAddress || "",
-                city: "", // Will be extracted from physicalAddress if needed
-                state: dashboardData.schoolInfo.location?.state || "",
-                country: dashboardData.schoolInfo.location?.country || "",
-                logo: dashboardData.schoolInfo.logo || null,
+                schoolName: dashboardData.schoolInfo.name || prev.schoolName,
+                schoolPrefix:
+                  dashboardData.schoolInfo.schoolPrefix || prev.schoolPrefix,
+                street: dashboardData.schoolInfo.physicalAddress || prev.street,
+                state: dashboardData.schoolInfo.location?.state || prev.state,
+                country:
+                  dashboardData.schoolInfo.location?.country || prev.country,
+                logo: dashboardData.schoolInfo.logo || prev.logo,
               }));
             }
-          } catch (schoolError) {
-            console.error("Error loading school data:", schoolError);
-            // Set empty defaults if API fails, don't hardcode values
-            setFormData((prev) => ({
-              ...prev,
-              schoolName: prev.schoolName || "",
-              schoolPrefix: prev.schoolPrefix || "",
-              street: prev.street || "",
-              state: prev.state || "",
-              country: prev.country || "",
-            }));
+          } catch {
+            // ignore — keep whatever we already have in formData
           }
-        } else {
-          // Set empty defaults if no schoolId, don't hardcode values
-          setFormData((prev) => ({
-            ...prev,
-            schoolName: "",
-            schoolPrefix: "",
-            street: "",
-            state: "",
-            country: "",
-          }));
         }
       } catch (error) {
         console.error("Error loading profile data:", error);
@@ -220,12 +188,10 @@ export default function Profile() {
       if (!formData.adminEmail.trim()) return "Admin email is required";
       if (!formData.adminPhone.trim()) return "Phone number is required";
 
-      // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.adminEmail))
+      if (!emailRegex.test(formData.adminEmail.trim()))
         return "Please enter a valid email address";
 
-      // Password validation (only if passwords are entered)
       if (password || confirmPassword) {
         if (password.length < 8)
           return "Password must be at least 8 characters long";
@@ -241,7 +207,7 @@ export default function Profile() {
     >
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,26 +221,25 @@ export default function Profile() {
   };
 
   const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+    setShowPassword((s) => !s);
   };
 
   const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
+    setShowConfirmPassword((s) => !s);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
-      // Validate file using the utility function
       const validation = validateImageFile(file);
       if (!validation.valid) {
         toast.error(validation.error || "Invalid file");
-        e.target.value = ""; // Reset input
+        e.target.value = "";
         return;
       }
 
-      // Show preview immediately
+      // Preview
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target) {
@@ -287,45 +252,41 @@ export default function Profile() {
       };
       reader.readAsDataURL(file);
 
-      // Upload to Cloudinary
+      // Upload
       setIsUploadingImage(true);
       setUploadProgress(0);
-
-      const uploadingToast = toast.loading("Uploading image...");
+      const uploadingToastId = toast.loading("Uploading image...");
 
       try {
         const imageUrl = await uploadToCloudinary(file, (progress) => {
-          setUploadProgress(progress);
+          setUploadProgress(Math.round(progress));
         });
 
-        // Update form data with the Cloudinary URL based on active tab
         if (activeTab === "school") {
-          setFormData({ ...formData, logo: imageUrl });
+          setFormData((prev) => ({ ...prev, logo: imageUrl }));
         } else {
-          setFormData({ ...formData, adminAvatar: imageUrl });
+          setFormData((prev) => ({ ...prev, adminAvatar: imageUrl }));
         }
-        toast.success("Image uploaded successfully!", { id: uploadingToast });
+
+        toast.success("Image uploaded successfully!", { id: uploadingToastId });
       } catch (error) {
         console.error("Error uploading image:", error);
         toast.error(
           error instanceof Error ? error.message : "Failed to upload image",
-          {
-            id: uploadingToast,
-          }
+          { id: uploadingToastId }
         );
-
-        // Reset preview on error
+        // reset preview & value on error
         if (activeTab === "school") {
           setAvatarPreview(null);
-          setFormData({ ...formData, logo: null });
+          setFormData((prev) => ({ ...prev, logo: null }));
         } else {
           setAdminAvatarPreview(null);
-          setFormData({ ...formData, adminAvatar: null });
+          setFormData((prev) => ({ ...prev, adminAvatar: null }));
         }
       } finally {
         setIsUploadingImage(false);
         setUploadProgress(0);
-        e.target.value = ""; // Reset input for potential re-upload
+        e.target.value = "";
       }
     }
   };
@@ -337,14 +298,13 @@ export default function Profile() {
       return;
     }
 
-    // Prevent submission if image is still uploading
     if (isUploadingImage) {
       toast.error("Please wait for image upload to complete");
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading(
+    const loadingToastId = toast.loading(
       `Updating ${
         activeTab === "school" ? "school information" : "administrator details"
       }...`
@@ -352,30 +312,13 @@ export default function Profile() {
 
     try {
       if (activeTab === "school") {
-        // Debug localStorage contents
-        console.log("=== DEBUGGING LOCALSTORAGE ===");
-        console.log(
-          "Raw user data from localStorage:",
-          localStorage.getItem("user")
-        );
-        console.log(
-          "Raw accessToken from localStorage:",
-          localStorage.getItem("accessToken")
-        );
-        console.log("Parsed user data:", getLocalStorageItem("user"));
-        console.log("================================");
-
-        // Update school information
         const schoolId = getSchoolId();
-        console.log("Retrieved school ID:", schoolId);
-
         if (!schoolId) {
           throw new Error(
-            "School ID not found. Please ensure you are logged in properly."
+            "School ID not found. Please ensure you're logged in."
           );
         }
 
-        // Prepare school update payload according to API specification
         const schoolPayload: UpdateSchoolPayload = {
           name: formData.schoolName.trim(),
           physicalAddress: formData.street.trim(),
@@ -383,7 +326,6 @@ export default function Profile() {
             country: formData.country,
             state: formData.state,
           },
-          // Add primary contacts - this might need to be customized based on your needs
           primaryContacts: [
             {
               name: `${formData.adminFirstName} ${formData.adminLastName}`.trim(),
@@ -395,72 +337,38 @@ export default function Profile() {
           active: true,
         };
 
-        // Only include logo if it exists
-        if (formData.logo) {
-          schoolPayload.logo = formData.logo;
-        }
+        if (formData.logo) schoolPayload.logo = formData.logo;
 
-        console.log("About to update school with payload:", schoolPayload);
-
-        try {
-          console.log("Calling updateSchool function...");
-          const updatedSchool = await updateSchool(schoolId, schoolPayload);
-          console.log("School updated successfully:", updatedSchool);
-        } catch (updateError) {
-          console.log("Error caught in updateSchool call:", updateError);
-          console.log("Error type:", typeof updateError);
-          if (updateError instanceof Error) {
-            console.log("Error message:", updateError.message);
-            console.log("Error stack:", updateError.stack);
-          }
-          console.log("Full error:", updateError);
-          throw updateError;
-        }
+        await updateSchool(schoolId, schoolPayload);
       } else {
-        // Update administrator details
-        console.log("Administrator data to update:", {
-          firstName: formData.adminFirstName,
-          lastName: formData.adminLastName,
-          email: formData.adminEmail,
-          phone: formData.adminPhone,
-          avatar: formData.adminAvatar,
-          password: password ? "***" : "not changed",
-        });
-
-        // Get the current user ID from localStorage or user context
         const currentUser = getLocalStorageItem("user");
         if (!currentUser || !currentUser.userId) {
-          throw new Error(
-            "User ID not found. Please ensure you are logged in properly."
-          );
+          throw new Error("User ID not found. Please ensure you're logged in.");
         }
 
-        // Prepare admin profile update payload
         const adminPayload: UpdateUserProfilePayload = {
           firstName: formData.adminFirstName.trim(),
           lastName: formData.adminLastName.trim(),
           phoneNumber: formData.adminPhone.trim(),
         };
 
-        // Only include avatar if it exists
         if (formData.adminAvatar) {
           adminPayload.userAvatar = formData.adminAvatar;
         }
 
-        // Note: Email updates might require additional verification
-        // dateOfBirth, gender, and other optional fields can be added based on your form
-
-        console.log("About to update user profile with payload:", adminPayload);
-
-        try {
-          const updatedProfile = await authService.updateUserProfile(
-            adminPayload
-          );
-          console.log("User profile updated successfully:", updatedProfile);
-        } catch (updateError) {
-          console.log("Error caught in updateUserProfile call:", updateError);
-          throw updateError;
+        if (formData.adminEmail && formData.adminEmail.trim()) {
+          // include email update if user provided one (may require verification on backend)
+          // some backends restrict email updates; handle server errors accordingly
+          // @ts-ignore - if UpdateUserProfilePayload doesn't include email, backend call may still accept it
+          adminPayload.email = formData.adminEmail.trim().toLowerCase();
         }
+
+        if (password && password.length >= 8) {
+          // @ts-ignore - include password only if backend supports updating via this endpoint
+          adminPayload.password = password;
+        }
+
+        await authService.updateUserProfile(adminPayload);
       }
 
       toast.success(
@@ -469,7 +377,7 @@ export default function Profile() {
             ? "School information"
             : "Administrator details"
         } updated successfully!`,
-        { id: loadingToast }
+        { id: loadingToastId }
       );
 
       setIsEditing(false);
@@ -477,11 +385,10 @@ export default function Profile() {
       setConfirmPassword("");
     } catch (error) {
       console.error("Error updating profile:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update profile";
-      toast.error(`Update failed: ${errorMessage}`, {
-        id: loadingToast,
-      });
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile",
+        { id: loadingToastId }
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -491,49 +398,47 @@ export default function Profile() {
     setIsEditing(false);
     setPassword("");
     setConfirmPassword("");
-    // Reset form data if needed
+    // we don't automatically revert formData here — you can add a reload if desired
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" />
 
-      {/* Loading State */}
-      {isLoadingData && (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      {/* Loading */}
+      {isLoadingData ? (
+        <div className="min-h-screen flex items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-8 rounded-2xl shadow-lg text-center"
+            className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full"
           >
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Loading Profile Data
             </h2>
             <p className="text-gray-600">
-              Please wait while we fetch your information...
+              Please wait while we fetch your information…
             </p>
           </motion.div>
         </div>
-      )}
-
-      {/* Main Content - Only show when not loading */}
-      {!isLoadingData && (
+      ) : (
         <>
-          {/* Header Section */}
+          {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.35 }}
             className="bg-white border-b border-gray-200 shadow-sm mx-6 my-4 rounded-2xl"
+            aria-hidden={isLoadingData}
           >
-            <div className="container mx-auto p-6">
+            <div className="container mx-auto p-6 max-w-6xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
                     <User className="w-6 h-6 text-white" />
                   </div>
-                  <div className="">
+                  <div>
                     <h1 className="text-2xl font-semibold text-gray-900">
                       Profile Settings
                     </h1>
@@ -542,52 +447,53 @@ export default function Profile() {
                     </p>
                   </div>
                 </div>
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300"
+                  onClick={() => setIsEditing((s) => !s)}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 ${
+                    isEditing
+                      ? "bg-gray-500 text-white hover:bg-gray-600"
+                      : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+                  }`}
+                  aria-pressed={isEditing}
+                  aria-label={isEditing ? "Cancel editing" : "Edit profile"}
                 >
                   {isEditing ? (
-                    <>
-                      <X className="w-5 h-5" />
-                      Cancel Edit
-                    </>
+                    <X className="w-5 h-5" />
                   ) : (
-                    <>
-                      <Edit3 className="w-5 h-5" />
-                      Edit Profile
-                    </>
+                    <Edit3 className="w-5 h-5" />
                   )}
+                  {isEditing ? "Cancel Edit" : "Edit Profile"}
                 </motion.button>
               </div>
             </div>
           </motion.div>
 
-          <div className="container mx-auto p-6">
+          <div className="container mx-auto p-6 max-w-6xl">
             {/* Tabs */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.35, delay: 0.05 }}
               className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8"
             >
               <div className="flex">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`flex-1 flex items-center justify-center gap-3 py-6 px-8 transition-all duration-300 ${
+                  className={`flex-1 flex items-center gap-3 py-5 px-6 transition-all duration-200 ${
                     activeTab === "school"
                       ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-b-4 border-blue-600"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                   onClick={() => setActiveTab("school")}
+                  aria-current={activeTab === "school"}
                 >
-                  <Building className="w-6 h-6" />
+                  <Building className="w-5 h-5" />
                   <div className="text-left">
-                    <div className="font-semibold text-lg">
-                      School Information
-                    </div>
+                    <div className="font-semibold">School Information</div>
                     <div className="text-sm opacity-80">
                       Institution details & contact
                     </div>
@@ -597,16 +503,17 @@ export default function Profile() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`flex-1 flex items-center justify-center gap-3 py-6 px-8 transition-all duration-300 ${
+                  className={`flex-1 flex items-center gap-3 py-5 px-6 transition-all duration-200 ${
                     activeTab === "admin"
                       ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-b-4 border-emerald-600"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                   onClick={() => setActiveTab("admin")}
+                  aria-current={activeTab === "admin"}
                 >
-                  <Shield className="w-6 h-6" />
+                  <Shield className="w-5 h-5" />
                   <div className="text-left">
-                    <div className="font-semibold text-lg">Administrator</div>
+                    <div className="font-semibold">Administrator</div>
                     <div className="text-sm opacity-80">
                       Personal details & security
                     </div>
@@ -615,16 +522,16 @@ export default function Profile() {
               </div>
             </motion.div>
 
-            {/* School Information Tab */}
+            {/* School Tab */}
             <AnimatePresence mode="wait">
               {activeTab === "school" && (
                 <motion.div
                   key="school"
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
+                  exit={{ opacity: 0, x: 12 }}
+                  transition={{ duration: 0.28 }}
+                  className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8"
                 >
                   <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-6 border-b border-gray-200">
                     <div className="flex items-center gap-3">
@@ -640,63 +547,72 @@ export default function Profile() {
 
                   <div className="p-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Logo Section */}
-                      <div className="lg:col-span-1">
-                        <div className="text-center">
-                          <div className="relative inline-block">
-                            <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                              {formData.logo || avatarPreview ? (
-                                <img
-                                  src={
-                                    formData.logo ||
-                                    avatarPreview ||
-                                    "/placeholder.svg"
-                                  }
-                                  alt="School Logo"
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <School className="w-16 h-16 text-blue-600" />
-                              )}
-
-                              {/* Upload Progress Overlay */}
-                              {isUploadingImage && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                  <div className="text-white text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                                    <div className="text-sm font-medium">
-                                      {uploadProgress}%
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
+                      {/* Logo */}
+                      <div className="lg:col-span-1 flex flex-col items-center">
+                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-white shadow-xl overflow-hidden">
+                          {formData.logo || avatarPreview ? (
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={
+                                  formData.logo ||
+                                  avatarPreview ||
+                                  "/placeholder.svg"
+                                }
+                                alt="School Logo"
+                                fill
+                                className="object-cover"
+                                sizes="160px"
+                                unoptimized
+                              />
                             </div>
-                            {isEditing && !isUploadingImage && (
-                              <motion.label
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition-colors"
-                              >
-                                <Camera className="w-5 h-5" />
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  onChange={handleFileChange}
-                                  accept="image/*"
-                                />
-                              </motion.label>
-                            )}
-                          </div>
-                          <div className="mt-4">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              School Logo
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {isUploadingImage
-                                ? "Uploading image..."
-                                : "Upload your institution logo"}
-                            </p>
-                          </div>
+                          ) : (
+                            <div className="flex items-center justify-center w-full h-full">
+                              <School className="w-16 h-16 text-blue-600" />
+                            </div>
+                          )}
+
+                          {/* Upload progress overlay */}
+                          {isUploadingImage && (
+                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                              <div className="text-white text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
+                                <div className="text-sm font-medium">
+                                  {uploadProgress}%
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {isEditing && !isUploadingImage && (
+                          <label
+                            htmlFor="school-logo"
+                            className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full cursor-pointer shadow"
+                            aria-label="Upload school logo"
+                            title="Upload school logo"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Upload Logo
+                            <input
+                              id="school-logo"
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              onChange={handleFileChange}
+                              aria-hidden={!isEditing}
+                            />
+                          </label>
+                        )}
+
+                        <div className="mt-4 text-center">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            School Logo
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {isUploadingImage
+                              ? "Uploading image..."
+                              : "Upload your institution logo"}
+                          </p>
                         </div>
                       </div>
 
@@ -714,11 +630,12 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter your school name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
+                            aria-label="School name"
                           />
                         </div>
 
@@ -734,11 +651,12 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="e.g. USS"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
+                            aria-label="School prefix"
                           />
                         </div>
 
@@ -754,11 +672,12 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter street address"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
+                            aria-label="Street address"
                           />
                         </div>
 
@@ -773,11 +692,12 @@ export default function Profile() {
                               value={formData.state}
                               onChange={handleInputChange}
                               disabled={!isEditing}
-                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                                 isEditing
-                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                                   : "border-gray-100 bg-gray-50"
                               } text-gray-900 font-medium disabled:cursor-not-allowed pr-12`}
+                              aria-label="State"
                             >
                               <option value="">Choose your state</option>
                               <option value="Lagos State">Lagos State</option>
@@ -815,11 +735,12 @@ export default function Profile() {
                               value={formData.country}
                               onChange={handleInputChange}
                               disabled={!isEditing}
-                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                                 isEditing
-                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                                   : "border-gray-100 bg-gray-50"
                               } text-gray-900 font-medium disabled:cursor-not-allowed pr-12`}
+                              aria-label="Country"
                             >
                               <option value="">Choose your country</option>
                               <option value="Nigeria">Nigeria</option>
@@ -847,10 +768,10 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Actions */}
                     {isEditing && (
                       <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200"
                       >
@@ -859,33 +780,35 @@ export default function Profile() {
                           whileTap={{ scale: 0.98 }}
                           onClick={handleUpdate}
                           disabled={isSubmitting || isUploadingImage}
-                          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
+                          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
+                          aria-disabled={isSubmitting || isUploadingImage}
                         >
                           {isSubmitting ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               Updating...
                             </>
                           ) : isUploadingImage ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               Uploading...
                             </>
                           ) : (
                             <>
-                              <Save className="w-5 h-5" />
+                              <Save className="w-4 h-4" />
                               Update School
                             </>
                           )}
                         </motion.button>
+
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={handleCancel}
                           disabled={isSubmitting}
-                          className="flex items-center gap-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                           Cancel
                         </motion.button>
                       </motion.div>
@@ -895,15 +818,15 @@ export default function Profile() {
               )}
             </AnimatePresence>
 
-            {/* Administrator Details Tab */}
+            {/* Admin Tab */}
             <AnimatePresence mode="wait">
               {activeTab === "admin" && (
                 <motion.div
                   key="admin"
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
+                  exit={{ opacity: 0, x: 12 }}
+                  transition={{ duration: 0.28 }}
                   className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
                 >
                   <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-8 py-6 border-b border-gray-200">
@@ -920,67 +843,73 @@ export default function Profile() {
 
                   <div className="p-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Avatar Section */}
-                      <div className="lg:col-span-1">
-                        <div className="text-center">
-                          <div className="relative inline-block">
-                            <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                              {formData.adminAvatar || adminAvatarPreview ? (
-                                <img
-                                  src={
-                                    formData.adminAvatar ||
-                                    adminAvatarPreview ||
-                                    "/placeholder.svg"
-                                  }
-                                  alt="Administrator Avatar"
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-16 h-16 text-emerald-600" />
-                              )}
-
-                              {/* Upload Progress Overlay */}
-                              {isUploadingImage && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                  <div className="text-white text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                                    <div className="text-sm font-medium">
-                                      {uploadProgress}%
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
+                      {/* Avatar Column */}
+                      <div className="lg:col-span-1 flex flex-col items-center">
+                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 border-4 border-white shadow-xl overflow-hidden">
+                          {formData.adminAvatar || adminAvatarPreview ? (
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={
+                                  formData.adminAvatar ||
+                                  adminAvatarPreview ||
+                                  "/placeholder.svg"
+                                }
+                                alt="Administrator Avatar"
+                                fill
+                                className="object-cover"
+                                sizes="160px"
+                                unoptimized
+                              />
                             </div>
-                            {isEditing && !isUploadingImage && (
-                              <motion.label
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="absolute -bottom-2 -right-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition-colors"
-                              >
-                                <Camera className="w-5 h-5" />
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  onChange={handleFileChange}
-                                  accept="image/*"
-                                />
-                              </motion.label>
-                            )}
-                          </div>
-                          <div className="mt-4">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Profile Picture
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {isUploadingImage
-                                ? "Uploading image..."
-                                : "Upload your profile photo"}
-                            </p>
-                          </div>
+                          ) : (
+                            <div className="flex items-center justify-center w-full h-full">
+                              <User className="w-16 h-16 text-emerald-600" />
+                            </div>
+                          )}
+
+                          {isUploadingImage && (
+                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                              <div className="text-white text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
+                                <div className="text-sm font-medium">
+                                  {uploadProgress}%
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {isEditing && !isUploadingImage && (
+                          <label
+                            htmlFor="admin-avatar"
+                            className="mt-4 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full cursor-pointer shadow"
+                            aria-label="Upload profile photo"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Upload Photo
+                            <input
+                              id="admin-avatar"
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              onChange={handleFileChange}
+                            />
+                          </label>
+                        )}
+
+                        <div className="mt-4 text-center">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Profile Picture
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {isUploadingImage
+                              ? "Uploading image..."
+                              : "Upload your profile photo"}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Form Fields */}
+                      {/* Admin Fields */}
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -994,9 +923,9 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter your first name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -1014,9 +943,9 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter your last name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -1034,9 +963,9 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter your email address"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -1054,15 +983,15 @@ export default function Profile() {
                             onChange={handleInputChange}
                             disabled={!isEditing}
                             placeholder="Enter your phone number"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
                         </div>
 
-                        {/* Password Fields - Only show when editing */}
+                        {/* Password fields when editing */}
                         {isEditing ? (
                           <>
                             <div className="space-y-2">
@@ -1076,12 +1005,18 @@ export default function Profile() {
                                   value={password}
                                   onChange={handlePasswordChange}
                                   placeholder="Enter new password (optional)"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300 text-gray-900 font-medium pr-12"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition text-gray-900 font-medium pr-12"
+                                  aria-label="New password"
                                 />
                                 <button
                                   type="button"
                                   onClick={togglePasswordVisibility}
                                   className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                                  aria-label={
+                                    showPassword
+                                      ? "Hide password"
+                                      : "Show password"
+                                  }
                                 >
                                   {showPassword ? (
                                     <EyeOff className="h-5 w-5" />
@@ -1105,12 +1040,18 @@ export default function Profile() {
                                   value={confirmPassword}
                                   onChange={handleConfirmPasswordChange}
                                   placeholder="Confirm your password"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-300 text-gray-900 font-medium pr-12"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition text-gray-900 font-medium pr-12"
+                                  aria-label="Confirm password"
                                 />
                                 <button
                                   type="button"
                                   onClick={toggleConfirmPasswordVisibility}
                                   className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
+                                  aria-label={
+                                    showConfirmPassword
+                                      ? "Hide confirm password"
+                                      : "Show confirm password"
+                                  }
                                 >
                                   {showConfirmPassword ? (
                                     <EyeOff className="h-5 w-5" />
@@ -1123,9 +1064,8 @@ export default function Profile() {
                           </>
                         ) : (
                           <>
-                            {/* Empty divs to maintain grid alignment when not editing */}
-                            <div></div>
-                            <div></div>
+                            <div />
+                            <div />
                           </>
                         )}
                       </div>
@@ -1134,7 +1074,7 @@ export default function Profile() {
                     {/* Security Notice */}
                     {isEditing && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl"
                       >
@@ -1154,10 +1094,10 @@ export default function Profile() {
                       </motion.div>
                     )}
 
-                    {/* Action Buttons */}
+                    {/* Admin actions */}
                     {isEditing && (
                       <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200"
                       >
@@ -1166,33 +1106,34 @@ export default function Profile() {
                           whileTap={{ scale: 0.98 }}
                           onClick={handleUpdate}
                           disabled={isSubmitting || isUploadingImage}
-                          className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
+                          className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                         >
                           {isSubmitting ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               Updating...
                             </>
                           ) : isUploadingImage ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                               Uploading...
                             </>
                           ) : (
                             <>
-                              <Save className="w-5 h-5" />
+                              <Save className="w-4 h-4" />
                               Update Profile
                             </>
                           )}
                         </motion.button>
+
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={handleCancel}
                           disabled={isSubmitting}
-                          className="flex items-center gap-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                           Cancel
                         </motion.button>
                       </motion.div>

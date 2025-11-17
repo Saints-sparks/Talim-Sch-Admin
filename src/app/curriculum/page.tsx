@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import ModernLoader from "@/components/ModernLoader";
 import { toast } from "react-toastify";
@@ -92,15 +91,14 @@ interface CurriculumKPIs {
   }>;
 }
 
-// Loading component for Suspense fallback
 const LoadingSpinner = () => <ModernLoader />;
 
-// Main dashboard component
+const PRIMARY = "#154473"; // Talim primary color used across buttons
+
 const CurriculumDashboardMain: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check for any query parameters that might affect initial state
   const initialTab =
     (searchParams?.get("tab") as "overview" | "structure") || "overview";
 
@@ -122,17 +120,17 @@ const CurriculumDashboardMain: React.FC = () => {
   const [kpis, setKpis] = useState<CurriculumKPIs | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
 
-  // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update tab when URL changes
   useEffect(() => {
     if (searchParams?.get("tab")) {
-      setActiveTab(searchParams.get("tab") as "overview" | "structure");
+      const tab = searchParams.get("tab") as "overview" | "structure";
+      if (tab) setActiveTab(tab);
     }
   }, [searchParams]);
 
@@ -157,11 +155,7 @@ const CurriculumDashboardMain: React.FC = () => {
     setLoadingKpis(true);
     try {
       const response = await apiClient.get(`${API_BASE_URL}/curriculum/kpis`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch curriculum KPIs");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch curriculum KPIs");
       const data = await response.json();
       setKpis(data);
     } catch (error) {
@@ -227,152 +221,182 @@ const CurriculumDashboardMain: React.FC = () => {
   };
 
   const filteredSubjects = subjects.filter((subject) => {
-    const matchesSearch =
-      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subject.code.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      subject.name.toLowerCase().includes(q) ||
+      subject.code.toLowerCase().includes(q)
+    );
   });
 
   const recentContent = curriculumContents
+    .slice()
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 5);
 
-  if (loading) {
-    return <ModernLoader />;
-  }
+  if (loading) return <ModernLoader />;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Fixed Navigation */}
-      <div className="flex-shrink-0 px-6 py-4 bg-white border-b">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Curriculum Management
-          </h1>
+    <div className="flex flex-col min-h-screen ">
+      {/* Top - flattened header (no bg white) */}
+      <div className="flex-shrink-0 px-6 py-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">
+              Curriculum Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage subjects, courses and curriculum content
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center border border-gray-200 rounded-md px-3 py-2 bg-white shadow-sm">
+              <Search className="w-4 h-4 text-gray-500 mr-2" />
+              <input
+                type="search"
+                placeholder="Search subjects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 text-sm placeholder-gray-400 focus:outline-none bg-transparent"
+                aria-label="Search subjects"
+              />
+            </div>
+
+            <button
+              onClick={() => router.push("/curriculum/structure")}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50"
+              style={{ backgroundColor: "transparent" }}
+            >
+              <Settings className="w-4 h-4" /> Manage Structure
+            </button>
+          </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+        {/* Tabs (flat style; active tab has border + primary color text) */}
+        <div className="mt-4 flex items-center gap-2">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            className={`px-3 py-2 text-sm font-medium rounded-md transition ${
               activeTab === "overview"
-                ? "bg-white text-[#154473] shadow-sm"
+                ? `text-[${PRIMARY}] border-b-2 border-[${PRIMARY}]`
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "overview"
+                ? { color: PRIMARY, borderBottomColor: PRIMARY }
+                : undefined
+            }
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab("structure")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+            className={`px-3 py-2 text-sm font-medium rounded-md transition ${
               activeTab === "structure"
-                ? "bg-white text-[#154473] shadow-sm"
+                ? `text-[${PRIMARY}] border-b-2 border-[${PRIMARY}]`
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "structure"
+                ? { color: PRIMARY, borderBottomColor: PRIMARY }
+                : undefined
+            }
           >
             Structure
           </button>
         </div>
       </div>
 
-      {/* Scrollable Content */}
+      {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-6">
-          {/* Overview Tab */}
+        <div className="h-full overflow-y-auto p-6 space-y-6">
           {activeTab === "overview" && (
-            <div className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow-sm p-6">
+            <>
+              {/* KPI cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Total Subjects
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <div className="text-xs text-gray-600">Total Subjects</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">
                         {loadingKpis ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
                         ) : (
-                          kpis?.totalSubjects || stats.totalSubjects
+                          kpis?.totalSubjects ?? stats.totalSubjects
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <BookOpen className="w-6 h-6 text-blue-600" />
+                    <div className="text-gray-500">
+                      <BookOpen className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Total Courses
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <div className="text-xs text-gray-600">Total Courses</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">
                         {loadingKpis ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
                         ) : (
-                          kpis?.totalCourses || stats.totalCourses
+                          kpis?.totalCourses ?? stats.totalCourses
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <GraduationCap className="w-6 h-6 text-green-600" />
+                    <div className="text-gray-500">
+                      <GraduationCap className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Total Classes
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <div className="text-xs text-gray-600">Total Classes</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">
                         {loadingKpis ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
                         ) : (
-                          kpis?.totalClasses || classes.length
+                          kpis?.totalClasses ?? classes.length
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-purple-100 rounded-full">
-                      <FileText className="w-6 h-6 text-purple-600" />
+                    <div className="text-gray-500">
+                      <FileText className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Active Teachers
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <div className="text-xs text-gray-600">Active Teachers</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">
                         {loadingKpis ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
                         ) : (
-                          kpis?.activeTeachers || stats.totalTeachers
+                          kpis?.activeTeachers ?? stats.totalTeachers
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-orange-100 rounded-full">
-                      <Users className="w-6 h-6 text-orange-600" />
+                    <div className="text-gray-500">
+                      <Users className="w-5 h-5" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Quick Actions
-                </h2>
+              {/* Quick actions */}
+              <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-gray-900">Quick Actions</h2>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <button
                     onClick={() =>
@@ -381,17 +405,15 @@ const CurriculumDashboardMain: React.FC = () => {
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <BookOpen className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
+                        <BookOpen className="w-4 h-4" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-gray-900">Add Subject</p>
-                        <p className="text-sm text-gray-500">
-                          Create new subject
-                        </p>
+                        <div className="font-medium text-gray-900">Add Subject</div>
+                        <div className="text-xs text-gray-500">Create new subject</div>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
                   </button>
 
                   <button
@@ -401,28 +423,27 @@ const CurriculumDashboardMain: React.FC = () => {
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <GraduationCap className="w-5 h-5 text-green-600" />
+                      <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
+                        <GraduationCap className="w-4 h-4" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-gray-900">Add Course</p>
-                        <p className="text-sm text-gray-500">
-                          Create new course
-                        </p>
+                        <div className="font-medium text-gray-900">Add Course</div>
+                        <div className="text-xs text-gray-500">Create new course</div>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
               </div>
 
-              {/* Recent Content */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              {/* Recent curriculum content */}
+              <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-sm font-semibold text-gray-900">
                     Recent Curriculum Content
                   </h2>
                 </div>
+
                 {recentContent.length > 0 ? (
                   <div className="space-y-3">
                     {recentContent.map((content) => (
@@ -431,103 +452,75 @@ const CurriculumDashboardMain: React.FC = () => {
                         className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <Book className="w-4 h-4 text-gray-600" />
+                          <div className="p-2 rounded bg-gray-50 text-gray-600">
+                            <Book className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900">
                               {content.course.code} - {content.course.name}
-                            </p>
-                            <p className="text-sm text-gray-500">
+                            </div>
+                            <div className="text-xs text-gray-500">
                               {content.term.name} ({content.term.year}) •{" "}
                               {content.teacherId?.firstName &&
                               content.teacherId?.lastName
                                 ? `${content.teacherId.firstName} ${content.teacherId.lastName}`
                                 : "No teacher assigned"}
-                            </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">
-                            {new Date(content.createdAt).toLocaleDateString()}
-                          </p>
+
+                        <div className="text-xs text-gray-500">
+                          {new Date(content.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">
+                  <p className="text-center text-gray-500 py-6">
                     No curriculum content created yet
                   </p>
                 )}
               </div>
-            </div>
+            </>
           )}
 
-          {/* Structure Tab */}
           {activeTab === "structure" && (
-            <div className="space-y-6">
-              {/* Search and Filter */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex flex-wrap gap-4 items-center">
-                  <div className="relative flex-1 min-w-64">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search subjects..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <button
-                    onClick={() => router.push("/curriculum/structure")}
-                    className="px-4 flex items-center gap-2 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Manage Structure
-                  </button>
+            <>
+              <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-gray-900">Subjects Overview</h2>
                 </div>
-              </div>
 
-              {/* Subjects List */}
-              <div className="bg-white rounded-lg shadow-sm">
-                <div className="p-6 border-b">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Subjects Overview
-                  </h2>
-                </div>
-                <div className="p-6">
-                  {filteredSubjects.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {filteredSubjects.map((subject) => (
-                        <div
-                          key={subject._id}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900">
-                              {subject.name}
-                            </h3>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                              {subject.code}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500">
-                            {subject.courseCount || 0} courses
-                          </p>
+                {filteredSubjects.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredSubjects.map((subject) => (
+                      <div
+                        key={subject._id}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow transition cursor-pointer"
+                        onClick={() =>
+                          router.push(`/curriculum/structure/subject/${subject._id}`)
+                        }
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-gray-900">{subject.name}</h3>
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                            {subject.code}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No subjects found</p>
-                    </div>
-                  )}
-                </div>
+                        <div className="text-xs text-gray-500">
+                          {subject.courseCount ?? subject.courses?.length ?? 0} courses
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">No subjects found</p>
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -535,7 +528,6 @@ const CurriculumDashboardMain: React.FC = () => {
   );
 };
 
-// Main wrapper component with Suspense
 const CurriculumDashboard: React.FC = () => {
   return (
     <Suspense fallback={<LoadingSpinner />}>
