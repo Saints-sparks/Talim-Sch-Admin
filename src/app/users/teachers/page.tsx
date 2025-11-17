@@ -237,11 +237,16 @@ const TeachersPage: React.FC = () => {
               {currentTeachers.map((teacher) => {
                 // Use initials if no avatar
                 // Prefer teacher.userAvatar, fallback to teacher.userId?.userAvatar, fallback to initials
-                const avatarUrl = teacher.userAvatar || teacher.userId?.userAvatar;
+                const avatarUrl =
+                  teacher.userAvatar || teacher.userId?.userAvatar;
                 const initials = `${(
-                  teacher.firstName || teacher.userId?.firstName || ""
+                  teacher.firstName ||
+                  teacher.userId?.firstName ||
+                  ""
                 ).charAt(0)}${(
-                  teacher.lastName || teacher.userId?.lastName || ""
+                  teacher.lastName ||
+                  teacher.userId?.lastName ||
+                  ""
                 ).charAt(0)}`.toUpperCase();
                 // Pick a color for initials avatar (hash by name)
                 const colorList = [
@@ -254,8 +259,16 @@ const TeachersPage: React.FC = () => {
                 ];
                 const colorIdx =
                   Math.abs(
-                    (teacher.firstName || teacher.userId?.firstName || "").charCodeAt(0) +
-                    (teacher.lastName || teacher.userId?.lastName || "").charCodeAt(0)
+                    (
+                      teacher.firstName ||
+                      teacher.userId?.firstName ||
+                      ""
+                    ).charCodeAt(0) +
+                      (
+                        teacher.lastName ||
+                        teacher.userId?.lastName ||
+                        ""
+                      ).charCodeAt(0)
                   ) % colorList.length;
                 const colorClass = colorList[colorIdx];
                 return (
@@ -296,7 +309,11 @@ const TeachersPage: React.FC = () => {
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        alt={teacher.firstName || teacher.userId?.firstName || "Avatar"}
+                        alt={
+                          teacher.firstName ||
+                          teacher.userId?.firstName ||
+                          "Avatar"
+                        }
                         className="w-16 h-16 rounded-full object-cover mb-3"
                       />
                     ) : (
