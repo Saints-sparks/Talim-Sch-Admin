@@ -9,6 +9,7 @@ import {
 } from "../services/leave.service";
 import { toast } from "react-toastify";
 import LeaveRequestSkeleton from "@/components/LeaveRequestSkeleton";
+import { Search } from "@/components/Icons";
 
 // Updated interface to match your actual API response
 interface ApiLeaveRequest {
@@ -66,6 +67,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
   const [filter, setFilter] = useState<
     "all" | "pending" | "approved" | "rejected"
   >("all");
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -169,13 +171,13 @@ const AdminLeaveRequestsPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "text-yellow-600 bg-yellow-100";
+        return "text-[#FFB400]";
       case "approved":
-        return "text-green-600 bg-green-100";
+        return "text-[#2E8B57]";
       case "rejected":
-        return "text-red-600 bg-red-100";
+        return "text-red-600 ";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-gray-600";
     }
   };
 
@@ -241,21 +243,41 @@ const AdminLeaveRequestsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6">
       <div className="pt-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">
-              All Leave Requests
+            <h1 className="text-[19px] font-semibold">
+              Request Leave
             </h1>
-            <p className="text-gray-600">
-              Review and manage student leave requests
-            </p>
           </div>
-          <div className="flex gap-2">
+
+          
+
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 max-w-xl mx-auto">
+            <div className="relative">
+              <input
+                type="search"
+                value={typeof search !== "undefined" ? search : ""}
+                onChange={(e) => {
+                  // Update local search state if available (guard for TS)
+                  try {
+                    // @ts-ignore
+                    setSearch(e.target.value);
+                  } catch (err) {}
+                }}
+                placeholder="Search"
+                className="w-full border border-[#E0E0E0] rounded-xl py-2 px-4 pl-10 max-w-[300px] text-[15px] focus:outline-none focus:ring-1 focus:ring-[#154473]"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <Search />
+              </div>
+            </div>
+          </div>
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-md text-sm transition ${
+              className={`px-3 py-1.5 rounded-xl text-[15px] transition font-medium ${
                 filter === "all"
                   ? "bg-[#154473] text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -265,9 +287,9 @@ const AdminLeaveRequestsPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilter("pending")}
-              className={`px-4 py-2 rounded-md text-sm transition ${
+              className={`px-3 py-1.5 rounded-xl text-[15px] transition font-medium ${
                 filter === "pending"
-                  ? "bg-[#154473] text-white"
+                  ? "bg-yellow-600 text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
@@ -275,21 +297,10 @@ const AdminLeaveRequestsPage: React.FC = () => {
               {leaveRequests.filter((r) => r.status === "pending").length})
             </button>
             <button
-              onClick={() => setFilter("approved")}
-              className={`px-4 py-2 rounded-md text-sm transition ${
-                filter === "approved"
-                  ? "bg-[#154473] text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
-              Approved (
-              {leaveRequests.filter((r) => r.status === "approved").length})
-            </button>
-            <button
               onClick={() => setFilter("rejected")}
-              className={`px-4 py-2 rounded-md text-sm transition ${
+              className={`px-3 py-1.5 rounded-xl text-[15px] transition font-medium ${
                 filter === "rejected"
-                  ? "bg-[#154473] text-white"
+                  ? "bg-red-600 text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
               }`}
             >
@@ -326,98 +337,118 @@ const AdminLeaveRequestsPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredRequests.map((request) => (
-              <div
-                key={request.id}
-                onClick={() => handleRequestClick(request.id)}
-                className="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow"
-              >
-                {/* Student Info */}
-                <div className="flex items-center mb-4">
-                  <img
-                    src="https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp"
-                    alt={request.studentName}
-                    className="w-12 h-12 rounded-full object-cover mr-3"
-                    onError={(e) =>
-                      (e.currentTarget.src =
-                        "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp")
-                    }
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">
-                      {request.studentName}
-                    </h3>
-                    <p className="text-sm text-gray-600">{request.leaveType}</p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full capitalize ${getStatusColor(
-                      request.status
-                    )}`}
-                  >
-                    {request.status}
-                  </span>
-                </div>
-
-                {/* Request Details */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Leave Type:</span>
-                    <span className="text-gray-800">{request.leaveType}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Date:</span>
-                    <span className="text-gray-800">
-                      {request.startDate} - {request.endDate}
-                    </span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-gray-500">Reason:</span>
-                    <p className="text-gray-800 mt-1 line-clamp-2">
-                      {request.description}
-                    </p>
-                  </div>
-                  {request.attachments && request.attachments.length > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Attachments:</span>
-                      <span className="text-blue-600">
-                        {request.attachments.length} file(s)
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredRequests
+              .filter((r) =>
+                `${r.studentName} ${r.leaveType} ${r.description}`
+                  .toLowerCase()
+                  .includes(search.toLowerCase())
+              )
+              .map((request) => (
+                <div
+                  key={request.id}
+                  onClick={() => handleRequestClick(request.id)}
+                  className="bg-white border border-[#F0F0F0] max-w-[356px] rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <img
+                        src={request.studentImage || "/img/default-avatar.png"}
+                        alt={request.studentName}
+                        className="w-11 h-11 rounded-full object-cover mr-3"
+                        onError={(e) =>
+                          (e.currentTarget.src = "/img/default-teacher.png")
+                        }
+                      />
+                      <div>
+                        <h3 className="text-[15px] font-semibold ">
+                          {request.studentName}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[15px] border border-[#E0E0E0] leading-[120%] px-2 py-1 rounded-xl capitalize ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status}
                       </span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-sm pt-2 border-t">
-                    <span className="text-gray-500">Submitted:</span>
-                    <span className="text-gray-800">
-                      {request.submittedDate}
-                    </span>
                   </div>
-                </div>
 
-                {/* Quick Actions for Pending Requests */}
-                {request.status === "pending" && (
-                  <div className="flex gap-2 mt-4 pt-3 border-t">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickAction(request.id, "approved");
-                      }}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickAction(request.id, "rejected");
-                      }}
-                      className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                    >
-                      Reject
-                    </button>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span className="text-[15px]">Leave Type:</span>
+                      <span className="text-[#4D4D4D] text-[15px] border border-[#F2F2F2] px-2 py-1 rounded-xl">{request.leaveType}</span>
+                    </div>
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span className="text-[15px]">Date:</span>
+                      <span className="text-[#4D4D4D] text-[15px] border border-[#F2F2F2] px-2 py-1 rounded-xl">
+                        {request.startDate} - {request.endDate}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span className="text-[15px]">Attachments:</span>
+                       <span className="text-[#4D4D4D] text-[15px] border border-[#F2F2F2] px-2 py-1 rounded-xl flex gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h11"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M7 10l5 5 5-5"
+                          />
+                        </svg>
+                        {request.attachments && request.attachments.length > 0
+                          ? `${request.attachments.length} file`
+                          : "0 files"}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#F2F2F2] rounded-xl font-medium p-3 text-[15px] text-[#4D4D4D]">
+                      {request.description || "No reason provided."}
+                    </div>
+
+                    
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {request.status === "pending" && (
+                    <div className="flex gap-2 mt-4 pt-3 border-t">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAction(request.id, "approved");
+                        }}
+                        className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAction(request.id, "rejected");
+                        }}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
           </div>
         )}
 
