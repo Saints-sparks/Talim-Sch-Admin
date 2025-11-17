@@ -9,7 +9,14 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiMessageSquare,
+  FiCamera,
+  FiX,
+  FiFile,
+  FiFileText,
 } from "react-icons/fi";
+import { FaMountainSun } from "react-icons/fa6";
+import { FaPlay } from "react-icons/fa";
+
 import {
   createAnnouncement,
   AnnouncementResponse,
@@ -20,8 +27,7 @@ import { toast } from "react-toastify";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import TalimModal from "@/components/ui/TalimModal";
-import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
-import { FiCamera, FiX, FiFile, FiFileText } from "react-icons/fi";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 interface Announcement {
   title: string;
@@ -35,22 +41,16 @@ const Announcement: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(
-    null
-  );
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [newAnnouncement, setNewAnnouncement] = useState<Announcement>({
     title: "",
     content: "",
     attachment: undefined,
   });
-  const [announcements, setAnnouncements] = useState<
-    CreateAnnouncementResponse[]
-  >([]);
+  const [announcements, setAnnouncements] = useState<CreateAnnouncementResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedAnnouncements, setExpandedAnnouncements] = useState<
-    Set<string>
-  >(new Set());
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -59,19 +59,13 @@ const Announcement: React.FC = () => {
   });
 
   const toggleAnnouncement = (id: string) => {
-    console.log("Toggling announcement:", id);
-    console.log("Current expanded:", Array.from(expandedAnnouncements));
-
     setExpandedAnnouncements((prevExpanded) => {
       const newExpanded = new Set(prevExpanded);
       if (newExpanded.has(id)) {
         newExpanded.delete(id);
-        console.log("Closing announcement:", id);
       } else {
         newExpanded.add(id);
-        console.log("Opening announcement:", id);
       }
-      console.log("New expanded state:", Array.from(newExpanded));
       return newExpanded;
     });
   };
@@ -97,7 +91,6 @@ const Announcement: React.FC = () => {
         lastPage: response.meta.lastPage,
       }));
     } catch (error) {
-      console.error("Error fetching announcements:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -140,16 +133,12 @@ const Announcement: React.FC = () => {
         throw new Error("Failed to create announcement");
       }
 
-      console.log("Announcement created:");
       toast.success("Announcement created successfully!");
-
-      // Refresh the announcements list
       fetchAnnouncements();
       setNewAnnouncement({ title: "", content: "", attachment: undefined });
       setAttachmentPreview(null);
       setIsModalOpen(false);
     } catch (error: any) {
-      console.error("Error creating announcement:", error);
       toast.error(
         "Failed to create announcement. Please try again.",
         error.message
@@ -159,16 +148,13 @@ const Announcement: React.FC = () => {
     }
   };
 
-  // Validate file for attachments (supports multiple types)
   const validateAttachmentFile = (file: File) => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-      // Images
       "image/jpeg",
       "image/png",
       "image/gif",
       "image/webp",
-      // Documents
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -176,10 +162,8 @@ const Announcement: React.FC = () => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-powerpoint",
       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      // Text files
       "text/plain",
       "text/csv",
-      // Archives
       "application/zip",
       "application/x-rar-compressed",
     ];
@@ -199,20 +183,16 @@ const Announcement: React.FC = () => {
     return { valid: true };
   };
 
-  // Handle file upload for attachments
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-
-      // Validate file using the new validation function
       const validation = validateAttachmentFile(file);
       if (!validation.valid) {
         toast.error(validation.error || "Invalid file");
-        e.target.value = ""; // Reset input
+        e.target.value = "";
         return;
       }
 
-      // Show preview immediately for images, or file info for other types
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -222,7 +202,6 @@ const Announcement: React.FC = () => {
         };
         reader.readAsDataURL(file);
       } else {
-        // For non-image files, store file info
         setAttachmentPreview(
           JSON.stringify({
             name: file.name,
@@ -232,7 +211,6 @@ const Announcement: React.FC = () => {
         );
       }
 
-      // Upload to Cloudinary
       setIsUploadingImage(true);
       setUploadProgress(0);
 
@@ -243,29 +221,24 @@ const Announcement: React.FC = () => {
           setUploadProgress(progress);
         });
 
-        // Update form data with the Cloudinary URL
         setNewAnnouncement((prev) => ({ ...prev, attachment: imageUrl }));
         toast.dismiss(uploadingToast);
         toast.success("Attachment uploaded successfully!");
       } catch (error) {
-        console.error("Error uploading attachment:", error);
         toast.dismiss(uploadingToast);
         toast.error(
           error instanceof Error ? error.message : "Failed to upload attachment"
         );
-
-        // Reset preview on error
         setAttachmentPreview(null);
         setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
       } finally {
         setIsUploadingImage(false);
         setUploadProgress(0);
-        e.target.value = ""; // Reset input for potential re-upload
+        e.target.value = "";
       }
     }
   };
 
-  // Remove attachment
   const removeAttachment = () => {
     setAttachmentPreview(null);
     setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
@@ -291,7 +264,7 @@ const Announcement: React.FC = () => {
           onClick={() => handlePageChange(i)}
           className={`px-4 py-2 mx-1 rounded-lg font-medium transition-all duration-300 ${
             pagination.page === i
-              ? "bg-blue-600 text-white shadow-lg"
+              ? "bg-[#003366] text-white shadow-lg"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
           }`}
         >
@@ -328,29 +301,77 @@ const Announcement: React.FC = () => {
       ) : (
         <div className="flex h-screen bg-[#F8F8F8]">
           <main className="flex-grow flex flex-col">
-            {/* Navigation Header */}
             <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
-                  <FiMessageSquare className="w-5 h-5 mr-2" />
-                  <span className="text-gray-900 font-medium text-xl">
-                    Announcements
-                  </span>
-                  <span className="text-gray-500">
-                    • Keep your school community informed
-                  </span>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                >
-                  <FiPlus className="h-4 w-4" />
-                  <span className="font-medium">New Announcement</span>
-                </button>
-              </div>
-            </div>
+              <div className="flex flex-col gap-4">
+                          {/* Create input */}
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                          <h1 className="text-xl font-semibold text-gray-900">Announcement</h1>
+                        </div>
 
-            {/* Content Area */}
+          {/* Card container */}
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+            {/* Input row (avatar + fake input) */}
+            <div
+              className="flex items-center gap-3 cursor-text"
+              // allow clicking anywhere on this row to open modal
+              onClick={() => setIsModalOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setIsModalOpen(true);
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
+                {/* User avatar */}
+                <img
+                  src="/default-avatar.png"
+                  alt="User avatar"
+                  className="w-full h-full object-cover"
+                  onError={(ev) => {
+                    // hide broken img so the bg placeholder displays
+                    (ev.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              </div>
+
+              {/* Read-only input that opens modal when focused/clicked */}
+              <input
+                type="text"
+                readOnly
+                placeholder="Create Announcement"
+                className="flex-1 px-4 py-3 rounded-xl border border-transparent bg-transparent text-gray-600 placeholder-gray-400 focus:outline-none"
+                onFocus={() => setIsModalOpen(true)}
+                aria-label="Create Announcement"
+              />
+        </div>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <FaMountainSun className="w-4 h-4" />
+                <span>Photos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <FaPlay className="w-4 h-4" />
+                <span>Videos</span>
+              </button>
+            </div>
+          </div>
+              </div>
+              </div>
+              </div>
+
+
+          {/* --- end --- */}
             <div className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto">
                 <div className="p-6">
@@ -380,12 +401,11 @@ const Announcement: React.FC = () => {
                               No Announcements Yet
                             </h3>
                             <p className="text-gray-600 mb-6">
-                              Create your first announcement to keep everyone
-                              informed.
+                              Create your first announcement to keep everyone informed.
                             </p>
                             <button
                               onClick={() => setIsModalOpen(true)}
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300"
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-[#003366] text-white transition-all duration-300"
                             >
                               <FiPlus className="h-4 w-4" />
                               <span>Create Announcement</span>
@@ -393,100 +413,97 @@ const Announcement: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className=" mx-auto">
+                        <div className="mx-auto">
                           {/* Announcements List */}
                           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            {announcements.map((announcement, index) => {
-                              // Use a more reliable identifier that combines id and index
-                              const uniqueId =
-                                announcement.id || `announcement-${index}`;
-                              const isExpanded =
-                                expandedAnnouncements.has(uniqueId);
+                           {announcements.map((announcement, index) => {
+                            const uniqueId = announcement.id || `announcement-${index}`;
+                            const isExpanded = expandedAnnouncements.has(uniqueId);
+                            const isImageAttachment =
+                              announcement.attachment &&
+                              /\.(jpg|jpeg|png|gif|webp)$/i.test(announcement.attachment);
 
-                              return (
-                                <div
-                                  key={uniqueId}
-                                  className={`border-b border-gray-100 last:border-b-0 transition-all duration-300 ${
-                                    isExpanded
-                                      ? "bg-blue-50"
-                                      : "hover:bg-gray-50"
-                                  }`}
-                                >
-                                  {/* List Item Header */}
-                                  <div
-                                    className="p-4 cursor-pointer"
-                                    onClick={() => toggleAnnouncement(uniqueId)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center space-x-3">
-                                          <div className="flex-shrink-0">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                              <FiMessageSquare className="h-5 w-5 text-blue-600" />
-                                            </div>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                              {announcement.title}
-                                            </h3>
-                                            <div className="flex items-center space-x-4 mt-1">
-                                              <div className="flex items-center text-sm text-gray-500">
-                                                <FiCalendar className="h-4 w-4 mr-1" />
-                                                {formatDateTime(
-                                                  announcement.createdAt
-                                                )}
-                                              </div>
-                                              {announcement.attachment && (
-                                                <div className="flex items-center text-sm text-blue-600">
-                                                  <FiPaperclip className="h-4 w-4 mr-1" />
-                                                  Has attachment
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        {isExpanded ? (
-                                          <FiChevronUp className="h-5 w-5 text-gray-400" />
-                                        ) : (
-                                          <FiChevronDown className="h-5 w-5 text-gray-400" />
-                                        )}
-                                      </div>
-                                    </div>
+                            const contentPreview = announcement.content.length > 120 && !isExpanded
+                              ? `${announcement.content.substring(0, 120)}...`
+                              : announcement.content;
+
+                            return (
+                              <div
+                                key={uniqueId}
+                                className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 shadow-sm hover:shadow-md transition-all duration-300"
+                              >
+                                {/* Header */}
+                                <div className="flex items-start gap-3">
+                                  {/* Avatar */}
+                                  <div className="w-10 h-10 rounded-full bg-[#003366]/10 flex items-center justify-center text-[#003366] font-semibold text-lg">
+                                    {announcement.title?.charAt(0).toUpperCase()}
                                   </div>
 
-                                  {/* Expandable Content */}
-                                  {isExpanded && (
-                                    <div className="px-4 pb-4 bg-white border-t border-blue-100">
-                                      <div className="pl-13">
-                                        <div className="bg-gray-50 rounded-lg p-4 mt-3">
-                                          <p className="text-gray-800 leading-relaxed">
-                                            {announcement.content}
-                                          </p>
-                                          {announcement.attachment && (
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                              <a
-                                                href={announcement.attachment}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium"
-                                              >
-                                                <FiPaperclip className="h-4 w-4" />
-                                                <span>View Attachment</span>
-                                              </a>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                                  {/* Title and Date */}
+                                  <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                      {announcement.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                      {formatDateTime(announcement.createdAt)}
+                                    </p>
+                                  </div>
+
+                                  {/* Expand / Collapse icon */}
+                                  <button
+                                    onClick={() => toggleAnnouncement(uniqueId)}
+                                    className="text-[#003366] hover:text-[#002244] transition"
+                                  >
+                                    {isExpanded ? (
+                                      <FiChevronUp className="w-5 h-5" />
+                                    ) : (
+                                      <FiChevronDown className="w-5 h-5" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Content Preview */}
+                                <div className="mt-3 text-gray-700 leading-relaxed">
+                                  <p>{contentPreview}</p>
+                                  {announcement.content.length > 120 && (
+                                    <button
+                                      onClick={() => toggleAnnouncement(uniqueId)}
+                                      className="mt-2 text-[#003366] text-sm font-medium hover:underline focus:outline-none"
+                                    >
+                                      {isExpanded ? "See less" : "See more"}
+                                    </button>
                                   )}
                                 </div>
-                              );
-                            })}
-                          </div>
 
-                          {/* Pagination */}
+                                {/* Attachment (if present) */}
+                                {isImageAttachment && (
+                                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-200">
+                                    <img
+                                      src={announcement.attachment}
+                                      alt="Announcement Attachment"
+                                      className="w-full h-56 object-cover"
+                                    />
+                                  </div>
+                                )}
+
+                                {!isImageAttachment && announcement.attachment && (
+                                  <div className="mt-4">
+                                    <a
+                                      href={announcement.attachment}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#003366]/90 transition-all duration-300"
+                                    >
+                                      <FiPaperclip className="w-4 h-4" />
+                                      <span>View Attachment</span>
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
                           {pagination.lastPage > 1 && (
                             <div className="mt-6 flex justify-center">
                               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -511,7 +528,7 @@ const Announcement: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title="Create Announcement"
         subtitle="Share important updates with your school community"
-        icon={<FiMessageSquare className="w-6 h-6" />}
+        icon={<FiMessageSquare className="w-6 h-6 text-white" />}
         isSubmitting={isSubmitting}
         footer={
           <div className="flex justify-end space-x-4">
@@ -527,7 +544,7 @@ const Announcement: React.FC = () => {
               type="submit"
               form="announcement-form"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-[#003366] text-white rounded-xl hover:bg-[#003366]/90 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -544,241 +561,130 @@ const Announcement: React.FC = () => {
           </div>
         }
       >
+        {/* Modal Form */}
         <form
-          id="announcement-form"
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Title
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={newAnnouncement.title}
-              onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  title: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-              placeholder="Enter announcement title..."
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+  id="announcement-form"
+  onSubmit={handleSubmit}
+  className="p-2 sm:p-4 flex flex-col gap-6"
+>
+  {/* Profile + Audience dropdown */}
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-[#003366]/10 flex items-center justify-center text-[#003366] font-semibold text-lg">
+        M
+      </div>
+      <div>
+        <p className="font-semibold text-gray-900">MR. Adeyemo Isaac</p>
+        <p className="text-sm text-gray-500">Admin</p>
+      </div>
+    </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Content
-            </label>
-            <textarea
-              name="content"
-              value={newAnnouncement.content}
-              onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  content: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
-              rows={4}
-              placeholder="Write your announcement content..."
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+    <select
+      name="audience"
+      defaultValue="everyone"
+      className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#003366]"
+    >
+      <option value="everyone">Send to Everyone</option>
+      <option value="teachers">Send to Teachers</option>
+      <option value="students">Send to Students</option>
+    </select>
+  </div>
 
-          {/* Attachment Upload Section */}
-          <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-700">
-              Attachment (Optional)
-            </label>
+  {/* Title input */}
+  <input
+    type="text"
+    name="title"
+    value={newAnnouncement.title}
+    onChange={(e) =>
+      setNewAnnouncement((prev) => ({ ...prev, title: e.target.value }))
+    }
+    placeholder="Enter announcement title"
+    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#003366] text-gray-800"
+    required
+  />
 
-            {/* Upload Area */}
-            {!attachmentPreview && !newAnnouncement.attachment ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-                <input
-                  type="file"
-                  id="attachment-upload"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-                  disabled={isSubmitting || isUploadingImage}
-                />
-                <label
-                  htmlFor="attachment-upload"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <FiFile className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {isUploadingImage
-                        ? "Uploading..."
-                        : "Click to upload a file"}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Images, PDFs, Documents up to 10MB
-                    </p>
-                  </div>
-                  {isUploadingImage && (
-                    <div className="mt-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {uploadProgress}%
-                      </p>
-                    </div>
-                  )}
-                </label>
-              </div>
-            ) : (
-              /* Preview Area */
-              <div className="border border-gray-300 rounded-xl p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    {(() => {
-                      // Check if it's an image preview (data URL) or file info (JSON string)
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          // It's file info, show appropriate icon
-                          const getFileIcon = (type: string) => {
-                            if (type.includes("pdf"))
-                              return (
-                                <FiFileText className="w-8 h-8 text-red-600" />
-                              );
-                            if (
-                              type.includes("word") ||
-                              type.includes("document")
-                            )
-                              return (
-                                <FiFileText className="w-8 h-8 text-blue-600" />
-                              );
-                            if (
-                              type.includes("excel") ||
-                              type.includes("sheet")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-green-600" />
-                              );
-                            if (
-                              type.includes("powerpoint") ||
-                              type.includes("presentation")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-orange-600" />
-                              );
-                            if (type.includes("zip") || type.includes("rar"))
-                              return (
-                                <FiFile className="w-8 h-8 text-purple-600" />
-                              );
-                            return <FiFile className="w-8 h-8 text-gray-600" />;
-                          };
-                          return (
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                              {getFileIcon(fileInfo.type)}
-                            </div>
-                          );
-                        } catch {
-                          // It's an image preview
-                          return (
-                            <img
-                              src={attachmentPreview}
-                              alt="Attachment preview"
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          );
-                        }
-                      } else if (newAnnouncement.attachment) {
-                        // Existing attachment URL - assume it's an image
-                        return (
-                          <img
-                            src={newAnnouncement.attachment}
-                            alt="Attachment preview"
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div className="flex-1">
-                    {(() => {
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                {fileInfo.name}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {(fileInfo.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                                {fileInfo.type}
-                              </p>
-                            </>
-                          );
-                        } catch {
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                Image attachment ready
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                This image will be included with your
-                                announcement
-                              </p>
-                            </>
-                          );
-                        }
-                      }
-                      return (
-                        <>
-                          <p className="text-sm font-medium text-gray-700">
-                            File attachment ready
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            This file will be included with your announcement
-                          </p>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeAttachment}
-                    disabled={isSubmitting || isUploadingImage}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
-                  >
-                    <FiX className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+  {/* Content textarea */}
+  <textarea
+    name="content"
+    value={newAnnouncement.content}
+    onChange={(e) =>
+      setNewAnnouncement((prev) => ({ ...prev, content: e.target.value }))
+    }
+    placeholder="Write your announcement here..."
+    className="w-full min-h-[180px] p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366] text-gray-800 resize-none"
+    required
+  />
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center space-x-2 text-blue-600">
-              <FiPaperclip className="h-4 w-4" />
-              <span className="text-sm font-medium">About Attachments</span>
-            </div>
-            <p className="text-blue-700 text-sm mt-1">
-              You can optionally include a file attachment with your
-              announcement. Supported formats include images (PNG, JPG, GIF),
-              documents (PDF, Word, Excel, PowerPoint), text files, and
-              archives.
-            </p>
+  {/* Attachment preview */}
+  {attachmentPreview && (
+    <div className="relative w-full mt-2">
+      {attachmentPreview.startsWith("data:image") ? (
+        <div className="relative rounded-xl overflow-hidden border border-gray-200">
+          <img
+            src={attachmentPreview}
+            alt="Preview"
+            className="w-full h-48 object-cover"
+          />
+          <button
+            type="button"
+            onClick={removeAttachment}
+            className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black transition"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <FiFile className="w-4 h-4 text-[#003366]" />
+            <span>Attachment ready</span>
           </div>
-        </form>
+          <button
+            type="button"
+            onClick={removeAttachment}
+            className="text-red-500 text-xs hover:underline"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* Attachment buttons */}
+  <div className="flex items-center gap-3 flex-wrap">
+    <label
+      htmlFor="photo-upload"
+      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+    >
+      <FiCamera className="w-4 h-4" />
+      <span>Photos</span>
+    </label>
+    <input
+      id="photo-upload"
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      className="hidden"
+    />
+
+    <label
+      htmlFor="video-upload"
+      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 cursor-pointer hover:bg-gray-100 transition"
+    >
+      <FiFileText className="w-4 h-4" />
+      <span>Videos</span>
+    </label>
+    <input
+      id="video-upload"
+      type="file"
+      accept="video/*"
+      onChange={handleFileChange}
+      className="hidden"
+    />
+  </div>
+</form>
+
       </TalimModal>
     </>
   );
