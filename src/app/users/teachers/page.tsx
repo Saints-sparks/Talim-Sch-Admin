@@ -111,7 +111,7 @@ const TeachersPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] p-4 leading-[120%] flex flex-col">
+    <div className="min-h-screen p-4 leading-[120%] flex flex-col">
       {/* Title and Controls - Redesigned */}
       <div className="bg-[#F8F8F8] pt-4 x-2 sm:px-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
