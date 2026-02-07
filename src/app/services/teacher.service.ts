@@ -155,13 +155,7 @@ const getLocalStorageItem = (key: string) => {
 };
 
 export const registerTeacher = async (payload: RegisterTeacherPayload) => {
-  const response = await fetch(API_ENDPOINTS.REGISTER, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await apiClient.post(API_ENDPOINTS.REGISTER, payload);
 
   if (!response.ok) {
     const errorData = await response.json();
@@ -179,15 +173,10 @@ export const createTeacherProfile = async (
     throw new Error("User ID is required to create teacher profile");
   }
 
-  const response = await fetch(`${API_ENDPOINTS.CREATE_TEACHER}${userId}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify(payload),
-  });
+  const response = await apiClient.post(
+    `${API_ENDPOINTS.CREATE_TEACHER}${userId}`,
+    payload
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
@@ -230,13 +219,8 @@ export const teacherService = {
 
     try {
       // Fetch all teachers by setting a high limit
-      const response = await fetch(
-        `${API_ENDPOINTS.GET_TEACHERS}?page=1&limit=1000`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.GET_TEACHERS}?page=1&limit=1000`
       );
 
       if (!response.ok) {
@@ -266,14 +250,7 @@ export const teacherService = {
         isFormTeacher: false, // or get this from current teacher data
       };
 
-      const response = await fetch(url, {
-        method: "PATCH", // Use PATCH for partial updates
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await apiClient.patch(url, requestBody);
 
       if (!response.ok) {
         // Handle different error statuses
@@ -303,15 +280,8 @@ export const teacherService = {
 
   async getTeacherById(teacherId: string): Promise<TeacherById> {
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.GET_TEACHER}/${teacherId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.GET_TEACHER}/${teacherId}`
       );
 
       if (!response.ok) {
@@ -320,7 +290,7 @@ export const teacherService = {
           throw new Error("Teacher not found");
         }
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch student details");
+        throw new Error(errorData.message || "Failed to fetch teacher details");
       }
 
       const data = await response.json();
@@ -328,7 +298,7 @@ export const teacherService = {
 
       return data;
     } catch (error) {
-      console.error("Error fetching teachers:", error);
+      console.error("Error fetching teacher:", error);
       throw error;
     }
   },
@@ -337,16 +307,9 @@ export const teacherService = {
     teacherId: string,
     payload: Partial<CreateTeacherProfilePayload>
   ): Promise<Teacher> {
-    const response = await fetch(
+    const response = await apiClient.put(
       `${API_ENDPOINTS.UPDATE_TEACHER}/${teacherId}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify(payload),
-      }
+      payload
     );
 
     if (!response.ok) {
@@ -358,14 +321,8 @@ export const teacherService = {
   },
 
   async deactivateTeacher(teacherId: string): Promise<Teacher> {
-    const response = await fetch(
-      `${API_ENDPOINTS.DEACTIVATE_TEACHER}/${teacherId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
+    const response = await apiClient.patch(
+      `${API_ENDPOINTS.DEACTIVATE_TEACHER}/${teacherId}`
     );
 
     if (!response.ok) {
