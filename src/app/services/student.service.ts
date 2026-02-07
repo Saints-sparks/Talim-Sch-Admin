@@ -253,13 +253,7 @@ interface CreateStudentProfilePayload {
 export const registerStudent = async (payload: RegisterStudentPayload) => {
   console.log("Registering student with payload:", payload);
 
-  const response = await fetch(API_ENDPOINTS.REGISTER, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await apiClient.post(API_ENDPOINTS.REGISTER, payload);
 
   if (!response.ok) {
     const errorData = await response.json();
