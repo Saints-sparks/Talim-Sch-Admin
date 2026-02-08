@@ -248,6 +248,7 @@ interface CreateStudentProfilePayload {
     email: string;
     relationship: string;
   };
+  password?: string; // Student's password for email notification
 }
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
