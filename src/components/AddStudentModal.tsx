@@ -126,6 +126,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             email: formData.parentContact.email,
             relationship: formData.parentContact.relationship,
           },
+          password: formData.password, // Include password for onboarding email
         };
 
         console.log("Sending profile data:", profileData);
