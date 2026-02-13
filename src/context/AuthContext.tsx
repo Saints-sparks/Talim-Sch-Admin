@@ -28,7 +28,6 @@ interface User {
   classId?: string | null;
   className?: string | null;
   termId?: string;
-  // Add other user properties as needed
 }
 
 interface AuthContextType {
@@ -62,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
-  // Set access token and update user info
+  // ✅ FIXED: Set access token and update user info + localStorage
   const setAccessToken = (token: string | null) => {
     setAccessTokenState(token);
 
@@ -70,8 +69,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     apiClient.setAccessToken(token);
 
     if (token) {
+      // Store in localStorage for service functions
+      localStorage.setItem("accessToken", token);
       // Get updated user info when token changes
       introspectToken(token);
+    } else {
+      // Remove from localStorage when clearing token
+      localStorage.removeItem("accessToken");
     }
   };
 
@@ -89,9 +93,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Use access token for introspection
+            Authorization: `Bearer ${token}`,
           },
-          credentials: "include", // Still include for CORS/cookie support
+          credentials: "include",
         }
       );
 
@@ -126,11 +130,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Important for httpOnly cookies!
+        credentials: "include",
         body: JSON.stringify({
           email,
           password,
-          deviceToken: "123456", // You can generate a proper device token
+          deviceToken: "123456",
           platform: "web",
         }),
       });
@@ -143,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
       const { access_token } = data;
 
-      // Store access token in memory only (not localStorage)
+      // Store access token (now also in localStorage via setAccessToken)
       setAccessToken(access_token);
 
       return true;
@@ -155,19 +159,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Refresh token function
   const refreshToken = async (): Promise<boolean> => {
-    // If there's already a refresh in progress, wait for it
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
     }
 
-    // Create new refresh promise
     refreshPromiseRef.current = (async () => {
       try {
         const response = await fetch(
           `${API_BASE_URL}${API_URLS.AUTH.REFRESH}`,
           {
             method: "POST",
-            credentials: "include", // Sends httpOnly cookie automatically
+            credentials: "include",
           }
         );
 
@@ -177,7 +179,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setAccessToken(access_token);
           return true;
         } else {
-          // Refresh failed - user needs to login again
           setAccessToken(null);
           setUser(null);
           return false;
@@ -195,12 +196,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return refreshPromiseRef.current;
   };
 
-  // Logout function
+  // ✅ FIXED: Logout function - clear localStorage
   const logout = async () => {
     try {
       await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`, {
         method: "POST",
-        credentials: "include", // Clears httpOnly cookie
+        credentials: "include",
         headers: accessToken
           ? {
               Authorization: `Bearer ${accessToken}`,
@@ -210,8 +211,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Clear in-memory access token and user data
-      setAccessToken(null);
+      // Clear everything
+      setAccessToken(null); // This also clears localStorage via setAccessToken
       setUser(null);
       localStorage.removeItem("user");
 
@@ -226,20 +227,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check for existing session on app load
+  // ✅ FIXED: Check for existing session on app load
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Try to refresh token on app load to check if session exists
-        const success = await refreshToken();
-        if (!success) {
-          // Check if user data exists in localStorage (for cases where token expired but user data is still there)
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            try {
-              setUser(JSON.parse(storedUser));
-            } catch (error) {
-              localStorage.removeItem("user");
+        // Check for stored token first
+        const storedToken = localStorage.getItem("accessToken");
+        
+        if (storedToken) {
+          // We have a stored token, try to use it
+          setAccessTokenState(storedToken);
+          apiClient.setAccessToken(storedToken);
+          await introspectToken(storedToken);
+        } else {
+          // No stored token, try to refresh
+          const success = await refreshToken();
+          if (!success) {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+              try {
+                setUser(JSON.parse(storedUser));
+              } catch (error) {
+                localStorage.removeItem("user");
+              }
             }
           }
         }
@@ -259,7 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const refreshInterval = setInterval(() => {
       refreshToken();
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 10 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, [accessToken]);

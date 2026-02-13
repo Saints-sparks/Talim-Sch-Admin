@@ -316,7 +316,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
       {!loading && (
         <>
           {/* Enhanced Header with Talim Styling */}
-          <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 m-6 rounded-2xl">
+          <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl">
             <div className="px-6 py-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
@@ -361,11 +361,11 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                         <p className="text-sm font-medium text-gray-500 mb-1">
                           Total Assessments
                         </p>
-                        <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                        <p className="text-3xl font-bold bg-[#003366] bg-clip-text text-transparent">
                           {assessmentStats.total}
                         </p>
                       </div>
-                      <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg group-hover:shadow-blue-200">
+                      <div className="p-3 bg-[#003366] rounded-xl shadow-lg group-hover:shadow-blue-200">
                         <FiClipboard className="h-6 w-6 text-white" />
                       </div>
                     </div>

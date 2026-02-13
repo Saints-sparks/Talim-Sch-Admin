@@ -353,15 +353,49 @@ export const updateCoursesInClass = async (
 };
 
 export const getClass = async (classId: string) => {
-  const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASS}/${classId}`);
+  try {
+    console.log('🔍 Attempting direct fetch for class:', classId);
+    const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASS}/${classId}`);
 
-  console.log(response);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Direct fetch successful');
+      return data;
+    }
 
-  if (!response.ok) {
-    throw new Error("Error fetching class details");
+    // If not ok, log the error but continue to fallback
+    const errorText = await response.text();
+    console.warn('⚠️ Direct fetch failed:', response.status, errorText);
+
+  } catch (directError) {
+    console.warn('⚠️ Direct fetch threw error:', directError);
   }
 
-  return response.json();
+  // Fallback: Get all classes and find the one we need
+  console.log('📋 Falling back to list endpoint...');
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch classes from list endpoint");
+    }
+
+    const allClasses = await response.json();
+    console.log('📋 Retrieved', allClasses.length, 'classes from list');
+    
+    const foundClass = allClasses.find((c: any) => c._id === classId);
+    
+    if (!foundClass) {
+      throw new Error(`Class with ID ${classId} not found`);
+    }
+    
+    console.log('✅ Found class from list endpoint');
+    return foundClass;
+    
+  } catch (fallbackError) {
+    console.error('❌ Fallback also failed:', fallbackError);
+    throw new Error(`Failed to fetch class: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+  }
 };
 
 export const updateStudent = async (

@@ -343,12 +343,12 @@ const CurriculumStructureMain: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Fixed Title and Controls */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 m-6 rounded-2xl">
-        {/* Main Header */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+return (
+  <div className="min-h-screen bg-gray-50">
+    {/* Scrollable Title and Controls */}
+    <div className="bg-white border-b border-gray-200 m-6 rounded-2xl">
+      {/* Main Header */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col space-y-6">
             {/* Title Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -438,9 +438,8 @@ const CurriculumStructureMain: React.FC = () => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 ">
+      {/* Content */}
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
             {/* Subjects List */}
             {filteredSubjects.length > 0 ? (
               <div className="space-y-8">
@@ -623,9 +622,10 @@ const CurriculumStructureMain: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
+     
+        
 
+        
       {/* Subject Modal */}
       <TalimModal
         isOpen={showSubjectModal}

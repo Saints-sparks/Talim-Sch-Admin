@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import {
   FiEdit,
   FiTrash,
@@ -11,6 +10,11 @@ import {
   FiBook,
   FiCalendar,
   FiClock,
+  FiPlus,
+  FiSettings,
+  FiTrendingUp,
+  FiGrid,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
@@ -18,71 +22,6 @@ import { getSchoolId } from "../services/school.service";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ClassesSkeleton from "@/components/ClassesSkeleton";
-
-// Add custom styles for text truncation
-const customStyles = `
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-`;
-
-// Rainbow color palette for cards with reduced thickness
-const rainbowColors = [
-  {
-    bg: "bg-blue-400",
-    text: "text-white",
-    button: "bg-blue-500 hover:bg-blue-600",
-  },
-  {
-    bg: "bg-green-400",
-    text: "text-white",
-    button: "bg-green-500 hover:bg-green-600",
-  },
-  {
-    bg: "bg-yellow-400",
-    text: "text-gray-800",
-    button: "bg-yellow-500 hover:bg-yellow-600",
-  },
-  {
-    bg: "bg-purple-400",
-    text: "text-white",
-    button: "bg-purple-500 hover:bg-purple-600",
-  },
-  {
-    bg: "bg-pink-400",
-    text: "text-white",
-    button: "bg-pink-500 hover:bg-pink-600",
-  },
-  {
-    bg: "bg-red-400",
-    text: "text-white",
-    button: "bg-red-500 hover:bg-red-600",
-  },
-  {
-    bg: "bg-indigo-400",
-    text: "text-white",
-    button: "bg-indigo-500 hover:bg-indigo-600",
-  },
-  {
-    bg: "bg-teal-400",
-    text: "text-white",
-    button: "bg-teal-500 hover:bg-teal-600",
-  },
-  {
-    bg: "bg-orange-400",
-    text: "text-white",
-    button: "bg-orange-500 hover:bg-orange-600",
-  },
-];
 
 export default function Classes() {
   const router = useRouter();
@@ -92,7 +31,7 @@ export default function Classes() {
     classCapacity: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const cardsPerPage = 8; // Changed to 8 for better 4x2 grid per page
+  const cardsPerPage = 8;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -115,7 +54,6 @@ export default function Classes() {
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
-    // Reset form when closing modal
     if (!isModalOpen) {
       setFormData({
         name: "",
@@ -170,7 +108,6 @@ export default function Classes() {
     try {
       setIsCreating(true);
 
-      // Create class
       const classData = {
         name: formData.name,
         classCapacity: formData.classCapacity,
@@ -200,306 +137,360 @@ export default function Classes() {
     }
   };
 
-  const getRandomColor = (index: number) => {
-    return rainbowColors[index % rainbowColors.length];
-  };
+  // Calculate stats
+  const totalStudents = classes.reduce((acc, c) => acc + (c.students?.length || 0), 0);
+  const totalCourses = classes.reduce((acc, c) => acc + (c.courses?.length || 0), 0);
+  const avgCapacity = classes.length > 0 
+    ? Math.round(classes.reduce((acc, c) => acc + (parseInt(c.classCapacity) || 0), 0) / classes.length)
+    : 0;
 
   return (
     <>
-      <style>{customStyles}</style>
       {isLoading ? (
         <ClassesSkeleton />
       ) : (
-        <div className="flex h-screen bg-[#F8F8F8]">
-          <main className="flex-grow flex flex-col">
-            {/* Navigation Header */}
-            <div className="flex items-center justify-between bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
-              {/* Left Side - Title & Count */}
-              <div className="flex items-center space-x-3">
-                <h1 className="font-semibold font-manrope text-[19px]">
-                  My classes
-                </h1>
-                <span className="text-[15px] font-semibold bg-white px-3 py-1 rounded-md">
-                  {classes.length} Class
-                </span>
-              </div>
-
-              {/* Right Side - Edit Button */}
-              <button
-                onClick={() => router.push("/classes/edit")}
-                className="flex items-center space-x-2 bg-[#003366] hover:bg-[#002244] text-white font-medium text-sm sm:text-base px-4 py-2 rounded-lg transition"
-              >
-                <span>Edit Class</span>
-                <FiEdit className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 p-4 sm:p-6">
-              {error ? (
-                <div className="text-center py-12 flex-1 flex items-center justify-center">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-                    <div className="text-red-600 text-lg font-semibold mb-2">
-                      Error Loading Classes
-                    </div>
-                    <p className="text-red-600 mb-4">{error}</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                    >
-                      Try Again
-                    </button>
+        <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+          {/* Enhanced Header with Talim Styling */}
+          <div className="flex-shrink-0 m-6 rounded-2xl" style={{ background: 'linear-gradient(to right, #003366, #004488)' }}>
+            <div className="px-6 py-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <FiGrid className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">
+                      Class Management
+                    </h1>
+                    <p className="text-blue-100 mt-1">
+                      Manage and organize your classes
+                    </p>
                   </div>
                 </div>
-              ) : classes.length === 0 ? (
-                <div className="text-center py-12 flex-1 flex items-center justify-center">
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-                    <div className="text-gray-400 text-6xl mb-4">🏫</div>
-                    <div className="text-gray-600 text-lg font-semibold mb-2">
-                      No Classes Found
+
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={toggleModal}
+                    className="inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    style={{ backgroundColor: 'white', color: '#003366' }}
+                  >
+                    <FiPlus className="h-4 w-4 mr-2" />
+                    Add Class
+                  </button>
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Content Area */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full overflow-y-auto">
+              <div className="px-6">
+                {/* Enhanced Stats Dashboard Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  
+                </div>
+
+                {/* Error State */}
+                {error ? (
+                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-8 shadow-sm">
+                    <div className="flex items-start">
+                      <div className="p-2 bg-red-100 rounded-xl">
+                        <FiAlertCircle className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <h3 className="text-lg font-semibold text-red-800 mb-2">
+                          Error Loading Classes
+                        </h3>
+                        <p className="text-red-700 mb-4">{error}</p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 shadow-lg"
+                        >
+                          Try Again
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-gray-500 mb-4">
-                      Get started by creating your first class to organize your
-                      students.
+                  </div>
+                ) : classes.length === 0 ? (
+                  /* Empty State */
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8" style={{ background: 'linear-gradient(135deg, #e6f0ff, #cce0ff)' }}>
+                      <FiGrid className="h-12 w-12" style={{ color: '#003366' }} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                      No Classes Found
+                    </h3>
+                    <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
+                      Get started by creating your first class to organize your students.
                     </p>
                     <button
                       onClick={toggleModal}
-                      className="px-4 py-2 bg-[#154473] text-white rounded hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:opacity-90"
+                      style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
                     >
-                      Create First Class
+                      <FiPlus className="h-5 w-5 mr-3" />
+                      Create Your First Class
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col flex-1">
-                  {/* Classes Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ">
-                    {displayedClasses.map((classItem) => (
-                      <div
-                        key={classItem._id}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-md transition-all duration-300"
-                      >
-                        {/* Top Section */}
-                        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
-                          <h3 className="font-semibold text-[15px]">Class 1</h3>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/classes/edit-class/${classItem._id}`
-                                )
-                              }
-                              className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 transition"
-                              title="Edit"
-                            >
-                              <FiEdit className="w-4 h-4 text-gray-700" />
-                            </button>
-                            <button
-                              onClick={() => console.log("delete")}
-                              className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 transition"
-                              title="Delete"
-                            >
-                              <FiTrash className="w-4 h-4 text-gray-700" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Details Section */}
-                        <div className="px-4 py-3 space-y-3 text-sm text-gray-700">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[15px] font-semibold">
-                              Class Name
-                            </span>
-                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
-                              <FiCalendar className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
-                              Grade 1
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-[15px] font-semibold">
-                              Courses
-                            </span>
-                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
-                              <FiBook className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
-                              9 courses
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-[15px] font-semibold">
-                              Students
-                            </span>
-                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
-                              <span>40/50</span>
-                              <div className="flex ml-2 -space-x-2">
-                                <img
-                                  src="/img/classdetail-student1.png"
-                                  alt="student image"
-                                  className="w-5 h-5 rounded-full border border-white"
-                                />
-                                <img
-                                  src="/img/classdetail-student2.png"
-                                  alt="student image"
-                                  className="w-5 h-5 rounded-full border border-white"
-                                />
-                                <img
-                                  src="/img/classdetail-student3.png"
-                                  alt="student image"
-                                  className="w-5 h-5 rounded-full border border-white"
-                                />
+                ) : (
+                  /* Classes Grid */
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {displayedClasses.map((classItem, index) => (
+                        <div
+                          key={classItem._id}
+                          className="group bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
+                          style={{ 
+                            borderColor: 'transparent',
+                            '--hover-border-color': '#003366'
+                          } as React.CSSProperties}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#003366'}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgb(229, 231, 235)'}
+                        >
+                          {/* Card Header */}
+                          <div className="px-4 py-3" style={{ background: 'linear-gradient(to right, #003366, #004488)' }}>
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-bold text-white text-lg">
+                                {classItem.name || 'Class 1'}
+                              </h3>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    router.push(`/classes/edit-class/${classItem._id}`)
+                                  }
+                                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
+                                  title="Edit"
+                                >
+                                  <FiEdit className="w-4 h-4 text-white" />
+                                </button>
+                                <button
+                                  onClick={() => console.log("delete")}
+                                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
+                                  title="Delete"
+                                >
+                                  <FiTrash className="w-4 h-4 text-white" />
+                                </button>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <span className="text-[15px] font-semibold">
-                              Last Updated
-                            </span>
-                            <div className="flex items-center bg-[#F2F2F2] text-[#4D4D4D] px-2 py-1 rounded-md text-[15px] font-semibold">
-                              <FiClock className="w-3.5 h-3.5 mr-1 text-[#1A1A1A]" />
-                              9/27/2025
+                          {/* Card Body */}
+                          <div className="p-4 space-y-3">
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700">
+                                Grade Level
+                              </span>
+                              <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                                <FiCalendar className="w-3.5 h-3.5 mr-1.5" style={{ color: '#003366' }} />
+                                <span className="text-sm font-semibold text-gray-800">
+                                  {classItem.gradeLevel || 'Grade 1'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700">
+                                Courses
+                              </span>
+                              <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                                <FiBook className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                                <span className="text-sm font-semibold text-gray-800">
+                                  {classItem.courses?.length || 0} courses
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700">
+                                Students
+                              </span>
+                              <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                                <span className="text-sm font-semibold text-gray-800 mr-2">
+                                  {classItem.students?.length || 0}/{classItem.classCapacity || 50}
+                                </span>
+                                <div className="flex -space-x-2">
+                                  <img
+                                    src="/img/classdetail-student1.png"
+                                    alt="student"
+                                    className="w-5 h-5 rounded-full border-2 border-white"
+                                  />
+                                  <img
+                                    src="/img/classdetail-student2.png"
+                                    alt="student"
+                                    className="w-5 h-5 rounded-full border-2 border-white"
+                                  />
+                                  <img
+                                    src="/img/classdetail-student3.png"
+                                    alt="student"
+                                    className="w-5 h-5 rounded-full border-2 border-white"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium text-gray-700">
+                                Last Updated
+                              </span>
+                              <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                                <FiClock className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                                <span className="text-sm font-semibold text-gray-800">
+                                  {new Date(classItem.updatedAt || Date.now()).toLocaleDateString()}
+                                </span>
+                              </div>
                             </div>
                           </div>
+
+                          {/* Card Footer */}
+                          <div className="px-4 pb-4">
+                            <button
+                              onClick={() => router.push(`/classes/${classItem._id}`)}
+                              className="w-full text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:opacity-90"
+                              style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
+                            >
+                              Manage Class
+                            </button>
+                          </div>
                         </div>
-
-                        {/* Manage Button */}
-                        <div className="px-4 pb-4">
-                          <button
-                            onClick={() =>
-                              router.push(`/classes/${classItem._id}`)
-                            }
-                            className="w-full bg-[#E0E0E0] hover:bg-gray-300 text-[15px] font-semibold py-2 rounded-md transition"
-                          >
-                            Manage Class
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="flex flex-col sm:flex-row justify-center items-center mt-6 gap-3 sm:gap-4">
-                      <button
-                        onClick={handlePrevPage}
-                        disabled={currentPage === 1}
-                        className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition-colors w-full sm:w-auto justify-center ${
-                          currentPage === 1
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                        }`}
-                      >
-                        <FiChevronLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">Previous</span>
-                        <span className="sm:hidden">Prev</span>
-                      </button>
-
-                      <span className="text-sm text-gray-600 px-2">
-                        Page {currentPage} of {totalPages}
-                      </span>
-
-                      <button
-                        onClick={handleNextPage}
-                        disabled={currentPage === totalPages}
-                        className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition-colors w-full sm:w-auto justify-center ${
-                          currentPage === totalPages
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                        }`}
-                      >
-                        <span className="hidden sm:inline">Next</span>
-                        <span className="sm:hidden">Next</span>
-                        <FiChevronRight className="w-4 h-4" />
-                      </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {/* Enhanced Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-4 py-6">
+                        <button
+                          onClick={handlePrevPage}
+                          disabled={currentPage === 1}
+                          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                            currentPage === 1
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 shadow-sm hover:shadow-md"
+                          }`}
+                          style={currentPage !== 1 ? { borderColor: '#003366' } : {}}
+                        >
+                          <FiChevronLeft className="w-5 h-5" />
+                          Previous
+                        </button>
+
+                        <div className="px-6 py-3 text-white font-semibold rounded-xl shadow-lg" style={{ background: 'linear-gradient(to right, #003366, #004488)' }}>
+                          Page {currentPage} of {totalPages}
+                        </div>
+
+                        <button
+                          onClick={handleNextPage}
+                          disabled={currentPage === totalPages}
+                          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                            currentPage === totalPages
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 shadow-sm hover:shadow-md"
+                          }`}
+                          style={currentPage !== totalPages ? { borderColor: '#003366' } : {}}
+                        >
+                          Next
+                          <FiChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </main>
+          </div>
         </div>
       )}
 
-      {/* Add Class Modal */}
+      {/* Enhanced Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex justify-center sm:justify-end items-end sm:items-stretch"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={toggleModal}
         >
           <div
-            className="h-full w-full sm:w-3/4 md:w-1/2 bg-white p-4 sm:p-6 shadow-lg overflow-y-auto rounded-t-lg sm:rounded-t-none"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex justify-between items-center mb-4 sm:mb-6">
-              <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">
-                Add Class
-              </h3>
-              <button
-                className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl p-1"
-                onClick={toggleModal}
-                disabled={isCreating}
-              >
-                ✕
-              </button>
+            <div className="sticky top-0 px-6 py-5 rounded-t-2xl" style={{ background: 'linear-gradient(to right, #003366, #004488)' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                    <FiPlus className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">
+                    Create New Class
+                  </h3>
+                </div>
+                <button
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  onClick={toggleModal}
+                  disabled={isCreating}
+                >
+                  <span className="text-white text-2xl">✕</span>
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleCreateClass}>
-              <div className="mb-4 flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
-                    Class Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter class name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  />
+            <form onSubmit={handleCreateClass} className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2">
+                      Class Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter class name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2">
+                      Class Capacity
+                    </label>
+                    <select
+                      name="classCapacity"
+                      value={formData.classCapacity}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Choose capacity</option>
+                      <option value="10">10 Students</option>
+                      <option value="20">20 Students</option>
+                      <option value="30">30 Students</option>
+                      <option value="45">45 Students</option>
+                      <option value="50">50 Students</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="flex-1">
-                  <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
-                    Class Capacity (Optional)
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Class Description
                   </label>
-                  <select
-                    name="classCapacity"
-                    value={formData.classCapacity}
+                  <textarea
+                    name="classDescription"
+                    placeholder="Provide additional notes about the class"
+                    value={formData.classDescription}
                     onChange={handleInputChange}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  >
-                    <option value="">Choose your class capacity</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="45">45</option>
-                  </select>
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    rows={4}
+                  ></textarea>
                 </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-700 font-semibold mb-2 text-sm sm:text-base">
-                  Class Description (Optional)
-                </label>
-                <textarea
-                  name="classDescription"
-                  placeholder="Provide additional notes about the class."
-                  value={formData.classDescription}
-                  onChange={handleInputChange}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  rows={3}
-                ></textarea>
               </div>
 
               {/* Modal Footer */}
-              <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
+              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base order-2 sm:order-1"
+                  className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all duration-300"
                   onClick={toggleModal}
                   disabled={isCreating}
                 >
@@ -507,13 +498,14 @@ export default function Classes() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-[#154473] text-white rounded-lg hover:bg-blue-700 flex items-center justify-center transition-colors text-sm sm:text-base order-1 sm:order-2"
+                  className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center hover:opacity-90"
+                  style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
                   disabled={isCreating}
                 >
                   {isCreating ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white"
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -532,10 +524,13 @@ export default function Classes() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Creating...
+                      Creating Class...
                     </>
                   ) : (
-                    "Create"
+                    <>
+                      <FiPlus className="mr-2 h-5 w-5" />
+                      Create Class
+                    </>
                   )}
                 </button>
               </div>

@@ -12,6 +12,7 @@ import ClassTable from "@/components/ClassTable";
 import AddClassModal from "@/components/AddClassModal";
 import { useDashboard } from "@/hooks/useDashboard";
 import { Book, BookOpen, Profile, Profile2User } from "@/components/Icons";
+import { LayoutDashboard, TrendingUp } from "lucide-react";
 
 const Dashboard = () => {
   const router = useRouter();
@@ -28,28 +29,24 @@ const Dashboard = () => {
           icon: <Book />,
           count: dashboardData.totalClasses,
           label: "Total Number of Classes",
-          
         },
         {
           id: 2,
           icon: <Profile2User />,
           count: dashboardData.totalStudents,
           label: "Total Number of Students",
-          
         },
         {
           id: 3,
           icon: <Profile />,
           count: dashboardData.totalTeachers,
           label: "Total Number of Teachers",
-          
         },
         {
           id: 4,
           icon: <BookOpen />,
           count: dashboardData.totalSubjects,
           label: "Total Number of Subjects",
-          
         },
       ]
     : [];
@@ -120,19 +117,34 @@ const Dashboard = () => {
 
   if (error || !dashboardData) {
     return (
-      <div className="flex h-screen bg-[#F8F8F8] p-2">
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
         <main className="flex-grow overflow-y-auto">
           <div className="text-center py-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md mx-auto">
-              <div className="text-red-600 text-lg font-semibold mb-2">
+            <div className="bg-white border border-red-200 rounded-2xl shadow-xl p-8 max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div className="text-red-600 text-xl font-bold mb-2">
                 Error Loading Dashboard
               </div>
-              <p className="text-red-600 mb-4">
+              <p className="text-red-600 mb-6">
                 {error || "Failed to load dashboard data"}
               </p>
               <button
                 onClick={refreshDashboard}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 Try Again
               </button>
@@ -145,41 +157,74 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="flex h-screen  p-2">
+      <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         {/* Main Content */}
         <main className="flex-grow overflow-y-auto">
-          {/* School Info Header */}
-          <div className="px-5 py-3 mb-4">
-            <h1 className="font-medium text-[20px] text-[#2F2F2F]">
-              School Overview
-            </h1>
+          {/* Enhanced Header with Talim Styling */}
+          <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl">
+            <div className="px-6 py-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <LayoutDashboard className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">
+                    School Overview
+                  </h1>
+                  <p className="text-blue-100 mt-1">
+                    Monitor your school's performance and key metrics
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Dashboard Cards */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 px-8 items-start">
+          {/* Enhanced Dashboard Cards */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-6">
             {cards.map((card) => (
-              <DashboardCard
+              <div
                 key={card.id}
-                id={card.id}
-                icon={card.icon}
-                count={card.count}
-                label={card.label}
-                
-                onNavigate={handleCardNavigation}
-               
-              />
+                onClick={() => handleCardNavigation(card.id)}
+                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">
+                      {card.label}
+                    </p>
+                    <p className="text-3xl font-bold bg-[#003366] bg-clip-text text-transparent">
+                      {card.count}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[#003366] rounded-xl shadow-lg group-hover:shadow-blue-300 transition-shadow duration-300">
+                    <div className="h-6 w-6 text-white [&>svg]:w-6 [&>svg]:h-6 [&>svg]:text-white [&>svg>path]:stroke-white [&>svg>path]:fill-white">
+                      {card.icon}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </section>
 
-          {/* Classes Table */}
-          <ClassTable
-            classes={dashboardData.recentClasses}
-            error={null}
-            onAdd={toggleModal}
-            onView={handleView}
-            onEdit={handleEdit}
-            onRetry={refreshDashboard}
-          />
+          {/* Enhanced Classes Table Section */}
+          <div className="px-6 pb-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-5 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2 text-[#003366]" />
+                  Recent Classes
+                </h2>
+              </div>
+              <ClassTable
+                classes={dashboardData.recentClasses}
+                error={null}
+                onAdd={toggleModal}
+                onView={handleView}
+                onEdit={handleEdit}
+                onRetry={refreshDashboard}
+              />
+            </div>
+          </div>
         </main>
       </div>
 

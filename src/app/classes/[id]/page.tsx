@@ -34,6 +34,8 @@ import { getClass } from "../../services/student.service";
 import { deleteCourseService } from "../../services/subjects.service";
 import CourseModal from "@/components/CourseModal";
 import "react-toastify/dist/ReactToastify.css";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ClassDetails {
   _id: string;
@@ -245,23 +247,18 @@ const ViewClass: React.FC = () => {
   };
 
   // Close menu when clicking outside
-  // Close menu when clicking outside (but ignore clicks inside the open dropdown)
   useEffect(() => {
-    if (!menuOpen) return; // only attach when a menu is open
+    if (!menuOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      // find the currently open dropdown element
       const dropdownEl = document.getElementById(`dropdown-${menuOpen}`);
-      // if no dropdown found, just close
       if (!dropdownEl) {
         setMenuOpen(null);
         return;
       }
-      // if click/mousedown was inside the dropdown, don't close it
       if (dropdownEl.contains(event.target as Node)) {
         return;
       }
-      // otherwise close it
       setMenuOpen(null);
     };
 
@@ -277,20 +274,13 @@ const ViewClass: React.FC = () => {
 
   useEffect(() => {
     const fetchClassData = async () => {
-      //   console.log("🔍 ViewClass component loaded");
-      //   console.log("🔍 Params:", params);
-      //   console.log("🔍 Class ID:", classId);
-
       try {
         if (!classId) {
           setError("Class ID is required");
           return;
         }
 
-        // console.log("🚀 Fetching class data for ID:", classId);
         const data = await getClass(classId);
-        //console.log("✅ Class data received:", data);
-
         setClassData(data);
       } catch (error: any) {
         console.error("❌ Error fetching class:", error);
@@ -307,35 +297,21 @@ const ViewClass: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header Skeleton */}
-        <div className="border-b border-gray-200 px-6 py-4 bg-white">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 max-w-md mx-8">
-              <div className="h-10 bg-gray-200 rounded-md animate-pulse"></div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-
         {/* Navigation Skeleton */}
-        <div className="p-6 bg-white">
+        <div className="bg-white px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 w-28 bg-gray-200 rounded-md animate-pulse"></div>
+            <div className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
         </div>
 
         {/* Main Content Skeleton */}
         <div className="p-6">
-          <div className="bg-white rounded-lg shadow-sm border">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Tabs Skeleton */}
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-gray-200 px-6 py-4 bg-gray-50">
               <div className="flex space-x-8">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(3)].map((_, i) => (
                   <div
                     key={i}
                     className="h-6 w-24 bg-gray-200 rounded animate-pulse"
@@ -345,20 +321,15 @@ const ViewClass: React.FC = () => {
             </div>
 
             {/* Content Skeleton */}
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="space-y-4">
-                  <div className="h-32 w-32 bg-gray-200 rounded-full mx-auto animate-pulse"></div>
-                  <div className="h-6 w-32 bg-gray-200 rounded mx-auto animate-pulse"></div>
-                </div>
-                <div className="lg:col-span-2 space-y-4">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-16 bg-gray-200 rounded animate-pulse"
-                    ></div>
-                  ))}
-                </div>
+            <div className="p-8 space-y-6">
+              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 bg-gray-200 rounded animate-pulse"
+                  ></div>
+                ))}
               </div>
             </div>
           </div>
@@ -367,59 +338,58 @@ const ViewClass: React.FC = () => {
     );
   }
 
-  // If there's an error, show error message
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex justify-center items-center p-6 min-h-[60vh]">
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
-            <div className="text-red-400 text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Error</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-500">
-                Class ID: {classId || "Not provided"}
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Retry
-                </button>
-                <button
-                  onClick={() => router.push("/classes")}
-                  className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#033c76] transition-colors duration-200 flex items-center"
-                >
-                  <ChevronLeft className="mr-2 w-4 h-4" /> Back to Classes
-                </button>
-              </div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-md mx-auto mt-32">
+          <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.963-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                ></path>
+              </svg>
             </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error Loading Class
+            </h3>
+            <p className="text-red-600 mb-6">{error}</p>
+            <button
+              onClick={() => router.push("/classes")}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to Classes
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  // If there is no class data found
   if (!classData) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex justify-center items-center p-6 min-h-[60vh]">
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center max-w-2xl">
-            <div className="text-gray-400 text-4xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-md mx-auto mt-32">
+          <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Class Not Found
-            </h2>
-            <p className="text-gray-600 mb-4">
-              The class you're looking for doesn't exist or has been removed.
+            </h3>
+            <p className="text-gray-600 mb-6">
+              The class you're looking for doesn't exist.
             </p>
-            <p className="text-sm text-gray-500 mb-6">Class ID: {classId}</p>
             <button
               onClick={() => router.push("/classes")}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center mx-auto"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <ChevronLeft className="mr-2 w-4 h-4" /> Back to Classes
+              Back to Classes
             </button>
           </div>
         </div>
@@ -428,229 +398,230 @@ const ViewClass: React.FC = () => {
   }
 
   return (
-    <div>
-      <div className="flex flex-col h-screen bg-[#F8F8F8]">
-        {/* Navigation Header */}
-        <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Back Button */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <div className="bg-white px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => router.push("/classes")}
-              className="flex items-center text-[15px] font-semibold"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors group"
             >
-              <ChevronLeft className="w-5 h-5 mr-1" />
-              Back
+              <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">Back to Classes</span>
             </button>
-
-            {/* Edit Class Button */}
-            <button
-              onClick={() => router.push(`/classes/edit-class/${classId}`)}
-              className="flex items-center gap-2 bg-[#002D62] hover:bg-[#001F45] text-white font-semibold text-[15px] px-5 py-2 rounded-lg transition"
-            >
-              <span>Edit Class</span>
-              <FiEdit className="w-4 h-4" />
-            </button>
+            <div className="text-gray-300">|</div>
+            <div className="flex items-center space-x-2">
+              <GraduationCap className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600">Class Details</span>
+            </div>
           </div>
+          <button
+            onClick={() => router.push(`/classes/edit-class/${classId}`)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+          >
+            <FiEdit className="w-4 h-4" />
+            Edit Class
+          </button>
         </div>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-6">
-            <nav className="flex space-x-6">
-              {[
-                { key: "details", label: "Class Details", icon: Info },
-                { key: "courses", label: "Courses", icon: BookOpen },
-                { key: "teacher", label: "Class Teacher", icon: User },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center py-4 border-b-2 font-semibold text-[15px] transition-all ${
-                      activeTab === tab.key
-                        ? "border-black text-black"
-                        : "border-transparent text-[#808080] hover:text-[#929292] hover:border-gray-300"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2 text-[#1A1A1A]" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
+      {/* Main Content */}
+      <div className="p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3 bg-gray-50 border-b border-gray-200 rounded-none h-auto p-0">
+              <TabsTrigger
+                value="details"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
+              >
+                <Info className="w-4 h-4" />
+                Class Details
+              </TabsTrigger>
+              <TabsTrigger
+                value="courses"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
+              >
+                <BookOpen className="w-4 h-4" />
+                Courses
+              </TabsTrigger>
+              <TabsTrigger
+                value="teacher"
+                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
+              >
+                <User className="w-4 h-4" />
+                Class Teacher
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Content Area */}
-        <div className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-            {activeTab === "details" && (
-              <>
-                {/* Class Information Header */}
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <Info className="w-5 h-5 text-[#1A1A1A]" />
-                    <h2 className="text-[15px] font-semibold text-[#4D4D4D]">
-                      Class Information
-                    </h2>
-                  </div>
-                  <button
-                    onClick={() =>
-                      router.push(`/classes/edit-class/${classId}`)
-                    }
-                    className="flex items-center gap-2 text-[15px] font-semibold text-[#393939] hover:text-[#003366] transition"
-                  >
-                    <FiEdit2 className="w-4 h-4 text-[#393939]" />
-                    Edit
-                  </button>
-                </div>
-
-                {/* Class Info Fields */}
-                <div className="space-y-4 text-[15px]">
-                  {/* Class Name */}
-                  <div className="flex items-center space-x-5 max-w-md">
-                    <span className="font-medium  text-gray-800">
-                      Class Name
-                    </span>
-                    <div className="flex items-center bg-gray-100 text-[#4D4D4D] px-2 py-1 rounded-md">
-                      <FiCalendar className="w-4 h-4 mr-1 text-gray-700" />
-                      <span>Grade 1</span>
-                    </div>
-                  </div>
-
-                  {/* Courses */}
-                  <div className="flex items-center space-x-5 max-w-md">
-                    <span className="font-medium text-gray-800">Courses</span>
-                    <div className="flex items-center bg-gray-100 text-[#4D4D4D]  px-2 py-1 rounded-md">
-                      <FiBook className="w-4 h-4 mr-1 text-gray-700" />
-                      <span>9 courses</span>
-                    </div>
-                  </div>
-
-                  {/* Students */}
-                  <div className="flex items-center space-x-5 max-w-md">
-                    <span className="font-medium text-gray-800">Students</span>
-                    <div className="flex items-center text-[#4D4D4D]  bg-gray-100 px-2 py-1 rounded-md">
-                      <span>40/50</span>
-                      <div className="flex ml-2 -space-x-2">
-                        <img
-                          src="/img/classdetail-student1.png"
-                          alt="student image"
-                          className="w-6 h-6 rounded-full border border-white"
-                        />
-                        <img
-                          src="/img/classdetail-student2.png"
-                          alt="student image"
-                          className="w-6 h-6 rounded-full border border-white"
-                        />
-                        <img
-                          src="/img/classdetail-student3.png"
-                          alt="student image"
-                          className="w-6 h-6 rounded-full border border-white"
-                        />
+            <div className="p-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-8"
+                >
+                  {/* Class Details Tab */}
+                  <TabsContent value="details" className="space-y-8 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {classData.name}
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Class information and statistics
+                        </p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Class Description */}
-                  <div className="flex items-center max-w-md">
-                    <span className="font-medium text-gray-800">
-                      {" "}
-                      Class Description
-                    </span>
-                    <div className="bg-gray-100 px-2 py-1 text-[#4D4D4D] ">
-                      <span>
-                        {" "}
-                        In class 1, our students will be building on the basic
-                        foundation.
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-                  <div className="bg-white border border-gray-200 rounded-lg p-8 flex items-center justify-between">
-                    <div>
-                      <p className="text-[23px] font-semibold text-[#030E18]">
-                        15
-                      </p>
-                      <p className="text-[13px] font-medium text-[#B3B3B3]">
-                        Total Courses
-                      </p>
-                    </div>
-                    <FiBook className="w-6 h-6 text-[#292D32]" />
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-8 flex items-center justify-between">
-                    <div>
-                      <p className="text-[23px] font-semibold text-[#030E18]">
-                        15
-                      </p>
-                      <p className="text-[13px] font-medium text-[#B3B3B3]">
-                        Class Capacity
-                      </p>
-                    </div>
-                    <Users className="w-6 h-6 text-[#292D32]" />
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-8 flex items-center justify-between">
-                    <div>
-                      <p className="text-[23px] font-semibold text-[#030E18]">
-                        15
-                      </p>
-                      <p className="text-[13px] font-medium text-[#B3B3B3]">
-                        Teachers
-                      </p>
-                    </div>
-                    <User className="w-6 h-6 text-[#292D32]" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Courses Tab */}
-            {activeTab === "courses" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow-sm">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 px-4 py-2">
-                    {/* Icon + Text */}
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        <BookOpen className="w-5 h-5 text-gray-700" />
+                    {/* Class Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4" />
+                          Class Name
+                        </label>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <span className="text-gray-900">
+                            {classData.name}
+                          </span>
+                        </div>
                       </div>
-                      <h2 className="text-base font-medium text-gray-800">
-                        Courses
-                      </h2>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" />
+                          Total Courses
+                        </label>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <span className="text-gray-900">
+                            {classData.courses?.length || 0} courses
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Class Capacity
+                        </label>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <span className="text-gray-900">
+                            {classData.classCapacity || "Not set"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Class Teacher
+                        </label>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <span className="text-gray-900">
+                            {getTeacherName(classData)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Info className="w-4 h-4" />
+                          Class Description
+                        </label>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <span className="text-gray-900">
+                            {classData.classDescription ||
+                              "No description available"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Buttons */}
-                    <div className="flex items-center gap-2">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {classData.courses?.length || 0}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Total Courses
+                            </p>
+                          </div>
+                          <div className="p-3 bg-blue-50 rounded-lg">
+                            <BookOpen className="w-6 h-6 text-blue-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {classData.classCapacity || "0"}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Class Capacity
+                            </p>
+                          </div>
+                          <div className="p-3 bg-green-50 rounded-lg">
+                            <Users className="w-6 h-6 text-green-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-2xl font-bold text-gray-900">1</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Class Teacher
+                            </p>
+                          </div>
+                          <div className="p-3 bg-purple-50 rounded-lg">
+                            <User className="w-6 h-6 text-purple-600" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Courses Tab */}
+                  <TabsContent value="courses" className="space-y-8 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Courses
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Manage courses for this class
+                        </p>
+                      </div>
                       <button
                         onClick={handleAddCourse}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
                       >
-                        + Add
-                      </button>
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                        <FiEdit className="w-4 h-4" />
-                        Edit
+                        + Add Course
                       </button>
                     </div>
-                  </div>
 
-                  {/* Content */}
-                  <div className="p-4 sm:p-6">
                     {!classData.courses || classData.courses.length === 0 ? (
-                      <div className="text-center py-12">
-                        <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
                           No courses yet
                         </h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          You haven’t added any courses to this class.
+                        <p className="text-sm text-gray-500 mb-6">
+                          You haven't added any courses to this class.
                         </p>
                         <button
                           onClick={handleAddCourse}
@@ -660,21 +631,21 @@ const ViewClass: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {classData.courses.map((course, index) => (
                           <div
                             key={course._id || index}
-                            className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
                           >
-                            {/* Top Row */}
+                            {/* Course Header */}
                             <div className="flex justify-between items-start mb-4">
-                              <h3 className="text-base font-semibold text-gray-900">
+                              <h3 className="text-lg font-semibold text-gray-900">
                                 {course.title || "Untitled Course"}
                               </h3>
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => handleEditCourse(course._id)}
-                                  className="p-1.5 text-[#003366] hover:bg-blue-50 rounded-full transition"
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                                 >
                                   <FiEdit className="w-4 h-4" />
                                 </button>
@@ -682,7 +653,8 @@ const ViewClass: React.FC = () => {
                                   onClick={() =>
                                     handleDeleteCourse(course._id, course.title)
                                   }
-                                  className="p-1.5 text-[#CC3333] hover:bg-red-50 rounded-full transition"
+                                  disabled={isDeletingCourse === course._id}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                                 >
                                   <FiTrash2 className="w-4 h-4" />
                                 </button>
@@ -690,17 +662,17 @@ const ViewClass: React.FC = () => {
                             </div>
 
                             {/* Course Info */}
-                            <div className="space-y-3 text-sm">
-                              <div className="flex items-center gap-2">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-sm">
                                 <span className="font-medium text-gray-700">
-                                  Course Code:
+                                  Code:
                                 </span>
-                                <span className="text-gray-900">
+                                <span className="text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
                                   {course.courseCode || "N/A"}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 text-sm">
                                 <span className="font-medium text-gray-700">
                                   Subject:
                                 </span>
@@ -710,275 +682,155 @@ const ViewClass: React.FC = () => {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700">
-                                  Students:
-                                </span>
-                                <span className="text-gray-900">40/50</span>
-                                <div className="flex -space-x-2">
-                                  {[1, 2, 3].map((i) => (
-                                    <img
-                                      key={i}
-                                      src={`/img/classdetail-student1${i}.png`}
-                                      alt="student"
-                                      className="w-6 h-6 rounded-full border-2 border-white"
-                                    />
-                                  ))}
+                              {course.updatedAt && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                  <span className="text-gray-600">
+                                    Updated{" "}
+                                    {new Date(
+                                      course.updatedAt
+                                    ).toLocaleDateString()}
+                                  </span>
                                 </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700">
-                                  Last Updated:
-                                </span>
-                                <span className="text-gray-900">
-                                  {course.updatedAt
-                                    ? new Date(
-                                        course.updatedAt
-                                      ).toLocaleDateString()
-                                    : "N/A"}
-                                </span>
-                              </div>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-            )}
+                  </TabsContent>
 
-            {/* Class Teacher Tab */}
-            {activeTab === "teacher" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                  {/* Header */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        <User className="w-5 h-5 text-gray-700" />
+                  {/* Class Teacher Tab */}
+                  <TabsContent value="teacher" className="space-y-8 mt-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Class Teacher Information
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Teacher assigned to this class
+                        </p>
                       </div>
-                      <h2 className="text-base font-semibold text-gray-800">
-                        Class Teacher Information
-                      </h2>
                     </div>
 
-                    <button
-                      onClick={handleAddCourse}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition"
-                    >
-                      <FiEdit className="w-4 h-4" />
-                      Change
-                    </button>
-                  </div>
-
-                  {/* Teacher Info */}
-                  {classData?.classTeacherId?.userId ? (
-                    <div className="space-y-6">
-                      {/* Profile */}
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={"/img/default-teacher.png"}
-                          alt="Teacher"
-                          className="w-20 h-20 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-900">
-                            Mrs {classData.classTeacherId.userId.lastName}
-                          </h3>
-                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-lg">
-                            {classData.name || "Primary 2"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Details */}
-                      <div className="space-y-4">
-                        {/* First Name */}
-                        <div className="flex items-center gap-4">
-                          <p className="text-sm text-gray-500 w-32">
-                            First Name
-                          </p>
-                          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <span className="text-gray-800 text-sm">
-                              {classData.classTeacherId.userId.firstName}
-                            </span>
+                    {classData?.classTeacherId?.userId ? (
+                      <div className="space-y-6">
+                        {/* Teacher Profile */}
+                        <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600">
+                            {classData.classTeacherId.userId.firstName?.[0]}
+                            {classData.classTeacherId.userId.lastName?.[0]}
                           </div>
-                        </div>
-
-                        {/* Last Name */}
-                        <div className="flex items-center gap-4">
-                          <p className="text-sm text-gray-500 w-32">
-                            Last Name
-                          </p>
-                          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <span className="text-gray-800 text-sm">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900">
+                              {classData.classTeacherId.userId.firstName}{" "}
                               {classData.classTeacherId.userId.lastName}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="flex items-center gap-4">
-                          <p className="text-sm text-gray-500 w-32">Email</p>
-                          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                            <FiEdit className="w-4 h-4 text-gray-500" />
-                            <span className="text-gray-800 text-sm break-all">
-                              {classData.classTeacherId.userId.email}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Specialization (if exists) */}
-                        {classData.classTeacherId.specialization && (
-                          <div className="flex items-center gap-4">
-                            <p className="text-sm text-gray-500 w-32">
-                              Specialization
+                            </h3>
+                            <p className="text-gray-600 mt-1">
+                              {classData.classTeacherId.isFormTeacher
+                                ? "Form Teacher"
+                                : "Class Teacher"}
                             </p>
-                            <div className="bg-gray-50 rounded-lg px-3 py-2 text-gray-800 text-sm flex-1">
-                              {classData.classTeacherId.specialization}
+                          </div>
+                        </div>
+
+                        {/* Teacher Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              First Name
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <span className="text-gray-900">
+                                {classData.classTeacherId.userId.firstName}
+                              </span>
                             </div>
                           </div>
-                        )}
 
-                        {/* Form Teacher */}
-                        <div className="flex items-center gap-4">
-                          <p className="text-sm text-gray-500 w-32">
-                            Form Teacher
-                          </p>
-                          <div className="bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                classData.classTeacherId.isFormTeacher
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {classData.classTeacherId.isFormTeacher
-                                ? "Yes"
-                                : "No"}
-                            </span>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              Last Name
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <span className="text-gray-900">
+                                {classData.classTeacherId.userId.lastName}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              Email
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <span className="text-gray-900 break-all">
+                                {classData.classTeacherId.userId.email}
+                              </span>
+                            </div>
+                          </div>
+
+                          {classData.classTeacherId.specialization && (
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4" />
+                                Specialization
+                              </label>
+                              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                <span className="text-gray-900">
+                                  {classData.classTeacherId.specialization}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <Badge className="w-4 h-4" />
+                              Form Teacher Status
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <span
+                                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                  classData.classTeacherId.isFormTeacher
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                {classData.classTeacherId.isFormTeacher
+                                  ? "Yes"
+                                  : "No"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 sm:py-12">
-                      <User className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600 font-medium mb-2 text-sm sm:text-base">
-                        No teacher assigned
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
-                        A teacher can be assigned through the edit page.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Settings Tab */}
-            {activeTab === "settings" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow-sm">
-                  <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-gray-100 rounded-lg mr-3">
-                        <Settings className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Class Settings
-                      </h2>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="space-y-6">
-                      {/* Class Information */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Class ID
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">
-                              {getStringValue(classData._id)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            School ID
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900 font-mono text-sm">
-                              {classData.schoolId?._id ||
-                                getStringValue(classData.schoolId)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Created At
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900">
-                              {classData.createdAt
-                                ? new Date(classData.createdAt).toLocaleString()
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Last Updated
-                          </label>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <span className="text-gray-900">
-                              {classData.updatedAt
-                                ? new Date(classData.updatedAt).toLocaleString()
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="border-t border-gray-200 pt-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                          Quick Actions
+                    ) : (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                        <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No teacher assigned
                         </h3>
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            onClick={() =>
-                              router.push(`/classes/edit-class/${classId}`)
-                            }
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
-                          >
-                            <FiEdit className="mr-2 w-4 h-4" />
-                            Edit Class
-                          </button>
-                          <button
-                            onClick={() => router.push("/classes")}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center text-sm"
-                          >
-                            <FiArrowLeft className="mr-2 w-4 h-4" />
-                            Back to Classes
-                          </button>
-                        </div>
+                        <p className="text-sm text-gray-500 mb-6">
+                          A teacher can be assigned through the edit page.
+                        </p>
+                        <button
+                          onClick={() =>
+                            router.push(`/classes/edit-class/${classId}`)
+                          }
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Assign Teacher
+                        </button>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+                    )}
+                  </TabsContent>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </Tabs>
         </div>
       </div>
 

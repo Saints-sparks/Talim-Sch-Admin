@@ -84,7 +84,7 @@ export default function SignIn() {
         toast.error("Invalid credentials. Please try again.");
       }
     } catch (err: any) {
-      console.error("Login error:", err);
+      //console.error("Login error:", err);
       toast.error(err.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);

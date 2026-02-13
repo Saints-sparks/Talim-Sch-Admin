@@ -20,7 +20,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
     firstName: "",
     lastName: "",
     phoneNumber: "",
@@ -79,7 +78,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         // Validate required fields
         if (
           !formData.email ||
-          !formData.password ||
           !formData.firstName ||
           !formData.lastName
         ) {
@@ -89,7 +87,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         const registrationData = {
           email: formData.email,
-          password: formData.password,
           role: "student",
           schoolId,
           firstName: formData.firstName,
@@ -175,23 +172,13 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-8">
-            {/* Section Header */}
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Account Information
-              </h3>
-              <p className="text-gray-600">
-                Set up login credentials and basic personal details
-              </p>
-            </div>
-
-            {/* Login Credentials */}
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+          <div className="space-y-6">
+            {/* Login Credentials Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                <div className="p-2 bg-blue-50 rounded-lg">
                   <svg
-                    className="w-4 h-4"
+                    className="w-5 h-5 text-[#003366]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -203,45 +190,36 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">
                   Login Credentials
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="student@example.com"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password *
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="Create a secure password"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Personal Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="student@example.com"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                <div className="p-2 bg-blue-50 rounded-lg">
                   <svg
-                    className="w-4 h-4"
+                    className="w-5 h-5 text-[#003366]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -253,59 +231,63 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">
                   Personal Information
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      placeholder="Enter first name"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      placeholder="Enter last name"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="tel"
-                    name="phoneNumber"
-                    placeholder="+234 XXX XXX XXXX"
-                    className="w-full md:w-1/2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                    value={formData.phoneNumber}
+                    type="text"
+                    name="firstName"
+                    placeholder="Enter first name"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    value={formData.firstName}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    placeholder="Enter last name"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  placeholder="+234 XXX XXX XXXX"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
 
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div className="flex gap-3">
                 <svg
-                  className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-[#003366] mt-0.5 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -318,13 +300,9 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   />
                 </svg>
                 <div>
-                  <h5 className="text-sm font-medium text-blue-900 mb-1">
-                    Account Setup
-                  </h5>
-                  <p className="text-sm text-blue-700">
-                    This information will be used to create the student's login
-                    account. The email and password will be their credentials
-                    for accessing the system.
+                  <p className="text-sm text-blue-900 leading-relaxed">
+                    A secure password will be automatically generated for the student's account. 
+                    The login credentials will be sent to the provided email address.
                   </p>
                 </div>
               </div>
@@ -334,23 +312,13 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       case 1:
         return (
-          <div className="space-y-8">
-            {/* Section Header */}
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Student Profile
-              </h3>
-              <p className="text-gray-600">
-                Complete the academic information and parent/guardian details
-              </p>
-            </div>
-
-            {/* Academic Information */}
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+          <div className="space-y-6">
+            {/* Academic Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                <div className="p-2 bg-blue-50 rounded-lg">
                   <svg
-                    className="w-4 h-4"
+                    className="w-5 h-5 text-[#003366]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -362,52 +330,57 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                     />
                   </svg>
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">
                   Academic Information
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Class *
-                    </label>
-                    <select
-                      name="classId"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                      value={formData.classId}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="" disabled>
-                        Select a class
-                      </option>
-                      {classes.map((classItem) => (
-                        <option key={classItem._id} value={classItem._id}>
-                          {classItem.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Grade Level *
-                    </label>
-                    <input
-                      type="text"
-                      name="gradeLevel"
-                      placeholder="e.g., Grade 10, JSS 2"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      value={formData.gradeLevel}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Parent/Guardian Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Class <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="classId"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
+                    value={formData.classId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a class
+                    </option>
+                    {classes.map((classItem) => (
+                      <option key={classItem._id} value={classItem._id}>
+                        {classItem.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Grade Level <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="gradeLevel"
+                    placeholder="e.g., Grade 10, JSS 2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    value={formData.gradeLevel}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Parent/Guardian Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                <div className="p-2 bg-blue-50 rounded-lg">
                   <svg
-                    className="w-4 h-4"
+                    className="w-5 h-5 text-[#003366]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -419,90 +392,93 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                     />
                   </svg>
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">
                   Parent/Guardian Information
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.parentContact.firstName}
-                      onChange={handleParentContactChange}
-                      placeholder="Enter parent/guardian first name"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.parentContact.lastName}
-                      onChange={handleParentContactChange}
-                      placeholder="Enter parent/guardian last name"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={formData.parentContact.phoneNumber}
-                      onChange={handleParentContactChange}
-                      placeholder="+234 XXX XXX XXXX"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.parentContact.email}
-                      onChange={handleParentContactChange}
-                      placeholder="parent@example.com"
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Relationship to Student *
-                    </label>
-                    <select
-                      name="relationship"
-                      value={formData.parentContact.relationship}
-                      onChange={handleParentContactChange}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select relationship
-                      </option>
-                      <option value="FATHER">Father</option>
-                      <option value="MOTHER">Mother</option>
-                      <option value="GUARDIAN">Guardian</option>
-                      <option value="OTHER">Other</option>
-                    </select>
-                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.parentContact.firstName}
+                    onChange={handleParentContactChange}
+                    placeholder="Enter parent/guardian first name"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.parentContact.lastName}
+                    onChange={handleParentContactChange}
+                    placeholder="Enter parent/guardian last name"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Relationship <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="relationship"
+                    value={formData.parentContact.relationship}
+                    onChange={handleParentContactChange}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select relationship
+                    </option>
+                    <option value="FATHER">Father</option>
+                    <option value="MOTHER">Mother</option>
+                    <option value="GUARDIAN">Guardian</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formData.parentContact.phoneNumber}
+                    onChange={handleParentContactChange}
+                    placeholder="+234 XXX XXX XXXX"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email Address <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.parentContact.email}
+                    onChange={handleParentContactChange}
+                    placeholder="parent@example.com"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Success Preview */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
+            {/* Success Info Box */}
+            <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+              <div className="flex gap-3">
                 <svg
                   className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"
                   fill="none"
@@ -517,12 +493,9 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   />
                 </svg>
                 <div>
-                  <h5 className="text-sm font-medium text-green-900 mb-1">
-                    Ready to Create Student Account
-                  </h5>
-                  <p className="text-sm text-green-700">
-                    All required information has been collected. Click "Create
-                    Student" to finalize the account setup.
+                  <p className="text-sm text-green-900 leading-relaxed">
+                    All required information has been collected. Click "Create Student" 
+                    to finalize the account setup.
                   </p>
                 </div>
               </div>
@@ -544,21 +517,21 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div
       id="modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4"
       onClick={(e) => {
         if ((e.target as Element).id === "modal-overlay") {
           onClose();
         }
       }}
     >
-      <div className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+      <div className="bg-white h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="bg-white bg-opacity-20 p-3 rounded-xl">
+        <div className="bg-[#003366] px-6 py-5 text-white flex-shrink-0">
+          <div className="flex justify-between items-start mb-5">
+            <div className="flex items-start gap-3">
+              <div className="bg-white bg-opacity-20 p-2.5 rounded-lg mt-0.5">
                 <svg
-                  className="w-8 h-8"
+                  className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -572,18 +545,18 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </svg>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Add New Student</h2>
-                <p className="text-blue-100 text-sm">
-                  Create a student account and profile
+                <h2 className="text-xl font-bold">Add New Student</h2>
+                <p className="text-blue-100 text-sm mt-0.5">
+                  {currentStep === 0 ? "Setup account credentials" : "Complete student profile"}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-blue-100 hover:text-white p-2 rounded-lg hover:bg-blue-500 transition-colors"
+              className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
             >
               <svg
-                className="w-6 h-6"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -599,27 +572,25 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
 
           {/* Progress Steps */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between relative">
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-blue-400 transform -translate-y-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              {/* Progress Line */}
+              <div className="absolute top-5 left-0 right-0 h-0.5 bg-blue-400"></div>
+              <div 
+                className="absolute top-5 left-0 h-0.5 bg-white transition-all duration-300"
+                style={{ width: currentStep === 0 ? '0%' : '100%' }}
+              ></div>
+
               {[
-                {
-                  step: 0,
-                  title: "Account Details",
-                  subtitle: "Login credentials",
-                },
-                {
-                  step: 1,
-                  title: "Student Profile",
-                  subtitle: "Academic information",
-                },
-              ].map((step, index) => (
-                <div key={step.step} className="relative px-4">
+                { step: 0, title: "Account", icon: "1" },
+                { step: 1, title: "Profile", icon: "2" },
+              ].map((step) => (
+                <div key={step.step} className="relative z-10 flex flex-col items-center">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                       currentStep >= step.step
-                        ? "bg-white text-blue-600"
-                        : "bg-blue-400 text-white"
+                        ? "bg-white text-blue-600 shadow-lg"
+                        : "bg-blue-500 text-white"
                     }`}
                   >
                     {currentStep > step.step ? (
@@ -632,32 +603,21 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={3}
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
                     ) : (
-                      step.step + 1
+                      step.icon
                     )}
                   </div>
                   <div className="mt-2 text-center">
                     <div
-                      className={`text-sm font-medium ${
-                        currentStep >= step.step
-                          ? "text-white"
-                          : "text-gray-400"
+                      className={`text-xs font-medium ${
+                        currentStep >= step.step ? "text-white" : "text-blue-200"
                       }`}
                     >
                       {step.title}
-                    </div>
-                    <div
-                      className={`text-xs ${
-                        currentStep >= step.step
-                          ? "text-blue-100"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {step.subtitle}
                     </div>
                   </div>
                 </div>
@@ -667,24 +627,22 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              {renderPageContent()}
-            </div>
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="p-6">
+            {renderPageContent()}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t border-gray-200 p-6">
-          <div className="max-w-3xl mx-auto flex justify-between items-center">
+        <div className="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0">
+          <div className="flex justify-between items-center gap-4">
             <button
               onClick={handleBackClick}
               disabled={currentStep === 0}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
                 currentStep === 0
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               <svg
@@ -706,7 +664,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2.5 bg-[#003366] text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
