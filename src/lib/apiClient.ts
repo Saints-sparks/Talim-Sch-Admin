@@ -1,3 +1,4 @@
+// lib/apiClient.ts
 import { API_BASE_URL } from "@/app/lib/api/config";
 
 interface RequestConfig extends RequestInit {
@@ -69,7 +70,26 @@ class ApiClient {
     }
   }
 
+  // ✅ FIXED: Construct full URL using API_BASE_URL
+  private buildUrl(endpoint: string): string {
+    // If it's already a full URL, return as is
+    if (endpoint.startsWith('http')) {
+      return endpoint;
+    }
+    
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    
+    // Combine base URL with path
+    const fullUrl = `${API_BASE_URL}${path}`;
+    console.log('🌐 Request URL:', fullUrl); // Debug log
+    return fullUrl;
+  }
+
   async request(url: string, config: RequestConfig = {}): Promise<Response> {
+    // Build the full URL
+    const fullUrl = this.buildUrl(url);
+    
     // Add Authorization header if token exists
     if (this.accessToken) {
       config.headers = {
@@ -82,7 +102,8 @@ class ApiClient {
     config.credentials = "include";
 
     // Make the request
-    let response = await fetch(url, config);
+    console.log('📤 Making request to:', fullUrl);
+    let response = await fetch(fullUrl, config);
 
     // If 401 and not already a retry, attempt to refresh token
     if (response.status === 401 && !config._retry) {
@@ -98,7 +119,7 @@ class ApiClient {
           };
         }
 
-        response = await fetch(url, config);
+        response = await fetch(fullUrl, config);
       } catch (refreshError) {
         // Refresh failed, redirect to login or handle as needed
         console.error("Token refresh failed:", refreshError);
@@ -165,8 +186,3 @@ class ApiClient {
 
 // Create singleton instance
 export const apiClient = new ApiClient();
-
-// Helper function to create full API URLs
-export const createApiUrl = (endpoint: string): string => {
-  return `${API_BASE_URL}${endpoint}`;
-};

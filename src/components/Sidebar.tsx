@@ -122,6 +122,11 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     //   path: "/complaints",
     //   icon: <AlertCircle className="w-5 h-5 text-rose-600" />,
     //   label: "Complaints",
+      {
+        path: "/messages",
+        icon: <ClipboardClose isActive={pathname.startsWith("/messages")} />,
+        label: "Messages",
+      },
     // },
     {
       path: "/settings",

@@ -1,0 +1,152 @@
+"use client";
+
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosHeaders,
+} from "axios";
+import nookies from "nookies";
+
+const  API_BASE_URL  = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
+
+type PendingRequest = {
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+};
+
+let isRefreshing = false;
+let pendingQueue: PendingRequest[] = [];
+
+const processQueue = (error: unknown, token: string | null) => {
+  pendingQueue.forEach((p) => {
+    if (error || !token) {
+      p.reject(error);
+    } else {
+      p.resolve(token);
+    }
+  });
+  pendingQueue = [];
+};
+
+const setAccessTokenCookie = (token: string) => {
+  nookies.set(undefined, "access_token", token, {
+    maxAge: 30 * 24 * 60 * 60,
+    path: "/",
+    sameSite: "lax",
+    secure: false,
+  });
+};
+
+const clearAuthCookies = () => {
+  nookies.destroy(undefined, "access_token", { path: "/" });
+  nookies.destroy(undefined, "refresh_token", { path: "/" });
+  nookies.destroy(undefined, "refreshToken", { path: "/" });
+};
+
+const attachInterceptors = (instance: AxiosInstance) => {
+  instance.interceptors.request.use((config) => {
+    const cookies = nookies.get(undefined);
+    const token = cookies.access_token;
+    if (token && !config.headers?.Authorization) {
+      const headers = config.headers ?? {};
+      if (headers instanceof AxiosHeaders) {
+        headers.set("Authorization", `Bearer ${token}`);
+      } else {
+        config.headers = AxiosHeaders.from({
+          ...(headers as Record<string, string>),
+          Authorization: `Bearer ${token}`,
+        });
+      }
+    }
+    return config;
+  });
+
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error: AxiosError) => {
+      const originalRequest = error.config as AxiosRequestConfig & {
+        _retry?: boolean;
+      };
+
+      if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            pendingQueue.push({ resolve, reject });
+          }).then((token) => {
+            const headers = originalRequest.headers ?? {};
+            if (headers instanceof AxiosHeaders) {
+              headers.set("Authorization", `Bearer ${token}`);
+            } else {
+              originalRequest.headers = AxiosHeaders.from({
+                ...(headers as Record<string, string>),
+                Authorization: `Bearer ${token}`,
+              });
+            }
+            return instance(originalRequest);
+          });
+        }
+
+        isRefreshing = true;
+        try {
+          const refreshResponse = await axios.post(
+            `${API_BASE_URL}/auth/refresh`,
+            null,
+            { withCredentials: true }
+          );
+
+          const newToken = (refreshResponse.data as any)?.access_token;
+          if (!newToken) {
+            throw new Error("No access token returned from refresh");
+          }
+
+          setAccessTokenCookie(newToken);
+          processQueue(null, newToken);
+
+          const headers = originalRequest.headers ?? {};
+          if (headers instanceof AxiosHeaders) {
+            headers.set("Authorization", `Bearer ${newToken}`);
+          } else {
+            originalRequest.headers = AxiosHeaders.from({
+              ...(headers as Record<string, string>),
+              Authorization: `Bearer ${newToken}`,
+            });
+          }
+          return instance(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          clearAuthCookies();
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+
+      return Promise.reject(error);
+    }
+  );
+};
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+attachInterceptors(apiClient);
+
+export const createApiClient = (token?: string | null) => {
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const instance = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
+    headers: AxiosHeaders.from(baseHeaders),
+  });
+
+  attachInterceptors(instance);
+  return instance;
+};

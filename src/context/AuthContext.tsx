@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import { apiClient } from "@/lib/apiClient";
 
 interface User {
+  _id?: string;
   userId: string;
   email: string;
   firstName?: string;
