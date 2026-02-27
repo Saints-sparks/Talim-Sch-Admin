@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChats } from "@/hooks/useChats";
 import ChatHeader from "./ChatHeader";
@@ -46,13 +46,14 @@ export default function PrivateChat({
   room,
   onBack,
 }: PrivateChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   
   // Refs for scroll management
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const selectRoomTimeoutRef = useRef<NodeJS.Timeout>();
+  const selectedRoomRef = useRef<string | null>(null);
   
   const { user } = useAuth();
   const {
@@ -68,65 +69,13 @@ export default function PrivateChat({
     selectChatRoom
   } = useChats();
 
-  // Transform chat messages from useChats hook to UI format
-  useEffect(() => {
-    if (!chatMessages || chatMessages.length === 0) {
-      setMessages([]);
-      return;
-    }
-
-    const formattedMessages = chatMessages.map((msg: any) => {
-      const senderName = msg.senderName || msg.sender?.name || 'Unknown';
-      const senderId = msg.senderId || msg.sender?._id || '';
-      
-      const isMyMessage = isCurrentUser(senderId, senderName);
-      
-      return {
-        _id: msg._id,
-        sender: senderName,
-        senderId: senderId,
-        text: msg.text || msg.content,
-        content: msg.content,
-        time: new Date(msg.createdAt).toLocaleTimeString([], 
-          { hour: '2-digit', minute: '2-digit' }
-        ),
-        createdAt: msg.createdAt,
-        timestamp: msg.createdAt,
-        type: msg.type || 'text',
-        senderType: isMyMessage ? 'me' : 'other',
-        color: isMyMessage ? 'green' : 'blue',
-        avatar: '',
-      };
-    }).sort((a, b) => 
-      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
-    );
-
-    setMessages(formattedMessages);
-  }, [chatMessages]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current && !isLoadingMore) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  }, [messages, isLoadingMore]);
-
-  // Select room when room prop changes
-  useEffect(() => {
-    if (room?.roomId) {
-      selectChatRoom(room.roomId);
-    }
-  }, [room?.roomId, selectChatRoom]);
-
   // Get current user ID
-  const getCurrentUserId = (): string | undefined => {
+  const getCurrentUserId = useCallback((): string | undefined => {
     return user?.userId || user?._id;
-  };
+  }, [user]);
 
   // Check if message is from current user
-  const isCurrentUser = (senderId: string, senderName: string): boolean => {
+  const isCurrentUser = useCallback((senderId: string, senderName: string): boolean => {
     const currentUserId = getCurrentUserId();
 
     if (!currentUserId) return false;
@@ -148,32 +97,133 @@ export default function PrivateChat({
     }
 
     return false;
-  };
+  }, [user, getCurrentUserId]);
 
-  // Handle sending a new message
-  const handleSendMessage = useCallback(async () => {
-    if (!messageInput.trim() || !currentRoom || isSending) return;
+const messages = useMemo(() => {
+  if (!chatMessages || chatMessages.length === 0) {
+    return [];
+  }
 
-    setIsSending(true);
-    
-    try {
-      await sendMessage({
-        content: messageInput.trim(),
-        roomId: currentRoom._id,
-        type: 'text',
-      });
+  return chatMessages
+    .map((msg: any) => {
+      // Extract senderId - it might be an object or a string
+      let senderId = '';
+      if (typeof msg.senderId === 'object' && msg.senderId !== null) {
+        // If it's an object, try to get the _id property
+        senderId = msg.senderId._id || msg.senderId.toString();
+      } else {
+        senderId = msg.senderId || msg.sender || '';
+      }
       
-      setMessageInput('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsSending(false);
+      let senderName = msg.senderName || 'Unknown';
+      
+      console.log('📨 Message - Raw senderId:', msg.senderId, 'Extracted senderId:', senderId, 'Sender Name:', senderName);
+      console.log('👤 Current user - _id:', user?._id, 'userId:', user?.userId);
+
+      // Check if this message is from the logged-in user
+      const isMyMessage = 
+        senderId === user?._id || 
+        senderId === user?.userId ||
+        (typeof msg.senderId === 'object' && msg.senderId?._id === user?._id);
+
+      // If it's the current user's message, use their name
+      if (isMyMessage) {
+        senderName = user?.firstName && user?.lastName
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : user?.email || user?._id || 'Me';
+        console.log('✅ This is my message, setting senderName to:', senderName);
+      }
+
+      return {
+        _id: msg._id,
+        sender: senderName,
+        senderId: senderId,
+        text: msg.text || msg.content || '',
+        content: msg.content || msg.text || '',
+        time: new Date(msg.createdAt).toLocaleTimeString([], 
+          { hour: '2-digit', minute: '2-digit' }
+        ),
+        createdAt: msg.createdAt,
+        timestamp: msg.createdAt,
+        type: msg.type || 'text',
+        senderType: isMyMessage ? 'self' : 'other',  // 'self' for right side, 'other' for left side
+        color: isMyMessage ? 'bg-blue-500' : 'bg-gray-500',
+        avatar: '',
+      };
+    })
+    .sort((a, b) => 
+      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
+    );
+}, [chatMessages, user]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current && !isLoadingMore && !isLoading && messages.length > 0) {
+      const timeoutId = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [messageInput, currentRoom, isSending, sendMessage]);
+  }, [messages.length, isLoadingMore, isLoading]);
+
+  // Select room when room prop changes - with debounce to prevent multiple selections
+  useEffect(() => {
+    if (room?.roomId && room.roomId !== selectedRoomRef.current) {
+      // Clear any existing timeout
+      if (selectRoomTimeoutRef.current) {
+        clearTimeout(selectRoomTimeoutRef.current);
+      }
+      
+      // Debounce room selection
+      selectRoomTimeoutRef.current = setTimeout(() => {
+        console.log(`📥 Selecting room: ${room.roomId}`);
+        selectChatRoom(room.roomId);
+        selectedRoomRef.current = room.roomId;
+      }, 100);
+    }
+    
+    return () => {
+      if (selectRoomTimeoutRef.current) {
+        clearTimeout(selectRoomTimeoutRef.current);
+      }
+    };
+  }, [room?.roomId, selectChatRoom]);
+
+
+// Handle sending a new message
+const handleSendMessage = useCallback(async () => {
+  if (!messageInput.trim() || !currentRoom || isSending) {
+    console.log('Cannot send:', { 
+      hasMessage: !!messageInput.trim(), 
+      hasCurrentRoom: !!currentRoom, 
+      isSending 
+    });
+    return;
+  }
+
+  setIsSending(true);
+  
+  try {
+    console.log('📤 Sending message:', messageInput.trim());
+    
+    await sendMessage({
+      chatRoomId: currentRoom._id,
+      text: messageInput.trim(),  // Backend expects 'text' field
+    });
+    
+    setMessageInput('');
+  } catch (error) {
+    console.error('Error sending message:', error);
+  } finally {
+    setIsSending(false);
+  }
+}, [messageInput, currentRoom, isSending, sendMessage]);
 
   // Handle load more messages (scroll to top)
-  const handleLoadMore = async () => {
-    if (hasMoreMessages && !isLoadingMore) {
+  const handleLoadMore = useCallback(async () => {
+    if (hasMoreMessages && !isLoadingMore && !isLoading) {
+      console.log('📜 Loading more messages...');
       const scrollContainer = messagesContainerRef.current;
       const scrollHeight = scrollContainer?.scrollHeight;
 
@@ -186,23 +236,32 @@ export default function PrivateChat({
         }, 0);
       }
     }
-  };
+  }, [hasMoreMessages, isLoadingMore, isLoading, loadMoreMessages]);
 
-  // Handle scroll to trigger pagination
-  const handleScroll = () => {
-    const scrollContainer = messagesContainerRef.current;
-    if (
-      scrollContainer &&
-      scrollContainer.scrollTop < 50 &&
-      hasMoreMessages &&
-      !isLoadingMore
-    ) {
-      handleLoadMore();
-    }
-  };
+  // Handle scroll to trigger pagination - with throttle
+  const scrollingRef = useRef(false);
+  
+  const handleScroll = useCallback(() => {
+    if (scrollingRef.current) return;
+    
+    scrollingRef.current = true;
+    requestAnimationFrame(() => {
+      const scrollContainer = messagesContainerRef.current;
+      if (
+        scrollContainer &&
+        scrollContainer.scrollTop < 50 &&
+        hasMoreMessages &&
+        !isLoadingMore &&
+        !isLoading
+      ) {
+        handleLoadMore();
+      }
+      scrollingRef.current = false;
+    });
+  }, [hasMoreMessages, isLoadingMore, isLoading, handleLoadMore]);
 
-  // Get the other participant's name and avatar
-  const getOtherParticipant = () => {
+  // Get the other participant's name and avatar - using useMemo
+  const otherParticipant = useMemo(() => {
     // For private chat, find the other user in the participants
     if (room?.participants && Array.isArray(room.participants)) {
       const currentUserId = getCurrentUserId();
@@ -231,12 +290,10 @@ export default function PrivateChat({
       avatar: '/icons/direct-message.svg',
       status: ''
     };
-  };
-
-  const otherParticipant = getOtherParticipant();
+  }, [room, getCurrentUserId]);
 
   // Format date for message grouping
-  const formatMessageDate = (date: Date) => {
+  const formatMessageDate = useCallback((date: Date) => {
     const today = new Date();
     const messageDate = new Date(date);
 
@@ -265,10 +322,10 @@ export default function PrivateChat({
       month: 'long', 
       day: 'numeric' 
     });
-  };
+  }, []);
 
-  // Group messages by date
-  const groupMessagesByDate = () => {
+  // Group messages by date - using useMemo
+  const groupedMessages = useMemo(() => {
     const grouped: { [key: string]: Message[] } = {};
 
     messages.forEach((message) => {
@@ -282,12 +339,13 @@ export default function PrivateChat({
     });
 
     return grouped;
-  };
+  }, [messages]);
 
-  const groupedMessages = groupMessagesByDate();
-  const dateKeys = Object.keys(groupedMessages).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
+  const dateKeys = useMemo(() => {
+    return Object.keys(groupedMessages).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime()
+    );
+  }, [groupedMessages]);
 
   return (
     <div className="w-full h-full flex flex-col relative bg-white">
@@ -334,7 +392,7 @@ export default function PrivateChat({
               <p className="text-sm text-gray-500">Select a chat to start messaging</p>
             </div>
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center justify-center h-48">
             <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-gray-500 mb-2">No messages yet</p>

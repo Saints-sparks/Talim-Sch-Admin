@@ -16,6 +16,7 @@ interface MessageBubbleProps {
     videoThumbnail?: string;
     duration?: string;
     time: string;
+    initials?: string; // Add initials prop
   };
   index: number;
   openSubMenu: { index: number; type: string } | null;
@@ -30,7 +31,8 @@ export default function GroupMessageBubble({
   toggleSubMenu,
   setReplyingMessage,
 }: MessageBubbleProps) {
-  const initials = getUserInitials(msg.sender);
+  // Use provided initials or generate from sender name
+  const initials = msg.initials || getUserInitials(msg.sender);
   const bgColor = msg.color || generateColorFromString(msg.sender);
 
   return (

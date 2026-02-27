@@ -1,4 +1,5 @@
 // types/chat.types.ts
+
 export interface User {
   _id: string;
   userId: string;
@@ -53,25 +54,33 @@ export interface ChatRoom {
   unreadCount?: number;
 }
 
+
+// types/chat.types.ts
+
 export interface ChatMessage {
   _id: string;
-  chatRoomId: string;
-  senderId: string | Participant;
-  text?: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  roomId: string;
+  isRead: boolean;
+  readBy: string[];  // If backend returns array of user IDs (strings)
+  type: string;
+  duration?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// DTO for sending messages - MUST match backend's CreateMessageDto
+export interface SendMessageDto {
+  chatRoomId: string;  // Must match backend expectation
+  text: string;        // Must match backend expectation
   attachments?: Array<{
     url: string;
     type: string;
     name: string;
     size?: number;
   }>;
-  readBy: Array<{
-    userId: string;
-    readAt: Date;
-  }>;
-  createdAt: Date;
-  updatedAt: Date;
-  isDeleted: boolean;
-  isEdited?: boolean;
 }
 
 export interface CreateChatRoomDto {
@@ -90,17 +99,6 @@ export interface CreateGroupChatDto {
   termId?: string;
   name?: string;
   participants?: string[];
-}
-
-export interface SendMessageDto {
-  chatRoomId: string;
-  text?: string;
-  attachments?: Array<{
-    url: string;
-    type: string;
-    name: string;
-    size?: number;
-  }>;
 }
 
 export interface MessagesResponse {

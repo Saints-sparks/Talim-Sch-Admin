@@ -13,37 +13,58 @@ import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
+// Define participant type
+interface Participant {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+  avatar?: string;
+  role?: string;
+  isOnline: boolean;
+}
+
 // Utility function to process participants data (handle Mongoose documents)
-function processParticipants(participants: any[], currentUserId?: string) {
+function processParticipants(participants: any[], currentUserId?: string): Participant[] {
   return participants
     .map((p: any) => {
       // Handle Mongoose documents - data might be in _doc property
       const participantData = p._doc || p;
       const participantId = participantData.userId || participantData._id || p.userId || p._id;
       
+      // Get name from various possible fields
+      let name = participantData.name || p.name;
+      if (!name && participantData.firstName) {
+        name = participantData.lastName 
+          ? `${participantData.firstName} ${participantData.lastName}`
+          : participantData.firstName;
+      }
+      
       return {
-        id: participantId,
+        id: participantId?.toString() || '',
         firstName: participantData.firstName || p.firstName,
         lastName: participantData.lastName || p.lastName,
-        name: participantData.name || p.name,
+        name: name || 'Unknown User',
         email: participantData.email || p.email,
         avatar: participantData.userAvatar || participantData.avatar || p.userAvatar || p.avatar,
         role: participantData.role || p.role,
         isOnline: participantData.isOnline || p.isOnline || false,
       };
     })
-    .filter((p: any) => p.id !== currentUserId); // Filter out current user
+    .filter((p: Participant) => p.id && p.id !== currentUserId); // Filter out current user
 }
 
 interface ChatHeaderProps {
   avatar: string;
   name: string;
   status?: string;
-  subtext?: string; // For group members
+  subtext?: string | string[]; // Allow both string and array for group members
   participants?: any[]; // Real participants data
   currentUserId?: string; // Current user ID to filter out
   onBack?: () => void; // Navigation back to chat list
   showBackButton?: boolean; // Whether to show back button (mobile)
+  initials?: string; // Add initials prop
 }
 
 export default function ChatHeader({
@@ -55,6 +76,7 @@ export default function ChatHeader({
   currentUserId,
   onBack,
   showBackButton = true,
+  initials,
 }: ChatHeaderProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +84,12 @@ export default function ChatHeader({
 
   // Process participants to get clean data
   const processedParticipants = processParticipants(participants, currentUserId);
+
+  // Format subtext to ensure it's a string
+  const displaySubtext = Array.isArray(subtext) ? subtext.join(', ') : subtext;
+
+  // Get display initials
+  const displayInitials = initials || getUserInitials(name);
 
   return (
     <div className="flex w-full items-center bg-white border-b border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
@@ -85,7 +113,7 @@ export default function ChatHeader({
               className="text-white font-medium text-sm"
               style={{ backgroundColor: generateColorFromString(name) }}
             >
-              {getUserInitials(name)}
+              {displayInitials}
             </AvatarFallback>
           </Avatar>
           {/* Online Indicator */}
@@ -108,8 +136,8 @@ export default function ChatHeader({
           {!isSearching && status && (
             <p className="text-xs text-gray-500 truncate">{status}</p>
           )}
-          {!isSearching && subtext && (
-            <p className="text-xs text-[#7B7B7B] truncate hidden sm:block">{subtext}</p>
+          {!isSearching && displaySubtext && (
+            <p className="text-xs text-[#7B7B7B] truncate hidden sm:block">{displaySubtext}</p>
           )}
         </div>
 

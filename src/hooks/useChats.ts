@@ -14,7 +14,37 @@ import {
 import { toast } from 'react-toastify';
 
 interface UseChatsReturn {
-  // ... (same interface)
+// State
+  chatRooms: ChatRoom[];
+  currentRoom: ChatRoom | null;
+  messages: ChatMessage[];
+  unreadCount: number;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMoreMessages: boolean;
+  error: string | null;
+  
+  // Chat room operations
+  fetchChatRooms: (force?: boolean) => Promise<void>;
+  createChatRoom: (data: CreateChatRoomDto) => Promise<ChatRoom | null>;
+  createGroupChat: (data: CreateGroupChatDto) => Promise<ChatRoom | null>;
+  selectChatRoom: (roomId: string) => Promise<void>;
+  searchChatRooms: (params: { searchTerm?: string; type?: ChatRoomType }) => Promise<ChatRoom[]>;
+  
+  // Message operations
+  sendMessage: (data: SendMessageDto) => Promise<ChatMessage | null>;
+  loadMoreMessages: () => Promise<void>;
+  refreshMessages: (force?: boolean) => Promise<void>;
+  markMessageAsRead: (messageId: string) => Promise<void>;
+  
+  // Participant operations
+  addParticipant: (roomId: string, userId: string) => Promise<void>;
+  removeParticipant: (roomId: string, userId: string) => Promise<void>;
+  
+  // Utility
+  resetCurrentRoom: () => void;
+  clearError: () => void;
+
 }
 
 export const useChats = (): UseChatsReturn => {
@@ -215,46 +245,101 @@ export const useChats = (): UseChatsReturn => {
     }
   }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId]);
 
-  /**
-   * Send a message to the current chat room
-   */
-  const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessage | null> => {
-    if (!isAuthenticated || !accessToken || !currentRoom) {
-      toast.error('Cannot send message');
-      return null;
-    }
 
-    try {
-      const newMessage = await chatService.sendMessage(data);
-      
-      // Optimistically add message to UI
-      setMessages(prev => [...prev, newMessage]);
-      
-      // Update last message in chat rooms list
-      setChatRooms(prev => prev.map(room => 
-        room._id === currentRoom._id 
-          ? { 
-              ...room, 
-              lastMessage: newMessage,
-              lastMessageAt: newMessage.createdAt 
-            } 
-          : room
-      ));
 
-      // Reset last fetch time so next interval will fetch new messages
-      lastMessageFetchRef.current = 0;
+const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessage | null> => {
+  if (!isAuthenticated || !accessToken || !currentRoom) {
+    console.error('❌ Cannot send message - missing requirements:', {
+      isAuthenticated,
+      hasAccessToken: !!accessToken,
+      hasCurrentRoom: !!currentRoom,
+      currentRoomId: currentRoom?._id
+    });
+    toast.error('Cannot send message');
+    return null;
+  }
 
-      return newMessage;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to send message';
-      toast.error(errorMessage);
-      return null;
-    }
-  }, [isAuthenticated, accessToken, currentRoom]);
+  // Backend expects 'chatRoomId' and 'text'
+  const messageData: SendMessageDto = {
+    chatRoomId: currentRoom._id,  // Use 'chatRoomId' as the backend expects
+    text: data.text || '',     // Backend expects 'text'
+    attachments: data.attachments || []
+  };
 
-  /**
-   * Load more messages (older messages)
-   */
+  console.log('📤 Sending message with data:', JSON.stringify(messageData, null, 2));
+
+  // Don't send empty messages
+  if (!messageData.text?.trim()) {
+    console.warn('⚠️ Attempted to send empty message');
+    toast.error('Cannot send empty message');
+    return null;
+  }
+
+  // Get current user info
+  const currentUserId = user?.userId || user?._id || '';
+  const currentUserName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : user?.email || 'You';
+
+  // Create optimistic message that matches the backend response format
+  const optimisticMessage: ChatMessage = {
+    _id: `temp-${Date.now()}`,
+    senderId: currentUserId,
+    senderName: currentUserName,
+    content: messageData.text,
+    roomId: currentRoom._id,
+    isRead: false,
+    readBy: [],
+    type: 'text',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  console.log('📝 Optimistic message:', optimisticMessage);
+
+  // Optimistically add message to UI
+  setMessages(prev => [...prev, optimisticMessage]);
+
+  try {
+    const newMessage = await chatService.sendMessage(messageData);
+    
+    console.log('✅ Message sent successfully:', newMessage);
+    
+    // Replace optimistic message with real one
+    setMessages(prev => prev.map(msg => 
+      msg._id === optimisticMessage._id ? newMessage : msg
+    ));
+    
+    // Update last message in chat rooms list
+    setChatRooms(prev => prev.map(room => 
+      room._id === currentRoom._id 
+        ? { 
+            ...room, 
+            lastMessage: newMessage,
+            lastMessageAt: newMessage.createdAt 
+          } 
+        : room
+    ));
+
+    // Reset last fetch time so next interval will fetch new messages
+    lastMessageFetchRef.current = 0;
+
+    return newMessage;
+  } catch (err: any) {
+    // Remove optimistic message on error
+    setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
+    
+    console.error('❌ Error sending message:', err);
+    
+    const errorMessage = err.response?.data?.message || 
+                        err.message || 
+                        'Failed to send message';
+    
+    toast.error(errorMessage);
+    return null;
+  }
+}, [isAuthenticated, accessToken, currentRoom, user]);
+ 
   const loadMoreMessages = useCallback(async () => {
     if (!currentRoom || !hasMoreMessages || isLoadingMore || !nextCursorRef.current) return;
 
@@ -310,32 +395,40 @@ export const useChats = (): UseChatsReturn => {
     }
   }, [currentRoom]);
 
-  /**
-   * Mark a message as read
-   */
-  const markMessageAsRead = useCallback(async (messageId: string) => {
-    if (!isAuthenticated || !accessToken) return;
+// hooks/useChats.ts - Updated markMessageAsRead function
 
-    try {
-      await chatService.markMessageAsRead(messageId);
-      
-      // Update local state
-      setMessages(prev => prev.map(msg => 
-        msg._id === messageId
-          ? {
-              ...msg,
-              readBy: [
-                ...(msg.readBy || []),
-                { userId: user?.userId || '', readAt: new Date() }
-              ]
-            }
-          : msg
-      ));
-    } catch (err) {
-      console.error('Error marking message as read:', err);
-    }
-  }, [isAuthenticated, accessToken, user?.userId]);
+// hooks/useChats.ts - Updated markMessageAsRead function
 
+/**
+ * Mark a message as read
+ */
+const markMessageAsRead = useCallback(async (messageId: string) => {
+  if (!isAuthenticated || !accessToken) return;
+
+  try {
+    await chatService.markMessageAsRead(messageId);
+    
+    // Get current user ID
+    const currentUserId = user?.userId || user?._id || '';
+    
+    if (!currentUserId) return;
+    
+    // Update local state - add current user ID to readBy array
+    setMessages(prev => prev.map(msg => 
+      msg._id === messageId
+        ? {
+            ...msg,
+            // If readBy is string[] (array of user IDs)
+            readBy: [...(msg.readBy || []), currentUserId]
+          }
+        : msg
+    ));
+    
+    console.log(`✅ Message ${messageId} marked as read by user ${currentUserId}`);
+  } catch (err) {
+    console.error('Error marking message as read:', err);
+  }
+}, [isAuthenticated, accessToken, user?.userId, user?._id]);
   /**
    * Add participant to a chat room
    */

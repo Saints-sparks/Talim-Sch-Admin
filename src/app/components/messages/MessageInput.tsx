@@ -8,7 +8,8 @@ import {
   Image, 
   FileVideo, 
   Plus,
-  Paperclip
+  Paperclip,
+  Loader2
 } from "lucide-react";
 
 interface MessageInputProps {
@@ -16,6 +17,7 @@ interface MessageInputProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSend?: () => void;
   disabled?: boolean;
+  isSending?: boolean; // Add isSending prop
   placeholder?: string;
 }
 
@@ -24,6 +26,7 @@ export default function MessageInput({
   onChange,
   onSend,
   disabled = false,
+  isSending = false, // Default to false
   placeholder = "Type something here..."
 }: MessageInputProps) {
   const [message, setMessage] = useState(value || "");
@@ -49,6 +52,7 @@ export default function MessageInput({
   };
 
   const currentMessage = value !== undefined ? value : message;
+  const hasContent = currentMessage.trim().length > 0;
 
   return (
     <div className="bg-white border-t border-gray-200 p-3 sm:p-4">
@@ -59,6 +63,7 @@ export default function MessageInput({
             variant="outline"
             size="sm"
             className="flex-shrink-0 h-8 px-3 text-xs"
+            disabled={isSending}
           >
             <FileText size={14} className="mr-1" />
             Doc
@@ -67,6 +72,7 @@ export default function MessageInput({
             variant="outline"
             size="sm"
             className="flex-shrink-0 h-8 px-3 text-xs"
+            disabled={isSending}
           >
             <Image size={14} className="mr-1" />
             Photo
@@ -75,6 +81,7 @@ export default function MessageInput({
             variant="outline"
             size="sm"
             className="flex-shrink-0 h-8 px-3 text-xs"
+            disabled={isSending}
           >
             <FileVideo size={14} className="mr-1" />
             Video
@@ -89,6 +96,7 @@ export default function MessageInput({
           size="sm"
           className="flex sm:hidden w-8 h-8 p-0 rounded-full"
           onClick={() => setShowAttachments(!showAttachments)}
+          disabled={isSending}
         >
           <Plus size={18} className="text-gray-500" />
         </Button>
@@ -96,25 +104,28 @@ export default function MessageInput({
         {/* Message Input */}
         <div className="flex-1 relative">
           <Input
-            placeholder={placeholder}
+            placeholder={isSending ? "Sending..." : placeholder}
             className="pr-12 border border-gray-300 rounded-full bg-gray-50 focus:bg-white focus:border-blue-500 transition-colors"
             value={currentMessage}
             onChange={handleChange}
-            disabled={disabled}
+            disabled={disabled || isSending}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSend();
+                if (hasContent && !disabled && !isSending) {
+                  handleSend();
+                }
               }
             }}
           />
           
           {/* Voice note button - when no text */}
-          {!currentMessage.trim() && (
+          {!hasContent && !isSending && (
             <Button
               variant="ghost"
               size="sm"
               className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-gray-200"
+              disabled={isSending}
             >
               <Mic size={16} className="text-gray-500" />
             </Button>
@@ -128,6 +139,7 @@ export default function MessageInput({
             size="sm"
             className="w-8 h-8 p-0 rounded-full hover:bg-gray-100"
             title="Attach file"
+            disabled={isSending}
           >
             <Paperclip size={16} className="text-gray-500" />
           </Button>
@@ -136,17 +148,21 @@ export default function MessageInput({
         {/* Send button */}
         <Button
           className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full transition-all ${
-            currentMessage.trim() 
+            hasContent && !isSending
               ? "bg-blue-500 hover:bg-blue-600 shadow-md" 
               : "bg-gray-300 cursor-not-allowed"
           }`}
           onClick={handleSend}
-          disabled={disabled || !currentMessage.trim()}
+          disabled={disabled || !hasContent || isSending}
         >
-          <SendHorizontal 
-            size={16} 
-            className={currentMessage.trim() ? "text-white" : "text-gray-500"} 
-          />
+          {isSending ? (
+            <Loader2 size={16} className="text-white animate-spin" />
+          ) : (
+            <SendHorizontal 
+              size={16} 
+              className={hasContent ? "text-white" : "text-gray-500"} 
+            />
+          )}
         </Button>
       </div>
     </div>
