@@ -174,7 +174,6 @@ const messages = useMemo(() => {
       if (selectRoomTimeoutRef.current) {
         clearTimeout(selectRoomTimeoutRef.current);
       }
-      
       // Debounce room selection
       selectRoomTimeoutRef.current = setTimeout(() => {
         console.log(`📥 Selecting room: ${room.roomId}`);
@@ -182,7 +181,7 @@ const messages = useMemo(() => {
         selectedRoomRef.current = room.roomId;
       }, 100);
     }
-    
+    // Do NOT reset messages to [] here; let useChats manage message state
     return () => {
       if (selectRoomTimeoutRef.current) {
         clearTimeout(selectRoomTimeoutRef.current);

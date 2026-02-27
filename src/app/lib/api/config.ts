@@ -26,6 +26,7 @@ export const API_URLS = {
     EDIT_CLASS: "/classes/:classId",
     UPDATE_COURSES: "/classes/:classId/courses",
     UPDATE_SCHOOL: "/schools/update/:id",
+    GET_PARENT: "/parents/school/:schoolId",
   },
   STUDENT: {
     CREATE: "/students",
@@ -182,6 +183,7 @@ export const API_ENDPOINTS = {
       ticket
     )}`,
   GET_STUDENTS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS}`,
+  GET_PARENT: (schoolId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.GET_PARENT.replace(":schoolId", schoolId)}`,
   CREATE_STUDENT_NEW: `${API_BASE_URL}${API_URLS.STUDENTS.CREATE_STUDENT}`,
   UPDATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.UPDATE_STUDENT}`,
   DELETE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT}`,

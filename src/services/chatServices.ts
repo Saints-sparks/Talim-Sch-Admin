@@ -561,6 +561,31 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       throw error;
     }
   }
+
+
+  // Add this to your chatServices.ts file
+
+/**
+ * Add multiple participants to a chat room
+ */
+async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom> {
+  try {
+    const response = await apiClient.post(
+      `${this.baseUrl}/rooms/${roomId}/participants/batch`,
+      { participantIds: userIds }
+    );
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to add participants');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error in addParticipantsToRoom:', error);
+    throw error;
+  }
+}
 }
 
 export const chatService = new ChatService();

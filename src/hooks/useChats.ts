@@ -23,6 +23,10 @@ interface UseChatsReturn {
   isLoadingMore: boolean;
   hasMoreMessages: boolean;
   error: string | null;
+
+  addParticipant: (roomId: string, userId: string) => Promise<void>;
+  addParticipantsToRoom: (roomId: string, userIds: string[]) => Promise<void>; // Add this line
+  removeParticipant: (roomId: string, userId: string) => Promise<void>;
   
   // Chat room operations
   fetchChatRooms: (force?: boolean) => Promise<void>;
@@ -453,6 +457,48 @@ const markMessageAsRead = useCallback(async (messageId: string) => {
     }
   }, [isAuthenticated, accessToken, currentRoom]);
 
+
+
+const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string[]) => {
+  if (!isAuthenticated || !accessToken) {
+    toast.error('You must be logged in to add participants');
+    return;
+  }
+
+  if (!userIds || userIds.length === 0) {
+    toast.error('No participants selected');
+    return;
+  }
+
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    // You'll need to add this method to your chatService
+    const updatedRoom = await chatService.addParticipantsToRoom(roomId, userIds);
+    
+    // Update chat rooms list
+    setChatRooms(prev => prev.map(room => 
+      room._id === roomId ? updatedRoom : room
+    ));
+    
+    // Update current room if it's the one being modified
+    if (currentRoom?._id === roomId) {
+      setCurrentRoom(updatedRoom);
+    }
+    
+    toast.success(`${userIds.length} parent${userIds.length !== 1 ? 's' : ''} added successfully`);
+  } catch (err: any) {
+    console.error('Error adding participants:', err);
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to add participants';
+    setError(errorMessage);
+    toast.error(errorMessage);
+    throw err; // Re-throw so the modal can handle it
+  } finally {
+    setIsLoading(false);
+  }
+}, [isAuthenticated, accessToken, currentRoom]);
+
   /**
    * Remove participant from a chat room
    */
@@ -601,7 +647,8 @@ const markMessageAsRead = useCallback(async (messageId: string) => {
     // Participant operations
     addParticipant,
     removeParticipant,
-    
+   addParticipantsToRoom, // Add this line
+
     // Utility
     resetCurrentRoom,
     clearError
