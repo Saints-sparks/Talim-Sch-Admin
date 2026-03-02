@@ -8,6 +8,7 @@ import MessageInput from "./MessageInput";
 import MessageBubble from "./PrivateMessageBubble";
 import ReplyPreview from "./ReplyPreview";
 import { Loader2, MessageCircle } from "lucide-react";
+import { chatService } from '@/services/chatServices';
 
 // Define the message structure for our UI
 interface Message {
@@ -346,6 +347,27 @@ const handleSendMessage = useCallback(async () => {
     );
   }, [groupedMessages]);
 
+  const [groupParticipants, setGroupParticipants] = useState<any[]>([]);
+
+  // Fetch full participant user objects for group chats
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      if (room && (room.type === 'group' || room.isGroup) && (room._id || room.roomId)) {
+        try {
+          // This endpoint should return full user objects for all participants
+          const participants = await chatService.getChatRoomParticipants(room._id || room.roomId);
+          setGroupParticipants(participants);
+        } catch (err) {
+          console.error('Error fetching group participants:', err);
+          setGroupParticipants([]);
+        }
+      } else {
+        setGroupParticipants([]);
+      }
+    };
+    fetchParticipants();
+  }, [room]);
+
   return (
     <div className="w-full h-full flex flex-col relative bg-white">
 <ChatHeader
@@ -356,7 +378,7 @@ const handleSendMessage = useCallback(async () => {
   showBackButton={true}
   isGroup={room?.type === 'group' || room?.isGroup || false} // Check if it's a group
   chatRoomId={room?._id || room?.roomId} // Pass the room ID
-  participants={room?.participants}
+  participants={groupParticipants.length > 0 ? groupParticipants : room?.participants}
   currentUserId={user?._id || user?.userId}
   onAddParents={() => {
     // Optional: Refresh the chat after adding parents

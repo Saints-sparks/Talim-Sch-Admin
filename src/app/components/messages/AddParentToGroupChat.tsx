@@ -135,8 +135,9 @@ const handleAddParents = async () => {
       return parent.userId._id;
     });
 
-    console.log('Adding participants with user IDs:', participantIds);
-    
+    // Log the participantIds being sent to the backend
+    console.log('🚀 Sending participantIds to backend:', participantIds);
+
     // Validate that all IDs are 24-character hex strings
     const objectIdPattern = /^[0-9a-fA-F]{24}$/;
     for (const id of participantIds) {
