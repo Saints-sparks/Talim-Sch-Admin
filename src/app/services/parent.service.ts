@@ -1,13 +1,25 @@
+// app/services/parent.service.ts
 import { API_ENDPOINTS } from "../lib/api/config";
 import { apiClient } from "@/lib/apiClient";
 
-export interface Parent {
+export interface ParentUser {
   _id: string;
-  email: string;
   firstName: string;
   lastName: string;
-  phoneNumber: string;
-  children?: string[]; // Array of student IDs
+  email: string;
+  phoneNumber?: string;
+  role: string;
+}
+
+export interface Parent {
+  _id: string;
+  userId: ParentUser;
+  children: Array<{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  }>;
   schoolId: string;
   createdAt?: string;
   updatedAt?: string;

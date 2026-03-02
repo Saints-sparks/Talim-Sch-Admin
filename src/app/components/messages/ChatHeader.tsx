@@ -8,10 +8,18 @@ import {
   Video,
   X,
   Info,
+  UserPlus,
 } from "lucide-react";
 import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
+import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Define participant type
 interface Participant {
@@ -65,6 +73,9 @@ interface ChatHeaderProps {
   onBack?: () => void; // Navigation back to chat list
   showBackButton?: boolean; // Whether to show back button (mobile)
   initials?: string; // Add initials prop
+  isGroup?: boolean; // Whether this is a group chat
+  chatRoomId?: string; // Chat room ID for adding participants
+  onAddParents?: () => void; // Callback after adding parents
 }
 
 export default function ChatHeader({
@@ -77,10 +88,14 @@ export default function ChatHeader({
   onBack,
   showBackButton = true,
   initials,
+  isGroup = false,
+  chatRoomId,
+  onAddParents,
 }: ChatHeaderProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
 
   // Process participants to get clean data
   const processedParticipants = processParticipants(participants, currentUserId);
@@ -90,6 +105,11 @@ export default function ChatHeader({
 
   // Get display initials
   const displayInitials = initials || getUserInitials(name);
+
+  // Handle successful parent addition
+  const handleAddParentsSuccess = () => {
+    onAddParents?.();
+  };
 
   return (
     <div className="flex w-full items-center bg-white border-b border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
@@ -169,6 +189,18 @@ export default function ChatHeader({
             </div>
           ) : (
             <>
+              {/* Add Parents Button - Show directly for group chats on desktop */}
+              {isGroup && chatRoomId && (
+                <button
+                  onClick={() => setIsAddParentModalOpen(true)}
+                  className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors text-sm font-medium"
+                  title="Add Parents to Group"
+                >
+                  <UserPlus size={16} />
+                  <span>Add Parents</span>
+                </button>
+              )}
+
               {/* Call Icons - Hidden on very small screens */}
               <button className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
                 <Phone size={18} className="text-gray-600" />
@@ -185,10 +217,39 @@ export default function ChatHeader({
                 <Search size={18} className="text-gray-600" />
               </button>
               
-              {/* More Options - Mobile */}
-              <button className="flex sm:hidden items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
-                <MoreVertical size={18} className="text-gray-600" />
-              </button>
+              {/* More Options Dropdown - Shows different options based on chat type */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
+                    <MoreVertical size={18} className="text-gray-600" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {isGroup && chatRoomId && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setIsAddParentModalOpen(true)}
+                        className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <span>Add Parents</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Phone className="mr-2 h-4 w-4" />
+                    <span>Voice Call</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Video className="mr-2 h-4 w-4" />
+                    <span>Video Call</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Search className="mr-2 h-4 w-4" />
+                    <span>Search in Chat</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
@@ -202,7 +263,18 @@ export default function ChatHeader({
           description={`Welcome to the Class Group! \n
           This is your space to collaborate, share ideas, ask questions, and stay connected with your classmates. Whether you need help with an assignment, want to share resources, or just discuss what's going on in class, feel free to engage here.`}
           participants={processedParticipants}
+          chatRoomId={chatRoomId}
         />
+
+        {/* Add Parent Modal */}
+        {isGroup && chatRoomId && (
+          <AddParentToGroupChatModal
+            isOpen={isAddParentModalOpen}
+            onClose={() => setIsAddParentModalOpen(false)}
+            chatRoomId={chatRoomId}
+            onSuccess={handleAddParentsSuccess}
+          />
+        )}
       </div>
     </div>
   );

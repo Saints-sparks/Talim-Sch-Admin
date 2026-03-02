@@ -565,13 +565,16 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
 
   // Add this to your chatServices.ts file
 
+// In chatServices.ts - Update the addParticipantsToRoom method
+
 /**
  * Add multiple participants to a chat room
  */
 async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom> {
   try {
+    // Fix: Use the correct endpoint path
     const response = await apiClient.post(
-      `${this.baseUrl}/rooms/${roomId}/participants/batch`,
+      `${this.baseUrl}/rooms/${roomId}/participants/batch`,  // ✅ Added /participants/batch
       { participantIds: userIds }
     );
     

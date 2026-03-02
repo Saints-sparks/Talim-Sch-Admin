@@ -1,4 +1,4 @@
-// components/chat/GroupInfoModal.tsx
+// components/chat/GroupInfoModal.tsx (updated section)
 "use client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -14,9 +14,10 @@ import {
   FileText,
   UserPlus,
   Loader2,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Students from "./Student";
+import Parents from "./Parents"; // Import the new Parents component
 import Images from "./Images";
 import Videos from "./Videos";
 import Links from "./Links";
@@ -25,8 +26,9 @@ import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import { useChats } from "@/hooks/useChats";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
+// Update menuItems - replace "Students" with "Parents"
 const menuItems = [
-  { name: "Students", icon: Users },
+  { name: "Parents", icon: UserCog }, // Changed from Students to Parents
   { name: "Images", icon: Image },
   { name: "Videos", icon: VideoIcon },
   { name: "Links", icon: Link2 },
@@ -85,7 +87,6 @@ export default function GroupInfoModal({
     try {
       // Refresh chat rooms to get updated participant list
       await fetchChatRooms(true);
-      // You might also want to refresh the current room data here
       console.log("Parents added successfully");
     } catch (error) {
       console.error("Error refreshing after adding parents:", error);
@@ -263,8 +264,13 @@ export default function GroupInfoModal({
               </div>
             )}
             
-            {/* Render section components */}
-            {selectedMenu === "Students" && <Students participants={currentParticipants} />}
+            {/* Render section components - Updated to use Parents instead of Students */}
+            {selectedMenu === "Parents" && (
+              <Parents 
+                chatRoomId={chatRoomId}
+                onAddParentSuccess={handleAddParentsSuccess}
+              />
+            )}
             {selectedMenu === "Images" && <Images />}
             {selectedMenu === "Videos" && <Videos />}
             {selectedMenu === "Links" && <Links />}

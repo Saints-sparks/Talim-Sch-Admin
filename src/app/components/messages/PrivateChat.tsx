@@ -348,13 +348,22 @@ const handleSendMessage = useCallback(async () => {
 
   return (
     <div className="w-full h-full flex flex-col relative bg-white">
-      <ChatHeader
-        avatar={otherParticipant.avatar}
-        name={otherParticipant.name}
-        subtext={otherParticipant.status}
-        onBack={onBack}
-        showBackButton={true}
-      />
+<ChatHeader
+  avatar={otherParticipant.avatar}
+  name={otherParticipant.name}
+  subtext={otherParticipant.status}
+  onBack={onBack}
+  showBackButton={true}
+  isGroup={room?.type === 'group' || room?.isGroup || false} // Check if it's a group
+  chatRoomId={room?._id || room?.roomId} // Pass the room ID
+  participants={room?.participants}
+  currentUserId={user?._id || user?.userId}
+  onAddParents={() => {
+    // Optional: Refresh the chat after adding parents
+    console.log('Parents added, refreshing...');
+    // You might want to refresh messages or participants here
+  }}
+/>
       
       <div 
         className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50"

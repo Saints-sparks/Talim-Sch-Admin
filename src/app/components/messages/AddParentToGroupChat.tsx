@@ -1,4 +1,4 @@
-// components/chat/AddParentToGroupChatModal.tsx
+// components/chat/AddParentToGroupChat.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,9 +6,36 @@ import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { parentService, Parent } from "@/app/services/parent.service";
+import { parentService } from "@/app/services/parent.service";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { useChats } from "@/hooks/useChats";
+
+// Define the interface to match the API response
+interface ApiParent {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+  } | null;
+  children: any[];
+  schoolId: string;
+}
+
+interface ParentWithUser {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+  } | null;
+  children: any[];
+  schoolId: string;
+}
 
 interface AddParentToGroupChatModalProps {
   isOpen: boolean;
@@ -23,8 +50,8 @@ export default function AddParentToGroupChatModal({
   chatRoomId,
   onSuccess,
 }: AddParentToGroupChatModalProps) {
-  const [parents, setParents] = useState<Parent[]>([]);
-  const [filteredParents, setFilteredParents] = useState<Parent[]>([]);
+  const [parents, setParents] = useState<ParentWithUser[]>([]);
+  const [filteredParents, setFilteredParents] = useState<ParentWithUser[]>([]);
   const [selectedParents, setSelectedParents] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -42,15 +69,20 @@ export default function AddParentToGroupChatModal({
 
   // Filter parents based on search term
   useEffect(() => {
-    if (searchTerm.trim()) {
+    if (searchTerm.trim() && parents.length > 0) {
       const term = searchTerm.toLowerCase().trim();
-      const filtered = parents.filter(
-        (parent) =>
-          parent.firstName.toLowerCase().includes(term) ||
-          parent.lastName.toLowerCase().includes(term) ||
-          parent.email.toLowerCase().includes(term) ||
-          `${parent.firstName} ${parent.lastName}`.toLowerCase().includes(term)
-      );
+      const filtered = parents.filter((parent) => {
+        const firstName = parent.userId?.firstName || '';
+        const lastName = parent.userId?.lastName || '';
+        const email = parent.userId?.email || '';
+        const fullName = `${firstName} ${lastName}`.toLowerCase();
+        return (
+          firstName.toLowerCase().includes(term) ||
+          lastName.toLowerCase().includes(term) ||
+          email.toLowerCase().includes(term) ||
+          fullName.includes(term)
+        );
+      });
       setFilteredParents(filtered);
     } else {
       setFilteredParents(parents);
@@ -61,9 +93,11 @@ export default function AddParentToGroupChatModal({
     setIsLoading(true);
     setError(null);
     try {
+      // Get parents from the service
       const parentsData = await parentService.getParentsBySchoolId();
-      setParents(parentsData);
-      setFilteredParents(parentsData);
+      // Data is already in the correct format
+      setParents(parentsData as ParentWithUser[]);
+      setFilteredParents(parentsData as ParentWithUser[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch parents");
       console.error("Error fetching parents:", err);
@@ -82,22 +116,45 @@ export default function AddParentToGroupChatModal({
     setSelectedParents(newSelected);
   };
 
-  const handleAddParents = async () => {
-    if (selectedParents.size === 0) return;
+const handleAddParents = async () => {
+  if (selectedParents.size === 0) return;
 
-    setIsAdding(true);
-    setError(null);
-    try {
-      await addParticipantsToRoom(chatRoomId, Array.from(selectedParents));
-      onSuccess?.();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add parents");
-      console.error("Error adding parents:", err);
-    } finally {
-      setIsAdding(false);
+  setIsAdding(true);
+  setError(null);
+  try {
+    // Extract the actual user IDs from the parent objects
+    const participantIds = Array.from(selectedParents).map(parentId => {
+      const parent = parents.find(p => p._id === parentId);
+      
+      // Validate that parent exists and has a userId
+      if (!parent?.userId || typeof parent.userId !== 'object') {
+        throw new Error(`Invalid parent data for ID: ${parentId}`);
+      }
+      
+      // Return the actual user ID (not the parent document ID)
+      return parent.userId._id;
+    });
+
+    console.log('Adding participants with user IDs:', participantIds);
+    
+    // Validate that all IDs are 24-character hex strings
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    for (const id of participantIds) {
+      if (!objectIdPattern.test(id)) {
+        throw new Error(`Invalid user ID format: ${id}`);
+      }
     }
-  };
+    
+    await addParticipantsToRoom(chatRoomId, participantIds);
+    onSuccess?.();
+    onClose();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to add parents");
+    console.error("Error adding parents:", err);
+  } finally {
+    setIsAdding(false);
+  }
+};
 
   const handleSelectAll = () => {
     if (selectedParents.size === filteredParents.length) {
@@ -105,6 +162,43 @@ export default function AddParentToGroupChatModal({
     } else {
       setSelectedParents(new Set(filteredParents.map((p) => p._id)));
     }
+  };
+
+  // Helper function to get parent display name
+  const getParentName = (parent: ParentWithUser) => {
+    if (parent.userId && typeof parent.userId === 'object') {
+      const { firstName, lastName, _id } = parent.userId;
+      if (firstName || lastName) {
+        return `${firstName || ''} ${lastName || ''}`.trim();
+      }
+      if (_id) {
+        return `Parent (${_id.substring(0, 8)}...)`;
+      }
+    }
+    return 'Unknown Parent';
+  };
+
+  // Helper function to get parent email
+  const getParentEmail = (parent: ParentWithUser) => {
+    if (parent.userId && typeof parent.userId === 'object' && parent.userId.email) {
+      return parent.userId.email;
+    }
+    return 'Email not available';
+  };
+
+  // Helper function to get parent initials
+  const getParentInitials = (parent: ParentWithUser) => {
+    if (parent.userId && typeof parent.userId === 'object') {
+      const { firstName, lastName } = parent.userId;
+      if (firstName && lastName) {
+        return `${firstName[0]}${lastName[0]}`.toUpperCase();
+      } else if (firstName) {
+        return firstName[0].toUpperCase();
+      } else if (lastName) {
+        return lastName[0].toUpperCase();
+      }
+    }
+    return 'P';
   };
 
   if (!isOpen) return null;
@@ -132,7 +226,7 @@ export default function AddParentToGroupChatModal({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <Input
               className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
-              placeholder="Search parents by name or email..."
+              placeholder="Search parents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -187,9 +281,11 @@ export default function AddParentToGroupChatModal({
             <div className="space-y-2">
               {filteredParents.map((parent) => {
                 const isSelected = selectedParents.has(parent._id);
-                const fullName = `${parent.firstName} ${parent.lastName}`;
-                const initials = getUserInitials(fullName);
-                const bgColor = generateColorFromString(fullName);
+                const fullName = getParentName(parent);
+                const email = getParentEmail(parent);
+                const initials = getParentInitials(parent);
+                const bgColor = generateColorFromString(parent._id);
+                const childCount = parent.children?.length || 0;
 
                 return (
                   <div
@@ -219,13 +315,14 @@ export default function AddParentToGroupChatModal({
                         {fullName}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {parent.email}
+                        {email}
                       </p>
-                      {parent.phoneNumber && (
-                        <p className="text-xs text-gray-400">
-                          {parent.phoneNumber}
+                      {childCount > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {childCount} child{childCount !== 1 ? 'ren' : ''}
                         </p>
                       )}
+                      
                     </div>
                   </div>
                 );
