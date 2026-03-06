@@ -1,4 +1,3 @@
-// components/chat/GroupInfoModal.tsx (updated section)
 "use client";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -15,20 +14,24 @@ import {
   UserPlus,
   Loader2,
   UserCog,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Parents from "./Parents"; // Import the new Parents component
+import Parents from "./Parents";
+import Teachers from "./Teachers"; // Import the new Teachers component
 import Images from "./Images";
 import Videos from "./Videos";
 import Links from "./Links";
 import Documents from "./Document";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
+import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { useChats } from "@/hooks/useChats";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
-// Update menuItems - replace "Students" with "Parents"
+// Update menuItems - add Teachers
 const menuItems = [
-  { name: "Parents", icon: UserCog }, // Changed from Students to Parents
+  { name: "Parents", icon: UserCog },
+  { name: "Teachers", icon: GraduationCap }, // Added Teachers
   { name: "Images", icon: Image },
   { name: "Videos", icon: VideoIcon },
   { name: "Links", icon: Link2 },
@@ -70,6 +73,7 @@ export default function GroupInfoModal({
 }: GroupInfoModalProps) {
   const [selectedMenu, setSelectedMenu] = useState("");
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
+  const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentParticipants, setCurrentParticipants] = useState<Participant[]>(participants);
   
@@ -82,14 +86,14 @@ export default function GroupInfoModal({
 
   if (!isOpen) return null;
 
-  const handleAddParentsSuccess = async () => {
+  const handleAddParticipantsSuccess = async () => {
     setIsRefreshing(true);
     try {
       // Refresh chat rooms to get updated participant list
       await fetchChatRooms(true);
-      console.log("Parents added successfully");
+      console.log("Participants added successfully");
     } catch (error) {
-      console.error("Error refreshing after adding parents:", error);
+      console.error("Error refreshing after adding participants:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -187,9 +191,9 @@ export default function GroupInfoModal({
                   </div>
                 </div>
 
-                {/* Add Parents Button - Only show for group chats and when chatRoomId is provided */}
+                {/* Add Participants Buttons - Only show for group chats and when chatRoomId is provided */}
                 {chatRoomId && (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-2">
                     <Button
                       onClick={() => setIsAddParentModalOpen(true)}
                       disabled={isRefreshing}
@@ -204,6 +208,24 @@ export default function GroupInfoModal({
                         <>
                           <UserPlus size={18} />
                           Add Parents to Group
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => setIsAddTeacherModalOpen(true)}
+                      disabled={isRefreshing}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
+                    >
+                      {isRefreshing ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={18} />
+                          Add Teachers to Group
                         </>
                       )}
                     </Button>
@@ -264,11 +286,17 @@ export default function GroupInfoModal({
               </div>
             )}
             
-            {/* Render section components - Updated to use Parents instead of Students */}
+            {/* Render section components */}
             {selectedMenu === "Parents" && (
               <Parents 
                 chatRoomId={chatRoomId}
-                onAddParentSuccess={handleAddParentsSuccess}
+                onAddParentSuccess={handleAddParticipantsSuccess}
+              />
+            )}
+            {selectedMenu === "Teachers" && (
+              <Teachers 
+                chatRoomId={chatRoomId}
+                onAddTeacherSuccess={handleAddParticipantsSuccess}
               />
             )}
             {selectedMenu === "Images" && <Images />}
@@ -285,7 +313,17 @@ export default function GroupInfoModal({
           isOpen={isAddParentModalOpen}
           onClose={() => setIsAddParentModalOpen(false)}
           chatRoomId={chatRoomId}
-          onSuccess={handleAddParentsSuccess}
+          onSuccess={handleAddParticipantsSuccess}
+        />
+      )}
+
+      {/* Add Teacher Modal */}
+      {chatRoomId && (
+        <AddTeacherToGroupChatModal
+          isOpen={isAddTeacherModalOpen}
+          onClose={() => setIsAddTeacherModalOpen(false)}
+          chatRoomId={chatRoomId}
+          onSuccess={handleAddParticipantsSuccess}
         />
       )}
     </>

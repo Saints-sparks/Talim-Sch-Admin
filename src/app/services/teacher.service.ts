@@ -204,6 +204,7 @@ export const teacherService = {
       }
 
       const data: GetTeachersResponse = await response.json();
+      console.log("Fetched teachers:", data);
       return data;
     } catch (error) {
       throw error;

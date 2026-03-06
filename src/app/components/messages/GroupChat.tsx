@@ -10,6 +10,7 @@ import GroupMessageBubble from "./GroupMessageBubble";
 import ReplyPreview from "./ReplyPreview";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { toast } from "react-toastify";
 
 interface Message {
   _id?: string;
@@ -49,10 +50,12 @@ export default function GroupChat({
 }: GroupChatProps) {
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isParticipant, setIsParticipant] = useState<boolean>(true); // Assume true until checked
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fetchedRoomsRef = useRef(new Set<string>());
+  const participationCheckedRef = useRef(false);
 
   const { user } = useAuth();
   const {
@@ -70,7 +73,59 @@ export default function GroupChat({
   // Use the sendMessage from useChats
   const { sendMessage } = useChats();
 
-  const roomId = room?._id;
+  // Get room ID safely
+  const getRoomId = useCallback((): string | undefined => {
+    if (!room) return undefined;
+    return room._id || room.roomId || room.id;
+  }, [room]);
+
+  const roomId = getRoomId();
+
+  // Check if current user is a participant in this group
+  useEffect(() => {
+    if (!room || !user || participationCheckedRef.current) return;
+
+    const checkParticipation = () => {
+      const currentUserId = user?.userId || user?._id;
+      if (!currentUserId) return;
+
+      // Check if user is in participants list
+      if (room.participants && Array.isArray(room.participants)) {
+        const isUserParticipant = room.participants.some((p: any) => {
+          const participantId = p.userId || p._id || p.id || p;
+          return participantId === currentUserId;
+        });
+
+        setIsParticipant(isUserParticipant);
+        
+        if (!isUserParticipant) {
+          console.warn('⚠️ Current user is not a participant in this group:', {
+            currentUserId,
+            participants: room.participants
+          });
+        } else {
+          console.log('✅ Current user is a participant in this group');
+        }
+      }
+      
+      participationCheckedRef.current = true;
+    };
+
+    checkParticipation();
+  }, [room, user]);
+
+  // Debug logging for room and user
+  useEffect(() => {
+    if (room) {
+      console.log('📋 GroupChat - Room data:', {
+        roomId,
+        roomName: room.name,
+        participants: room.participants?.length,
+        currentUser: user?.userId || user?._id,
+        isParticipant
+      });
+    }
+  }, [room, roomId, user, isParticipant]);
 
   // Get user initials from name
   const getUserInitialsFromName = useCallback((name: string): string => {
@@ -98,7 +153,7 @@ export default function GroupChat({
     };
   }, [user, getUserInitialsFromName]);
 
-  // Check if message is from current user (by ID only, not name)
+  // Check if message is from current user
   const isCurrentUser = useCallback((senderId: string): boolean => {
     const currentUserId = currentUserInfo.id;
     
@@ -122,10 +177,9 @@ export default function GroupChat({
     return getUserInitialsFromName(senderName);
   }, [isCurrentUser, currentUserInfo.initials, getUserInitialsFromName]);
 
-  // ── Fetch messages only when room changes, but don't clear immediately ──
+  // Fetch messages when room changes
   useEffect(() => {
     if (!roomId) {
-      // Only clear if we're explicitly leaving to a null room
       clearMessages();
       fetchedRoomsRef.current.clear();
       return;
@@ -155,8 +209,6 @@ export default function GroupChat({
     if (!chatMessages || chatMessages.length === 0) {
       return [];
     }
-
-    console.log('🔄 Formatting group messages, count:', chatMessages.length);
 
     return chatMessages.map((msg: any) => {
       // Extract senderId properly (could be string or object)
@@ -225,23 +277,40 @@ export default function GroupChat({
       return;
     }
 
+    // Check if user is a participant
+    if (!isParticipant) {
+      toast.error('You are not a participant in this group');
+      console.error('Cannot send message: User is not a participant');
+      return;
+    }
+
     setIsSending(true);
     
     try {
-      console.log("📤 Sending message:", messageInput.trim());
+      console.log("📤 Sending group message:", {
+        roomId,
+        text: messageInput.trim(),
+        userId: currentUserInfo.id
+      });
       
-      await sendMessage({
+      const result = await sendMessage({
         chatRoomId: roomId,
         text: messageInput.trim(),
       });
       
-      setMessageInput("");
+      if (result) {
+        console.log("✅ Message sent successfully:", result);
+        setMessageInput("");
+      } else {
+        throw new Error('Failed to send message');
+      }
     } catch (err) {
       console.error("❌ Send failed", err);
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSending(false);
     }
-  }, [messageInput, roomId, isSending, sendMessage]);
+  }, [messageInput, roomId, isSending, sendMessage, isParticipant, currentUserInfo.id]);
 
   // Handle scroll for pagination
   const handleScroll = useCallback(() => {
@@ -270,10 +339,12 @@ export default function GroupChat({
     // Get first 3 participant names for subtext
     const participantNames = participants
       .slice(0, 3)
-      .map((p: any) => p.firstName && p.lastName 
-        ? `${p.firstName} ${p.lastName}`.trim()
-        : p.name || p.email || 'User'
-      )
+      .map((p: any) => {
+        if (typeof p === 'string') return 'User';
+        return p.firstName && p.lastName 
+          ? `${p.firstName} ${p.lastName}`.trim()
+          : p.name || p.email || 'User';
+      })
       .join(', ');
 
     return {
@@ -282,6 +353,34 @@ export default function GroupChat({
       participantList: participantNames + (participantCount > 3 ? ` and ${participantCount - 3} others` : '')
     };
   }, [room]);
+
+  // If not a participant, show a message
+  if (roomId && !isParticipant && !isLoading) {
+    return (
+      <div className="w-full h-full flex flex-col bg-white">
+        <ChatHeader
+          avatar={room?.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
+          name={roomInfo.name}
+          status="Group chat"
+          subtext={roomInfo.participantList}
+          participants={room?.participants || []}
+          currentUserId={currentUserInfo.id}
+          onBack={onBack}
+          showBackButton={!!onBack}
+          initials={currentUserInfo.initials}
+        />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-800 mb-2">Cannot Send Messages</h3>
+            <p className="text-sm text-gray-600">
+              You are not a participant in this group chat. Please contact an administrator to be added.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-white">
@@ -295,6 +394,12 @@ export default function GroupChat({
         onBack={onBack}
         showBackButton={!!onBack}
         initials={currentUserInfo.initials}
+        isGroup={true}
+        chatRoomId={roomId}
+        onAddParents={() => {
+          console.log('Add parents to group');
+          // You can implement this functionality
+        }}
       />
 
       <div
@@ -367,9 +472,17 @@ export default function GroupChat({
         value={messageInput}
         onChange={(e) => setMessageInput(e.target.value)}
         onSend={handleSendMessage}
-        disabled={!roomId || isSending}
+        disabled={!roomId || isSending || !isParticipant}
         isSending={isSending}
-        placeholder={isSending ? "Sending..." : "Type a message..."}
+        placeholder={
+          !roomId 
+            ? "Select a chat to start messaging"
+            : !isParticipant
+            ? "You are not a participant in this group"
+            : isSending 
+            ? "Sending..." 
+            : "Type a message..."
+        }
       />
     </div>
   );
