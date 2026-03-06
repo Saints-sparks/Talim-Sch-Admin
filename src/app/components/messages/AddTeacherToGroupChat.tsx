@@ -9,37 +9,17 @@ import { teacherService } from "@/app/services/teacher.service";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { useChats } from "@/hooks/useChats";
 
-// Define the interface to match the API response
-interface ApiTeacher {
-  _id: string;
-  userId: {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phoneNumber?: string;
-    userAvatar?: string;
-  } | null;
-  specialization: string;
-  employmentRole: string;
-  assignedClasses?: any[];
-  assignedCourses?: any[];
-  schoolId: string;
-  isActive: boolean;
-}
-
+// Define the interface to match the API response (flat structure)
 interface TeacherWithUser {
   _id: string;
-  userId: {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phoneNumber?: string;
-    userAvatar?: string;
-  } | null;
-  specialization: string;
-  employmentRole: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  userAvatar?: string;
+  role: string;
+  specialization?: string;
+  employmentRole?: string;
   assignedClasses?: any[];
   assignedCourses?: any[];
   schoolId: string;
@@ -81,9 +61,9 @@ export default function AddTeacherToGroupChatModal({
     if (searchTerm.trim() && teachers.length > 0) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = teachers.filter((teacher) => {
-        const firstName = teacher.userId?.firstName || '';
-        const lastName = teacher.userId?.lastName || '';
-        const email = teacher.userId?.email || '';
+        const firstName = teacher.firstName || '';
+        const lastName = teacher.lastName || '';
+        const email = teacher.email || '';
         const specialization = teacher.specialization || '';
         const employmentRole = teacher.employmentRole || '';
         const fullName = `${firstName} ${lastName}`.toLowerCase();
@@ -109,7 +89,7 @@ export default function AddTeacherToGroupChatModal({
     try {
       // Get teachers from the service
       const teachersData = await teacherService.getAllTeachers();
-      // Data is already in the correct format
+      // Data is already in the flat format
       setTeachers(teachersData as TeacherWithUser[]);
       setFilteredTeachers(teachersData as TeacherWithUser[]);
     } catch (err) {
@@ -136,18 +116,8 @@ export default function AddTeacherToGroupChatModal({
     setIsAdding(true);
     setError(null);
     try {
-      // Extract the actual user IDs from the teacher objects
-      const participantIds = Array.from(selectedTeachers).map(teacherId => {
-        const teacher = teachers.find(t => t._id === teacherId);
-        
-        // Validate that teacher exists and has a userId
-        if (!teacher?.userId || typeof teacher.userId !== 'object') {
-          throw new Error(`Invalid teacher data for ID: ${teacherId}`);
-        }
-        
-        // Return the actual user ID (not the teacher document ID)
-        return teacher.userId._id;
-      });
+      // With flat structure, the teacher's _id IS the user ID
+      const participantIds = Array.from(selectedTeachers);
 
       // Log the participantIds being sent to the backend
       console.log('🚀 Sending teacher participantIds to backend:', participantIds);
@@ -179,26 +149,14 @@ export default function AddTeacherToGroupChatModal({
     }
   };
 
-  // Helper function to get teacher display name
+  // Helper function to get teacher display name - UPDATED for flat structure
   const getTeacherName = (teacher: TeacherWithUser) => {
-    if (teacher.userId && typeof teacher.userId === 'object') {
-      const { firstName, lastName, _id } = teacher.userId;
-      if (firstName || lastName) {
-        return `${firstName || ''} ${lastName || ''}`.trim();
-      }
-      if (_id) {
-        return `Teacher (${_id.substring(0, 8)}...)`;
-      }
-    }
-    return 'Unknown Teacher';
+    return `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || 'Unknown Teacher';
   };
 
-  // Helper function to get teacher email
+  // Helper function to get teacher email - UPDATED for flat structure
   const getTeacherEmail = (teacher: TeacherWithUser) => {
-    if (teacher.userId && typeof teacher.userId === 'object' && teacher.userId.email) {
-      return teacher.userId.email;
-    }
-    return 'Email not available';
+    return teacher.email || 'Email not available';
   };
 
   // Helper function to get teacher role
@@ -214,15 +172,13 @@ export default function AddTeacherToGroupChatModal({
 
   // Helper function to get teacher initials
   const getTeacherInitials = (teacher: TeacherWithUser) => {
-    if (teacher.userId && typeof teacher.userId === 'object') {
-      const { firstName, lastName } = teacher.userId;
-      if (firstName && lastName) {
-        return `${firstName[0]}${lastName[0]}`.toUpperCase();
-      } else if (firstName) {
-        return firstName[0].toUpperCase();
-      } else if (lastName) {
-        return lastName[0].toUpperCase();
-      }
+    const { firstName, lastName } = teacher;
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    } else if (firstName) {
+      return firstName[0].toUpperCase();
+    } else if (lastName) {
+      return lastName[0].toUpperCase();
     }
     return 'T';
   };

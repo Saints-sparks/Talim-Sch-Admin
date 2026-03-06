@@ -11,16 +11,14 @@ import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 // Extend the Teacher interface to match API response
 interface ApiTeacher {
   _id: string;
-  userId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber?: string;
-    userAvatar?: string;
-  };
-  specialization: string;
-  employmentRole: string;
+  firstName: string;  // Flat structure - not nested
+  lastName: string;   // Flat structure - not nested
+  email: string;      // Flat structure - not nested
+  phoneNumber?: string;
+  userAvatar?: string;
+  role: string;
+  specialization?: string;
+  employmentRole?: string;
   assignedClasses?: Array<{
     _id: string;
     name: string;
@@ -57,9 +55,9 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = teachers.filter((teacher) => {
-        const firstName = teacher.userId?.firstName || '';
-        const lastName = teacher.userId?.lastName || '';
-        const email = teacher.userId?.email || '';
+        const firstName = teacher.firstName || '';
+        const lastName = teacher.lastName || '';
+        const email = teacher.email || '';
         const specialization = teacher.specialization || '';
         const employmentRole = teacher.employmentRole || '';
         const fullName = `${firstName} ${lastName}`.toLowerCase();
@@ -84,7 +82,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
     setError(null);
     try {
       const teachersData = await teacherService.getAllTeachers();
-      // The data might already be in the correct format
+      // The data is already in the flat format
       setTeachers(teachersData as unknown as ApiTeacher[]);
       setFilteredTeachers(teachersData as unknown as ApiTeacher[]);
     } catch (err) {
@@ -101,22 +99,20 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
     fetchTeachers();
   };
 
-  // Get teacher display name
+  // Get teacher display name - UPDATED to use flat structure
   const getTeacherName = (teacher: ApiTeacher) => {
-    if (teacher.userId) {
-      return `${teacher.userId.firstName || ''} ${teacher.userId.lastName || ''}`.trim() || 'Unknown Teacher';
-    }
-    return 'Unknown Teacher';
+    // Direct access to firstName and lastName (not nested)
+    return `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || 'Unknown Teacher';
   };
 
-  // Get teacher email
+  // Get teacher email - UPDATED to use flat structure
   const getTeacherEmail = (teacher: ApiTeacher) => {
-    return teacher.userId?.email || 'No email';
+    return teacher.email || 'No email';
   };
 
-  // Get teacher phone
+  // Get teacher phone - UPDATED to use flat structure
   const getTeacherPhone = (teacher: ApiTeacher) => {
-    return teacher.userId?.phoneNumber || '';
+    return teacher.phoneNumber || '';
   };
 
   // Get teacher role/specialization
