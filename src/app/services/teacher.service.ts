@@ -33,6 +33,7 @@ export interface Course {
   updatedAt?: Date;
 }
 
+// In teacher.service.ts - Update the Teacher interface
 export interface Teacher {
   _id: string;
   userId: User;
@@ -41,8 +42,7 @@ export interface Teacher {
   phoneNumber: string;
   email: string;
   role: string;
-  userAvatar?: string; // <-- Add this line to match backend
-
+  userAvatar?: string;
   highestAcademicQualification: string;
   yearsOfExperience: number;
   specialization: string;
@@ -57,9 +57,9 @@ export interface Teacher {
   createdAt?: Date;
   updatedAt?: Date;
   classIds?: string[];
-  __v?: number; // Added __v property to match TeacherById type
+  __v?: number;
+  schoolId: string; // Add this line
 }
-
 export interface TeacherById {
   _id: string;
   userId: {
@@ -204,6 +204,7 @@ export const teacherService = {
       }
 
       const data: GetTeachersResponse = await response.json();
+      console.log("Fetched teachers:", data);
       return data;
     } catch (error) {
       throw error;

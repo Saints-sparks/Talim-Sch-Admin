@@ -9,10 +9,12 @@ import {
   X,
   Info,
   UserPlus,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
+import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import {
   DropdownMenu,
@@ -75,7 +77,7 @@ interface ChatHeaderProps {
   initials?: string; // Add initials prop
   isGroup?: boolean; // Whether this is a group chat
   chatRoomId?: string; // Chat room ID for adding participants
-  onAddParents?: () => void; // Callback after adding parents
+  onAddParticipants?: () => void; // Callback after adding participants
 }
 
 export default function ChatHeader({
@@ -90,12 +92,13 @@ export default function ChatHeader({
   initials,
   isGroup = false,
   chatRoomId,
-  onAddParents,
+  onAddParticipants,
 }: ChatHeaderProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
+  const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
 
   // Process participants to get clean data
   const processedParticipants = processParticipants(participants, currentUserId);
@@ -106,9 +109,9 @@ export default function ChatHeader({
   // Get display initials
   const displayInitials = initials || getUserInitials(name);
 
-  // Handle successful parent addition
-  const handleAddParentsSuccess = () => {
-    onAddParents?.();
+  // Handle successful participant addition
+  const handleAddParticipantsSuccess = () => {
+    onAddParticipants?.();
   };
 
   return (
@@ -189,16 +192,35 @@ export default function ChatHeader({
             </div>
           ) : (
             <>
-              {/* Add Parents Button - Show directly for group chats on desktop */}
+              {/* Add Participants Button - Show directly for group chats on desktop */}
               {isGroup && chatRoomId && (
-                <button
-                  onClick={() => setIsAddParentModalOpen(true)}
-                  className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors text-sm font-medium"
-                  title="Add Parents to Group"
-                >
-                  <UserPlus size={16} />
-                  <span>Add Parents</span>
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors text-sm font-medium"
+                      title="Add Participants to Group"
+                    >
+                      <UserPlus size={16} />
+                      <span>Add</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => setIsAddParentModalOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Add Parents</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setIsAddTeacherModalOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Add Teachers</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
 
               {/* Call Icons - Hidden on very small screens */}
@@ -231,8 +253,15 @@ export default function ChatHeader({
                         onClick={() => setIsAddParentModalOpen(true)}
                         className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
                       >
-                        <UserPlus className="mr-2 h-4 w-4" />
+                        <Users className="mr-2 h-4 w-4" />
                         <span>Add Parents</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setIsAddTeacherModalOpen(true)}
+                        className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Add Teachers</span>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -260,8 +289,8 @@ export default function ChatHeader({
           onClose={() => setIsModalOpen(false)}
           avatar={avatar}
           name={name}
-          description={`Welcome to the Class Group! \n
-          This is your space to collaborate, share ideas, ask questions, and stay connected with your classmates. Whether you need help with an assignment, want to share resources, or just discuss what's going on in class, feel free to engage here.`}
+          description={`Welcome to the Group! \n
+          This is your space to collaborate, share ideas, ask questions, and stay connected.`}
           participants={processedParticipants}
           chatRoomId={chatRoomId}
         />
@@ -272,7 +301,17 @@ export default function ChatHeader({
             isOpen={isAddParentModalOpen}
             onClose={() => setIsAddParentModalOpen(false)}
             chatRoomId={chatRoomId}
-            onSuccess={handleAddParentsSuccess}
+            onSuccess={handleAddParticipantsSuccess}
+          />
+        )}
+
+        {/* Add Teacher Modal */}
+        {isGroup && chatRoomId && (
+          <AddTeacherToGroupChatModal
+            isOpen={isAddTeacherModalOpen}
+            onClose={() => setIsAddTeacherModalOpen(false)}
+            chatRoomId={chatRoomId}
+            onSuccess={handleAddParticipantsSuccess}
           />
         )}
       </div>
