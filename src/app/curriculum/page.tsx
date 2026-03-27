@@ -49,13 +49,21 @@ interface CurriculumContent {
   _id: string;
   course: {
     _id: string;
-    name: string;
-    code: string;
+    name?: string;
+    code?: string;
+    courseCode?: string;
+    title?: string;
+    description?: string;
+    className?: string;
+    schoolName?: string;
+    teacherName?: string;
   };
   term: {
     _id: string;
     name: string;
-    year: string;
+    year?: string;
+    startDate?: string;
+    endDate?: string;
   };
   content: string;
   attachments: string[];
@@ -64,7 +72,9 @@ interface CurriculumContent {
     firstName: string;
     lastName: string;
   } | null;
+  teacherName?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface Stats {
@@ -239,6 +249,31 @@ const CurriculumDashboardMain: React.FC = () => {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 5);
+
+  // Helper function to get course display text
+  const getCourseDisplay = (course: CurriculumContent['course']) => {
+    if (!course) return "No course";
+    const code = course.courseCode || course.code || "N/A";
+    const name = course.title || course.name || "No course name";
+    return `${code} - ${name}`;
+  };
+
+  // Helper function to get term display text
+  const getTermDisplay = (term: CurriculumContent['term']) => {
+    if (!term) return "No term";
+    if (term.year) return `${term.name} (${term.year})`;
+    if (term.startDate) return `${term.name} (${new Date(term.startDate).getFullYear()})`;
+    return term.name;
+  };
+
+  // Helper function to get teacher display text
+  const getTeacherDisplay = (content: CurriculumContent) => {
+    if (content.teacherName) return content.teacherName;
+    if (content.teacherId?.firstName && content.teacherId?.lastName) {
+      return `${content.teacherId.firstName} ${content.teacherId.lastName}`;
+    }
+    return "No teacher assigned";
+  };
 
   if (loading) return <ModernLoader />;
 
@@ -501,14 +536,11 @@ const CurriculumDashboardMain: React.FC = () => {
                               </div>
                               <div className="flex-1">
                                 <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                  {content.course.code} - {content.course.name}
+                                  {getCourseDisplay(content.course)}
                                 </div>
                                 <div className="text-sm text-gray-500 mt-1">
-                                  {content.term.name} ({content.term.year}) •{" "}
-                                  {content.teacherId?.firstName &&
-                                  content.teacherId?.lastName
-                                    ? `${content.teacherId.firstName} ${content.teacherId.lastName}`
-                                    : "No teacher assigned"}
+                                  {getTermDisplay(content.term)} •{" "}
+                                  {getTeacherDisplay(content)}
                                 </div>
                               </div>
                             </div>

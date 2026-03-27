@@ -22,6 +22,7 @@ import {
   Note,
   Power,
   Settings,
+  Message,
   UserGroup,
   VolumeHigh,
 } from "./Icons";
@@ -124,7 +125,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     //   label: "Complaints",
       {
         path: "/messages",
-        icon: <ClipboardClose isActive={pathname.startsWith("/messages")} />,
+        icon: <Message isActive={pathname.startsWith("/messages")} />,
         label: "Messages",
       },
     // },
