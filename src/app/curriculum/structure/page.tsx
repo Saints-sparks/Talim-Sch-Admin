@@ -12,8 +12,6 @@ import {
   BookOpen,
   GraduationCap,
   ChevronLeft,
-  X,
-  Settings,
   Users,
   Filter,
   AlertCircle,
@@ -24,12 +22,10 @@ import {
   getClasses,
   getTeachers,
   getSubjectsWithCourses,
+  deleteCourseService,
   createSubject,
   updateSubject,
   deleteSubject,
-  createCourse,
-  updateCourseService,
-  deleteCourseService,
   Class,
   Subject,
   Teacher,
@@ -37,6 +33,7 @@ import {
 } from "@/app/services/subjects.service";
 import CourseModal from "@/components/CourseModal";
 import TalimModal from "@/components/ui/TalimModal";
+import DeleteConfirmModal from "@/components/curricula/DeleteConfirmModal";
 
 interface NewSubject {
   name: string;
@@ -81,6 +78,10 @@ const CurriculumStructureMain: React.FC = () => {
     classId: "",
   });
 
+  // Delete Modal States
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+
   // Course Modal States
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">("add");
@@ -100,8 +101,6 @@ const CurriculumStructureMain: React.FC = () => {
       if (initialAction === "add-subject") {
         openAddSubjectModal();
       }
-      // For add-course from URL, we need to open with a dummy subject
-      // This will be handled after data is loaded in the next useEffect
     }
   }, [mounted, initialAction]);
 
@@ -244,7 +243,6 @@ const CurriculumStructureMain: React.FC = () => {
         `Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`
       );
       setShowSubjectModal(false);
-
       fetchSubjects(); // This will now fetch subjects with their courses
     } catch (error: any) {
       console.error(`Error ${subjectMode}ing subject:`, error);
@@ -252,6 +250,32 @@ const CurriculumStructureMain: React.FC = () => {
     } finally {
       setIsSubmittingSubject(false);
     }
+  };
+
+  // Delete Subject Functions
+  const handleDeleteSubject = (subject: Subject) => {
+    setSubjectToDelete(subject);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteSubject = async () => {
+    if (!subjectToDelete) return;
+
+    try {
+      await deleteSubject(subjectToDelete._id);
+      toast.success(`"${subjectToDelete.name}" deleted successfully!`);
+      setShowDeleteModal(false);
+      setSubjectToDelete(null);
+      await fetchSubjects(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error deleting subject:", error);
+      toast.error(error.message || "Failed to delete subject");
+    }
+  };
+
+  const cancelDeleteSubject = () => {
+    setShowDeleteModal(false);
+    setSubjectToDelete(null);
   };
 
   // Course Functions
@@ -272,28 +296,6 @@ const CurriculumStructureMain: React.FC = () => {
   const handleCourseModalSuccess = () => {
     setShowCourseModal(false);
     fetchSubjects(); // Refresh the subjects with their courses
-  };
-
-  // Delete Functions
-  const handleDeleteSubject = async (subjectId: string) => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this subject? This will also delete all associated courses."
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await deleteSubject(subjectId);
-      toast.success("Subject deleted successfully!");
-      fetchSubjects();
-    } catch (error: any) {
-      console.error("Error deleting subject:", error);
-      toast.error(error.message || "Failed to delete subject");
-    }
   };
 
   const handleDeleteCourse = async (courseId: string) => {
@@ -343,12 +345,12 @@ const CurriculumStructureMain: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-return (
-  <div className="min-h-screen bg-gray-50">
-    {/* Scrollable Title and Controls */}
-    <div className="bg-white border-b border-gray-200 m-6 rounded-2xl">
-      {/* Main Header */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Scrollable Title and Controls */}
+      <div className="bg-white border-b border-gray-200 m-6 rounded-2xl">
+        {/* Main Header */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col space-y-6">
             {/* Title Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -437,195 +439,187 @@ return (
         </div>
       </div>
 
-      {/* Scrollable Content */}
       {/* Content */}
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-            {/* Subjects List */}
-            {filteredSubjects.length > 0 ? (
-              <div className="space-y-8">
-                {filteredSubjects.map((subject) => (
-                  <div
-                    key={subject._id}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
-                  >
-                    {/* Subject Header */}
-                    <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b border-gray-100">
-                      <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg">
-                            <BookOpen className="h-7 w-7 text-white" />
-                          </div>
-                          <div className="space-y-2">
-                            <h2 className="text-2xl font-bold text-gray-900">
-                              {subject.name}
-                            </h2>
-                            <div className="flex flex-wrap items-center gap-3">
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {subject.code}
-                              </span>
-                              <span className="text-sm text-gray-600">
-                                Class: {getClassName(subject.classId || "")}
-                              </span>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Subjects List */}
+        {filteredSubjects.length > 0 ? (
+          <div className="space-y-8">
+            {filteredSubjects.map((subject) => (
+              <div
+                key={subject._id}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
+              >
+                {/* Subject Header */}
+                <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b border-gray-100">
+                  <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                    <div className="flex items-start space-x-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg">
+                        <BookOpen className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {subject.name}
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {subject.code}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            Class: {getClassName(subject.classId || "")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openAddCourseModal(subject)}
+                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Course
+                      </button>
+                      <button
+                        onClick={() => openEditSubjectModal(subject)}
+                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSubject(subject)}
+                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Courses */}
+                <div className="p-6">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5 text-blue-600" />
+                        Courses
+                      </h3>
+                      {subject.courses && subject.courses.length > 0 && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {subject.courses.length} course
+                          {subject.courses.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+
+                    {subject.courses && subject.courses.length > 0 ? (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {subject.courses.map((course) => (
+                          <div
+                            key={course._id}
+                            className="group bg-white border-2 border-gray-100 hover:border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="space-y-2 flex-1 mr-2">
+                                <h4 className="font-semibold text-gray-900 line-clamp-1">
+                                  {course.title}
+                                </h4>
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                  {course.courseCode}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => openEditCourseModal(course)}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCourse(course._id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              {course.description && (
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {course.description}
+                                </p>
+                              )}
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <Users className="w-3.5 h-3.5" />
+                                <span className="line-clamp-1">
+                                  {getTeacherName(course.teacherId || "")}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-12">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                              <GraduationCap className="w-8 h-8 text-blue-600" />
+                            </div>
+                          </div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                            No courses yet
+                          </h4>
+                          <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+                            Start building your curriculum by adding the
+                            first course to this subject.
+                          </p>
                           <button
                             onClick={() => openAddCourseModal(subject)}
-                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center"
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center mx-auto"
                           >
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Course
-                          </button>
-                          <button
-                            onClick={() => openEditSubjectModal(subject)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSubject(subject._id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                            Add First Course
                           </button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Courses */}
-                    <div className="p-6">
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                            <GraduationCap className="w-5 h-5 text-blue-600" />
-                            Courses
-                          </h3>
-                          {subject.courses && subject.courses.length > 0 && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {subject.courses.length} course
-                              {subject.courses.length !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </div>
-
-                        {subject.courses && subject.courses.length > 0 ? (
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {subject.courses.map((course) => (
-                              <div
-                                key={course._id}
-                                className="group bg-white border-2 border-gray-100 hover:border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200"
-                              >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="space-y-2 flex-1 mr-2">
-                                    <h4 className="font-semibold text-gray-900 line-clamp-1">
-                                      {course.title}
-                                    </h4>
-                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                      {course.courseCode}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() =>
-                                        openEditCourseModal(course)
-                                      }
-                                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                    >
-                                      <Edit className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteCourse(course._id)
-                                      }
-                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                  {course.description && (
-                                    <p className="text-sm text-gray-600 line-clamp-2">
-                                      {course.description}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                    <Users className="w-3.5 h-3.5" />
-                                    <span className="line-clamp-1">
-                                      {getTeacherName(course.teacherId || "")}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-12">
-                            <div className="text-center">
-                              <div className="flex justify-center mb-4">
-                                <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
-                                  <GraduationCap className="w-8 h-8 text-blue-600" />
-                                </div>
-                              </div>
-                              <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                                No courses yet
-                              </h4>
-                              <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                                Start building your curriculum by adding the
-                                first course to this subject.
-                              </p>
-                              <button
-                                onClick={() => openAddCourseModal(subject)}
-                                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center mx-auto"
-                              >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add First Course
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-16">
-                <div className="text-center">
-                  <div className="flex justify-center mb-6">
-                    <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
-                      <BookOpen className="w-12 h-12 text-blue-600" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    {searchTerm || selectedClass !== "all"
-                      ? "No subjects found"
-                      : "No subjects yet"}
-                  </h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    {searchTerm || selectedClass !== "all"
-                      ? "Try adjusting your search or filters to find what you're looking for."
-                      : "Get started by creating your first subject to begin building your curriculum structure."}
-                  </p>
-                  {!searchTerm && selectedClass === "all" && (
-                    <button
-                      onClick={openAddSubjectModal}
-                      className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center mx-auto"
-                    >
-                      <Plus className="w-5 h-5 mr-2" />
-                      Add First Subject
-                    </button>
-                  )}
                 </div>
               </div>
-            )}
+            ))}
           </div>
-     
-        
+        ) : (
+          <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-16">
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
+                  <BookOpen className="w-12 h-12 text-blue-600" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                {searchTerm || selectedClass !== "all"
+                  ? "No subjects found"
+                  : "No subjects yet"}
+              </h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                {searchTerm || selectedClass !== "all"
+                  ? "Try adjusting your search or filters to find what you're looking for."
+                  : "Get started by creating your first subject to begin building your curriculum structure."}
+              </p>
+              {!searchTerm && selectedClass === "all" && (
+                <button
+                  onClick={openAddSubjectModal}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl flex items-center mx-auto"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add First Subject
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
-        
       {/* Subject Modal */}
       <TalimModal
         isOpen={showSubjectModal}
@@ -755,6 +749,14 @@ return (
           </div>
         </div>
       </TalimModal>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={cancelDeleteSubject}
+        onConfirm={confirmDeleteSubject}
+        message={`Are you sure you want to delete "${subjectToDelete?.name}"? This will also delete all associated courses.`}
+      />
 
       {/* Course Modal */}
       <CourseModal

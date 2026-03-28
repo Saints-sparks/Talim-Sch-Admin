@@ -41,15 +41,30 @@ export interface User {
   isEmailVerified: boolean;
   // Add other user properties as needed
 }
+// Update your localStorage utility
+export const getLocalStorageItem = (key: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+};
 
-export const getLocalStorageItem = (key: string): LocalStorageItem | null => {
+export const getLocalStorageJSON = <T>(key: string): T | null => {
   if (typeof window === 'undefined') return null;
   const item = localStorage.getItem(key);
   if (!item) return null;
-  return item ? JSON.parse(item) : null;
+  try {
+    return JSON.parse(item);
+  } catch (error) {
+    console.error(`Failed to parse JSON for key "${key}":`, error);
+    return null;
+  }
 };
 
-export const setLocalStorageItem = (key: string, value: LocalStorageItem): void => {
+export const setLocalStorageItem = (key: string, value: string): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, value);
+};
+
+export const setLocalStorageJSON = (key: string, value: any): void => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(key, JSON.stringify(value));
 };

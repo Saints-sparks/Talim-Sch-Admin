@@ -328,7 +328,7 @@ export const updateSubject = async (
     throw new Error("No access token found");
   }
 
-  const response = await fetch(`${API_BASE_URL}/subjects/${subjectId}`, {
+  const response = await fetch(`${API_BASE_URL}/subjects-courses/subjects/${subjectId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -351,14 +351,16 @@ export const updateSubject = async (
 
   return response.json();
 };
-
 export const deleteSubject = async (subjectId: string): Promise<void> => {
   const token = getLocalStorageItem("accessToken");
   if (!token) {
     throw new Error("No access token found");
   }
 
-  const response = await fetch(`${API_BASE_URL}/subjects/${subjectId}`, {
+  // Call the function to get the URL
+  const url = API_ENDPOINTS.DELETE_SUBJECT(subjectId);
+  
+  const response = await fetch(url, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -366,9 +368,19 @@ export const deleteSubject = async (subjectId: string): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to delete subject");
+    // Try to get error details
+    let errorMessage = "Failed to delete subject";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch (e) {
+      // If response is not JSON, use status text
+      errorMessage = `Failed to delete subject: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 };
+
 
 // Course CRUD operations with proper API endpoints
 export const updateCourseService = async (

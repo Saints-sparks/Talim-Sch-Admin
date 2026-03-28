@@ -42,6 +42,8 @@ export const API_URLS = {
   SUBJECTS: {
     GET_SUBJECTS_BY_SCHOOL: "/subjects-courses/by-school",
     CREATE_SUBJECT: "/subjects-courses/subjects",
+    UPDATE_SUBJECT: "/subjects-courses/subjects/:subjectId",
+    DELETE_SUBJECT: "/subjects-courses/subjects/:subjectId",
   },
   COURSES: {
     CREATE_COURSE: "/subjects-courses/courses",
@@ -51,7 +53,7 @@ export const API_URLS = {
     GET_COURSES_BY_SUBJECT: "/subjects-courses/courses/subject",
     GET_COURSES_BY_SCHOOL: "/subjects-courses/courses/school",
     GET_COURSES_BY_CLASS: "/subjects-courses/courses/class",
-    DELETE_COURSE: "",
+    DELETE_COURSE: "/subjects-courses/",
     GET_COURSE_BY_ID: "",
   },
   TEACHERS: {
@@ -123,6 +125,9 @@ export const API_ENDPOINTS = {
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
   GET_SUBJECTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
   CREATE_SUBJECT: `${API_BASE_URL}${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
+  DELETE_SUBJECT: (subjectId: string) =>
+    `${API_BASE_URL}${API_URLS.SUBJECTS.DELETE_SUBJECT.replace(
+      ":subjectId", subjectId )}`,
   UPDATE_COURSES_BY_CLASS: (classId: string) =>
     `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_COURSES.replace(
       ":classId",
