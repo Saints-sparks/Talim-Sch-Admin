@@ -742,7 +742,7 @@ const AddTeacherModal: React.FC<{
     >
       <div className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+        <div className="bg-[#003366] p-6 text-white">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="bg-white bg-opacity-20 p-3 rounded-xl">
@@ -851,7 +851,7 @@ const AddTeacherModal: React.FC<{
 
             <button
               onClick={handleSubmit}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#003366] text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? (

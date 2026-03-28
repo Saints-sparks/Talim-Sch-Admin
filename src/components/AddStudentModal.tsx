@@ -84,6 +84,18 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           toast.error("Please fill in all required fields");
           return;
         }
+        
+        // Helper function to generate random password
+        const generateRandomPassword = () => {
+          const length = 12;
+          const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+          let password = "";
+          for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charset.length);
+            password += charset[randomIndex];
+          }
+          return password;
+        };
 
         const registrationData = {
           email: formData.email,
@@ -92,6 +104,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber,
+          password: generateRandomPassword() // Add th
         };
 
         console.log("Sending registration data:", registrationData);
@@ -525,7 +538,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
       }}
     >
-      <div className="bg-white h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+      <div className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
         {/* Header */}
         <div className="bg-[#003366] px-6 py-5 text-white flex-shrink-0">
           <div className="flex justify-between items-start mb-5">
