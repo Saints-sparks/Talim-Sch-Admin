@@ -83,8 +83,8 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
       // Map ChatRoomType to DisplayChatRoom type
       let isGroup = false;
       let displayType: "private" | "group" = "private";
-      // Only use enum mapping for type
-      if (room.type === ChatRoomType.CLASS_GROUP || room.type === ChatRoomType.COURSE_GROUP) {
+      // Any type other than one-to-one is treated as a group
+      if (room.type !== ChatRoomType.ONE_TO_ONE) {
         isGroup = true;
         displayType = 'group';
       } else {
@@ -117,13 +117,11 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
 
       // Get last message
       const lastMessage = room.lastMessage ? {
-        content: room.lastMessage.text || '',
-        senderId: typeof room.lastMessage.senderId === 'string' ? room.lastMessage.senderId : room.lastMessage.senderId.userId,
-        senderName: typeof room.lastMessage.senderId === 'string'
-          ? 'Unknown'
-          : ((room.lastMessage.senderId.firstName || '') + (room.lastMessage.senderId.lastName ? ' ' + room.lastMessage.senderId.lastName : '')).trim() || 'Unknown',
+        content: room.lastMessage.content || '',
+        senderId: room.lastMessage.senderId || '',
+        senderName: room.lastMessage.senderName || 'Unknown',
         timestamp: new Date(room.lastMessage.createdAt),
-        type: room.lastMessage.attachments && room.lastMessage.attachments.length > 0 ? room.lastMessage.attachments[0].type : 'text'
+        type: 'text'
       } : undefined;
 
       return {
@@ -132,7 +130,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
         type: displayType,
         lastMessage,
         unreadCount: room.unreadCount || 0,
-        participants: room.participants?.map(p => {
+        participants: room.participants?.map((p: any) => {
           if (typeof p === 'string') {
             return {
               userId: p,
@@ -141,10 +139,12 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
               isOnline: false
             };
           } else {
+            const participantId = p.userId || p._id || p.id || p.user?._id || p.user?.id || p.user?.userId || '';
+            const participantName = ((p.firstName || p.user?.firstName || '') + ((p.lastName || p.user?.lastName) ? ' ' + (p.lastName || p.user?.lastName) : '')).trim();
             return {
-              userId: p.userId,
-              name: ((p.firstName || '') + (p.lastName ? ' ' + p.lastName : '')).trim(),
-              role: p.role,
+              userId: participantId,
+              name: participantName || p.name || p.user?.name || p.email || p.user?.email || undefined,
+              role: p.role || p.user?.role,
               isOnline: false // Participant does not have isActive
             };
           }
@@ -298,7 +298,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
         <div className="mx-3 sm:mx-4 mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
           <button 
-            onClick={fetchChatRooms}
+            onClick={() => fetchChatRooms()}
             className="text-xs text-red-700 underline mt-1 hover:text-red-800"
           >
             Retry
@@ -435,8 +435,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
       <CreateGroupModal
         open={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        onCreate={() => {}}
-        schoolName={""}
+        onSuccess={() => fetchChatRooms(true)}
       />
     </div>
   );

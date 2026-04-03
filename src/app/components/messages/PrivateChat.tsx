@@ -70,6 +70,15 @@ export default function PrivateChat({
     selectChatRoom
   } = useChats();
 
+  const extractId = useCallback((value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      return value._id || value.id || value.userId || '';
+    }
+    return String(value);
+  }, []);
+
   // Get current user ID
   const getCurrentUserId = useCallback((): string | undefined => {
     return user?.userId || user?._id;
@@ -100,6 +109,31 @@ export default function PrivateChat({
     return false;
   }, [user, getCurrentUserId]);
 
+  const participantNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    const participants = room?.participants || [];
+
+    participants.forEach((participant: any) => {
+      const participantObj = typeof participant === 'object' ? participant : { userId: participant };
+      const participantId =
+        extractId(participantObj?.userId) ||
+        extractId(participantObj?._id) ||
+        extractId(participantObj?.id);
+
+      if (!participantId) return;
+
+      const name = participantObj?.firstName && participantObj?.lastName
+        ? `${participantObj.firstName} ${participantObj.lastName}`.trim()
+        : participantObj?.name || participantObj?.email || '';
+
+      if (name) {
+        map.set(participantId, name);
+      }
+    });
+
+    return map;
+  }, [room?.participants, extractId]);
+
 const messages = useMemo(() => {
   if (!chatMessages || chatMessages.length === 0) {
     return [];
@@ -108,24 +142,30 @@ const messages = useMemo(() => {
   return chatMessages
     .map((msg: any) => {
       // Extract senderId - it might be an object or a string
-      let senderId = '';
-      if (typeof msg.senderId === 'object' && msg.senderId !== null) {
-        // If it's an object, try to get the _id property
-        senderId = msg.senderId._id || msg.senderId.toString();
-      } else {
-        senderId = msg.senderId || msg.sender || '';
-      }
+      const senderId =
+        extractId(msg.senderId) ||
+        extractId(msg.sender?._id) ||
+        extractId(msg.sender?.id) ||
+        extractId(msg.sender?.userId) ||
+        extractId(msg.sender);
       
-      let senderName = msg.senderName || 'Unknown';
+      const senderObjectName = msg.sender?.firstName && msg.sender?.lastName
+        ? `${msg.sender.firstName} ${msg.sender.lastName}`.trim()
+        : msg.sender?.name || msg.sender?.email || '';
+
+      let senderName =
+        msg.senderName ||
+        senderObjectName ||
+        participantNameById.get(senderId) ||
+        room?.displayName ||
+        room?.name ||
+        'User';
       
       console.log('📨 Message - Raw senderId:', msg.senderId, 'Extracted senderId:', senderId, 'Sender Name:', senderName);
       console.log('👤 Current user - _id:', user?._id, 'userId:', user?.userId);
 
       // Check if this message is from the logged-in user
-      const isMyMessage = 
-        senderId === user?._id || 
-        senderId === user?.userId ||
-        (typeof msg.senderId === 'object' && msg.senderId?._id === user?._id);
+      const isMyMessage = isCurrentUser(senderId, senderName);
 
       // If it's the current user's message, use their name
       if (isMyMessage) {
@@ -155,7 +195,7 @@ const messages = useMemo(() => {
     .sort((a, b) => 
       new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
     );
-}, [chatMessages, user]);
+}, [chatMessages, user, extractId, isCurrentUser, participantNameById, room]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -177,6 +217,20 @@ const messages = useMemo(() => {
       }
       // Debounce room selection
       selectRoomTimeoutRef.current = setTimeout(() => {
+        // Pre-check membership before delegating to selectChatRoom
+        if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
+          const currentUserId = user?.userId || user?._id;
+          if (currentUserId) {
+            const isMember = room.participants.some((p: any) => {
+              const pid = typeof p === 'string' ? p : (p.userId || p._id || p.id || p)?.toString?.() || '';
+              return pid === currentUserId;
+            });
+            if (!isMember) {
+              console.warn(`⛔ PrivateChat: user ${currentUserId} is not a member of room ${room.roomId}, skipping selection`);
+              return;
+            }
+          }
+        }
         console.log(`📥 Selecting room: ${room.roomId}`);
         selectChatRoom(room.roomId);
         selectedRoomRef.current = room.roomId;
@@ -380,7 +434,7 @@ const handleSendMessage = useCallback(async () => {
   chatRoomId={room?._id || room?.roomId} // Pass the room ID
   participants={groupParticipants.length > 0 ? groupParticipants : room?.participants}
   currentUserId={user?._id || user?.userId}
-  onAddParents={() => {
+  onAddParticipants={() => {
     // Optional: Refresh the chat after adding parents
     console.log('Parents added, refreshing...');
     // You might want to refresh messages or participants here

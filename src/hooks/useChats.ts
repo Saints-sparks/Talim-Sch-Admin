@@ -53,6 +53,27 @@ interface UseChatsReturn {
 
 export const useChats = (): UseChatsReturn => {
   const { user, accessToken, isAuthenticated } = useAuth();
+
+  const normalizeId = useCallback((value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    return value?.toString?.() || '';
+  }, []);
+
+  const getParticipantId = useCallback((participant: any): string => {
+    if (!participant) return '';
+    if (typeof participant === 'string' || typeof participant === 'number') {
+      return normalizeId(participant);
+    }
+
+    // Support multiple backend payload shapes
+    const direct = participant.userId || participant._id || participant.id;
+    const nestedUser = participant.user?.userId || participant.user?._id || participant.user?.id;
+    const nestedParticipant = participant.participant?.userId || participant.participant?._id || participant.participant?.id;
+
+    return normalizeId(direct || nestedUser || nestedParticipant || participant);
+  }, [normalizeId]);
   
   // State
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
@@ -108,8 +129,25 @@ export const useChats = (): UseChatsReturn => {
     try {
       const rooms = await chatService.getUserChatRooms();
       const roomsArray = Array.isArray(rooms) ? rooms : [];
+
+      // Only keep rooms where the current user is a participant
+      const currentUserId = normalizeId(user?.userId || user?._id || user?.id);
+      if (!currentUserId) {
+        console.warn('⛔ Blocking room list: current user ID unavailable for membership filter');
+        setChatRooms([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      const memberRooms = roomsArray.filter(room => {
+        if (!room.participants || !Array.isArray(room.participants)) return false;
+        return room.participants.some((p: any) => {
+          const pid = getParticipantId(p);
+          return pid === currentUserId;
+        });
+      });
       
-      const sortedRooms = roomsArray.sort((a, b) => {
+      const sortedRooms = memberRooms.sort((a, b) => {
         const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
         const dateB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
         return dateB - dateA;
@@ -127,7 +165,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated, accessToken, user?.userId, user?._id, user?.id, normalizeId, getParticipantId]);
 
   /**
    * Create a new chat room
@@ -179,6 +217,8 @@ export const useChats = (): UseChatsReturn => {
       let errorMessage = 'Failed to create group chat';
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
+      } else if (typeof err?.message === 'string' && err.message.startsWith('HTTP')) {
+        errorMessage = err.message;
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -200,8 +240,16 @@ export const useChats = (): UseChatsReturn => {
       return;
     }
 
-    // Find room in existing list
+    const currentUserId = normalizeId(user?.userId || user?._id || user?.id);
+    if (!currentUserId) {
+      toast.error('Unable to verify chat membership for current user');
+      setError('Access denied: unable to verify current user');
+      return;
+    }
+
+    // Find room in existing list; track resolvedRoom to use in guard (avoids stale re-lookup)
     const room = chatRooms.find(r => r._id === roomId);
+    let resolvedRoom = room || null;
     if (!room) {
       await fetchChatRooms(true); // Force fetch
       const refreshedRoom = chatRooms.find(r => r._id === roomId);
@@ -209,9 +257,43 @@ export const useChats = (): UseChatsReturn => {
         setError('Chat room not found');
         return;
       }
-      setCurrentRoom(refreshedRoom);
-    } else {
-      setCurrentRoom(room);
+      resolvedRoom = refreshedRoom;
+    }
+
+    // Verify the current user is a participant — use resolvedRoom (not a stale second lookup)
+    let participantIds: string[] = [];
+    if (resolvedRoom?.participants && Array.isArray(resolvedRoom.participants) && resolvedRoom.participants.length > 0) {
+      participantIds = resolvedRoom.participants
+        .map((p: any) => getParticipantId(p))
+        .filter(Boolean);
+    }
+
+    // Fail-closed: if local room payload lacks participant IDs, verify via server endpoint
+    if (participantIds.length === 0) {
+      try {
+        const apiParticipants = await chatService.getChatRoomParticipants(roomId);
+        participantIds = (Array.isArray(apiParticipants) ? apiParticipants : [])
+          .map((p: any) => getParticipantId(p))
+          .filter(Boolean);
+      } catch (verifyError) {
+        console.warn(`⛔ Blocked fetch: could not verify participants for room ${roomId}`, verifyError);
+        toast.error('Unable to verify chat membership');
+        setError('Access denied: unable to verify chat membership');
+        return;
+      }
+    }
+
+    const isMember = participantIds.includes(currentUserId);
+    if (!isMember) {
+      console.warn(`⛔ Blocked fetch: user ${currentUserId} is not a member of room ${roomId}`);
+      toast.error('You are not a member of this chat room');
+      setError('Access denied: you are not a member of this chat room');
+      return;
+    }
+
+    // Set current room only after membership is verified
+    if (resolvedRoom) {
+      setCurrentRoom(resolvedRoom);
     }
 
     currentRoomIdRef.current = roomId;
@@ -247,17 +329,20 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId]);
+  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId, user?._id, user?.id, normalizeId, getParticipantId]);
 
 
 
 const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessage | null> => {
-  if (!isAuthenticated || !accessToken || !currentRoom) {
+  const targetRoomId = data.chatRoomId || currentRoom?._id;
+
+  if (!isAuthenticated || !accessToken || !targetRoomId) {
     console.error('❌ Cannot send message - missing requirements:', {
       isAuthenticated,
       hasAccessToken: !!accessToken,
       hasCurrentRoom: !!currentRoom,
-      currentRoomId: currentRoom?._id
+      currentRoomId: currentRoom?._id,
+      dataChatRoomId: data.chatRoomId
     });
     toast.error('Cannot send message');
     return null;
@@ -265,7 +350,7 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
 
   // Backend expects 'chatRoomId' and 'text'
   const messageData: SendMessageDto = {
-    chatRoomId: currentRoom._id,  // Use 'chatRoomId' as the backend expects
+    chatRoomId: targetRoomId,
     text: data.text || '',     // Backend expects 'text'
     attachments: data.attachments || []
   };
@@ -291,7 +376,7 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
     senderId: currentUserId,
     senderName: currentUserName,
     content: messageData.text,
-    roomId: currentRoom._id,
+    roomId: targetRoomId,
     isRead: false,
     readBy: [],
     type: 'text',
@@ -316,7 +401,7 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
     
     // Update last message in chat rooms list
     setChatRooms(prev => prev.map(room => 
-      room._id === currentRoom._id 
+      room._id === targetRoomId 
         ? { 
             ...room, 
             lastMessage: newMessage,

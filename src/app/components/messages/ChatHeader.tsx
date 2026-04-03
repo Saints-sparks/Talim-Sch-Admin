@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
+import GroupMembersModal from "./GroupMembersModal";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
@@ -62,7 +63,7 @@ function processParticipants(participants: any[], currentUserId?: string): Parti
         isOnline: participantData.isOnline || p.isOnline || false,
       };
     })
-    .filter((p: Participant) => p.id && p.id !== currentUserId); // Filter out current user
+    .filter((p: Participant) => p.id);
 }
 
 interface ChatHeaderProps {
@@ -97,6 +98,7 @@ export default function ChatHeader({
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
   const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
 
@@ -250,6 +252,13 @@ export default function ChatHeader({
                   {isGroup && chatRoomId && (
                     <>
                       <DropdownMenuItem
+                        onClick={() => setIsMembersModalOpen(true)}
+                        className="cursor-pointer"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>View Members</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         onClick={() => setIsAddParentModalOpen(true)}
                         className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
                       >
@@ -294,6 +303,16 @@ export default function ChatHeader({
           participants={processedParticipants}
           chatRoomId={chatRoomId}
         />
+
+        {isGroup && (
+          <GroupMembersModal
+            isOpen={isMembersModalOpen}
+            onClose={() => setIsMembersModalOpen(false)}
+            groupName={name}
+            participants={processedParticipants}
+            currentUserId={currentUserId}
+          />
+        )}
 
         {/* Add Parent Modal */}
         {isGroup && chatRoomId && (

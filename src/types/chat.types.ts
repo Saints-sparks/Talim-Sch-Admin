@@ -24,7 +24,8 @@ export interface User {
 export enum ChatRoomType {
   CLASS_GROUP = 'class_group',
   COURSE_GROUP = 'course_group',
-  ONE_TO_ONE = 'one_to_one'
+  ONE_TO_ONE = 'one_to_one',
+  ADMIN_PARENT_GROUP = 'admin_parent_group'
 }
 
 export interface Participant {
@@ -93,7 +94,7 @@ export interface CreateChatRoomDto {
 }
 
 export interface CreateGroupChatDto {
-  type: ChatRoomType.CLASS_GROUP | ChatRoomType.COURSE_GROUP;
+  type: ChatRoomType.CLASS_GROUP | ChatRoomType.COURSE_GROUP | ChatRoomType.ADMIN_PARENT_GROUP | string;
   classId?: string;
   courseId?: string;
   termId?: string;

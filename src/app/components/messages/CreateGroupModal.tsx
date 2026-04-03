@@ -111,19 +111,16 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         console.log('✅ Group created:', newGroup);
         toast.success("Parent group created successfully!");
         
-        // Refresh chat rooms to show the new group
-        await fetchChatRooms();
-        
         // Reset form
         setGroupName("");
         
-        // Call success callback if provided
+        // Close modal first
+        onClose();
+
+        // Notify parent to force-refresh its own chat rooms list
         if (onSuccess) {
           onSuccess();
         }
-        
-        // Close modal
-        onClose();
       }
     } catch (error: any) {
       console.error("❌ Error creating group:", error);

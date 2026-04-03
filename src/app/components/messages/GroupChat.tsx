@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChats } from "@/hooks/useChats";
+import { chatService } from "@/services/chatServices";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import GroupMessageBubble from "./GroupMessageBubble";
@@ -50,7 +51,8 @@ export default function GroupChat({
 }: GroupChatProps) {
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isParticipant, setIsParticipant] = useState<boolean>(true); // Assume true until checked
+  // null = not yet checked, true = confirmed member, false = confirmed non-member
+  const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -68,6 +70,9 @@ export default function GroupChat({
     loadOlderMessages,
     refreshMessages,
     clearMessages,
+    addMessage,
+    updateMessage,
+    removeMessage,
   } = useChatMessages();
 
   // Use the sendMessage from useChats
@@ -81,38 +86,109 @@ export default function GroupChat({
 
   const roomId = getRoomId();
 
-  // Check if current user is a participant in this group
+  const getMessageDayKey = useCallback((value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
+  }, []);
+
+  const formatDateSeparator = useCallback((value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const today = new Date();
+    const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const diffDays = Math.round((todayKey - dateKey) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+
+    return date.toLocaleDateString([], {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, []);
+
+  const extractId = useCallback((value: any): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "number") return String(value);
+    if (typeof value === "object") {
+      const direct = value._id || value.id || value.userId;
+      const nestedUser = value.user?._id || value.user?.id || value.user?.userId;
+      const nestedParticipant = value.participant?._id || value.participant?.id || value.participant?.userId;
+      return (direct || nestedUser || nestedParticipant || value?.toString?.() || "") as string;
+    }
+    return String(value);
+  }, []);
+
+  // Reset participation state when room changes so the check re-runs
   useEffect(() => {
-    if (!room || !user || participationCheckedRef.current) return;
+    setIsParticipant(null);
+    participationCheckedRef.current = false;
+  }, [roomId]);
 
-    const checkParticipation = () => {
-      const currentUserId = user?.userId || user?._id;
-      if (!currentUserId) return;
+  // Run membership check once isParticipant resets to null
+  useEffect(() => {
+    if (!room || !user || isParticipant !== null) return;
 
-      // Check if user is in participants list
-      if (room.participants && Array.isArray(room.participants)) {
-        const isUserParticipant = room.participants.some((p: any) => {
-          const participantId = p.userId || p._id || p.id || p;
-          return participantId === currentUserId;
-        });
+    const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
+    if (!currentUserId) {
+      participationCheckedRef.current = true;
+      setIsParticipant(false);
+      return;
+    }
 
-        setIsParticipant(isUserParticipant);
-        
-        if (!isUserParticipant) {
-          console.warn('⚠️ Current user is not a participant in this group:', {
-            currentUserId,
-            participants: room.participants
+    const verifyMembership = async () => {
+      let participantIds: string[] = [];
+
+      if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
+        participantIds = room.participants
+          .map((p: any) => extractId(p))
+          .filter(Boolean);
+      }
+
+      // Fail-closed: if room payload does not include usable participant IDs,
+      // verify against participants endpoint before allowing any fetch.
+      if (participantIds.length === 0 && roomId) {
+        try {
+          const apiParticipants = await chatService.getChatRoomParticipants(roomId);
+          participantIds = (Array.isArray(apiParticipants) ? apiParticipants : [])
+            .map((p: any) => extractId(p))
+            .filter(Boolean);
+        } catch (verifyError) {
+          console.warn('⚠️ Membership verification failed; blocking room fetch', {
+            roomId,
+            verifyError,
           });
-        } else {
-          console.log('✅ Current user is a participant in this group');
+          participationCheckedRef.current = true;
+          setIsParticipant(false);
+          return;
         }
       }
-      
+
+      const isMember = participantIds.includes(currentUserId);
       participationCheckedRef.current = true;
+      setIsParticipant(isMember);
+
+      if (!isMember) {
+        console.warn('⚠️ Current user is NOT a participant in this group:', {
+          currentUserId,
+          roomId,
+          participantIds,
+        });
+      } else {
+        console.log('✅ Current user is a participant in this group');
+      }
     };
 
-    checkParticipation();
-  }, [room, user]);
+    verifyMembership();
+  }, [room, user, isParticipant, roomId]);
 
   // Debug logging for room and user
   useEffect(() => {
@@ -169,6 +245,31 @@ export default function GroupChat({
     return extractedSenderId === currentUserId;
   }, [currentUserInfo.id]);
 
+  const participantNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    const participants = room?.participants || [];
+
+    participants.forEach((participant: any) => {
+      const participantObj = typeof participant === "object" ? participant : { userId: participant };
+      const participantId =
+        extractId(participantObj?.userId) ||
+        extractId(participantObj?._id) ||
+        extractId(participantObj?.id);
+
+      if (!participantId) return;
+
+      const name = participantObj?.firstName && participantObj?.lastName
+        ? `${participantObj.firstName} ${participantObj.lastName}`.trim()
+        : participantObj?.name || participantObj?.email || "";
+
+      if (name) {
+        map.set(participantId, name);
+      }
+    });
+
+    return map;
+  }, [room?.participants, extractId]);
+
   // Get user initials for avatar
   const getUserAvatarInitials = useCallback((senderId: string, senderName: string): string => {
     if (isCurrentUser(senderId)) {
@@ -177,11 +278,21 @@ export default function GroupChat({
     return getUserInitialsFromName(senderName);
   }, [isCurrentUser, currentUserInfo.initials, getUserInitialsFromName]);
 
-  // Fetch messages when room changes
+  // Fetch messages when room changes — only after participation is verified
   useEffect(() => {
     if (!roomId) {
       clearMessages();
       fetchedRoomsRef.current.clear();
+      participationCheckedRef.current = false;
+      return;
+    }
+
+    // Block until the participation check completes (null = unchecked)
+    if (isParticipant === null) return;
+
+    // Block if confirmed non-member
+    if (isParticipant === false) {
+      console.warn(`⛔ Blocked fetch: current user is not a participant of room ${roomId}`);
       return;
     }
 
@@ -202,7 +313,8 @@ export default function GroupChat({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [roomId, fetchMessages, clearMessages]);
+  // isParticipant in deps causes this to re-run on null → true/false transition
+  }, [roomId, fetchMessages, clearMessages, isParticipant]);
 
   // Transform messages for UI
   const messages = useMemo(() => {
@@ -212,15 +324,22 @@ export default function GroupChat({
 
     return chatMessages.map((msg: any) => {
       // Extract senderId properly (could be string or object)
-      let senderId = '';
-      if (typeof msg.senderId === 'object' && msg.senderId !== null) {
-        senderId = msg.senderId._id || msg.senderId.toString();
-      } else {
-        senderId = msg.senderId || msg.sender?._id || '';
-      }
+      const senderId =
+        extractId(msg.senderId) ||
+        extractId(msg.sender?._id) ||
+        extractId(msg.sender?.id) ||
+        extractId(msg.sender?.userId);
       
       // Get sender name
-      let senderName = msg.senderName || msg.sender?.name || 'Unknown';
+      const senderObjectName = msg.sender?.firstName && msg.sender?.lastName
+        ? `${msg.sender.firstName} ${msg.sender.lastName}`.trim()
+        : msg.sender?.name || msg.sender?.email || "";
+
+      let senderName =
+        msg.senderName ||
+        senderObjectName ||
+        participantNameById.get(senderId) ||
+        "User";
       
       // Check if this message is from the current user
       const isMyMessage = isCurrentUser(senderId);
@@ -253,7 +372,7 @@ export default function GroupChat({
     }).sort((a, b) => 
       new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
     );
-  }, [chatMessages, isCurrentUser, currentUserInfo.name, getUserAvatarInitials]);
+  }, [chatMessages, extractId, isCurrentUser, currentUserInfo.name, getUserAvatarInitials, participantNameById]);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -268,9 +387,10 @@ export default function GroupChat({
 
   // Handle sending a new message
   const handleSendMessage = useCallback(async () => {
-    if (!messageInput.trim() || !roomId || isSending) {
+    const trimmedMessage = messageInput.trim();
+    if (!trimmedMessage || !roomId || isSending) {
       console.log('Cannot send:', { 
-        hasMessage: !!messageInput.trim(), 
+        hasMessage: !!trimmedMessage, 
         hasRoomId: !!roomId, 
         isSending 
       });
@@ -278,39 +398,74 @@ export default function GroupChat({
     }
 
     // Check if user is a participant
-    if (!isParticipant) {
+    if (isParticipant === false) {
       toast.error('You are not a participant in this group');
       console.error('Cannot send message: User is not a participant');
       return;
     }
 
     setIsSending(true);
+
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      _id: optimisticId,
+      senderId: currentUserInfo.id,
+      senderName: currentUserInfo.name || 'You',
+      content: trimmedMessage,
+      roomId,
+      isRead: false,
+      readBy: [],
+      type: 'text',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Show outgoing message instantly in this chat view
+    addMessage(optimisticMessage as any);
+    setMessageInput("");
     
     try {
       console.log("📤 Sending group message:", {
         roomId,
-        text: messageInput.trim(),
+        text: trimmedMessage,
         userId: currentUserInfo.id
       });
       
       const result = await sendMessage({
         chatRoomId: roomId,
-        text: messageInput.trim(),
+        text: trimmedMessage,
       });
       
       if (result) {
         console.log("✅ Message sent successfully:", result);
-        setMessageInput("");
+        // Reconcile optimistic message with backend-confirmed message
+        updateMessage(optimisticId, {
+          ...result,
+          _id: result._id,
+        } as any);
       } else {
         throw new Error('Failed to send message');
       }
     } catch (err) {
+      removeMessage(optimisticId);
+      setMessageInput(trimmedMessage);
       console.error("❌ Send failed", err);
       toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSending(false);
     }
-  }, [messageInput, roomId, isSending, sendMessage, isParticipant, currentUserInfo.id]);
+  }, [
+    messageInput,
+    roomId,
+    isSending,
+    sendMessage,
+    isParticipant,
+    currentUserInfo.id,
+    currentUserInfo.name,
+    addMessage,
+    updateMessage,
+    removeMessage,
+  ]);
 
   // Handle scroll for pagination
   const handleScroll = useCallback(() => {
@@ -355,7 +510,7 @@ export default function GroupChat({
   }, [room]);
 
   // If not a participant, show a message
-  if (roomId && !isParticipant && !isLoading) {
+  if (roomId && isParticipant === false && !isLoading) {
     return (
       <div className="w-full h-full flex flex-col bg-white">
         <ChatHeader
@@ -396,7 +551,7 @@ export default function GroupChat({
         initials={currentUserInfo.initials}
         isGroup={true}
         chatRoomId={roomId}
-        onAddParents={() => {
+        onAddParticipants={() => {
           console.log('Add parents to group');
           // You can implement this functionality
         }}
@@ -442,20 +597,34 @@ export default function GroupChat({
             <p className="text-sm">Send a message to start the conversation</p>
           </div>
         ) : (
-          messages.map((msg, idx) => (
-            <GroupMessageBubble
-              key={msg._id || `${idx}-${msg.createdAt}`}
-              msg={{
-                ...msg,
-                senderType: msg.senderType,
-                initials: msg.initials,
-              }}
-              index={idx}
-              openSubMenu={openSubMenu}
-              toggleSubMenu={toggleSubMenu}
-              setReplyingMessage={setReplyingMessage}
-            />
-          ))
+          messages.map((msg, idx) => {
+            const currentDayKey = getMessageDayKey(msg.createdAt);
+            const prevDayKey = idx > 0 ? getMessageDayKey(messages[idx - 1]?.createdAt) : "";
+            const showDateSeparator = idx === 0 || currentDayKey !== prevDayKey;
+
+            return (
+              <div key={msg._id || `${idx}-${msg.createdAt}`}>
+                {showDateSeparator && (
+                  <div className="flex items-center justify-center my-3">
+                    <span className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
+                      {formatDateSeparator(msg.createdAt)}
+                    </span>
+                  </div>
+                )}
+                <GroupMessageBubble
+                  msg={{
+                    ...msg,
+                    senderType: msg.senderType,
+                    initials: msg.initials,
+                  }}
+                  index={idx}
+                  openSubMenu={openSubMenu}
+                  toggleSubMenu={toggleSubMenu}
+                  setReplyingMessage={setReplyingMessage}
+                />
+              </div>
+            );
+          })
         )}
 
         <div ref={messagesEndRef} />
@@ -472,12 +641,12 @@ export default function GroupChat({
         value={messageInput}
         onChange={(e) => setMessageInput(e.target.value)}
         onSend={handleSendMessage}
-        disabled={!roomId || isSending || !isParticipant}
+        disabled={!roomId || isSending || isParticipant === false || isParticipant === null}
         isSending={isSending}
         placeholder={
           !roomId 
             ? "Select a chat to start messaging"
-            : !isParticipant
+            : isParticipant === false
             ? "You are not a participant in this group"
             : isSending 
             ? "Sending..." 

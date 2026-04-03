@@ -40,6 +40,33 @@ const getUserDisplayName = (user: any): string => {
 
 class ChatService {
   private readonly baseUrl = '/chat';
+
+  private normalizeRoomPayload(payload: any): ChatRoom {
+    const room = payload?.data || payload?.chatRoom || payload?.room || payload?.result || payload;
+    return {
+      ...room,
+      _id: room?._id || room?.id || room?.roomId,
+      participants: room?.participants || [],
+    } as ChatRoom;
+  }
+
+  private async extractErrorMessage(response: Response): Promise<string> {
+    try {
+      const text = await response.text();
+      if (!text) return `HTTP ${response.status}`;
+      try {
+        const parsed = JSON.parse(text);
+        const message = parsed?.message || parsed?.error || parsed?.details;
+        if (Array.isArray(message)) return message.join(', ');
+        if (typeof message === 'string') return message;
+      } catch {
+        // response body is plain text; fall through
+      }
+      return text;
+    } catch {
+      return `HTTP ${response.status}`;
+    }
+  }
   
   // Debouncing mechanism
   private pendingRequests: Map<string, Promise<CursorMessagesResponse>> = new Map();
@@ -63,12 +90,16 @@ class ChatService {
       console.log('📥 Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await this.extractErrorMessage(response);
         console.error('❌ Error response body:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
-      
-      const result = await response.json();
+
+      const raw = await response.json();
+      const result = this.normalizeRoomPayload(raw);
+      if (!result?._id) {
+        throw new Error('Invalid chat room response: missing room id');
+      }
       console.log('✅ Chat room created successfully:', result);
       return result;
     } catch (error) {
@@ -90,19 +121,30 @@ class ChatService {
       console.log('📥 Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await this.extractErrorMessage(response);
         console.error('❌ Error response body:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
-      
+
       const text = await response.text();
       console.log('📥 Raw response:', text);
-      
+
       if (!text) {
         throw new Error('Empty response from server');
       }
-      
-      const result = JSON.parse(text);
+
+      let raw: any;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid JSON response from server');
+      }
+
+      const result = this.normalizeRoomPayload(raw);
+      if (!result?._id) {
+        throw new Error('Invalid group response: missing room id');
+      }
+
       console.log('✅ Group created successfully:', result);
       return result;
     } catch (error) {
@@ -118,19 +160,42 @@ class ChatService {
   async getUserChatRooms(): Promise<ChatRoom[]> {
     try {
       console.log('📤 Fetching user chat rooms');
-      
-      const response = await apiClient.get(`${this.baseUrl}/rooms`);
-      
+
+      let response = await apiClient.get(`${this.baseUrl}/rooms?_ts=${Date.now()}`, {
+        cache: 'no-store',
+      });
+
       console.log('📥 Response status:', response.status);
-      
+
+      // Some environments still return 304; retry with cache-buster to force fresh body.
+      if (response.status === 304) {
+        const cacheBuster = `_ts=${Date.now()}`;
+        response = await apiClient.get(`${this.baseUrl}/rooms?${cacheBuster}`, {
+          cache: 'no-store',
+        });
+        console.log('📥 Retried rooms fetch status:', response.status);
+      }
+
       if (response.status === 204) {
         console.log('📥 No chat rooms found');
         return [];
       }
-      
-      const result = await response.json();
-      console.log(`📥 Fetched ${result.length} chat rooms`);
-      return result;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch rooms'}`);
+      }
+
+      const text = await response.text();
+      if (!text) {
+        console.log('📥 Empty rooms response body');
+        return [];
+      }
+
+      const result = JSON.parse(text);
+      const rooms = Array.isArray(result) ? result : [];
+      console.log(`📥 Fetched ${rooms.length} chat rooms`);
+      return rooms;
     } catch (error) {
       console.error('❌ Error fetching user chat rooms:', error);
       throw error;
