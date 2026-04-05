@@ -1,13 +1,38 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChatRoom } from "@/types/chat.types";
 import { formatDistanceToNow } from "date-fns";
 import { Users } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
+interface ChatSidebarParticipant {
+  _id?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+}
+
+interface ChatSidebarMessage {
+  type?: string;
+  content?: string;
+}
+
+interface ChatSidebarRoom {
+  name?: string;
+  participants?: ChatSidebarParticipant[];
+  currentUserId?: string;
+  avatarInfo?: {
+    type?: "image" | "initials";
+    value?: string;
+  };
+  lastMessageAt?: Date | string;
+  lastMessage?: ChatSidebarMessage;
+  unreadCount?: number;
+}
+
 interface ChatSidebarItemProps {
-  room: ChatRoom;
+  room: ChatSidebarRoom;
   type: "private" | "group";
   onClick: () => void;
 }
@@ -28,7 +53,8 @@ export default function ChatSidebarItem({ room, type, onClick }: ChatSidebarItem
       };
     } else {
       // Private chat - get the other participant
-      const otherParticipant = room.participants?.find(p => p._id !== room.currentUserId) || room.participants?.[0];
+      const otherParticipant =
+        room.participants?.find((p) => p._id !== room.currentUserId) || room.participants?.[0];
       const participantName = otherParticipant 
         ? `${otherParticipant.firstName || ''} ${otherParticipant.lastName || ''}`.trim() 
         : 'Unknown User';
@@ -105,10 +131,10 @@ export default function ChatSidebarItem({ room, type, onClick }: ChatSidebarItem
         </p>
 
         {/* Unread count */}
-        {room.unreadCount > 0 && (
+        {(room.unreadCount || 0) > 0 && (
           <div className="mt-1">
             <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-              {room.unreadCount}
+              {room.unreadCount || 0}
             </span>
           </div>
         )}
