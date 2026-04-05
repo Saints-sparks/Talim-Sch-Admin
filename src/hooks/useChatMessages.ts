@@ -4,9 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { chatService } from '@/services/chatServices';
 import { ChatMessage } from '@/types/chat.types';
 import { toast } from 'react-toastify';
-import debounce from 'lodash/debounce';
 
-interface UseChatMessagesReturn {
+export interface UseChatMessagesReturn {
   // State
   messages: ChatMessage[];
   isLoading: boolean;
@@ -44,6 +43,37 @@ interface FetchMessagesOptions {
 // Throttling configuration
 const FETCH_THROTTLE_MS = 5000; // 5 seconds minimum between fetches for same room
 const PAGINATION_THROTTLE_MS = 2000; // 2 seconds between pagination requests
+
+const createAsyncDebounce = (fn: () => Promise<void>, waitMs: number) => {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let previousResolve: (() => void) | null = null;
+
+  return () =>
+    new Promise<void>((resolve, reject) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      // Resolve the previous queued caller since its invocation is superseded.
+      if (previousResolve) {
+        previousResolve();
+      }
+
+      previousResolve = resolve;
+
+      timeoutId = setTimeout(async () => {
+        timeoutId = null;
+        previousResolve = null;
+
+        try {
+          await fn();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      }, waitMs);
+    });
+};
 
 export const useChatMessages = (): UseChatMessagesReturn => {
   const { isAuthenticated, accessToken } = useAuth();
@@ -256,7 +286,7 @@ const fetchMessages = useCallback(async (
 
   // Create debounced versions of pagination functions
   const debouncedLoadOlder = useCallback(
-    debounce(async () => {
+    createAsyncDebounce(async () => {
       if (!currentRoomIdRef.current) {
         setError('No chat room selected');
         return;
@@ -276,7 +306,7 @@ const fetchMessages = useCallback(async (
   );
 
   const debouncedLoadNewer = useCallback(
-    debounce(async () => {
+    createAsyncDebounce(async () => {
       if (!currentRoomIdRef.current) {
         setError('No chat room selected');
         return;
