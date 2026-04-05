@@ -23,10 +23,6 @@ interface UseChatsReturn {
   isLoadingMore: boolean;
   hasMoreMessages: boolean;
   error: string | null;
-
-  addParticipant: (roomId: string, userId: string) => Promise<void>;
-  addParticipantsToRoom: (roomId: string, userIds: string[]) => Promise<void>; // Add this line
-  removeParticipant: (roomId: string, userId: string) => Promise<void>;
   
   // Chat room operations
   fetchChatRooms: (force?: boolean) => Promise<void>;
@@ -43,6 +39,7 @@ interface UseChatsReturn {
   
   // Participant operations
   addParticipant: (roomId: string, userId: string) => Promise<void>;
+  addParticipantsToRoom: (roomId: string, userIds: string[]) => Promise<void>;
   removeParticipant: (roomId: string, userId: string) => Promise<void>;
   
   // Utility
@@ -131,7 +128,7 @@ export const useChats = (): UseChatsReturn => {
       const roomsArray = Array.isArray(rooms) ? rooms : [];
 
       // Only keep rooms where the current user is a participant
-      const currentUserId = normalizeId(user?.userId || user?._id || user?.id);
+      const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
       if (!currentUserId) {
         console.warn('⛔ Blocking room list: current user ID unavailable for membership filter');
         setChatRooms([]);
@@ -165,7 +162,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, user?.userId, user?._id, user?.id, normalizeId, getParticipantId]);
+  }, [isAuthenticated, accessToken, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
 
   /**
    * Create a new chat room
@@ -240,7 +237,7 @@ export const useChats = (): UseChatsReturn => {
       return;
     }
 
-    const currentUserId = normalizeId(user?.userId || user?._id || user?.id);
+    const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
     if (!currentUserId) {
       toast.error('Unable to verify chat membership for current user');
       setError('Access denied: unable to verify current user');
@@ -329,7 +326,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId, user?._id, user?.id, normalizeId, getParticipantId]);
+  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
 
 
 
