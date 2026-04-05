@@ -378,7 +378,7 @@ class ChatService {
     limit: number,
     cursor?: string,
     direction: 'before' | 'after' = 'before',
-    cacheKey: string
+    cacheKey: string = ''
   ): Promise<CursorMessagesResponse> {
     try {
       const queryParams = new URLSearchParams();
