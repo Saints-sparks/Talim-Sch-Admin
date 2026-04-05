@@ -40,17 +40,16 @@ interface ChatSidebarItemProps {
 export default function ChatSidebarItem({ room, type, onClick }: ChatSidebarItemProps) {
   
   // Get display name and avatar info
-  const { name, avatar, subtitle, color, initials } = useMemo(() => {
+  const { name, avatar, color, initials } = useMemo(() => {
     if (type === "group") {
       // Group chat
       const groupName = room.name || "Group Chat";
-      return {
-        name: groupName,
-        avatar: room.avatarInfo?.type === "image" ? room.avatarInfo.value : null,
-        subtitle: `${room.participants?.length || 0} participants`,
-        color: generateColorFromString(groupName),
-        initials: "👥"
-      };
+        return {
+          name: groupName,
+          avatar: room.avatarInfo?.type === "image" ? room.avatarInfo.value : null,
+          color: generateColorFromString(groupName),
+          initials: "👥"
+        };
     } else {
       // Private chat - get the other participant
       const otherParticipant =
@@ -62,7 +61,6 @@ export default function ChatSidebarItem({ room, type, onClick }: ChatSidebarItem
       return {
         name: participantName || otherParticipant?.email || 'User',
         avatar: otherParticipant?.avatar || null,
-        subtitle: otherParticipant?.email || '',
         color: generateColorFromString(participantName || otherParticipant?.email || ''),
         initials: getUserInitials(participantName || otherParticipant?.email || 'U')
       };
