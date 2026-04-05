@@ -23,6 +23,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     firstName: "",
     lastName: "",
     phoneNumber: "",
+    password: "",
     classId: "",
     gradeLevel: "",
     parentContact: {
@@ -97,6 +98,8 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           return password;
         };
 
+        const generatedPassword = generateRandomPassword();
+
         const registrationData = {
           email: formData.email,
           role: "student",
@@ -104,11 +107,12 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber,
-          password: generateRandomPassword() // Add th
+          password: generatedPassword,
         };
 
         console.log("Sending registration data:", registrationData);
         const { userId } = await registerStudent(registrationData);
+        setFormData((prev) => ({ ...prev, password: generatedPassword }));
         setUserId(userId);
         setCurrentStep(1);
         toast.success("Student registered successfully!");
