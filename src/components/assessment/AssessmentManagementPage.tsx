@@ -310,7 +310,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="flex flex-col h-screen bg-gray-50">
       {loading && <ModernLoader />}
 
       {!loading && (
@@ -361,7 +361,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                         <p className="text-sm font-medium text-gray-500 mb-1">
                           Total Assessments
                         </p>
-                        <p className="text-3xl font-bold bg-[#003366] bg-clip-text text-transparent">
+                        <p className="text-3xl font-bold text-[#003366]">
                           {assessmentStats.total}
                         </p>
                       </div>
@@ -377,11 +377,11 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                         <p className="text-sm font-medium text-gray-500 mb-1">
                           Active
                         </p>
-                        <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+                        <p className="text-3xl font-bold text-[#154473]">
                           {assessmentStats.active}
                         </p>
                       </div>
-                      <div className="p-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl shadow-lg group-hover:shadow-emerald-200">
+                      <div className="p-3 bg-[#154473] rounded-xl shadow-lg">
                         <FiTrendingUp className="h-6 w-6 text-white" />
                       </div>
                     </div>
@@ -409,11 +409,11 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                         <p className="text-sm font-medium text-gray-500 mb-1">
                           Completed
                         </p>
-                        <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">
+                        <p className="text-3xl font-bold text-[#003366]">
                           {assessmentStats.completed}
                         </p>
                       </div>
-                      <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-purple-200">
+                      <div className="p-3 bg-[#003366] rounded-xl shadow-lg">
                         <FiUsers className="h-6 w-6 text-white" />
                       </div>
                     </div>
