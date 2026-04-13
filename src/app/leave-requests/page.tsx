@@ -311,10 +311,10 @@ const AdminLeaveRequestsPage: React.FC = () => {
         </div>
 
         {filteredRequests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+          <div className="flex flex-col items-center justify-center py-24 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="w-20 h-20 bg-[#003366]/10 rounded-2xl flex items-center justify-center mb-6">
               <svg
-                className="w-12 h-12 text-blue-400"
+                className="w-10 h-10 text-[#003366]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -322,19 +322,29 @@ const AdminLeaveRequestsPage: React.FC = () => {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No Leave Requests Found
-            </h3>
-            <p className="text-gray-500 text-center max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
               {filter === "all"
-                ? "There are no leave requests to display at the moment."
-                : `There are no ${filter} leave requests to display.`}
+                ? "No Leave Requests Yet"
+                : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Requests`}
+            </h3>
+            <p className="text-gray-500 text-sm text-center max-w-sm leading-relaxed">
+              {filter === "all"
+                ? "When students or staff submit leave requests, they'll appear here for you to review and action."
+                : `There are currently no ${filter} leave requests. Check other filters or come back later.`}
             </p>
+            {filter !== "all" && (
+              <button
+                onClick={() => setFilter("all")}
+                className="mt-6 px-5 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] transition-colors"
+              >
+                View All Requests
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -432,7 +442,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
                           e.stopPropagation();
                           handleQuickAction(request.id, "approved");
                         }}
-                        className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                        className="flex-1 px-3 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#002244] transition-colors font-medium"
                       >
                         Approve
                       </button>
@@ -441,7 +451,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
                           e.stopPropagation();
                           handleQuickAction(request.id, "rejected");
                         }}
-                        className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                        className="flex-1 px-3 py-2 bg-white border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors font-medium"
                       >
                         Reject
                       </button>
