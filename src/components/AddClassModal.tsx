@@ -116,17 +116,16 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative overflow-hidden flex-shrink-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
-            <div className="relative flex items-center justify-between">
+          <div className="bg-[#003366] px-8 py-6 text-white flex-shrink-0">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                   <FiBook className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Create New Class</h2>
-                  <p className="text-blue-100 text-sm mt-1">
-                    Add a new class to your school management system
+                  <h2 className="text-xl font-bold">Create New Class</h2>
+                  <p className="text-blue-200 text-sm mt-0.5">
+                    Add a new class to your school
                   </p>
                 </div>
               </div>
@@ -135,7 +134,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                 whileTap={{ scale: 0.9 }}
                 onClick={handleClose}
                 disabled={isCreating}
-                className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FiX className="w-5 h-5" />
               </motion.button>
@@ -149,7 +148,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                 {/* Class Information Section */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wide flex items-center gap-2">
-                    <FiBook className="w-4 h-4 text-blue-600" />
+                    <FiBook className="w-4 h-4 text-[#003366]" />
                     Class Information
                   </h3>
 
@@ -166,10 +165,10 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                         value={formData.name}
                         onChange={handleInputChange}
                         disabled={isCreating}
-                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed ${
+                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/30 transition-all text-gray-900 placeholder-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed ${
                           errors.name
                             ? "border-red-300 focus:border-red-500 focus:ring-red-200"
-                            : "border-gray-200 focus:border-blue-500"
+                            : "border-gray-200 focus:border-[#003366]"
                         }`}
                         required
                       />
@@ -195,7 +194,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                         value={formData.classCapacity}
                         onChange={handleInputChange}
                         disabled={isCreating}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/30 focus:border-[#003366] transition-all text-gray-900 disabled:bg-gray-50 disabled:cursor-not-allowed"
                       >
                         <option value="">Select capacity (optional)</option>
                         <option value="10">10 students</option>
@@ -208,11 +207,12 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                       </select>
                     </div>
 
-                    {/* Students Icon for visual enhancement */}
+                    {/* Capacity note */}
                     <div className="flex items-end">
-                      <div className="w-full h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <FiUsers className="w-6 h-6 text-blue-600" />
-                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        <FiUsers className="w-3.5 h-3.5 inline mr-1 text-[#003366]" />
+                        Capacity sets the maximum number of students allowed in this class.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -220,7 +220,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                 {/* Class Description */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wide flex items-center gap-2">
-                    <FiInfo className="w-4 h-4 text-blue-600" />
+                    <FiInfo className="w-4 h-4 text-[#003366]" />
                     Additional Details
                   </h3>
 
@@ -234,23 +234,23 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                       value={formData.classDescription}
                       onChange={handleInputChange}
                       disabled={isCreating}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400 resize-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/30 focus:border-[#003366] transition-all text-gray-900 placeholder-gray-400 resize-none disabled:bg-gray-50 disabled:cursor-not-allowed"
                       rows={4}
                     />
                   </div>
                 </div>
 
                 {/* Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="bg-[#003366]/5 border border-[#003366]/20 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-5 h-5 bg-[#003366] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <FiInfo className="w-3 h-3 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-blue-900 mb-1">
+                      <h4 className="text-sm font-medium text-[#003366] mb-1">
                         Class Setup Information
                       </h4>
-                      <p className="text-sm text-blue-700 leading-relaxed">
+                      <p className="text-sm text-[#003366]/80 leading-relaxed">
                         Once created, you'll be able to add students, assign
                         teachers, and manage the class schedule. The class
                         capacity helps track enrollment limits, while the
@@ -282,7 +282,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isCreating || !formData.name.trim()}
-                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-8 py-3 bg-[#003366] text-white rounded-xl font-medium hover:bg-[#002244] transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isCreating ? (
                   <>
