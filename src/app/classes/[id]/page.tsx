@@ -573,8 +573,8 @@ const ViewClass: React.FC = () => {
                               Class Capacity
                             </p>
                           </div>
-                          <div className="p-3 bg-green-50 rounded-lg">
-                            <Users className="w-6 h-6 text-green-600" />
+                          <div className="p-3 bg-blue-50 rounded-lg">
+                            <Users className="w-6 h-6 text-[#003366]" />
                           </div>
                         </div>
                       </div>
@@ -587,8 +587,8 @@ const ViewClass: React.FC = () => {
                               Class Teacher
                             </p>
                           </div>
-                          <div className="p-3 bg-purple-50 rounded-lg">
-                            <User className="w-6 h-6 text-purple-600" />
+                          <div className="p-3 bg-[#003366]/10 rounded-lg">
+                            <User className="w-6 h-6 text-[#003366]" />
                           </div>
                         </div>
                       </div>
@@ -608,7 +608,7 @@ const ViewClass: React.FC = () => {
                       </div>
                       <button
                         onClick={handleAddCourse}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors shadow-sm font-medium"
                       >
                         + Add Course
                       </button>
@@ -625,7 +625,7 @@ const ViewClass: React.FC = () => {
                         </p>
                         <button
                           onClick={handleAddCourse}
-                          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] text-sm font-medium"
                         >
                           Add First Course
                         </button>
@@ -820,7 +820,7 @@ const ViewClass: React.FC = () => {
                           onClick={() =>
                             router.push(`/classes/edit-class/${classId}`)
                           }
-                          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] text-sm font-medium"
                         >
                           Assign Teacher
                         </button>
