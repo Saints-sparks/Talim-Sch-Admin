@@ -505,7 +505,7 @@ export default function Profile() {
                   whileTap={{ scale: 0.98 }}
                   className={`flex-1 flex items-center gap-3 py-5 px-6 transition-all duration-200 ${
                     activeTab === "admin"
-                      ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-b-4 border-emerald-600"
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-[#003366] border-b-4 border-[#003366]"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                   onClick={() => setActiveTab("admin")}
@@ -829,14 +829,14 @@ export default function Profile() {
                   transition={{ duration: 0.28 }}
                   className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
                 >
-                  <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-8 py-6 border-b border-gray-200">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-6 border-b border-gray-200">
                     <div className="flex items-center gap-3">
-                      <Shield className="w-6 h-6 text-emerald-700" />
-                      <h2 className="text-xl font-bold text-emerald-900">
+                      <Shield className="w-6 h-6 text-[#003366]" />
+                      <h2 className="text-xl font-bold text-[#003366]">
                         Administrator Details
                       </h2>
                     </div>
-                    <p className="text-emerald-600 mt-2">
+                    <p className="text-blue-600 mt-2">
                       Manage your personal information and security settings
                     </p>
                   </div>
@@ -845,7 +845,7 @@ export default function Profile() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* Avatar Column */}
                       <div className="lg:col-span-1 flex flex-col items-center">
-                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 border-4 border-white shadow-xl overflow-hidden">
+                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-white shadow-xl overflow-hidden">
                           {formData.adminAvatar || adminAvatarPreview ? (
                             <div className="relative w-full h-full">
                               <Image
@@ -863,7 +863,7 @@ export default function Profile() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">
-                              <User className="w-16 h-16 text-emerald-600" />
+                              <User className="w-16 h-16 text-[#003366]" />
                             </div>
                           )}
 
@@ -882,7 +882,7 @@ export default function Profile() {
                         {isEditing && !isUploadingImage && (
                           <label
                             htmlFor="admin-avatar"
-                            className="mt-4 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full cursor-pointer shadow"
+                            className="mt-4 inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-full cursor-pointer shadow"
                             aria-label="Upload profile photo"
                           >
                             <Camera className="w-4 h-4" />
@@ -913,7 +913,7 @@ export default function Profile() {
                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <User className="w-4 h-4 text-emerald-600" />
+                            <User className="w-4 h-4 text-[#003366]" />
                             First Name
                           </label>
                           <input
@@ -925,7 +925,7 @@ export default function Profile() {
                             placeholder="Enter your first name"
                             className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -933,7 +933,7 @@ export default function Profile() {
 
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <User className="w-4 h-4 text-emerald-600" />
+                            <User className="w-4 h-4 text-[#003366]" />
                             Last Name
                           </label>
                           <input
@@ -945,7 +945,7 @@ export default function Profile() {
                             placeholder="Enter your last name"
                             className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -953,7 +953,7 @@ export default function Profile() {
 
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Mail className="w-4 h-4 text-emerald-600" />
+                            <Mail className="w-4 h-4 text-[#003366]" />
                             Email Address
                           </label>
                           <input
@@ -965,7 +965,7 @@ export default function Profile() {
                             placeholder="Enter your email address"
                             className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -973,7 +973,7 @@ export default function Profile() {
 
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Phone className="w-4 h-4 text-emerald-600" />
+                            <Phone className="w-4 h-4 text-[#003366]" />
                             Phone Number
                           </label>
                           <input
@@ -985,7 +985,7 @@ export default function Profile() {
                             placeholder="Enter your phone number"
                             className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
                               isEditing
-                                ? "border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
                                 : "border-gray-100 bg-gray-50"
                             } text-gray-900 font-medium disabled:cursor-not-allowed`}
                           />
@@ -996,7 +996,7 @@ export default function Profile() {
                           <>
                             <div className="space-y-2">
                               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Key className="w-4 h-4 text-emerald-600" />
+                                <Key className="w-4 h-4 text-[#003366]" />
                                 New Password
                               </label>
                               <div className="relative">
@@ -1005,7 +1005,7 @@ export default function Profile() {
                                   value={password}
                                   onChange={handlePasswordChange}
                                   placeholder="Enter new password (optional)"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition text-gray-900 font-medium pr-12"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#003366] focus:ring-4 focus:ring-blue-50 transition text-gray-900 font-medium pr-12"
                                   aria-label="New password"
                                 />
                                 <button
@@ -1029,7 +1029,7 @@ export default function Profile() {
 
                             <div className="space-y-2">
                               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Key className="w-4 h-4 text-emerald-600" />
+                                <Key className="w-4 h-4 text-[#003366]" />
                                 Confirm Password
                               </label>
                               <div className="relative">
@@ -1040,7 +1040,7 @@ export default function Profile() {
                                   value={confirmPassword}
                                   onChange={handleConfirmPasswordChange}
                                   placeholder="Confirm your password"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition text-gray-900 font-medium pr-12"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#003366] focus:ring-4 focus:ring-blue-50 transition text-gray-900 font-medium pr-12"
                                   aria-label="Confirm password"
                                 />
                                 <button
@@ -1106,7 +1106,7 @@ export default function Profile() {
                           whileTap={{ scale: 0.98 }}
                           onClick={handleUpdate}
                           disabled={isSubmitting || isUploadingImage}
-                          className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
+                          className="flex items-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-xl font-semibold shadow transition hover:bg-[#002244] disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                         >
                           {isSubmitting ? (
                             <>
