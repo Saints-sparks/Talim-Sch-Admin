@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   User,
   School,
@@ -14,12 +14,12 @@ import {
   Eye,
   EyeOff,
   Edit3,
-
   AlertCircle,
   Building,
   Globe,
   Key,
   Shield,
+  Pencil,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import Image from "next/image";
@@ -40,7 +40,8 @@ import {
   type UpdateUserProfilePayload,
 } from "../services/auth.service";
 
-type Tab = "school" | "admin";
+// Which section is currently being edited
+type EditingSection = "admin" | "school" | null;
 
 interface FormData {
   schoolName: string;
@@ -57,18 +58,14 @@ interface FormData {
 }
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState<Tab>("school");
+  const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [adminAvatarPreview, setAdminAvatarPreview] = useState<string | null>(
-    null
-  );
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -87,20 +84,18 @@ export default function Profile() {
     adminAvatar: null,
   });
 
-  // Load user data and school data on component mount
+  // ─── Data loading ────────────────────────────────────────────────────────────
   useEffect(() => {
     const loadProfileData = async () => {
       try {
         setIsLoadingData(true);
 
-        // Load user data from local storage utility for consistency
         const storedUser = getLocalStorageItem("user");
         if (storedUser && storedUser.userId) {
           try {
             const userProfile: UserProfile = await authService.getUserProfile(
               storedUser.userId
             );
-
             setFormData((prev) => ({
               ...prev,
               adminFirstName: userProfile.firstName || "",
@@ -121,46 +116,36 @@ export default function Profile() {
                 logo: userProfile.schoolId.logo || null,
               }));
             }
-          } catch (apiError) {
-            // Fallback: use basic stored user fields if API fails
+          } catch {
             const fallback = storedUser || {};
             setFormData((prev) => ({
               ...prev,
-              adminFirstName:
-                fallback.firstName || fallback.name?.split(" ")[0] || "",
+              adminFirstName: fallback.firstName || fallback.name?.split(" ")[0] || "",
               adminLastName:
-                fallback.lastName ||
-                fallback.name?.split(" ").slice(1).join(" ") ||
-                "",
+                fallback.lastName || fallback.name?.split(" ").slice(1).join(" ") || "",
               adminEmail: fallback.email || "",
               adminPhone: fallback.phoneNumber || fallback.phone || "",
-              adminAvatar: null,
             }));
           }
         }
 
-        // Load school data from API (if available)
         const schoolId = getSchoolId();
         if (schoolId) {
           try {
-            const dashboardData: SchoolDashboardData = await getSchoolDashboard(
-              schoolId
-            );
+            const dashboardData: SchoolDashboardData = await getSchoolDashboard(schoolId);
             if (dashboardData?.schoolInfo) {
               setFormData((prev) => ({
                 ...prev,
                 schoolName: dashboardData.schoolInfo.name || prev.schoolName,
-                schoolPrefix:
-                  dashboardData.schoolInfo.schoolPrefix || prev.schoolPrefix,
+                schoolPrefix: dashboardData.schoolInfo.schoolPrefix || prev.schoolPrefix,
                 street: dashboardData.schoolInfo.physicalAddress || prev.street,
                 state: dashboardData.schoolInfo.location?.state || prev.state,
-                country:
-                  dashboardData.schoolInfo.location?.country || prev.country,
+                country: dashboardData.schoolInfo.location?.country || prev.country,
                 logo: dashboardData.schoolInfo.logo || prev.logo,
               }));
             }
           } catch {
-            // ignore — keep whatever we already have in formData
+            // ignore — keep existing data
           }
         }
       } catch (error) {
@@ -174,9 +159,9 @@ export default function Profile() {
     loadProfileData();
   }, []);
 
-  // Form validation
-  const validateForm = (): string | null => {
-    if (activeTab === "school") {
+  // ─── Validation ──────────────────────────────────────────────────────────────
+  const validateForm = (section: EditingSection): string | null => {
+    if (section === "school") {
       if (!formData.schoolName.trim()) return "School name is required";
       if (!formData.schoolPrefix.trim()) return "School prefix is required";
       if (!formData.street.trim()) return "Street address is required";
@@ -185,147 +170,104 @@ export default function Profile() {
     } else {
       if (!formData.adminFirstName.trim()) return "First name is required";
       if (!formData.adminLastName.trim()) return "Last name is required";
-      if (!formData.adminEmail.trim()) return "Admin email is required";
+      if (!formData.adminEmail.trim()) return "Email is required";
       if (!formData.adminPhone.trim()) return "Phone number is required";
-
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.adminEmail.trim()))
         return "Please enter a valid email address";
-
       if (password || confirmPassword) {
-        if (password.length < 8)
-          return "Password must be at least 8 characters long";
+        if (password.length < 8) return "Password must be at least 8 characters";
         if (password !== confirmPassword) return "Passwords do not match";
       }
     }
     return null;
   };
 
+  // ─── Input handlers ───────────────────────────────────────────────────────────
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  };
-
-  const handleConfirmPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+  // ─── File upload ──────────────────────────────────────────────────────────────
+  const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: "logo" | "avatar"
   ) => {
-    setConfirmPassword(e.target.value);
-  };
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((s) => !s);
-  };
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error || "Invalid file");
+      e.target.value = "";
+      return;
+    }
 
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword((s) => !s);
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        toast.error(validation.error || "Invalid file");
-        e.target.value = "";
-        return;
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target) {
+        if (target === "logo") setLogoPreview(event.target.result as string);
+        else setAvatarPreview(event.target.result as string);
       }
+    };
+    reader.readAsDataURL(file);
 
-      // Preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target) {
-          if (activeTab === "school") {
-            setAvatarPreview(event.target.result as string);
-          } else {
-            setAdminAvatarPreview(event.target.result as string);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
+    // Upload
+    setIsUploadingImage(true);
+    setUploadProgress(0);
+    const toastId = toast.loading("Uploading image...");
 
-      // Upload
-      setIsUploadingImage(true);
+    try {
+      const imageUrl = await uploadToCloudinary(file, (p) => setUploadProgress(Math.round(p)));
+      if (target === "logo") {
+        setFormData((prev) => ({ ...prev, logo: imageUrl }));
+      } else {
+        setFormData((prev) => ({ ...prev, adminAvatar: imageUrl }));
+      }
+      toast.success("Image uploaded successfully!", { id: toastId });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to upload image", {
+        id: toastId,
+      });
+      if (target === "logo") {
+        setLogoPreview(null);
+        setFormData((prev) => ({ ...prev, logo: null }));
+      } else {
+        setAvatarPreview(null);
+        setFormData((prev) => ({ ...prev, adminAvatar: null }));
+      }
+    } finally {
+      setIsUploadingImage(false);
       setUploadProgress(0);
-      const uploadingToastId = toast.loading("Uploading image...");
-
-      try {
-        const imageUrl = await uploadToCloudinary(file, (progress) => {
-          setUploadProgress(Math.round(progress));
-        });
-
-        if (activeTab === "school") {
-          setFormData((prev) => ({ ...prev, logo: imageUrl }));
-        } else {
-          setFormData((prev) => ({ ...prev, adminAvatar: imageUrl }));
-        }
-
-        toast.success("Image uploaded successfully!", { id: uploadingToastId });
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        toast.error(
-          error instanceof Error ? error.message : "Failed to upload image",
-          { id: uploadingToastId }
-        );
-        // reset preview & value on error
-        if (activeTab === "school") {
-          setAvatarPreview(null);
-          setFormData((prev) => ({ ...prev, logo: null }));
-        } else {
-          setAdminAvatarPreview(null);
-          setFormData((prev) => ({ ...prev, adminAvatar: null }));
-        }
-      } finally {
-        setIsUploadingImage(false);
-        setUploadProgress(0);
-        e.target.value = "";
-      }
+      e.target.value = "";
     }
   };
 
-  const handleUpdate = async () => {
-    const validationError = validateForm();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
-    if (isUploadingImage) {
-      toast.error("Please wait for image upload to complete");
-      return;
-    }
+  // ─── Save ─────────────────────────────────────────────────────────────────────
+  const handleUpdate = async (section: EditingSection) => {
+    const validationError = validateForm(section);
+    if (validationError) { toast.error(validationError); return; }
+    if (isUploadingImage) { toast.error("Please wait for image upload to complete"); return; }
 
     setIsSubmitting(true);
-    const loadingToastId = toast.loading(
-      `Updating ${
-        activeTab === "school" ? "school information" : "administrator details"
-      }...`
+    const toastId = toast.loading(
+      section === "school" ? "Updating school information..." : "Updating administrator details..."
     );
 
     try {
-      if (activeTab === "school") {
+      if (section === "school") {
         const schoolId = getSchoolId();
-        if (!schoolId) {
-          throw new Error(
-            "School ID not found. Please ensure you're logged in."
-          );
-        }
+        if (!schoolId) throw new Error("School ID not found. Please ensure you're logged in.");
 
         const schoolPayload: UpdateSchoolPayload = {
           name: formData.schoolName.trim(),
           physicalAddress: formData.street.trim(),
-          location: {
-            country: formData.country,
-            state: formData.state,
-          },
+          location: { country: formData.country, state: formData.state },
           primaryContacts: [
             {
               name: `${formData.adminFirstName} ${formData.adminLastName}`.trim(),
@@ -336,815 +278,475 @@ export default function Profile() {
           ],
           active: true,
         };
-
         if (formData.logo) schoolPayload.logo = formData.logo;
-
         await updateSchool(schoolId, schoolPayload);
       } else {
         const currentUser = getLocalStorageItem("user");
-        if (!currentUser || !currentUser.userId) {
+        if (!currentUser?.userId)
           throw new Error("User ID not found. Please ensure you're logged in.");
-        }
 
         const adminPayload: UpdateUserProfilePayload = {
           firstName: formData.adminFirstName.trim(),
           lastName: formData.adminLastName.trim(),
           phoneNumber: formData.adminPhone.trim(),
         };
-
-        if (formData.adminAvatar) {
-          adminPayload.userAvatar = formData.adminAvatar;
-        }
-
-        if (formData.adminEmail && formData.adminEmail.trim()) {
-          // include email update if user provided one (may require verification on backend)
-          // some backends restrict email updates; handle server errors accordingly
-          // @ts-ignore - if UpdateUserProfilePayload doesn't include email, backend call may still accept it
-          adminPayload.email = formData.adminEmail.trim().toLowerCase();
-        }
-
-        if (password && password.length >= 8) {
-          // @ts-ignore - include password only if backend supports updating via this endpoint
-          adminPayload.password = password;
-        }
+        if (formData.adminAvatar) adminPayload.userAvatar = formData.adminAvatar;
+        // @ts-ignore
+        if (formData.adminEmail) adminPayload.email = formData.adminEmail.trim().toLowerCase();
+        // @ts-ignore
+        if (password && password.length >= 8) adminPayload.password = password;
 
         await authService.updateUserProfile(adminPayload);
       }
 
       toast.success(
-        `${
-          activeTab === "school"
-            ? "School information"
-            : "Administrator details"
-        } updated successfully!`,
-        { id: loadingToastId }
+        section === "school" ? "School information updated!" : "Administrator details updated!",
+        { id: toastId }
       );
-
-      setIsEditing(false);
+      setEditingSection(null);
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update profile",
-        { id: loadingToastId }
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update profile", {
+        id: toastId,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
+    setEditingSection(null);
     setPassword("");
     setConfirmPassword("");
-    // we don't automatically revert formData here — you can add a reload if desired
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-center" />
+  // ─── Derived helpers ──────────────────────────────────────────────────────────
+  const adminInitials =
+    `${formData.adminFirstName?.[0] ?? ""}${formData.adminLastName?.[0] ?? ""}`.toUpperCase() || "AD";
+  const adminFullName =
+    [formData.adminFirstName, formData.adminLastName].filter(Boolean).join(" ") || "Administrator";
+  const isEditingAdmin = editingSection === "admin";
+  const isEditingSchool = editingSection === "school";
 
-      {/* Loading */}
-      {isLoadingData ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full"
+  // ─── Loading state ────────────────────────────────────────────────────────────
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Toaster position="top-center" />
+        <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile</h2>
+          <p className="text-gray-500 text-sm">Please wait while we fetch your information…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Reusable field renderer ─────────────────────────────────────────────────
+  const Field = ({
+    label,
+    icon: Icon,
+    value,
+    name,
+    type = "text",
+    editing,
+    placeholder,
+  }: {
+    label: string;
+    icon: React.ElementType;
+    value: string;
+    name: string;
+    type?: string;
+    editing: boolean;
+    placeholder?: string;
+  }) => (
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+        <Icon className="w-4 h-4" />
+        {label}
+      </label>
+      {editing ? (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={handleInputChange}
+          placeholder={placeholder}
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-gray-900 text-sm"
+        />
+      ) : (
+        <p className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal">Not set</span>}</p>
+      )}
+    </div>
+  );
+
+  const SelectField = ({
+    label,
+    icon: Icon,
+    value,
+    name,
+    editing,
+    options,
+    placeholder,
+  }: {
+    label: string;
+    icon: React.ElementType;
+    value: string;
+    name: string;
+    editing: boolean;
+    options: { value: string; label: string }[];
+    placeholder?: string;
+  }) => (
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+        <Icon className="w-4 h-4" />
+        {label}
+      </label>
+      {editing ? (
+        <div className="relative">
+          <select
+            name={name}
+            value={value}
+            onChange={handleInputChange}
+            className="w-full appearance-none px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-gray-900 text-sm pr-8"
           >
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Loading Profile Data
-            </h2>
-            <p className="text-gray-600">
-              Please wait while we fetch your information…
-            </p>
-          </motion.div>
+            <option value="">{placeholder || "Select…"}</option>
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="bg-white border-b border-gray-200 shadow-sm mx-6 my-4 rounded-2xl"
-            aria-hidden={isLoadingData}
-          >
-            <div className="container mx-auto p-6 max-w-6xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-3 rounded-xl shadow-lg">
-                    <User className="w-6 h-6 text-white" />
+        <p className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal">Not set</span>}</p>
+      )}
+    </div>
+  );
+
+  const CardHeader = ({
+    title,
+    section,
+  }: {
+    title: string;
+    section: "admin" | "school";
+  }) => {
+    const isActive = editingSection === section;
+    return (
+      <div className="bg-gray-100 px-6 py-4 flex items-center justify-between border-b border-gray-200">
+        <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+        <button
+          onClick={() => {
+            if (isActive) handleCancel();
+            else setEditingSection(section);
+          }}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-[#003366] transition-colors"
+        >
+          {isActive ? (
+            <>
+              <X className="w-4 h-4" /> Cancel
+            </>
+          ) : (
+            <>
+              <Pencil className="w-4 h-4" /> Edit
+            </>
+          )}
+        </button>
+      </div>
+    );
+  };
+
+  const SaveBar = ({ section }: { section: "admin" | "school" }) => (
+    <div className="flex items-center gap-3 pt-4 mt-2 border-t border-gray-100">
+      <button
+        onClick={() => handleUpdate(section)}
+        disabled={isSubmitting || isUploadingImage}
+        className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white text-sm font-semibold rounded-lg hover:bg-[#002244] transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isSubmitting ? (
+          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
+        ) : (
+          <><Save className="w-4 h-4" />Save Changes</>
+        )}
+      </button>
+      <button
+        onClick={handleCancel}
+        disabled={isSubmitting}
+        className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+
+  // ─── Main render ─────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <Toaster position="top-center" />
+
+      {/* Page title */}
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Profile</h1>
+
+      <div className="max-w-4xl space-y-6">
+
+        {/* ── Admin hero row ──────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-start gap-6">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div className="w-24 h-24 rounded-full bg-[#003366] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+              {formData.adminAvatar || avatarPreview ? (
+                <Image
+                  src={avatarPreview || formData.adminAvatar || ""}
+                  alt="Admin avatar"
+                  width={96}
+                  height={96}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              ) : (
+                <span className="text-white text-2xl font-bold">{adminInitials}</span>
+              )}
+            </div>
+            {isUploadingImage && editingSection === "admin" && (
+              <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                <span className="text-white text-xs font-medium">{uploadProgress}%</span>
+              </div>
+            )}
+          </div>
+
+          {/* Name + buttons */}
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{adminFullName}</h2>
+              <p className="text-gray-500 text-sm flex items-center gap-1.5 mt-0.5">
+                <Shield className="w-3.5 h-3.5" />
+                School Administrator
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <label
+                htmlFor="admin-avatar-upload"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+              >
+                <Camera className="w-4 h-4" />
+                Change Photo
+                <input
+                  id="admin-avatar-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, "avatar")}
+                />
+              </label>
+              {(formData.adminAvatar || avatarPreview) && (
+                <button
+                  onClick={() => {
+                    setAvatarPreview(null);
+                    setFormData((prev) => ({ ...prev, adminAvatar: null }));
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition"
+                >
+                  Remove Photo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Personal Information card ───────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+        >
+          <CardHeader title="Personal Information" section="admin" />
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Field label="First Name" icon={User} value={formData.adminFirstName} name="adminFirstName" editing={isEditingAdmin} placeholder="First name" />
+              <Field label="Last Name" icon={User} value={formData.adminLastName} name="adminLastName" editing={isEditingAdmin} placeholder="Last name" />
+              <Field label="Email Address" icon={Mail} value={formData.adminEmail} name="adminEmail" type="email" editing={isEditingAdmin} placeholder="Email address" />
+              <Field label="Phone Number" icon={Phone} value={formData.adminPhone} name="adminPhone" type="tel" editing={isEditingAdmin} placeholder="Phone number" />
+            </div>
+
+            {/* Password section — only shown when editing */}
+            {isEditingAdmin && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mt-6 pt-6 border-t border-gray-100 space-y-4"
+              >
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Key className="w-4 h-4 text-[#003366]" />
+                  Change Password <span className="font-normal text-gray-400">(optional)</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="New password"
+                      className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
-                      Profile Settings
-                    </h1>
-                    <p className="text-gray-600 mt-1">
-                      Manage your school and administrator information
-                    </p>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm password"
+                      className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-amber-700">
+                    Leave password fields empty if you don't want to change your password. Minimum 8 characters.
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsEditing((s) => !s)}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 ${
-                    isEditing
-                      ? "bg-gray-500 text-white hover:bg-gray-600"
-                      : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
-                  }`}
-                  aria-pressed={isEditing}
-                  aria-label={isEditing ? "Cancel editing" : "Edit profile"}
-                >
-                  {isEditing ? (
-                    <X className="w-5 h-5" />
-                  ) : (
-                    <Edit3 className="w-5 h-5" />
-                  )}
-                  {isEditing ? "Cancel Edit" : "Edit Profile"}
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="container mx-auto p-6 max-w-6xl">
-            {/* Tabs */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.05 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8"
-            >
-              <div className="flex">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`flex-1 flex items-center gap-3 py-5 px-6 transition-all duration-200 ${
-                    activeTab === "school"
-                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-b-4 border-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  onClick={() => setActiveTab("school")}
-                  aria-current={activeTab === "school"}
-                >
-                  <Building className="w-5 h-5" />
-                  <div className="text-left">
-                    <div className="font-semibold">School Information</div>
-                    <div className="text-sm opacity-80">
-                      Institution details & contact
-                    </div>
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`flex-1 flex items-center gap-3 py-5 px-6 transition-all duration-200 ${
-                    activeTab === "admin"
-                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-[#003366] border-b-4 border-[#003366]"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  onClick={() => setActiveTab("admin")}
-                  aria-current={activeTab === "admin"}
-                >
-                  <Shield className="w-5 h-5" />
-                  <div className="text-left">
-                    <div className="font-semibold">Administrator</div>
-                    <div className="text-sm opacity-80">
-                      Personal details & security
-                    </div>
-                  </div>
-                </motion.button>
-              </div>
-            </motion.div>
-
-            {/* School Tab */}
-            <AnimatePresence mode="wait">
-              {activeTab === "school" && (
-                <motion.div
-                  key="school"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 12 }}
-                  transition={{ duration: 0.28 }}
-                  className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8"
-                >
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-6 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <Building className="w-6 h-6 text-blue-700" />
-                      <h2 className="text-xl font-bold text-blue-900">
-                        School Information
-                      </h2>
-                    </div>
-                    <p className="text-blue-600 mt-2">
-                      Manage your institution details and contact information
-                    </p>
-                  </div>
-
-                  <div className="p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Logo */}
-                      <div className="lg:col-span-1 flex flex-col items-center">
-                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-white shadow-xl overflow-hidden">
-                          {formData.logo || avatarPreview ? (
-                            <div className="relative w-full h-full">
-                              <Image
-                                src={
-                                  formData.logo ||
-                                  avatarPreview ||
-                                  "/placeholder.svg"
-                                }
-                                alt="School Logo"
-                                fill
-                                className="object-cover"
-                                sizes="160px"
-                                unoptimized
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center w-full h-full">
-                              <School className="w-16 h-16 text-blue-600" />
-                            </div>
-                          )}
-
-                          {/* Upload progress overlay */}
-                          {isUploadingImage && (
-                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                              <div className="text-white text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
-                                <div className="text-sm font-medium">
-                                  {uploadProgress}%
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {isEditing && !isUploadingImage && (
-                          <label
-                            htmlFor="school-logo"
-                            className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full cursor-pointer shadow"
-                            aria-label="Upload school logo"
-                            title="Upload school logo"
-                          >
-                            <Camera className="w-4 h-4" />
-                            Upload Logo
-                            <input
-                              id="school-logo"
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="hidden"
-                              onChange={handleFileChange}
-                              aria-hidden={!isEditing}
-                            />
-                          </label>
-                        )}
-
-                        <div className="mt-4 text-center">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            School Logo
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {isUploadingImage
-                              ? "Uploading image..."
-                              : "Upload your institution logo"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Form Fields */}
-                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <School className="w-4 h-4 text-blue-600" />
-                            School Name
-                          </label>
-                          <input
-                            type="text"
-                            name="schoolName"
-                            value={formData.schoolName}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter your school name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                            aria-label="School name"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Building className="w-4 h-4 text-blue-600" />
-                            School Prefix
-                          </label>
-                          <input
-                            type="text"
-                            name="schoolPrefix"
-                            value={formData.schoolPrefix}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="e.g. USS"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                            aria-label="School prefix"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <MapPin className="w-4 h-4 text-blue-600" />
-                            Street Address
-                          </label>
-                          <input
-                            type="text"
-                            name="street"
-                            value={formData.street}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter street address"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                            aria-label="Street address"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <MapPin className="w-4 h-4 text-blue-600" />
-                            State
-                          </label>
-                          <div className="relative">
-                            <select
-                              name="state"
-                              value={formData.state}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                                isEditing
-                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                                  : "border-gray-100 bg-gray-50"
-                              } text-gray-900 font-medium disabled:cursor-not-allowed pr-12`}
-                              aria-label="State"
-                            >
-                              <option value="">Choose your state</option>
-                              <option value="Lagos State">Lagos State</option>
-                              <option value="FCT Abuja">FCT Abuja</option>
-                              <option value="Rivers State">Rivers State</option>
-                              <option value="Kano State">Kano State</option>
-                              <option value="Oyo State">Oyo State</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Globe className="w-4 h-4 text-blue-600" />
-                            Country
-                          </label>
-                          <div className="relative">
-                            <select
-                              name="country"
-                              value={formData.country}
-                              onChange={handleInputChange}
-                              disabled={!isEditing}
-                              className={`w-full appearance-none px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                                isEditing
-                                  ? "border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                                  : "border-gray-100 bg-gray-50"
-                              } text-gray-900 font-medium disabled:cursor-not-allowed pr-12`}
-                              aria-label="Country"
-                            >
-                              <option value="">Choose your country</option>
-                              <option value="Nigeria">Nigeria</option>
-                              <option value="Ghana">Ghana</option>
-                              <option value="Kenya">Kenya</option>
-                              <option value="South Africa">South Africa</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    {isEditing && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200"
-                      >
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={handleUpdate}
-                          disabled={isSubmitting || isUploadingImage}
-                          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
-                          aria-disabled={isSubmitting || isUploadingImage}
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              Updating...
-                            </>
-                          ) : isUploadingImage ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-4 h-4" />
-                              Update School
-                            </>
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={handleCancel}
-                          disabled={isSubmitting}
-                          className="flex items-center gap-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancel
-                        </motion.button>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Admin Tab */}
-            <AnimatePresence mode="wait">
-              {activeTab === "admin" && (
-                <motion.div
-                  key="admin"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 12 }}
-                  transition={{ duration: 0.28 }}
-                  className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
-                >
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-8 py-6 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-6 h-6 text-[#003366]" />
-                      <h2 className="text-xl font-bold text-[#003366]">
-                        Administrator Details
-                      </h2>
-                    </div>
-                    <p className="text-blue-600 mt-2">
-                      Manage your personal information and security settings
-                    </p>
-                  </div>
-
-                  <div className="p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Avatar Column */}
-                      <div className="lg:col-span-1 flex flex-col items-center">
-                        <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-white shadow-xl overflow-hidden">
-                          {formData.adminAvatar || adminAvatarPreview ? (
-                            <div className="relative w-full h-full">
-                              <Image
-                                src={
-                                  formData.adminAvatar ||
-                                  adminAvatarPreview ||
-                                  "/placeholder.svg"
-                                }
-                                alt="Administrator Avatar"
-                                fill
-                                className="object-cover"
-                                sizes="160px"
-                                unoptimized
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center w-full h-full">
-                              <User className="w-16 h-16 text-[#003366]" />
-                            </div>
-                          )}
-
-                          {isUploadingImage && (
-                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                              <div className="text-white text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
-                                <div className="text-sm font-medium">
-                                  {uploadProgress}%
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {isEditing && !isUploadingImage && (
-                          <label
-                            htmlFor="admin-avatar"
-                            className="mt-4 inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-full cursor-pointer shadow"
-                            aria-label="Upload profile photo"
-                          >
-                            <Camera className="w-4 h-4" />
-                            Upload Photo
-                            <input
-                              id="admin-avatar"
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="hidden"
-                              onChange={handleFileChange}
-                            />
-                          </label>
-                        )}
-
-                        <div className="mt-4 text-center">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Profile Picture
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {isUploadingImage
-                              ? "Uploading image..."
-                              : "Upload your profile photo"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Admin Fields */}
-                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <User className="w-4 h-4 text-[#003366]" />
-                            First Name
-                          </label>
-                          <input
-                            type="text"
-                            name="adminFirstName"
-                            value={formData.adminFirstName}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter your first name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <User className="w-4 h-4 text-[#003366]" />
-                            Last Name
-                          </label>
-                          <input
-                            type="text"
-                            name="adminLastName"
-                            value={formData.adminLastName}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter your last name"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Mail className="w-4 h-4 text-[#003366]" />
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            name="adminEmail"
-                            value={formData.adminEmail}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter your email address"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <Phone className="w-4 h-4 text-[#003366]" />
-                            Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            name="adminPhone"
-                            value={formData.adminPhone}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="Enter your phone number"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-200 ${
-                              isEditing
-                                ? "border-gray-200 focus:border-[#003366] focus:ring-4 focus:ring-blue-50"
-                                : "border-gray-100 bg-gray-50"
-                            } text-gray-900 font-medium disabled:cursor-not-allowed`}
-                          />
-                        </div>
-
-                        {/* Password fields when editing */}
-                        {isEditing ? (
-                          <>
-                            <div className="space-y-2">
-                              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Key className="w-4 h-4 text-[#003366]" />
-                                New Password
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type={showPassword ? "text" : "password"}
-                                  value={password}
-                                  onChange={handlePasswordChange}
-                                  placeholder="Enter new password (optional)"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#003366] focus:ring-4 focus:ring-blue-50 transition text-gray-900 font-medium pr-12"
-                                  aria-label="New password"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={togglePasswordVisibility}
-                                  className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
-                                  aria-label={
-                                    showPassword
-                                      ? "Hide password"
-                                      : "Show password"
-                                  }
-                                >
-                                  {showPassword ? (
-                                    <EyeOff className="h-5 w-5" />
-                                  ) : (
-                                    <Eye className="h-5 w-5" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Key className="w-4 h-4 text-[#003366]" />
-                                Confirm Password
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type={
-                                    showConfirmPassword ? "text" : "password"
-                                  }
-                                  value={confirmPassword}
-                                  onChange={handleConfirmPasswordChange}
-                                  placeholder="Confirm your password"
-                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#003366] focus:ring-4 focus:ring-blue-50 transition text-gray-900 font-medium pr-12"
-                                  aria-label="Confirm password"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={toggleConfirmPasswordVisibility}
-                                  className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
-                                  aria-label={
-                                    showConfirmPassword
-                                      ? "Hide confirm password"
-                                      : "Show confirm password"
-                                  }
-                                >
-                                  {showConfirmPassword ? (
-                                    <EyeOff className="h-5 w-5" />
-                                  ) : (
-                                    <Eye className="h-5 w-5" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div />
-                            <div />
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Security Notice */}
-                    {isEditing && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl"
-                      >
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                          <div>
-                            <h4 className="text-sm font-semibold text-amber-900">
-                              Security Notice
-                            </h4>
-                            <p className="text-sm text-amber-700 mt-1">
-                              Leave password fields empty if you don't want to
-                              change your password. New passwords must be at
-                              least 8 characters long.
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Admin actions */}
-                    {isEditing && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200"
-                      >
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={handleUpdate}
-                          disabled={isSubmitting || isUploadingImage}
-                          className="flex items-center gap-2 bg-[#003366] text-white px-6 py-3 rounded-xl font-semibold shadow transition hover:bg-[#002244] disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              Updating...
-                            </>
-                          ) : isUploadingImage ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-4 h-4" />
-                              Update Profile
-                            </>
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={handleCancel}
-                          disabled={isSubmitting}
-                          className="flex items-center gap-2 bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancel
-                        </motion.button>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {isEditingAdmin && <SaveBar section="admin" />}
           </div>
-        </>
-      )}
+        </motion.div>
+
+        {/* ── School hero row ─────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-start gap-6 mt-4">
+          {/* Logo */}
+          <div className="relative flex-shrink-0">
+            <div className="w-24 h-24 rounded-xl bg-blue-50 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden">
+              {formData.logo || logoPreview ? (
+                <Image
+                  src={logoPreview || formData.logo || ""}
+                  alt="School logo"
+                  width={96}
+                  height={96}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              ) : (
+                <School className="w-10 h-10 text-[#003366]" />
+              )}
+            </div>
+            {isUploadingImage && editingSection === "school" && (
+              <div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center">
+                <span className="text-white text-xs font-medium">{uploadProgress}%</span>
+              </div>
+            )}
+          </div>
+
+          {/* School name + buttons */}
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {formData.schoolName || "Your School"}
+              </h2>
+              {formData.schoolPrefix && (
+                <p className="text-gray-500 text-sm mt-0.5">Prefix: {formData.schoolPrefix}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <label
+                htmlFor="school-logo-upload"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+              >
+                <Camera className="w-4 h-4" />
+                Change Logo
+                <input
+                  id="school-logo-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, "logo")}
+                />
+              </label>
+              {(formData.logo || logoPreview) && (
+                <button
+                  onClick={() => {
+                    setLogoPreview(null);
+                    setFormData((prev) => ({ ...prev, logo: null }));
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition"
+                >
+                  Remove Logo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── School Information card ─────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+        >
+          <CardHeader title="School Information" section="school" />
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Field label="School Name" icon={Building} value={formData.schoolName} name="schoolName" editing={isEditingSchool} placeholder="School name" />
+              <Field label="School Prefix" icon={Building} value={formData.schoolPrefix} name="schoolPrefix" editing={isEditingSchool} placeholder="e.g. USS" />
+              <Field label="Street Address" icon={MapPin} value={formData.street} name="street" editing={isEditingSchool} placeholder="Street address" />
+              <SelectField
+                label="State"
+                icon={MapPin}
+                value={formData.state}
+                name="state"
+                editing={isEditingSchool}
+                placeholder="Choose your state"
+                options={[
+                  { value: "Lagos State", label: "Lagos State" },
+                  { value: "FCT Abuja", label: "FCT Abuja" },
+                  { value: "Rivers State", label: "Rivers State" },
+                  { value: "Kano State", label: "Kano State" },
+                  { value: "Oyo State", label: "Oyo State" },
+                ]}
+              />
+              <SelectField
+                label="Country"
+                icon={Globe}
+                value={formData.country}
+                name="country"
+                editing={isEditingSchool}
+                placeholder="Choose your country"
+                options={[
+                  { value: "Nigeria", label: "Nigeria" },
+                  { value: "Ghana", label: "Ghana" },
+                  { value: "Kenya", label: "Kenya" },
+                  { value: "South Africa", label: "South Africa" },
+                ]}
+              />
+            </div>
+
+            {isEditingSchool && <SaveBar section="school" />}
+          </div>
+        </motion.div>
+
+      </div>
     </div>
   );
 }
