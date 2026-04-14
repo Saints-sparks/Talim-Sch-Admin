@@ -123,14 +123,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login function
+  // Login function — includes RBAC: only school_admin role is permitted
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Step 1: Authenticate
       const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGIN}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           email,
@@ -142,14 +141,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        const msg = errorData.message || "Login failed";
+        // Make credential errors descriptive
+        if (response.status === 401) {
+          throw new Error("Incorrect email or password. Please check your credentials and try again.");
+        }
+        throw new Error(msg);
       }
 
       const data = await response.json();
       const { access_token } = data;
 
-      // Store access token (now also in localStorage via setAccessToken)
-      setAccessToken(access_token);
+      // Step 2: Introspect token to retrieve user role before storing anything
+      const introResponse = await fetch(`${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+        credentials: "include",
+      });
+
+      if (!introResponse.ok) {
+        throw new Error("Could not verify your account. Please try again.");
+      }
+
+      const introData = await introResponse.json();
+      const userData = introData.user;
+
+      // Step 3: RBAC check — only school_admin may access this portal
+      if (userData.role !== "school_admin") {
+        const friendlyRole = userData.role.replace(/_/g, " ");
+        throw new Error(
+          `Access denied. This portal is for school administrators only. ` +
+          `Your account is registered as "${friendlyRole}". ` +
+          `Please use the correct Talim app for your role.`
+        );
+      }
+
+      // Step 4: Role is valid — persist session
+      setAccessTokenState(access_token);
+      apiClient.setAccessToken(access_token);
+      localStorage.setItem("accessToken", access_token);
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+      window.dispatchEvent(
+        new CustomEvent("auth-changed", { detail: { type: "login", user: userData } })
+      );
 
       return true;
     } catch (error: any) {
