@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useCallback,
 } from "react";
 import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
 import { toast } from "react-toastify";
@@ -62,6 +63,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
+  const clearSession = useCallback((redirectToLogin = false) => {
+    setAccessTokenState(null);
+    apiClient.setAccessToken(null);
+    setUser(null);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+
+    if (
+      redirectToLogin &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== "/"
+    ) {
+      window.location.assign("/");
+    }
+  }, []);
+
   // ✅ FIXED: Set access token and update user info + localStorage
   const setAccessToken = (token: string | null) => {
     setAccessTokenState(token);
@@ -76,7 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       introspectToken(token);
     } else {
       // Remove from localStorage when clearing token
-      localStorage.removeItem("accessToken");
+      clearSession();
     }
   };
 
@@ -102,6 +119,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
+        if (data.user?.role !== "school_admin") {
+          throw new Error("Access denied for this portal");
+        }
+
         setUser(data.user);
 
         // Store user in localStorage for persistence across tabs
@@ -118,8 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Error introspecting token:", error);
-      setAccessToken(null);
-      setUser(null);
+      clearSession(true);
     }
   };
 
@@ -218,14 +238,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setAccessToken(access_token);
           return true;
         } else {
-          setAccessToken(null);
-          setUser(null);
+          clearSession(true);
           return false;
         }
       } catch (error) {
         console.error("Refresh token error:", error);
-        setAccessToken(null);
-        setUser(null);
+        clearSession(true);
         return false;
       } finally {
         refreshPromiseRef.current = null;
@@ -251,9 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Logout error:", error);
     } finally {
       // Clear everything
-      setAccessToken(null); // This also clears localStorage via setAccessToken
-      setUser(null);
-      localStorage.removeItem("user");
+      clearSession();
 
       // Trigger auth event for WebSocket
       window.dispatchEvent(
@@ -265,6 +281,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.success("Logged out successfully");
     }
   };
+
+  useEffect(() => {
+    const handleAuthChanged = (event: Event) => {
+      const authEvent = event as CustomEvent<{ type?: string }>;
+      if (authEvent.detail?.type === "logout") {
+        clearSession(true);
+      }
+    };
+
+    window.addEventListener("auth-changed", handleAuthChanged);
+    return () => window.removeEventListener("auth-changed", handleAuthChanged);
+  }, [clearSession]);
 
   // ✅ FIXED: Check for existing session on app load
   useEffect(() => {

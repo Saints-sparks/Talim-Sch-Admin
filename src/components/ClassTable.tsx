@@ -6,6 +6,18 @@ import { ChevronDown } from "./Icons";
 import { useState } from "react";
 import Image from "next/image";
 
+interface ClassStudent {
+  _id?: string;
+  userId?: {
+    firstName?: string;
+    lastName?: string;
+    userAvatar?: string;
+  };
+  firstName?: string;
+  lastName?: string;
+  userAvatar?: string;
+}
+
 interface ClassTableProps {
   classes: Array<{
     _id: string;
@@ -13,6 +25,7 @@ interface ClassTableProps {
     classDescription?: string;
     classCapacity?: number;
     studentCount: number;
+    students?: ClassStudent[];
   }>;
   error: string | null;
   onAdd: () => void;
@@ -29,43 +42,37 @@ const ClassTable: React.FC<ClassTableProps> = ({
   onEdit,
   onRetry,
 }) => {
-  const getCapacityStatus = (
-    capacity: number | undefined,
-    studentCount: number
-  ) => {
-    if (!capacity) return { status: "unknown", percentage: 0 };
-    const percentage = (studentCount / capacity) * 100;
-    if (percentage >= 90) return { status: "full", percentage };
-    if (percentage >= 70) return { status: "high", percentage };
-    return { status: "normal", percentage };
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "full":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "high":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "normal":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  // Search state
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 4;
 
-  // Filtered classes based on search
   const filteredClasses = classes.filter((item) => {
     const searchLower = search.toLowerCase();
-    return (
-      item.name.toLowerCase().includes(searchLower) ||
-      (item.classDescription?.toLowerCase().includes(searchLower) ?? false) ||
-      (item.classCapacity !== undefined &&
-        String(item.classCapacity).includes(searchLower))
-    );
+    return item.name.toLowerCase().includes(searchLower);
   });
+  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * rowsPerPage;
+  const paginatedClasses = filteredClasses.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
+  const showingStart = filteredClasses.length === 0 ? 0 : startIndex + 1;
+  const showingEnd = Math.min(startIndex + rowsPerPage, filteredClasses.length);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const getStudentAvatar = (student: ClassStudent) =>
+    student.userId?.userAvatar || student.userAvatar || "";
+
+  const getStudentName = (student: ClassStudent) => {
+    const firstName = student.userId?.firstName || student.firstName || "";
+    const lastName = student.userId?.lastName || student.lastName || "";
+    return `${firstName} ${lastName}`.trim() || "Student";
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 leading-[120%]">
@@ -95,7 +102,7 @@ const ClassTable: React.FC<ClassTableProps> = ({
               type="search"
               placeholder="Search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="flex-1 border-none shadow-none placeholder-[#B3B3B3] placeholder:font-medium placeholder:text-[15px] text-[#2F2F2F] focus:outline-none focus-visible:ring-0"
             />
           </div>
@@ -169,16 +176,18 @@ const ClassTable: React.FC<ClassTableProps> = ({
                         <th className="text-left py-4 px-6  font-semibold text-[15px]">
                           Capacity
                         </th>
-                        <th className="text-left py-4 px-6  font-semibold text-[15px]">
-                          Description
-                        </th>
                         <th className="text-center py-4 px-6  font-semibold text-[15px]">
                           Action
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {filteredClasses.map((item, index) => (
+                      {paginatedClasses.map((item) => {
+                        const studentsWithAvatars = (item.students || [])
+                          .filter((student) => getStudentAvatar(student))
+                          .slice(0, 3);
+
+                        return (
                         <tr
                           key={item._id}
                           className="border-b border-[#F0F0F0] hover:bg-gray-50 transition-colors duration-200"
@@ -195,29 +204,19 @@ const ClassTable: React.FC<ClassTableProps> = ({
                               <span className="font-medium text-gray-800 text-base">
                                 {item.studentCount}/{item.classCapacity ?? "--"}
                               </span>
-                              {/* Avatars - placeholder, replace with actual avatars if available */}
-                              <div className="flex -space-x-2">
-                                {[0, 1, 2].map((i) => (
+                              {studentsWithAvatars.length > 0 && (
+                                <div className="flex -space-x-2">
+                                  {studentsWithAvatars.map((student) => (
                                   <img
-                                    key={i}
-                                    src={`https://randomuser.me/api/portraits/med/men/${
-                                      i + 10
-                                    }.jpg`}
-                                    alt="avatar"
+                                    key={student._id || getStudentAvatar(student)}
+                                    src={getStudentAvatar(student)}
+                                    alt={`${getStudentName(student)} avatar`}
                                     className="w-7 h-7 rounded-full border-2 border-white shadow"
                                   />
                                 ))}
-                              </div>
+                                </div>
+                              )}
                             </div>
-                          </td>
-                          {/* Description */}
-                          <td className="py-2 px-6">
-                            <span
-                              className="text-[#808080] text-[15px] font-medium max-w-xs block truncate"
-                              title={item.classDescription}
-                            >
-                              {item.classDescription ?? "No description"}
-                            </span>
                           </td>
                           {/* Action */}
                           <td className="py-2 px-6 text-center">
@@ -239,20 +238,28 @@ const ClassTable: React.FC<ClassTableProps> = ({
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      )})}
                     </tbody>
                   </table>
                 </div>
                 {/* Pagination Footer - matches design */}
                 <div className="flex items-center justify-between px-6 py-2 border border-[#F2F2F2] rounded-xl bg-white mt-4">
                   <span className="text-[#979797] text-[15px] font-medium">
-                    Showing 1 - {classes.length} of 6
+                    Showing {showingStart} - {showingEnd} of{" "}
+                    {filteredClasses.length}
                   </span>
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <select className="px-4 py-2 pr-8 rounded-xl border border-[#F0F0F0] text-[#030E18] font-medium text-[15px] appearance-none">
-                        <option>1</option>
-                        <option>2</option>
+                      <select
+                        value={safeCurrentPage}
+                        onChange={(e) => setCurrentPage(Number(e.target.value))}
+                        className="px-4 py-2 pr-8 rounded-xl border border-[#F0F0F0] text-[#030E18] font-medium text-[15px] appearance-none"
+                      >
+                        {Array.from({ length: totalPages }, (_, index) => (
+                          <option key={index + 1} value={index + 1}>
+                            {index + 1}
+                          </option>
+                        ))}
                       </select>
                       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
                         <ChevronDown />
@@ -260,10 +267,30 @@ const ClassTable: React.FC<ClassTableProps> = ({
                     </div>
 
                     <span className="text-[#979797] text-[15px]">
-                      of page 2
+                      of page {totalPages}
                     </span>
-                    <ChevronLeft />
-                    <ChevronRight />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, page - 1))
+                      }
+                      disabled={safeCurrentPage === 1}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(totalPages, page + 1))
+                      }
+                      disabled={safeCurrentPage === totalPages}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight />
+                    </button>
                   </div>
                 </div>
               </div>

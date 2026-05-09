@@ -357,6 +357,20 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Grade Level <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="gradeLevel"
+                    placeholder="e.g., Grade 10, JSS 2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    value={formData.gradeLevel}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Class <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -375,20 +389,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       </option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Grade Level <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="gradeLevel"
-                    placeholder="e.g., Grade 10, JSS 2"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    value={formData.gradeLevel}
-                    onChange={handleInputChange}
-                    required
-                  />
                 </div>
               </div>
             </div>
