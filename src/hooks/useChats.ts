@@ -145,9 +145,9 @@ export const useChats = (): UseChatsReturn => {
       });
       
       const sortedRooms = memberRooms.sort((a, b) => {
-        const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-        const dateB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-        return dateB - dateA;
+        const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
+        const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
+        return new Date(tsB).getTime() - new Date(tsA).getTime();
       });
       
       setChatRooms(sortedRooms);
