@@ -37,7 +37,7 @@ interface AuthContextType {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, keepSignedIn?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   setAccessToken: (token: string | null) => void;
@@ -63,12 +63,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
+  const getStoredAccessToken = () =>
+    localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+
+  const persistSession = (
+    token: string,
+    userData: User,
+    keepSignedIn = true
+  ) => {
+    setAccessTokenState(token);
+    apiClient.setAccessToken(token);
+    setUser(userData);
+
+    localStorage.setItem("accessToken", token);
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("user");
+  };
+
   const clearSession = useCallback((redirectToLogin = false) => {
     setAccessTokenState(null);
     apiClient.setAccessToken(null);
     setUser(null);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+    localStorage.removeItem("keepSignedIn");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("user");
 
     if (
       redirectToLogin &&
@@ -89,6 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (token) {
       // Store in localStorage for service functions
       localStorage.setItem("accessToken", token);
+      sessionStorage.removeItem("accessToken");
       // Get updated user info when token changes
       introspectToken(token);
     } else {
@@ -103,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [accessToken]);
 
   // Introspect token to get user info using access token
-  const introspectToken = async (token: string) => {
+  const introspectToken = async (token: string, redirectOnFailure = true) => {
     try {
       const response = await fetch(
         `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
@@ -125,8 +148,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         setUser(data.user);
 
-        // Store user in localStorage for persistence across tabs
         localStorage.setItem("user", JSON.stringify(data.user));
+        sessionStorage.removeItem("user");
 
         // Trigger auth event for WebSocket
         window.dispatchEvent(
@@ -139,12 +162,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Error introspecting token:", error);
-      clearSession(true);
+      if (redirectOnFailure) {
+        clearSession(true);
+      }
+      throw error;
     }
   };
 
   // Login function — includes RBAC: only school_admin role is permitted
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (
+    email: string,
+    password: string,
+    keepSignedIn = true
+  ): Promise<boolean> => {
     try {
       // Step 1: Authenticate
       const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGIN}`, {
@@ -154,6 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({
           email,
           password,
+          rememberMe: keepSignedIn,
           deviceToken: "123456",
           platform: "web",
         }),
@@ -200,11 +231,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Step 4: Role is valid — persist session
-      setAccessTokenState(access_token);
-      apiClient.setAccessToken(access_token);
-      localStorage.setItem("accessToken", access_token);
-      setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
+      persistSession(access_token, userData, keepSignedIn);
       window.dispatchEvent(
         new CustomEvent("auth-changed", { detail: { type: "login", user: userData } })
       );
@@ -299,18 +326,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = async () => {
       try {
         // Check for stored token first
-        const storedToken = localStorage.getItem("accessToken");
+        const storedToken = getStoredAccessToken();
         
         if (storedToken) {
           // We have a stored token, try to use it
           setAccessTokenState(storedToken);
           apiClient.setAccessToken(storedToken);
-          await introspectToken(storedToken);
+          try {
+            await introspectToken(storedToken, false);
+          } catch (error) {
+            const refreshed = await refreshToken();
+            if (!refreshed) {
+              clearSession(true);
+            }
+          }
         } else {
           // No stored token, try to refresh
           const success = await refreshToken();
           if (!success) {
-            const storedUser = localStorage.getItem("user");
+            const storedUser =
+              localStorage.getItem("user") || sessionStorage.getItem("user");
             if (storedUser) {
               try {
                 setUser(JSON.parse(storedUser));

@@ -22,6 +22,7 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<LoginError | null>(null);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +30,7 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, keepSignedIn);
       router.push("/dashboard");
     } catch (err: any) {
       const msg: string = err.message || "";
@@ -161,6 +162,8 @@ export default function SignIn() {
               <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
                 <input
                   type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(e) => setKeepSignedIn(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]"
                 />
                 Keep me signed in
