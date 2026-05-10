@@ -20,8 +20,8 @@ import { toast } from "react-toastify";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import TalimModal from "@/components/ui/TalimModal";
-import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
-import { FiCamera, FiX, FiFile, FiFileText } from "react-icons/fi";
+import { uploadFileAttachment } from "../services/files.service";
+import { FiX, FiFile, FiFileText } from "react-icons/fi";
 
 interface Announcement {
   title: string;
@@ -30,10 +30,10 @@ interface Announcement {
 }
 
 const Announcement: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(
     null
@@ -110,8 +110,16 @@ const Announcement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, [pagination.page, pagination.limit]);
+    if (isAuthLoading) return;
+
+    if (user?.userId) {
+      fetchAnnouncements();
+      return;
+    }
+
+    setLoading(false);
+    setError("User not authenticated");
+  }, [isAuthLoading, user?.userId, pagination.page, pagination.limit]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.lastPage) {
@@ -150,10 +158,7 @@ const Announcement: React.FC = () => {
       setIsModalOpen(false);
     } catch (error: any) {
       console.error("Error creating announcement:", error);
-      toast.error(
-        "Failed to create announcement. Please try again.",
-        error.message
-      );
+      toast.error(error.message || "Failed to create announcement. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -232,19 +237,17 @@ const Announcement: React.FC = () => {
         );
       }
 
-      // Upload to Cloudinary
-      setIsUploadingImage(true);
+      setIsUploadingAttachment(true);
       setUploadProgress(0);
 
       const uploadingToast = toast.loading("Uploading attachment...");
 
       try {
-        const imageUrl = await uploadToCloudinary(file, (progress) => {
+        const attachmentUrl = await uploadFileAttachment(file, (progress) => {
           setUploadProgress(progress);
         });
 
-        // Update form data with the Cloudinary URL
-        setNewAnnouncement((prev) => ({ ...prev, attachment: imageUrl }));
+        setNewAnnouncement((prev) => ({ ...prev, attachment: attachmentUrl }));
         toast.dismiss(uploadingToast);
         toast.success("Attachment uploaded successfully!");
       } catch (error) {
@@ -258,7 +261,7 @@ const Announcement: React.FC = () => {
         setAttachmentPreview(null);
         setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
       } finally {
-        setIsUploadingImage(false);
+        setIsUploadingAttachment(false);
         setUploadProgress(0);
         e.target.value = ""; // Reset input for potential re-upload
       }
@@ -526,7 +529,7 @@ const Announcement: React.FC = () => {
             <button
               type="submit"
               form="announcement-form"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingAttachment}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
@@ -606,7 +609,7 @@ const Announcement: React.FC = () => {
                   className="hidden"
                   onChange={handleFileChange}
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-                  disabled={isSubmitting || isUploadingImage}
+                  disabled={isSubmitting || isUploadingAttachment}
                 />
                 <label
                   htmlFor="attachment-upload"
@@ -617,7 +620,7 @@ const Announcement: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">
-                      {isUploadingImage
+                      {isUploadingAttachment
                         ? "Uploading..."
                         : "Click to upload a file"}
                     </p>
@@ -625,7 +628,7 @@ const Announcement: React.FC = () => {
                       Images, PDFs, Documents up to 10MB
                     </p>
                   </div>
-                  {isUploadingImage && (
+                  {isUploadingAttachment && (
                     <div className="mt-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div
@@ -756,7 +759,7 @@ const Announcement: React.FC = () => {
                   <button
                     type="button"
                     onClick={removeAttachment}
-                    disabled={isSubmitting || isUploadingImage}
+                    disabled={isSubmitting || isUploadingAttachment}
                     className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
                   >
                     <FiX className="w-4 h-4" />

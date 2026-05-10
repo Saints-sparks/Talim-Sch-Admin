@@ -1,7 +1,11 @@
-import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "../lib/api/config";
-import { uploadImage } from "./files.service";
 import { apiClient } from "@/lib/apiClient";
+
+const getErrorMessage = async (response: Response, fallback: string) => {
+  const payload = await response.json().catch(() => null);
+  const message = payload?.message || payload?.error || fallback;
+  return Array.isArray(message) ? message.join(", ") : message;
+};
 
 /**
  * Interface for an announcement
@@ -101,6 +105,12 @@ export const createAnnouncement = async (
       announcement
     );
 
+    if (!response.ok) {
+      throw new Error(
+        await getErrorMessage(response, "Failed to create announcement")
+      );
+    }
+
     const data: CreateAnnouncementResponse = await response.json();
     return data;
   } catch (error) {
@@ -125,6 +135,12 @@ export const getAnnouncementsBySender = async (
     const response = await apiClient.get(
       API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId, page, limit)
     );
+
+    if (!response.ok) {
+      throw new Error(
+        await getErrorMessage(response, "Failed to fetch announcements")
+      );
+    }
 
     const data: AnnouncementResponse = await response.json();
     return data;

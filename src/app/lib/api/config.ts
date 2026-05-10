@@ -74,6 +74,7 @@ export const API_URLS = {
   },
   FILES: {
     UPLOAD_IMAGE: "/upload/image",
+    UPLOAD_FILE: "/upload/file",
   },
   ACADEMIC: {
     CREATE_ACADEMIC_YEAR: "/academic-year-term/academic-year",
@@ -138,6 +139,7 @@ export const API_ENDPOINTS = {
   CREATE_ANNOUNCEMENT: `${API_BASE_URL}${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
   CREATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENT.CREATE}`,
   UPLOAD_IMAGE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_IMAGE}`,
+  UPLOAD_FILE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_FILE}`,
   GET_ANNOUNCEMENTS_BY_SENDER: (
     senderId: string,
     page: number,
