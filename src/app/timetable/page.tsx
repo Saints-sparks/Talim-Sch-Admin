@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, FormEvent } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
 import { RefreshCw } from "lucide-react";
@@ -13,7 +13,7 @@ interface TimetableEntry {
   _id?: string;
   time: string;
   startTime: string;
-  startTIme?: string; // Handle backend typo
+  startTIme?: string; // Handle legacy backend typo
   endTime: string;
   course: string;
   subject: string;
@@ -21,6 +21,7 @@ interface TimetableEntry {
   courseId: string;
   subjectId: string;
   day: string;
+  teacherName?: string;
 }
 
 interface Teacher {
@@ -33,7 +34,17 @@ interface Course {
   _id: string;
   title: string;
   description?: string;
-  subjectId: string;
+  subjectId: string | { _id: string; name?: string; code?: string };
+  teacherId?:
+    | string
+    | {
+        _id?: string;
+        userId?: {
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+        };
+      };
   courseCode?: string;
 }
 
@@ -66,6 +77,8 @@ const Timetable = () => {
   const [noTimetable, setNoTimetable] = useState(false);
   const [draggedCourse, setDraggedCourse] = useState<Course | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreatingEntry, setIsCreatingEntry] = useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [visibleDays, setVisibleDays] = useState([
     "Monday",
@@ -75,11 +88,9 @@ const Timetable = () => {
     "Friday",
   ]);
   const [formData, setFormData] = useState({
-    classId: "",
     day: "",
     startTime: "",
     endTime: "",
-    subject: "",
     courseId: "",
   });
 
@@ -135,85 +146,127 @@ const Timetable = () => {
 
   const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
+  const getCourseSubjectId = (course: Course) =>
+    typeof course.subjectId === "string" ? course.subjectId : course.subjectId?._id;
+
+  const getCourseSubjectName = (course: Course) =>
+    typeof course.subjectId === "string"
+      ? "Subject"
+      : course.subjectId?.name || course.subjectId?.code || "Subject";
+
+  const getCourseTeacherName = (course?: Course | null) => {
+    if (!course?.teacherId || typeof course.teacherId === "string") {
+      return "Unassigned teacher";
+    }
+
+    const user = course.teacherId.userId;
+    const name = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+    return name || user?.email || "Unassigned teacher";
+  };
+
+  const normalizeTimeForDisplay = (time: string) => {
+    if (!time) return "";
+    if (time.includes("AM") || time.includes("PM")) return time;
+    const [hourStr, minute = "00"] = time.split(":");
+    return `${hourStr.padStart(2, "0")}:${minute}`;
+  };
+
+  const formatSlotTimeForApi = (time: string) => {
+    const [hourStr, minute = "00"] = time.split(":");
+    return `${hourStr.padStart(2, "0")}:${minute}`;
+  };
+
+  const buildLocalEntry = (
+    savedEntry: any,
+    course: Course,
+    day: string,
+    startTime: string,
+    endTime: string
+  ): TimetableEntry => ({
+    _id: savedEntry?._id,
+    time: `${startTime} - ${endTime}`,
+    startTime,
+    endTime,
+    course: course.title,
+    subject: getCourseSubjectName(course),
+    class: selectedClassId,
+    courseId: course._id,
+    subjectId: getCourseSubjectId(course) || "",
+    day,
+    teacherName: getCourseTeacherName(course),
+  });
+
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Fetch classes on component mount
-  useEffect(() => {
-    const fetchClasses = async () => {
-      setIsLoadingClasses(true);
-      try {
-        const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
-        if (!response.ok) throw new Error("Failed to fetch classes");
-        const classesData = await response.json();
-        const classesArray = Array.isArray(classesData)
-          ? classesData
-          : classesData.data || [];
-        setClasses(classesArray);
+  const fetchClasses = useCallback(async () => {
+    setIsLoadingClasses(true);
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
+      if (!response.ok) throw new Error("Failed to fetch classes");
+      const classesData = await response.json();
+      const classesArray = Array.isArray(classesData)
+        ? classesData
+        : classesData.data || [];
+      setClasses(classesArray);
 
-        // Auto-select the first class if none is selected
-        if (classesArray.length > 0 && !selectedClassId) {
-          setSelectedClassId(classesArray[0]._id);
-        }
-      } catch (error: any) {
-        console.error("Error fetching classes:", error);
-        toast.error(error.message || "Failed to load classes");
-      } finally {
-        setIsLoadingClasses(false);
+      if (classesArray.length > 0 && !selectedClassId) {
+        setSelectedClassId(classesArray[0]._id);
       }
-    };
-    fetchClasses();
-  }, []);
-
-  // Fetch courses when class is selected
-  useEffect(() => {
-    const fetchCoursesByClass = async () => {
-      if (!selectedClassId) return;
-
-      setIsLoadingSubjects(true);
-      try {
-        // Fetch courses directly by class ID
-        const response = await apiClient.get(
-          API_ENDPOINTS.GET_COURSES_BY_CLASS(selectedClassId)
-        );
-        if (!response.ok) throw new Error("Failed to fetch courses for class");
-
-        const coursesData = await response.json();
-        const coursesArray = Array.isArray(coursesData)
-          ? coursesData
-          : coursesData.data || [];
-
-        // Group courses by subject for display
-        const subjectsMap = new Map();
-        coursesArray.forEach((course: Course) => {
-          if (!subjectsMap.has(course.subjectId)) {
-            subjectsMap.set(course.subjectId, {
-              _id: course.subjectId,
-              name: course.subjectId, // We might need to fetch subject names separately
-              code: "",
-              courses: [],
-            });
-          }
-          subjectsMap.get(course.subjectId).courses.push(course);
-        });
-
-        setSubjects(Array.from(subjectsMap.values()));
-        setCourses(coursesArray);
-      } catch (error: any) {
-        console.error("Error fetching courses for class:", error);
-        toast.error(error.message || "Failed to load courses for this class");
-      } finally {
-        setIsLoadingSubjects(false);
-      }
-    };
-
-    fetchCoursesByClass();
+    } catch (error: any) {
+      console.error("Error fetching classes:", error);
+      toast.error(error.message || "Failed to load classes");
+    } finally {
+      setIsLoadingClasses(false);
+    }
   }, [selectedClassId]);
 
-  // Fetch timetable data
-  useEffect(() => {
-    const fetchTimetableByClass = async () => {
+  const fetchCoursesByClass = useCallback(async () => {
+    if (!selectedClassId) return;
+
+    setIsLoadingSubjects(true);
+    try {
+      const response = await apiClient.get(
+        API_ENDPOINTS.GET_COURSES_BY_CLASS(selectedClassId)
+      );
+      if (!response.ok) throw new Error("Failed to fetch courses for class");
+
+      const coursesData = await response.json();
+      const coursesArray = Array.isArray(coursesData)
+        ? coursesData
+        : coursesData.data || [];
+
+      const subjectsMap = new Map<string, Subject>();
+      coursesArray.forEach((course: Course) => {
+        const subjectId = getCourseSubjectId(course);
+        if (!subjectId) return;
+        if (!subjectsMap.has(subjectId)) {
+          subjectsMap.set(subjectId, {
+            _id: subjectId,
+            name: getCourseSubjectName(course),
+            code:
+              typeof course.subjectId === "string"
+                ? ""
+                : course.subjectId?.code || "",
+            courses: [],
+          });
+        }
+        subjectsMap.get(subjectId)?.courses?.push(course);
+      });
+
+      setSubjects(Array.from(subjectsMap.values()));
+      setCourses(coursesArray);
+    } catch (error: any) {
+      console.error("Error fetching courses for class:", error);
+      toast.error(error.message || "Failed to load courses for this class");
+    } finally {
+      setIsLoadingSubjects(false);
+    }
+  }, [selectedClassId]);
+
+  const fetchTimetableByClass = useCallback(
+    async (showToast = false) => {
       if (!selectedClassId) return;
 
       setIsLoadingTimetable(true);
@@ -221,8 +274,9 @@ const Timetable = () => {
       setNoTimetable(false);
 
       try {
-        const url = `${API_ENDPOINTS.GET_TIMETABLE_BY_CLASS}/${selectedClassId}`;
-        const res = await apiClient.get(url);
+        const res = await apiClient.get(
+          API_ENDPOINTS.GET_TIMETABLE_BY_CLASS(selectedClassId)
+        );
 
         if (res.status === 404) {
           setTimetableEntries({});
@@ -237,13 +291,14 @@ const Timetable = () => {
         const formattedTimetable = Object.keys(data).reduce((acc, day) => {
           acc[day] = data[day].map((entry: any) => ({
             ...entry,
-            startTime: entry.startTIme || entry.startTime,
+            startTime: entry.startTime || entry.startTIme,
           }));
           return acc;
         }, {} as Record<string, TimetableEntry[]>);
 
         setTimetableEntries(formattedTimetable);
-        setNoTimetable(false);
+        setNoTimetable(Object.keys(formattedTimetable).length === 0);
+        if (showToast) toast.success("Timetable refreshed");
       } catch (error: any) {
         console.error("Error fetching timetable:", error);
         setTimetableError(error.message || "Failed to fetch timetable");
@@ -251,30 +306,22 @@ const Timetable = () => {
       } finally {
         setIsLoadingTimetable(false);
       }
-    };
+    },
+    [selectedClassId]
+  );
 
-    fetchTimetableByClass();
-  }, [selectedClassId]);
+  const refreshTimetablePage = useCallback(async () => {
+    await Promise.all([fetchClasses(), fetchCoursesByClass(), fetchTimetableByClass(true)]);
+  }, [fetchClasses, fetchCoursesByClass, fetchTimetableByClass]);
 
   useEffect(() => {
-    if (isModalOpen) {
-      const fetchSubjects = async () => {
-        try {
-          const subjectsRes = await apiClient.get(
-            API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL
-          );
-          const subjectsData = await subjectsRes.json();
-          setSubjects(
-            Array.isArray(subjectsData) ? subjectsData : subjectsData.data || []
-          );
-        } catch (error: any) {
-          console.error("Error fetching subjects:", error);
-          toast.error(error.message || "Failed to load subjects");
-        }
-      };
-      fetchSubjects();
-    }
-  }, [isModalOpen]);
+    fetchClasses();
+  }, [fetchClasses]);
+
+  useEffect(() => {
+    fetchCoursesByClass();
+    fetchTimetableByClass();
+  }, [fetchCoursesByClass, fetchTimetableByClass]);
 
   // Drag and drop handlers
   const handleDragStart = (course: Course) => {
@@ -295,59 +342,36 @@ const Timetable = () => {
     if (!draggedCourse || !selectedClassId) return;
 
     try {
-      // Find the subject for this course
-      const subject = subjects.find((s) =>
-        s.courses?.some((c) => c._id === draggedCourse._id)
-      );
-
-      if (!subject) {
-        toast.error("Subject not found for this course");
-        return;
-      }
-
-      // Create payload for backend
       const payload = {
         classId: selectedClassId,
         courseId: draggedCourse._id,
-        day: day,
-        startTime: formatTime(timeSlot.start + ":00"),
-        endTime: formatTime(timeSlot.end + ":00"),
+        day,
+        startTime: formatSlotTimeForApi(timeSlot.start),
+        endTime: formatSlotTimeForApi(timeSlot.end),
       };
 
-      // Save to backend first
       const res = await apiClient.post(
         API_ENDPOINTS.CREATE_TIMETABLE_ENTRY,
         payload
       );
       if (!res.ok) {
-        throw new Error("Failed to create timetable entry");
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to create timetable entry");
       }
       const savedEntry = await res.json();
 
-      // Create timetable entry for local state
-      const newEntry: TimetableEntry = {
-        _id: savedEntry._id,
-        time: timeSlot.label,
-        startTime: timeSlot.start,
-        endTime: timeSlot.end,
-        course: draggedCourse.title,
-        subject: subject.name,
-        class: selectedClassId,
-        courseId: draggedCourse._id,
-        subjectId: subject._id,
-        day: day,
-      };
+      const startTime = formatSlotTimeForApi(timeSlot.start);
+      const endTime = formatSlotTimeForApi(timeSlot.end);
+      const newEntry = buildLocalEntry(savedEntry, draggedCourse, day, startTime, endTime);
 
-      // Update local state
       setTimetableEntries((prev) => ({
         ...prev,
         [day]: [...(prev[day] || []), newEntry],
       }));
+      setNoTimetable(false);
 
       // Show success message
-      toast.success(
-        `${draggedCourse.title} added to ${day} at ${timeSlot.label}`
-      );
+      toast.success(`${draggedCourse.title} added to ${day} at ${timeSlot.label}`);
     } catch (error: any) {
       console.error("Error adding timetable entry:", error);
       toast.error(error.message || "Failed to add timetable entry");
@@ -443,11 +467,18 @@ const Timetable = () => {
         return `${parseInt(hours, 10)}:${minutes}`;
       }
 
-      // Delete from backend first (if endpoint exists)
-      // const deleteRes = await apiClient.delete(`${API_ENDPOINTS.DELETE_TIMETABLE_ENTRY}/${entryToDelete._id}`);
-      // if (!deleteRes.ok) {
-      //   throw new Error("Failed to delete timetable entry");
-      // }
+      if (!entryToDelete._id) {
+        toast.error("This timetable entry cannot be deleted because its ID is missing");
+        return;
+      }
+
+      const deleteRes = await apiClient.delete(
+        API_ENDPOINTS.DELETE_TIMETABLE_ENTRY(entryToDelete._id)
+      );
+      if (!deleteRes.ok) {
+        const errorData = await deleteRes.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to delete timetable entry");
+      }
 
       // Update local state - remove the specific entry
       setTimetableEntries((prev) => ({
@@ -470,6 +501,116 @@ const Timetable = () => {
     if (hour === 0) hour = 12;
     const formattedHour = hour < 10 ? `0${hour}` : hour.toString();
     return `${formattedHour}:${minute} ${ampm}`;
+  };
+
+  const handleCreateEntryFromModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClassId) {
+      toast.error("Please select a class first");
+      return;
+    }
+
+    const selectedCourse = courses.find((course) => course._id === formData.courseId);
+    if (!selectedCourse) {
+      toast.error("Please select a subject/course");
+      return;
+    }
+
+    if (!formData.day || !formData.startTime || !formData.endTime) {
+      toast.error("Please fill all timetable fields");
+      return;
+    }
+
+    setIsCreatingEntry(true);
+    try {
+      const payload = {
+        classId: selectedClassId,
+        courseId: selectedCourse._id,
+        day: formData.day,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      };
+
+      const res = await apiClient.post(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, payload);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to create timetable entry");
+      }
+
+      const savedEntry = await res.json();
+      const newEntry = buildLocalEntry(
+        savedEntry,
+        selectedCourse,
+        formData.day,
+        formData.startTime,
+        formData.endTime
+      );
+
+      setTimetableEntries((prev) => ({
+        ...prev,
+        [formData.day]: [...(prev[formData.day] || []), newEntry],
+      }));
+      setNoTimetable(false);
+      setIsModalOpen(false);
+      setFormData({ day: "", startTime: "", endTime: "", courseId: "" });
+      toast.success("Timetable entry added");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create timetable entry");
+    } finally {
+      setIsCreatingEntry(false);
+    }
+  };
+
+  const applyTemplate = async () => {
+    if (!selectedClassId) {
+      toast.error("Please select a class first");
+      return;
+    }
+    if (courses.length === 0) {
+      toast.error("No courses available for this class");
+      return;
+    }
+    if (Object.values(timetableEntries).some((entries) => entries.length > 0)) {
+      const shouldContinue = window.confirm(
+        "This will add template entries to the current timetable. Existing entries will be kept. Continue?"
+      );
+      if (!shouldContinue) return;
+    }
+
+    setIsApplyingTemplate(true);
+    let createdCount = 0;
+    try {
+      for (let dayIndex = 0; dayIndex < weekDays.length; dayIndex += 1) {
+        const day = weekDays[dayIndex];
+        for (let slotIndex = 0; slotIndex < Math.min(timeSlots.length, courses.length); slotIndex += 1) {
+          const course = courses[(slotIndex + dayIndex) % courses.length];
+          const slot = timeSlots[slotIndex];
+          const res = await apiClient.post(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, {
+            classId: selectedClassId,
+            courseId: course._id,
+            day,
+            startTime: formatSlotTimeForApi(slot.start),
+            endTime: formatSlotTimeForApi(slot.end),
+          });
+
+          if (res.ok) {
+            createdCount += 1;
+          }
+        }
+      }
+
+      await fetchTimetableByClass();
+      if (createdCount > 0) {
+        toast.success(`Template applied with ${createdCount} timetable entries`);
+      } else {
+        toast.info("No template entries were added. The timetable may already be full or have conflicts.");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to apply timetable template");
+      await fetchTimetableByClass();
+    } finally {
+      setIsApplyingTemplate(false);
+    }
   };
 
   // Skeleton loader component
@@ -626,9 +767,7 @@ const Timetable = () => {
         <button
           onClick={() => {
             setTimetableError(null);
-            if (selectedClassId) {
-              setSelectedClassId((s: string) => s + "");
-            }
+            fetchTimetableByClass(true);
           }}
           className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
         >
@@ -665,7 +804,11 @@ const Timetable = () => {
         weekDays.forEach((day) => {
           const entry = getEntryForSlot(day, timeSlot);
           if (entry) {
-            row.push(`${entry.course}\n(${entry.subject})\nMr Adeniyi`);
+            row.push(
+              `${entry.course}\n(${entry.subject})\n${
+                entry.teacherName || "Unassigned teacher"
+              }`
+            );
           } else {
             row.push("");
           }
@@ -722,8 +865,19 @@ const Timetable = () => {
             <h1 className="text-[19px] font-semibold ">Class Timetable</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-4 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors">
-              <RefreshCw className="w-4 h-4" />
+            <button
+              onClick={refreshTimetablePage}
+              disabled={isLoadingTimetable || isLoadingSubjects || isLoadingClasses}
+              className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-4 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors disabled:opacity-60"
+              title="Refresh timetable"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${
+                  isLoadingTimetable || isLoadingSubjects || isLoadingClasses
+                    ? "animate-spin"
+                    : ""
+                }`}
+              />
             </button>
             <button
               onClick={downloadTimetable}
@@ -776,9 +930,20 @@ const Timetable = () => {
                 <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
-            <button className="flex items-center gap-2 px-6 py-2 bg-white text-[15px] font-semibold border border-[#E0E0E0] rounded-xl hover:bg-blue-700 transition-colors mt-6">
+            <button
+              onClick={applyTemplate}
+              disabled={isApplyingTemplate || courses.length === 0}
+              className="flex items-center gap-2 px-6 py-2 bg-white text-[15px] font-semibold border border-[#E0E0E0] rounded-xl hover:bg-blue-50 transition-colors mt-6 disabled:opacity-60"
+            >
               <Copy />
-              Copy from Template
+              {isApplyingTemplate ? "Applying..." : "Copy from Template"}
+            </button>
+            <button
+              onClick={toggleModal}
+              disabled={!selectedClassId || courses.length === 0}
+              className="flex items-center gap-2 px-6 py-2 bg-[#003366] text-white text-[15px] font-semibold border border-[#003366] rounded-xl hover:bg-[#002244] transition-colors mt-6 disabled:opacity-60"
+            >
+              Add Entry
             </button>
           </div>
         </div>
@@ -826,7 +991,7 @@ const Timetable = () => {
                       {course.title}
                     </div>
                     <div className="text-[15px] font-medium mt-1">
-                      Mr Adeniyi
+                      {getCourseTeacherName(course)}
                     </div>
                   </div>
                 ))}
@@ -843,10 +1008,14 @@ const Timetable = () => {
             <TimetableSkeleton />
           ) : timetableError ? (
             <TimetableErrorPanel message={timetableError} />
-          ) : noTimetable ? (
-            <NoTimetableState />
           ) : (
             <div className="bg-white rounded-2xl border border-[#F0F0F0]">
+              {noTimetable && (
+                <div className="mx-4 mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  No timetable yet. Drag a course into a slot, use Add Entry,
+                  or copy from the template to get started.
+                </div>
+              )}
               {/* Grid Header */}
               <div className="grid grid-cols-6 border-b border-gray-200">
                 <div className="p-4 font-medium text-[15px] text-[#030E18]">
@@ -901,7 +1070,7 @@ const Timetable = () => {
                                     <div
                                       className={`text-[15px] font-medium truncate`}
                                     >
-                                      Mr Adeniyi
+                                      {entry.teacherName || "Unassigned teacher"}
                                     </div>
                                   </div>
                                 </div>
@@ -931,6 +1100,126 @@ const Timetable = () => {
           )}
         </div>
       </div>
+
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={toggleModal}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="border-b border-gray-100 px-6 py-4">
+              <h2 className="text-lg font-semibold text-[#030E18]">
+                Add Timetable Entry
+              </h2>
+              <p className="mt-1 text-sm text-[#4D4D4D]">
+                Schedule a registered course for the selected class.
+              </p>
+            </div>
+
+            <form className="space-y-4 p-6" onSubmit={handleCreateEntryFromModal}>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                  Subject/Course
+                </label>
+                <select
+                  value={formData.courseId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, courseId: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a course</option>
+                  {courses.map((course) => (
+                    <option key={course._id} value={course._id}>
+                      {course.title} - {getCourseTeacherName(course)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                  Day
+                </label>
+                <select
+                  value={formData.day}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, day: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a day</option>
+                  {weekDays.map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        startTime: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        endTime: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={toggleModal}
+                  disabled={isCreatingEntry}
+                  className="rounded-xl border border-gray-200 px-5 py-2.5 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingEntry}
+                  className="rounded-xl bg-[#003366] px-5 py-2.5 font-semibold text-white hover:bg-[#002244] disabled:opacity-60"
+                >
+                  {isCreatingEntry ? "Adding..." : "Add Entry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
