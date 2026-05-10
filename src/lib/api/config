@@ -83,8 +83,8 @@ export const API_URLS = {
     CREATE_TIMETABLE_ENTRY: "/timetable",
     GET_TIMETABLE: "/timetable?page=:page&limit=:limit",
     GET_TIMETABLE_BY_DAY: "/timetable/day/:day",
-    UPDATE_TIMETABLE_ENTRY: "/timetable/entry/:entryId",
-    DELETE_TIMETABLE_ENTRY: "/timetable/entry/:entryId",
+    UPDATE_TIMETABLE_ENTRY: "/timetable/:entryId",
+    DELETE_TIMETABLE_ENTRY: "/timetable/:entryId",
     GET_TIMETABLE_BY_CLASS: "/timetable/class/",
   },
   COMPLAINTS: {
@@ -163,7 +163,8 @@ export const API_ENDPOINTS = {
       ":day",
       day
     )}`,
-  GET_TIMETABLE_BY_CLASS: `${API_BASE_URL}/timetable/class`,
+  GET_TIMETABLE_BY_CLASS: (classId: string) =>
+    `${API_BASE_URL}/timetable/class/${classId}`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) =>
     `${API_BASE_URL}${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(
       ":entryId",
