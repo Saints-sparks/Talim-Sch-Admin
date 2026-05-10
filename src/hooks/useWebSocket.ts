@@ -55,6 +55,26 @@ export interface WebSocketContextType {
   onChatRoomHistory: (
     callback: (data: { roomId: string; messages: ChatMessage[] }) => void
   ) => () => void;
+  onChatRoomsUpdate: (
+    callback: (data: { rooms: any[]; totalRooms: number }) => void
+  ) => () => void;
+  onUnreadMessagesUpdate: (
+    callback: (data: { userId: string; unreadCount: number }) => void
+  ) => () => void;
+  onMessagesUpdate: (
+    callback: (data: {
+      roomId: string;
+      messages: ChatMessage[];
+      hasMore: boolean;
+      nextCursor?: string;
+      prevCursor?: string;
+      direction: string;
+    }) => void
+  ) => () => void;
+
+  // Socket emitters for fetching data
+  fetchChatRoomsViaSocket: (userId?: string) => void;
+  fetchUnreadCountViaSocket: (userId?: string) => void;
 
   // Connection management
   connect: (userId: string) => void;
@@ -425,6 +445,69 @@ export const useWebSocket = (): WebSocketContextType => {
     []
   );
 
+  const onChatRoomsUpdate = useCallback(
+    (callback: (data: { rooms: any[]; totalRooms: number }) => void) => {
+      if (!socketRef.current) return () => {};
+
+      socketRef.current.on("chat-rooms-update", callback);
+      return () => {
+        socketRef.current?.off("chat-rooms-update", callback);
+      };
+    },
+    []
+  );
+
+  const onUnreadMessagesUpdate = useCallback(
+    (callback: (data: { userId: string; unreadCount: number }) => void) => {
+      if (!socketRef.current) return () => {};
+
+      socketRef.current.on("unread-messages-update", callback);
+      return () => {
+        socketRef.current?.off("unread-messages-update", callback);
+      };
+    },
+    []
+  );
+
+  const onMessagesUpdate = useCallback(
+    (
+      callback: (data: {
+        roomId: string;
+        messages: ChatMessage[];
+        hasMore: boolean;
+        nextCursor?: string;
+        prevCursor?: string;
+        direction: string;
+      }) => void
+    ) => {
+      if (!socketRef.current) return () => {};
+
+      socketRef.current.on("messages-update", callback);
+      return () => {
+        socketRef.current?.off("messages-update", callback);
+      };
+    },
+    []
+  );
+
+  const fetchChatRoomsViaSocket = useCallback((userId?: string) => {
+    if (!socketRef.current?.connected) {
+      console.warn("⚠️ Cannot fetch chat rooms via socket: not connected");
+      return;
+    }
+    socketRef.current.emit("fetch-chat-rooms", userId ? { userId } : {});
+    console.log("📨 Emitted fetch-chat-rooms via socket");
+  }, []);
+
+  const fetchUnreadCountViaSocket = useCallback((userId?: string) => {
+    if (!socketRef.current?.connected) {
+      console.warn("⚠️ Cannot fetch unread count via socket: not connected");
+      return;
+    }
+    socketRef.current.emit("fetch-unread-count", userId ? { userId } : {});
+    console.log("📨 Emitted fetch-unread-count via socket");
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -454,6 +537,13 @@ export const useWebSocket = (): WebSocketContextType => {
     onChatMessage,
     onNotification,
     onChatRoomHistory,
+    onChatRoomsUpdate,
+    onUnreadMessagesUpdate,
+    onMessagesUpdate,
+
+    // Socket emitters
+    fetchChatRoomsViaSocket,
+    fetchUnreadCountViaSocket,
 
     // Connection management
     connect,

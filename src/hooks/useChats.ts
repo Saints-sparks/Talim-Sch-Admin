@@ -1,6 +1,7 @@
 // hooks/useChats.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useWebSocketContext } from '@/context/WebSocketContext';
 import { chatService } from '@/services/chatServices';
 import { 
   ChatRoom, 
@@ -50,6 +51,14 @@ interface UseChatsReturn {
 
 export const useChats = (): UseChatsReturn => {
   const { user, accessToken, isAuthenticated } = useAuth();
+  const {
+    isConnected,
+    joinChatRoom,
+    leaveChatRoom,
+    onChatMessage,
+    onChatRoomsUpdate,
+    onUnreadMessagesUpdate,
+  } = useWebSocketContext();
 
   const normalizeId = useCallback((value: any): string => {
     if (!value) return '';
@@ -85,7 +94,9 @@ export const useChats = (): UseChatsReturn => {
   // Pagination refs
   const nextCursorRef = useRef<string | undefined>();
   const currentRoomIdRef = useRef<string | null>(null);
-  
+  // Ref to access the latest currentRoom inside socket callbacks without stale closure
+  const currentRoomRef = useRef<ChatRoom | null>(null);
+
   // Add refs to track last fetch times
   const lastMessageFetchRef = useRef<number>(0);
   const lastUnreadFetchRef = useRef<number>(0);
@@ -288,11 +299,18 @@ export const useChats = (): UseChatsReturn => {
       return;
     }
 
+    // Leave the previous room on the socket before switching
+    if (currentRoomIdRef.current && currentRoomIdRef.current !== roomId) {
+      leaveChatRoom(currentRoomIdRef.current);
+    }
+
     // Set current room only after membership is verified
     if (resolvedRoom) {
       setCurrentRoom(resolvedRoom);
     }
 
+    // Join the new room so the socket receives live chat-message events for it
+    joinChatRoom(roomId);
     currentRoomIdRef.current = roomId;
     setIsLoading(true);
     setError(null);
@@ -326,7 +344,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
+  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, joinChatRoom, leaveChatRoom, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
 
 
 
@@ -624,13 +642,16 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
    * Reset current room
    */
   const resetCurrentRoom = useCallback(() => {
+    if (currentRoomIdRef.current) {
+      leaveChatRoom(currentRoomIdRef.current);
+    }
     setCurrentRoom(null);
     setMessages([]);
     nextCursorRef.current = undefined;
     setHasMoreMessages(true);
     currentRoomIdRef.current = null;
     lastMessageFetchRef.current = 0;
-  }, []);
+  }, [leaveChatRoom]);
 
   /**
    * Fetch unread message count (with throttling)
@@ -661,7 +682,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
   // Initial fetch on mount and auth change
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     if (isAuthenticated && accessToken) {
       fetchChatRooms(true);
       fetchUnreadCount(true);
@@ -677,30 +698,118 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
     };
   }, [isAuthenticated, accessToken]);
 
-  // Single polling interval for all updates
+  // Keep currentRoomRef in sync so socket callbacks always see the latest room
   useEffect(() => {
-    if (!isAuthenticated || !accessToken) return;
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
 
-    const pollingInterval = setInterval(() => {
-      // Only fetch if the component is still mounted
-      if (!isMountedRef.current) return;
+  // Subscribe to real-time socket events while connected
+  useEffect(() => {
+    if (!isConnected || !isAuthenticated) return;
 
-      // Fetch unread count
-      fetchUnreadCount();
+    const unsubMessage = onChatMessage((message) => {
+      const activeRoom = currentRoomRef.current;
 
-      // Fetch rooms updates
-      fetchChatRooms();
-
-      // Refresh current room messages if one is selected
-      if (currentRoom) {
-        refreshMessages();
+      // Append incoming message to the open conversation (skip if already present)
+      if (activeRoom && message.roomId === activeRoom._id) {
+        setMessages(prev => {
+          if (prev.some(m => m._id === message._id)) return prev;
+          return [
+            ...prev,
+            {
+              _id: message._id,
+              senderId: message.senderId,
+              senderName: message.senderName,
+              content: message.content,
+              roomId: message.roomId,
+              type: message.type,
+              duration: message.duration,
+              isRead: false,
+              readBy: message.readBy || [],
+              createdAt: new Date(message.timestamp),
+              updatedAt: new Date(message.timestamp),
+            } as any,
+          ];
+        });
       }
-    }, MESSAGE_FETCH_INTERVAL); // Use a single interval (30 seconds)
+
+      // Update sidebar: refresh last-message preview and bump unread count
+      setChatRooms(prev => {
+        const updated = prev.map(room => {
+          if (room._id !== message.roomId) return room;
+          const isCurrentRoom = activeRoom?._id === message.roomId;
+          return {
+            ...room,
+            lastMessage: {
+              content: message.content,
+              createdAt: new Date(message.timestamp),
+              updatedAt: new Date(message.timestamp),
+            } as any,
+            lastMessageAt: message.timestamp,
+            unreadCount: isCurrentRoom ? 0 : (room.unreadCount ?? 0) + 1,
+          };
+        });
+        return updated.sort((a, b) => {
+          const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
+          const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
+          return new Date(tsB as any).getTime() - new Date(tsA as any).getTime();
+        });
+      });
+    });
+
+    // Full room list refresh (triggered after a message is sent by any participant)
+    const unsubRooms = onChatRoomsUpdate((data) => {
+      if (!Array.isArray(data.rooms)) return;
+      const currentUserId = normalizeId(
+        user?.userId || user?._id || (user as any)?.id
+      );
+      if (!currentUserId) return;
+      const memberRooms = data.rooms.filter(room => {
+        if (!Array.isArray(room.participants)) return false;
+        return room.participants.some(
+          (p: any) => getParticipantId(p) === currentUserId
+        );
+      });
+      setChatRooms(memberRooms);
+    });
+
+    // Global unread badge update (triggered after mark-as-read or new message)
+    const unsubUnread = onUnreadMessagesUpdate((data) => {
+      if (typeof data.unreadCount === 'number') {
+        setUnreadCount(data.unreadCount);
+      }
+    });
 
     return () => {
-      clearInterval(pollingInterval);
+      unsubMessage();
+      unsubRooms();
+      unsubUnread();
     };
-  }, [isAuthenticated, accessToken, currentRoom, fetchChatRooms, fetchUnreadCount, refreshMessages]);
+  }, [
+    isConnected,
+    isAuthenticated,
+    onChatMessage,
+    onChatRoomsUpdate,
+    onUnreadMessagesUpdate,
+    normalizeId,
+    getParticipantId,
+    user?.userId,
+    user?._id,
+  ]);
+
+  // Polling fallback — only active while the WebSocket is disconnected
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken || isConnected) return;
+
+    const pollingInterval = setInterval(() => {
+      if (!isMountedRef.current) return;
+      fetchUnreadCount();
+      fetchChatRooms();
+      if (currentRoom) refreshMessages();
+    }, MESSAGE_FETCH_INTERVAL);
+
+    return () => clearInterval(pollingInterval);
+  }, [isAuthenticated, accessToken, isConnected, currentRoom, fetchChatRooms, fetchUnreadCount, refreshMessages]);
 
   return {
     // State
