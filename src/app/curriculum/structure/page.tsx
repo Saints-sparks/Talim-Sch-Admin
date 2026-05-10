@@ -304,6 +304,14 @@ const CurriculumStructureMain: React.FC = () => {
     fetchSubjects();
   };
 
+  const closeCourseModal = () => {
+    setShowCourseModal(false);
+    if (initialAction) {
+      handledActionRef.current = null;
+      router.replace("/curriculum/structure");
+    }
+  };
+
   const handleDeleteCourse = async (courseId: string) => {
     if (typeof window === "undefined" || !mounted) return;
 
@@ -802,7 +810,7 @@ const CurriculumStructureMain: React.FC = () => {
       {/* Course Modal */}
       <CourseModal
         isOpen={showCourseModal}
-        onClose={() => setShowCourseModal(false)}
+        onClose={closeCourseModal}
         onSuccess={handleCourseModalSuccess}
         mode={courseModalMode}
         course={selectedCourse}
