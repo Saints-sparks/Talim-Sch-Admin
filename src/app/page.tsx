@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, EyeOff, ShieldAlert, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import ModernLoader from "@/components/ModernLoader";
 import treelogo from "../../public/img/treelogo.svg";
 import loginImage from "../../public/img/Education-rafiki 1.svg";
 
@@ -52,6 +53,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
+      <ModernLoader visible={loading} />
       {/* ── Left panel — Form ── */}
       <div className="flex flex-col justify-center items-center px-8 py-12 sm:px-16 bg-white">
         <div className="w-full max-w-sm">

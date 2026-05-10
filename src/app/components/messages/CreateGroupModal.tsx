@@ -3,8 +3,30 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChats } from "@/hooks/useChats";
 import { ChatRoomType } from "@/types/chat.types";
-import { GraduationCap, Loader2, X } from "lucide-react";
+import {
+  Users,
+  GraduationCap,
+  BookOpen,
+  Layers,
+  Loader2,
+  X,
+  ChevronLeft,
+} from "lucide-react";
 import { toast } from "react-toastify";
+import { getClasses, getCoursesBySchool } from "@/app/services/subjects.service";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type GroupKind = "parent" | "class" | "course" | "custom";
+
+interface GroupTypeOption {
+  kind: GroupKind;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  badge: string;
+}
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -12,253 +34,394 @@ interface CreateGroupModalProps {
   onSuccess?: () => void;
 }
 
-const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ 
-  open, 
-  onClose,
-  onSuccess 
-}) => {
+// ─── Group type definitions ───────────────────────────────────────────────────
+
+const GROUP_TYPES: GroupTypeOption[] = [
+  {
+    kind: "parent",
+    label: "Parent Group",
+    description: "All school parents are added automatically",
+    icon: <Users className="w-5 h-5" />,
+    color: "blue",
+    badge: "Auto-populates",
+  },
+  {
+    kind: "class",
+    label: "Class Group",
+    description: "All students in a class are added automatically",
+    icon: <GraduationCap className="w-5 h-5" />,
+    color: "green",
+    badge: "Auto-populates",
+  },
+  {
+    kind: "course",
+    label: "Subject / Course Group",
+    description: "All students enrolled in a subject are added automatically",
+    icon: <BookOpen className="w-5 h-5" />,
+    color: "purple",
+    badge: "Auto-populates",
+  },
+  {
+    kind: "custom",
+    label: "Custom Group",
+    description: "Start blank and add any members manually",
+    icon: <Layers className="w-5 h-5" />,
+    color: "orange",
+    badge: "Manual",
+  },
+];
+
+const COLOR_MAP: Record<string, { bg: string; text: string; border: string; badge: string }> = {
+  blue:   { bg: "bg-blue-50",   text: "text-blue-600",   border: "border-blue-500",   badge: "bg-blue-100 text-blue-700"   },
+  green:  { bg: "bg-green-50",  text: "text-green-600",  border: "border-green-500",  badge: "bg-green-100 text-green-700"  },
+  purple: { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-500", badge: "bg-purple-100 text-purple-700" },
+  orange: { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-500", badge: "bg-orange-100 text-orange-700" },
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSuccess }) => {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [selectedKind, setSelectedKind] = useState<GroupKind | null>(null);
   const [groupName, setGroupName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [schoolDetails, setSchoolDetails] = useState<{
-    id: string;
-    name: string;
-    logo?: string;
-  } | null>(null);
+  const [classId, setClassId] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const [classes, setClasses] = useState<{ _id: string; name: string; gradeLevel: string }[]>([]);
+  const [courses, setCourses] = useState<{ _id: string; title: string; subjectName?: string }[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [schoolDetails, setSchoolDetails] = useState<{ id: string; name: string; logo?: string } | null>(null);
 
   const { user } = useAuth();
-  const { createGroupChat, fetchChatRooms } = useChats();
+  const { createGroupChat } = useChats();
 
-  // Set school details from user context when modal opens
+  // Load school info when modal opens
   useEffect(() => {
     if (!open) return;
-
-    console.log('📋 Modal opened, user:', user);
-    
     if (user?.schoolId && user?.schoolName) {
-      console.log('✅ Using school from user context:', {
-        id: user.schoolId,
-        name: user.schoolName
-      });
-      setSchoolDetails({
-        id: user.schoolId,
-        name: user.schoolName,
-        logo: user.schoolLogo
-      });
+      setSchoolDetails({ id: user.schoolId, name: user.schoolName, logo: user.schoolLogo });
     } else {
-      // Fallback to localStorage
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          console.log('📦 User from localStorage:', userData);
-          if (userData.schoolId && userData.schoolName) {
-            setSchoolDetails({
-              id: userData.schoolId,
-              name: userData.schoolName,
-              logo: userData.schoolLogo
-            });
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u.schoolId && u.schoolName) {
+            setSchoolDetails({ id: u.schoolId, name: u.schoolName, logo: u.schoolLogo });
           }
-        } catch (error) {
-          console.error("Error parsing user from localStorage:", error);
         }
-      }
+      } catch {}
     }
   }, [open, user]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!groupName.trim()) {
-      toast.error("Please enter a group name");
-      return;
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setStep(1);
+      setSelectedKind(null);
+      setGroupName("");
+      setClassId("");
+      setCourseId("");
+    }
+  }, [open]);
+
+  // Fetch classes/courses when step 2 is reached and type requires them
+  useEffect(() => {
+    if (step !== 2 || !selectedKind) return;
+
+    if (selectedKind === "class" && classes.length === 0) {
+      setLoadingOptions(true);
+      getClasses()
+        .then(setClasses)
+        .catch(() => toast.error("Failed to load classes"))
+        .finally(() => setLoadingOptions(false));
     }
 
-    if (!schoolDetails?.id) {
-      toast.error("School information not available");
-      return;
+    if (selectedKind === "course" && courses.length === 0) {
+      setLoadingOptions(true);
+      getCoursesBySchool()
+        .then(setCourses)
+        .catch(() => toast.error("Failed to load subjects"))
+        .finally(() => setLoadingOptions(false));
     }
+  }, [step, selectedKind]);
 
-    setLoading(true);
-    
-    try {
-      console.log('🚀 Creating parent/admin group with:', {
-        name: groupName.trim(),
-        schoolId: schoolDetails.id
-      });
-      
-      // Create group chat with just name and schoolId
-      // The backend will:
-      // 1. Set type = 'class_group' or appropriate type
-      // 2. Add the admin as a participant automatically
-      // 3. Allow parents to be added later
-      const groupData = {
-        name: groupName.trim(),
-        // The schoolId comes from the authenticated user on the backend
-        // We don't need to send it explicitly
-      };
-
-      console.log('📤 Sending group data:', groupData);
-
-      // Add group type selection UI
-      // For now, default to admin_parent_group
-      const newGroup = await createGroupChat({
-        name: groupName.trim(),
-        type: 'admin_parent_group', // Use new type for admin-parent group
-        // No classId or courseId needed
-      });
-
-      if (newGroup) {
-        console.log('✅ Group created:', newGroup);
-        toast.success("Parent group created successfully!");
-        
-        // Reset form
-        setGroupName("");
-        
-        // Close modal first
-        onClose();
-
-        // Notify parent to force-refresh its own chat rooms list
-        if (onSuccess) {
-          onSuccess();
-        }
-      }
-    } catch (error: any) {
-      console.error("❌ Error creating group:", error);
-      
-      // Show more detailed error
-      let errorMessage = "Failed to create parent group";
-      if (error.response?.data?.message) {
-        if (Array.isArray(error.response.data.message)) {
-          errorMessage = error.response.data.message.join(', ');
-        } else {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectKind = (kind: GroupKind) => {
+    setSelectedKind(kind);
+    setStep(2);
   };
 
-  const handleClose = () => {
-    setGroupName("");
-    onClose();
+  const isFormValid = (): boolean => {
+    if (!groupName.trim()) return false;
+    if (selectedKind === "class" && !classId) return false;
+    if (selectedKind === "course" && !courseId) return false;
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid() || !schoolDetails?.id) return;
+
+    setSubmitting(true);
+    try {
+      let chatRoomType: string;
+      const payload: Record<string, any> = { name: groupName.trim() };
+
+      switch (selectedKind) {
+        case "parent":
+          chatRoomType = ChatRoomType.ADMIN_PARENT_GROUP;
+          break;
+        case "class":
+          chatRoomType = ChatRoomType.CLASS_GROUP;
+          payload.classId = classId;
+          break;
+        case "course":
+          chatRoomType = ChatRoomType.COURSE_GROUP;
+          payload.courseId = courseId;
+          break;
+        case "custom":
+        default:
+          chatRoomType = ChatRoomType.CUSTOM_GROUP;
+          break;
+      }
+
+      const newGroup = await createGroupChat({ ...payload, type: chatRoomType as any });
+
+      if (newGroup) {
+        const labels: Record<GroupKind, string> = {
+          parent: "Parent group",
+          class: "Class group",
+          course: "Subject group",
+          custom: "Group",
+        };
+        toast.success(`${labels[selectedKind!]} created successfully!`);
+        onClose();
+        onSuccess?.();
+      }
+    } catch (err: any) {
+      const msg =
+        Array.isArray(err?.response?.data?.message)
+          ? err.response.data.message.join(", ")
+          : err?.response?.data?.message || err?.message || "Failed to create group";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-300 relative">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-          disabled={loading}
-        >
-          <X size={20} />
-        </button>
+  const selected = GROUP_TYPES.find((g) => g.kind === selectedKind);
+  const colors = selected ? COLOR_MAP[selected.color] : null;
 
-        {/* Header with school logo/icon */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center overflow-hidden">
-            {schoolDetails?.logo ? (
-              <img
-                src={schoolDetails.logo}
-                alt={schoolDetails.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const fallback = parent.querySelector(".fallback-icon");
-                    if (fallback) {
-                      (fallback as HTMLElement).style.display = "block";
-                    }
-                  }
-                }}
-              />
-            ) : null}
-            <GraduationCap
-              className={`w-6 h-6 text-blue-600 fallback-icon ${
-                schoolDetails?.logo ? "hidden" : "block"
-              }`}
-            />
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in duration-200 relative overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            {step === 2 && (
+              <button
+                onClick={() => setStep(1)}
+                className="p-1 rounded-lg hover:bg-gray-100 transition-colors mr-1"
+                disabled={submitting}
+              >
+                <ChevronLeft size={18} className="text-gray-500" />
+              </button>
+            )}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                {step === 1 ? "Create Group" : `New ${selected?.label}`}
+              </h2>
+              <p className="text-xs text-gray-500">
+                {step === 1
+                  ? "Choose a group type"
+                  : selected?.description}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Create Parent Group</h2>
-            <p className="text-sm text-gray-500">Create a group for parents and admins</p>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            disabled={submitting}
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Group Name Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Group Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              value={groupName}
-              onChange={e => setGroupName(e.target.value)}
-              placeholder="e.g., Grade 5 Parents, School Announcements"
-              required
-              disabled={loading}
-              autoFocus
-            />
+        {/* Step 1 — Type picker */}
+        {step === 1 && (
+            
+          <div className="p-5 grid grid-cols-2 gap-3">
+            {GROUP_TYPES.map((opt) => {
+              const c = COLOR_MAP[opt.color];
+              return (
+                <button
+                  key={opt.kind}
+                  onClick={() => handleSelectKind(opt.kind)}
+                  className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 border-gray-100 hover:border-gray-200 hover:${c.bg} transition-all text-left group`}
+                >
+                  <div className={`p-2 rounded-lg ${c.bg} ${c.text} group-hover:scale-105 transition-transform`}>
+                    {opt.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-snug">{opt.description}</p>
+                  </div>
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
+                    {opt.badge}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+        )}
 
-          {/* School Information - Read Only */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              School
-            </label>
-            <div className="relative">
+        {/* Step 2 — Form */}
+        {step === 2 && selected && colors && (
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            {/* Group name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Group Name <span className="text-red-500">*</span>
+              </label>
               <input
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-gray-600 cursor-not-allowed"
-                value={schoolDetails?.name || "Loading school information..."}
+                type="text"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder={
+                  selectedKind === "parent" ? "e.g., School Parents 2025" :
+                  selectedKind === "class"  ? "e.g., Grade 5A Chat" :
+                  selectedKind === "course" ? "e.g., Mathematics Group" :
+                  "e.g., Staff Planning Team"
+                }
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                required
+                disabled={submitting}
+                autoFocus
+              />
+            </div>
+
+            {/* Class selector */}
+            {selectedKind === "class" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Select Class <span className="text-red-500">*</span>
+                </label>
+                {loadingOptions ? (
+                  <div className="flex items-center gap-2 py-2.5 text-sm text-gray-500">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading classes...
+                  </div>
+                ) : (
+                  <select
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                    required
+                    disabled={submitting}
+                  >
+                    <option value="">-- Choose a class --</option>
+                    {classes.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} {c.gradeLevel ? `(${c.gradeLevel})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* Course selector */}
+            {selectedKind === "course" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Select Subject / Course <span className="text-red-500">*</span>
+                </label>
+                {loadingOptions ? (
+                  <div className="flex items-center gap-2 py-2.5 text-sm text-gray-500">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading subjects...
+                  </div>
+                ) : (
+                  <select
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={courseId}
+                    onChange={(e) => setCourseId(e.target.value)}
+                    required
+                    disabled={submitting}
+                  >
+                    <option value="">-- Choose a subject --</option>
+                    {courses.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.title}{c.subjectName ? ` — ${c.subjectName}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* School display */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">School</label>
+              <input
+                className="w-full border border-gray-100 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                value={schoolDetails?.name || "Loading…"}
                 disabled
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Group will be created for {schoolDetails?.name || 'your school'}
-            </p>
-          </div>
 
-          {/* Group Type Info */}
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-800 font-medium mb-1">Group Details:</p>
-            <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
-              <li>Only admins and parents will be able to join</li>
-              <li>You will be automatically added as a participant</li>
-              <li>Parents can be added manually later</li>
-            </ul>
-          </div>
+            {/* Info card */}
+            <div className={`p-3 rounded-xl border ${colors.bg} border-opacity-50`}>
+              <p className={`text-xs font-semibold ${colors.text} mb-1`}>What happens next:</p>
+              <ul className={`text-xs ${colors.text} space-y-1 list-disc list-inside opacity-80`}>
+                {selectedKind === "parent" && <>
+                  <li>All parents in {schoolDetails?.name || "your school"} are auto-added</li>
+                  <li>You are added as the group admin</li>
+                  <li>New parents can be added later</li>
+                </>}
+                {selectedKind === "class" && <>
+                  <li>All students in the selected class are auto-added</li>
+                  <li>You are added as the group admin</li>
+                  <li>More members can be added later</li>
+                </>}
+                {selectedKind === "course" && <>
+                  <li>All students enrolled in the subject are auto-added</li>
+                  <li>You are added as the group admin</li>
+                  <li>More members can be added later</li>
+                </>}
+                {selectedKind === "custom" && <>
+                  <li>Only you are added initially</li>
+                  <li>Add any members manually from the group info panel</li>
+                  <li>Full control over who can join</li>
+                </>}
+              </ul>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-            <button
-              type="button"
-              className="px-5 py-2.5 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center gap-2"
-              disabled={loading || !groupName.trim() || !schoolDetails?.id}
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? "Creating..." : "Create Parent Group"}
-            </button>
-          </div>
-        </form>
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                disabled={submitting}
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                  selected.color === "blue"   ? "bg-blue-600 hover:bg-blue-700" :
+                  selected.color === "green"  ? "bg-green-600 hover:bg-green-700" :
+                  selected.color === "purple" ? "bg-purple-600 hover:bg-purple-700" :
+                  "bg-orange-500 hover:bg-orange-600"
+                }`}
+                disabled={submitting || !isFormValid() || !schoolDetails?.id}
+              >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {submitting ? "Creating…" : `Create ${selected.label}`}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

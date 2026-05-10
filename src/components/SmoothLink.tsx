@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useTransition } from '@/context/TransitionContext';
 
 interface SmoothLinkProps {
   href: string;
@@ -13,37 +12,26 @@ interface SmoothLinkProps {
   replace?: boolean;
 }
 
-const SmoothLink: React.FC<SmoothLinkProps> = ({ 
-  href, 
-  children, 
-  className, 
-  onClick, 
-  replace = false 
+const SmoothLink: React.FC<SmoothLinkProps> = ({
+  href,
+  children,
+  className,
+  onClick,
+  replace = false
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { startTransition, endTransition } = useTransition();
-
-  // End transition when pathname changes
-  useEffect(() => {
-    endTransition();
-  }, [pathname, endTransition]);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    // Execute custom onClick if provided
+
     if (onClick) {
       onClick(e);
     }
 
-    // Don't navigate if we're already on the target page
     if (pathname === href) {
       return;
     }
-
-    // Start transition immediately
-    startTransition();
 
     try {
       if (replace) {
@@ -53,7 +41,6 @@ const SmoothLink: React.FC<SmoothLinkProps> = ({
       }
     } catch (error) {
       console.error('Navigation error:', error);
-      endTransition();
     }
   };
 

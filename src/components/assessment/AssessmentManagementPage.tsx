@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import ModernLoader from "@/components/ModernLoader";
+import AssessmentSkeleton from "@/components/AssessmentSkeleton";
 import {
   FiPlus,
   FiRefreshCw,
@@ -309,12 +309,11 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
     console.log("View assessment:", assessment);
   };
 
+  if (loading) return <AssessmentSkeleton />;
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {loading && <ModernLoader />}
-
-      {!loading && (
-        <>
+      <>
           {/* Enhanced Header with Talim Styling */}
           <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl">
             <div className="px-6 py-6">
@@ -519,7 +518,6 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
             </div>
           </div>
         </>
-      )}
 
       {/* Create/Edit Assessment Modal */}
       <AssessmentCreateModal

@@ -25,7 +25,8 @@ export enum ChatRoomType {
   CLASS_GROUP = 'class_group',
   COURSE_GROUP = 'course_group',
   ONE_TO_ONE = 'one_to_one',
-  ADMIN_PARENT_GROUP = 'admin_parent_group'
+  ADMIN_PARENT_GROUP = 'admin_parent_group',
+  CUSTOM_GROUP = 'custom_group',
 }
 
 export interface Participant {

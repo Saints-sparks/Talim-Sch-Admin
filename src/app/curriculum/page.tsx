@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ModernLoader from "@/components/ModernLoader";
+import CurriculumSkeleton from "@/components/CurriculumSkeleton";
 import { toast } from "react-toastify";
 import {
   BookOpen,
@@ -106,7 +106,7 @@ interface CurriculumKPIs {
   }>;
 }
 
-const LoadingSpinner = () => <ModernLoader />;
+const LoadingSpinner = () => <CurriculumSkeleton />;
 
 const CurriculumDashboardMain: React.FC = () => {
   const router = useRouter();
@@ -275,7 +275,7 @@ const CurriculumDashboardMain: React.FC = () => {
     return "No teacher assigned";
   };
 
-  if (loading) return <ModernLoader />;
+  if (loading) return <CurriculumSkeleton />;
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">

@@ -4,7 +4,6 @@ import { useSidebar } from "@/context/SidebarContext";
 import Sidebar from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import SchoolAdminNavbar from "@/components/Navbar";
-import ModernLoader from "@/components/ModernLoader";
 import PageTransition from "@/components/PageTransition";
 import classNames from "classnames";
 import { usePathname } from "next/navigation";
@@ -39,7 +38,6 @@ export default function LayoutShell({
         <main className="flex-1 overflow-y-auto bg-[#F2F2F2]">
           <PageTransition key={pathname}>{children}</PageTransition>
         </main>
-        <ModernLoader />
       </motion.div>
     </div>
   );

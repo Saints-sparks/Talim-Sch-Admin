@@ -5,14 +5,19 @@ import { useTransition } from "@/context/TransitionContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-const ModernLoader: React.FC = () => {
+interface ModernLoaderProps {
+  visible?: boolean;
+}
+
+const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
   const { isTransitioning } = useTransition();
+  const shouldShow = visible !== undefined ? visible : isTransitioning;
 
   const talimLetters = ["T", "a", "l", "i", "m"];
 
   return (
     <AnimatePresence>
-      {isTransitioning && (
+      {shouldShow && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 backdrop-blur-sm"
           initial={{ opacity: 0 }}
