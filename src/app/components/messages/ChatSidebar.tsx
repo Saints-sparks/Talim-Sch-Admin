@@ -269,7 +269,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchChatRooms()}
+            onClick={() => fetchChatRooms(true)}
             className="flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
           >
             <svg 
