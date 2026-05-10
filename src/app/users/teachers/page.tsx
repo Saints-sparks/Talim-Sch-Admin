@@ -2,15 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import TeachersSkeleton from "@/components/TeachersSkeleton";
-import { FaSearch } from "react-icons/fa";
 import { Teacher, teacherService } from "@/app/services/teacher.service";
 import { getClasses, type Class } from "@/app/services/student.service";
 import { toast } from "react-toastify";
-import Avatar from "@/components/Avatar";
-import SmoothButton from "@/components/SmoothButton";
 import { ErrorState, EmptyState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
 
@@ -28,18 +24,51 @@ const TeachersPage: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  const teachersPerPage = 9;
+  const [teachersPerPage, setTeachersPerPage] = useState(9);
+
+  const getTeacherUser = (teacher: Teacher) =>
+    typeof teacher.userId === "object" ? teacher.userId : null;
+  const getTeacherUserId = (teacher: Teacher) => getTeacherUser(teacher)?._id || teacher._id;
+  const getTeacherFirstName = (teacher: Teacher) =>
+    getTeacherUser(teacher)?.firstName || teacher.firstName || "";
+  const getTeacherLastName = (teacher: Teacher) =>
+    getTeacherUser(teacher)?.lastName || teacher.lastName || "";
+  const getTeacherEmail = (teacher: Teacher) =>
+    getTeacherUser(teacher)?.email || teacher.email || "";
+  const getTeacherPhone = (teacher: Teacher) =>
+    getTeacherUser(teacher)?.phoneNumber || teacher.phoneNumber || "";
+  const getTeacherAvatar = (teacher: Teacher) =>
+    teacher.userAvatar || getTeacherUser(teacher)?.userAvatar || "";
+  const getAssignedClasses = (teacher: Teacher) =>
+    teacher.assignedClasses || [];
 
   const fetchTeachers = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await teacherService.getTeachers(
-        currentPage,
-        teachersPerPage
+      const response = await teacherService.getTeachers(1, 1000);
+      const teachersWithProfiles = await Promise.all(
+        response.data.map(async (teacher) => {
+          const userId = getTeacherUserId(teacher);
+
+          try {
+            const profile = await teacherService.getTeacherById(userId);
+            return {
+              ...teacher,
+              assignedClasses:
+                profile.classTeacherClasses || profile.assignedClasses || [],
+              assignedCourses: profile.assignedCourses || [],
+              isFormTeacher: profile.isFormTeacher,
+              hasTeacherProfile: true,
+            };
+          } catch (profileError) {
+            return { ...teacher, hasTeacherProfile: false };
+          }
+        })
       );
-      setTeachers(response.data);
+
+      setTeachers(teachersWithProfiles);
       if (response.meta && typeof response.meta.total === "number") {
         setTotalTeachers(response.meta.total);
       } else {
@@ -51,7 +80,7 @@ const TeachersPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, []);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -76,22 +105,57 @@ const TeachersPage: React.FC = () => {
     setMenuOpen(menuOpen === teacherId ? null : teacherId);
   };
 
-  const handleViewProfile = (teacherId: string) => {
-    router.push(`/users/teachers/${teacherId}`);
+  const handleViewProfile = (teacher: Teacher) => {
+    router.push(`/users/teachers/${getTeacherUserId(teacher)}`);
+  };
+
+  const handleEditTeacher = (teacher: Teacher) => {
+    setMenuOpen(null);
+    router.push(`/users/teachers/${getTeacherUserId(teacher)}/edit`);
+  };
+
+  const handleDeactivateTeacher = async (teacher: Teacher) => {
+    setMenuOpen(null);
+    const userId = getTeacherUserId(teacher);
+    const teacherName = `${getTeacherFirstName(teacher)} ${getTeacherLastName(
+      teacher
+    )}`.trim();
+
+    if (
+      !window.confirm(
+        `Deactivate ${teacherName || "this teacher"}? They will no longer be able to access the teacher portal.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await teacherService.deactivateTeacher(userId);
+      toast.success("Teacher deactivated successfully");
+      await fetchTeachers();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to deactivate teacher"
+      );
+    }
   };
 
   // Filter teachers based on search term, selected class, and status
   const filteredTeachers = teachers.filter((teacher) => {
-    const nameMatch = `${teacher.userId?.firstName || teacher.firstName} ${
-      teacher.userId?.lastName || teacher.lastName
-    }`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const search = searchTerm.trim().toLowerCase();
+    const searchableText = [
+      getTeacherFirstName(teacher),
+      getTeacherLastName(teacher),
+      getTeacherEmail(teacher),
+      getTeacherPhone(teacher),
+    ]
+      .join(" ")
+      .toLowerCase();
+    const nameMatch = !search || searchableText.includes(search);
 
     const classMatch =
       !selectedClass ||
-      (teacher.assignedClasses?.some((cls) => cls._id === selectedClass) ??
-        false);
+      getAssignedClasses(teacher).some((cls) => cls._id === selectedClass);
 
     // Use isActive boolean for status
     const statusMatch =
@@ -103,11 +167,19 @@ const TeachersPage: React.FC = () => {
   });
 
   // Calculate pagination values for filtered results
-  const totalPages = Math.ceil(filteredTeachers.length / teachersPerPage);
-  const startIndex = (currentPage - 1) * teachersPerPage;
+  const totalPages = Math.max(1, Math.ceil(filteredTeachers.length / teachersPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
   const currentTeachers = filteredTeachers.slice(
-    startIndex,
-    startIndex + teachersPerPage
+    (safeCurrentPage - 1) * teachersPerPage,
+    (safeCurrentPage - 1) * teachersPerPage + teachersPerPage
+  );
+  const showingStart =
+    filteredTeachers.length === 0
+      ? 0
+      : (safeCurrentPage - 1) * teachersPerPage + 1;
+  const showingEnd = Math.min(
+    (safeCurrentPage - 1) * teachersPerPage + teachersPerPage,
+    filteredTeachers.length
   );
 
   return (
@@ -206,25 +278,26 @@ const TeachersPage: React.FC = () => {
             message={error}
             onRetry={fetchTeachers}
           />
-        ) : teachers.length === 0 ? (
+        ) : filteredTeachers.length === 0 ? (
           <EmptyState
             icon="👨‍🏫"
             title="No Teachers Found"
             message={
-              searchTerm || selectedClass
+              searchTerm || selectedClass || statusFilter
                 ? "No teachers match your current search or filter criteria."
                 : "Get started by adding your first teacher to the system."
             }
             actionText={
-              searchTerm || selectedClass
+              searchTerm || selectedClass || statusFilter
                 ? "Clear Filters"
                 : "Add First Teacher"
             }
             onAction={
-              searchTerm || selectedClass
+              searchTerm || selectedClass || statusFilter
                 ? () => {
                     setSearchTerm("");
                     setSelectedClass(null);
+                    setStatusFilter("");
                     setCurrentPage(1);
                   }
                 : toggleModal
@@ -237,17 +310,10 @@ const TeachersPage: React.FC = () => {
               {currentTeachers.map((teacher) => {
                 // Use initials if no avatar
                 // Prefer teacher.userAvatar, fallback to teacher.userId?.userAvatar, fallback to initials
-                const avatarUrl =
-                  teacher.userAvatar || teacher.userId?.userAvatar;
-                const initials = `${(
-                  teacher.firstName ||
-                  teacher.userId?.firstName ||
-                  ""
-                ).charAt(0)}${(
-                  teacher.lastName ||
-                  teacher.userId?.lastName ||
-                  ""
-                ).charAt(0)}`.toUpperCase();
+                const avatarUrl = getTeacherAvatar(teacher);
+                const initials = `${getTeacherFirstName(teacher).charAt(
+                  0
+                )}${getTeacherLastName(teacher).charAt(0)}`.toUpperCase();
                 // Pick a color for initials avatar (hash by name)
                 const colorList = [
                   "bg-[#154473] text-white",
@@ -260,15 +326,9 @@ const TeachersPage: React.FC = () => {
                 const colorIdx =
                   Math.abs(
                     (
-                      teacher.firstName ||
-                      teacher.userId?.firstName ||
-                      ""
+                      getTeacherFirstName(teacher) || "T"
                     ).charCodeAt(0) +
-                      (
-                        teacher.lastName ||
-                        teacher.userId?.lastName ||
-                        ""
-                      ).charCodeAt(0)
+                      (getTeacherLastName(teacher) || "A").charCodeAt(0)
                   ) % colorList.length;
                 const colorClass = colorList[colorIdx];
                 return (
@@ -287,21 +347,16 @@ const TeachersPage: React.FC = () => {
                       <div className="absolute right-4 top-12 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <button
                           className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-                          onClick={() => {
-                            toggleMenu(teacher._id);
-                            // Add edit functionality here
-                          }}
+                          onClick={() => handleEditTeacher(teacher)}
                         >
                           Edit
                         </button>
                         <button
                           className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 rounded-b-lg"
-                          onClick={() => {
-                            toggleMenu(teacher._id);
-                            // Add delete functionality here
-                          }}
+                          onClick={() => handleDeactivateTeacher(teacher)}
+                          disabled={!teacher.isActive}
                         >
-                          Delete
+                          Deactivate
                         </button>
                       </div>
                     )}
@@ -309,11 +364,7 @@ const TeachersPage: React.FC = () => {
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        alt={
-                          teacher.firstName ||
-                          teacher.userId?.firstName ||
-                          "Avatar"
-                        }
+                        alt={`${getTeacherFirstName(teacher)} avatar`}
                         className="w-16 h-16 rounded-full object-cover mb-3"
                       />
                     ) : (
@@ -325,13 +376,17 @@ const TeachersPage: React.FC = () => {
                     )}
                     <div className="text-center flex flex-col items-center flex-1 w-full">
                       <h3 className="font-semibold text-gray-900 text-base mb-1">
-                        {teacher.userId?.firstName || teacher.firstName}{" "}
-                        {teacher.userId?.lastName || teacher.lastName}
+                        {getTeacherFirstName(teacher)} {getTeacherLastName(teacher)}
                       </h3>
                       <div className="flex gap-2 mb-3">
-                        <span className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded">
-                          Grade 2
-                        </span>
+                        {getAssignedClasses(teacher).slice(0, 1).map((cls) => (
+                          <span
+                            key={cls._id}
+                            className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded"
+                          >
+                            {cls.name}
+                          </span>
+                        ))}
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded ${
                             teacher.isActive
@@ -342,8 +397,13 @@ const TeachersPage: React.FC = () => {
                           {teacher.isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
+                      {!teacher.hasTeacherProfile && (
+                        <p className="text-xs text-amber-600 mb-3">
+                          Profile setup pending
+                        </p>
+                      )}
                       <button
-                        onClick={() => handleViewProfile(teacher._id)}
+                        onClick={() => handleViewProfile(teacher)}
                         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg py-2 mt-auto transition"
                       >
                         View Profile
@@ -360,14 +420,11 @@ const TeachersPage: React.FC = () => {
               <div className="text-sm text-gray-600">
                 Showing{" "}
                 <span className="font-medium text-gray-900">
-                  {startIndex + 1}
+                  {showingStart}
                 </span>{" "}
                 to{" "}
                 <span className="font-medium text-gray-900">
-                  {Math.min(
-                    startIndex + teachersPerPage,
-                    filteredTeachers.length
-                  )}
+                  {showingEnd}
                 </span>{" "}
                 of{" "}
                 <span className="font-medium text-gray-900">
@@ -385,8 +442,7 @@ const TeachersPage: React.FC = () => {
                     className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={teachersPerPage}
                     onChange={(e) => {
-                      // Handle rows per page change
-                      // setTeachersPerPage(Number(e.target.value));
+                      setTeachersPerPage(Number(e.target.value));
                       setCurrentPage(1);
                     }}
                   >
@@ -401,7 +457,7 @@ const TeachersPage: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <button
                     className="p-2 rounded-md border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={currentPage === 1}
+                    disabled={safeCurrentPage === 1}
                     onClick={() =>
                       setCurrentPage((prev) => Math.max(prev - 1, 1))
                     }
@@ -427,12 +483,12 @@ const TeachersPage: React.FC = () => {
                       let pageNum;
                       if (totalPages <= 5) {
                         pageNum = i + 1;
-                      } else if (currentPage <= 3) {
+                      } else if (safeCurrentPage <= 3) {
                         pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
+                      } else if (safeCurrentPage >= totalPages - 2) {
                         pageNum = totalPages - 4 + i;
                       } else {
-                        pageNum = currentPage - 2 + i;
+                        pageNum = safeCurrentPage - 2 + i;
                       }
 
                       return (
@@ -440,7 +496,7 @@ const TeachersPage: React.FC = () => {
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                            currentPage === pageNum
+                            safeCurrentPage === pageNum
                               ? "bg-blue-600 text-white border-blue-600"
                               : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                           }`}
@@ -453,7 +509,7 @@ const TeachersPage: React.FC = () => {
 
                   <button
                     className="p-2 rounded-md border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={currentPage === totalPages}
+                    disabled={safeCurrentPage === totalPages}
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                     }

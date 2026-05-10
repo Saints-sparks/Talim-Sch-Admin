@@ -23,10 +23,13 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ClassesSkeleton from "@/components/ClassesSkeleton";
 
+const GRADE_OPTIONS = Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`);
+
 export default function Classes() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
+    gradeLevel: "",
     classDescription: "",
     classCapacity: "",
   });
@@ -57,6 +60,7 @@ export default function Classes() {
     if (!isModalOpen) {
       setFormData({
         name: "",
+        gradeLevel: "",
         classDescription: "",
         classCapacity: "",
       });
@@ -110,6 +114,7 @@ export default function Classes() {
 
       const classData = {
         name: formData.name,
+        gradeLevel: formData.gradeLevel,
         classCapacity: formData.classCapacity,
         classDescription: formData.classDescription,
       };
@@ -120,6 +125,7 @@ export default function Classes() {
       setIsModalOpen(false);
       setFormData({
         name: "",
+        gradeLevel: "",
         classDescription: "",
         classCapacity: "",
       });
@@ -453,12 +459,33 @@ export default function Classes() {
 
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2">
-                      Class Capacity
+                      Grade Level *
+                    </label>
+                    <select
+                      name="gradeLevel"
+                      value={formData.gradeLevel}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select grade</option>
+                      {GRADE_OPTIONS.map((grade) => (
+                        <option key={grade} value={grade}>
+                          {grade}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2">
+                      Class Capacity *
                     </label>
                     <select
                       name="classCapacity"
                       value={formData.classCapacity}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     >
                       <option value="">Choose capacity</option>

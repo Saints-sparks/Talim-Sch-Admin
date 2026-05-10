@@ -47,8 +47,9 @@ const TeacherProfile = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const teachers = await teacherService.getTeacherById(teacherId);
-        console.log(teachers, "teachers");
+        const teachers = await teacherService.getTeacherProfileOrFallback(
+          teacherId
+        );
 
         if (!teachers) {
           throw new Error("Teacher not found");
@@ -241,6 +242,12 @@ const TeacherProfile = () => {
               </button>
             </div>
           </div>
+          {!teacher.hasTeacherProfile && (
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              This teacher account exists, but its teacher profile has not been
+              completed yet. You can still view the account details.
+            </div>
+          )}
         </div>
       </div>
 
@@ -318,8 +325,8 @@ const TeacherProfile = () => {
                           <div className="relative">
                             <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg mx-auto">
                               <span className="text-xl sm:text-3xl font-bold text-white">
-                                {teacher.userId.firstName[0]}
-                                {teacher.userId.lastName[0]}
+                                {teacher.userId.firstName?.[0] || "T"}
+                                {teacher.userId.lastName?.[0] || ""}
                               </span>
                             </div>
                             <div className="absolute -bottom-2 -right-2">

@@ -138,8 +138,17 @@ const CourseModal: React.FC<CourseModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!newCourse.title || !newCourse.courseCode || !newCourse.subjectId) {
-      toast.error("Please fill in all required fields");
+    const missingFields = [
+      !newCourse.title.trim() ? "Course Title" : "",
+      !newCourse.courseCode.trim() ? "Course Code" : "",
+      !newCourse.description.trim() ? "Description" : "",
+      !newCourse.teacherId ? "Assigned Teacher" : "",
+      !newCourse.classId ? "Class" : "",
+      !newCourse.subjectId ? "Subject" : "",
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      toast.error(`Please complete: ${missingFields.join(", ")}`);
       return;
     }
 
@@ -161,7 +170,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
       handleClose();
     } catch (error: any) {
       console.error(`Error ${mode}ing course:`, error);
-      toast.error(error.message || `Failed to ${mode} course`);
+      toast.error(error.message || `Failed to ${mode} course. Please check the required fields.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -309,7 +318,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                      Description *
                     </label>
                     <textarea
                       value={newCourse.description}
@@ -337,7 +346,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Assigned Teacher
+                      Assigned Teacher *
                       {isLoadingTeachers && (
                         <span className="ml-2 text-sm text-blue-600">
                           Loading...
@@ -438,7 +447,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Class
+                      Class *
                     </label>
                     {mode === "edit" ? (
                       // In edit mode, show the class as read-only
@@ -564,7 +573,13 @@ const CourseModal: React.FC<CourseModalProps> = ({
                 type="button"
                 onClick={handleSubmit}
                 disabled={
-                  isSubmitting || !newCourse.title || !newCourse.courseCode
+                  isSubmitting ||
+                  !newCourse.title ||
+                  !newCourse.courseCode ||
+                  !newCourse.description ||
+                  !newCourse.teacherId ||
+                  !newCourse.classId ||
+                  !newCourse.subjectId
                 }
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >

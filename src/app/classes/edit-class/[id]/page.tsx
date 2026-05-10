@@ -23,9 +23,12 @@ import {
 import { getTeachers, Teacher } from "../../../services/subjects.service";
 import "react-toastify/dist/ReactToastify.css";
 
+const GRADE_OPTIONS = Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`);
+
 interface ClassDetails {
   _id: string;
   name: string;
+  gradeLevel: string;
   schoolId: string;
   classTeacherId: {
     _id: string;
@@ -76,6 +79,7 @@ const EditClass: React.FC = () => {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    gradeLevel: "",
     classDescription: "",
     classCapacity: "",
   });
@@ -128,6 +132,7 @@ const EditClass: React.FC = () => {
         // Set form data
         setFormData({
           name: data.name || "",
+          gradeLevel: data.gradeLevel || "",
           classDescription: data.classDescription || "",
           classCapacity:
             data.classCapacity !== undefined && data.classCapacity !== null
@@ -182,6 +187,9 @@ const EditClass: React.FC = () => {
       if (!formData.name.trim()) {
         throw new Error("Class name is required");
       }
+      if (!formData.gradeLevel) {
+        throw new Error("Grade level is required");
+      }
       if (!formData.classCapacity || parseInt(formData.classCapacity) <= 0) {
         throw new Error("Valid class capacity is required");
       }
@@ -189,6 +197,7 @@ const EditClass: React.FC = () => {
       // Update class details only (no teacher assignment here)
       await updateClass(classId, {
         name: formData.name,
+        gradeLevel: formData.gradeLevel,
         classDescription: formData.classDescription,
         classCapacity: formData.classCapacity,
       });
@@ -217,6 +226,8 @@ const EditClass: React.FC = () => {
 
       if (error.message?.includes("Class name is required")) {
         errorMessage = "Please enter a valid class name";
+      } else if (error.message?.includes("Grade level is required")) {
+        errorMessage = "Please select a grade level";
       } else if (error.message?.includes("Valid class capacity is required")) {
         errorMessage = "Please enter a valid class capacity (greater than 0)";
       } else if (error.message?.includes("classCapacity must be a string")) {
@@ -609,6 +620,28 @@ const EditClass: React.FC = () => {
                           placeholder="Enter class name (e.g., Grade 1A)"
                           required
                         />
+                      </div>
+
+                      {/* Grade Level */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Grade Level *
+                        </label>
+                        <select
+                          value={formData.gradeLevel}
+                          onChange={(e) =>
+                            handleInputChange("gradeLevel", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          required
+                        >
+                          <option value="">Select grade</option>
+                          {GRADE_OPTIONS.map((grade) => (
+                            <option key={grade} value={grade}>
+                              {grade}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Class Capacity */}

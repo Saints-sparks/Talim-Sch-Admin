@@ -79,6 +79,8 @@ export default function TeacherProfileForm() {
   const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
   const [isSubmittingAvailability, setIsSubmittingAvailability] =
     useState(false);
+  const [teacherUserId, setTeacherUserId] = useState("");
+  const [hasTeacherProfile, setHasTeacherProfile] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [formData, setFormData] = useState<FormData>({
@@ -108,7 +110,10 @@ export default function TeacherProfileForm() {
         return;
       }
 
-      const data: TeacherById = await teacherService.getTeacherById(teacherId);
+      const data: TeacherById =
+        await teacherService.getTeacherProfileOrFallback(teacherId);
+      setTeacherUserId(data.userId._id);
+      setHasTeacherProfile(data.hasTeacherProfile !== false);
       setFormData({
         firstName: data.userId.firstName || "",
         lastName: data.userId.lastName || "",
@@ -248,9 +253,7 @@ export default function TeacherProfileForm() {
         throw new Error("Teacher ID is missing");
       }
 
-      // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId);
-      const userId = teacherData.userId._id;
+      const userId = teacherUserId || teacherId;
 
       const personalData = {
         firstName: formData.firstName,
@@ -298,9 +301,7 @@ export default function TeacherProfileForm() {
         throw new Error("Teacher ID is missing");
       }
 
-      // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId);
-      const userId = teacherData.userId._id;
+      const userId = teacherUserId || teacherId;
 
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
@@ -342,9 +343,7 @@ export default function TeacherProfileForm() {
         throw new Error("Teacher ID is missing");
       }
 
-      // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId);
-      const userId = teacherData.userId._id;
+      const userId = teacherUserId || teacherId;
 
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
@@ -387,9 +386,7 @@ export default function TeacherProfileForm() {
         throw new Error("Teacher ID is missing");
       }
 
-      // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId);
-      const userId = teacherData.userId._id;
+      const userId = teacherUserId || teacherId;
 
       // Use the correct endpoint structure from your controller
       const token = localStorage.getItem("accessToken");
@@ -438,9 +435,7 @@ export default function TeacherProfileForm() {
         throw new Error("Teacher ID is missing");
       }
 
-      // Get the current teacher data to extract userId
-      const teacherData = await teacherService.getTeacherById(teacherId);
-      const userId = teacherData.userId._id;
+      const userId = teacherUserId || teacherId;
 
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
@@ -475,7 +470,7 @@ export default function TeacherProfileForm() {
   const handleRemoveUser = async () => {
     if (window.confirm("Are you sure you want to deactivate this teacher?")) {
       try {
-        await teacherService.deactivateTeacher(teacherId);
+        await teacherService.deactivateTeacher(teacherUserId || teacherId);
         toast.success("Teacher deactivated successfully!");
         router.push("/users/teachers");
       } catch (error: any) {
@@ -580,6 +575,13 @@ export default function TeacherProfileForm() {
             </TabsList>
 
             <CardContent className="p-8">
+              {!hasTeacherProfile && (
+                <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  This teacher account does not have a full teacher profile yet.
+                  Personal details and deactivation are available; profile-specific
+                  sections may need profile setup first.
+                </div>
+              )}
               <TabsContent value="personal-details" className="mt-0">
                 <form onSubmit={handleSubmitPersonal}>
                   <div className="space-y-8">
@@ -719,7 +721,7 @@ export default function TeacherProfileForm() {
                         className="text-red-600 border-red-600 hover:bg-red-50"
                         onClick={handleRemoveUser}
                       >
-                        Remove User
+                        Deactivate Teacher
                       </Button>
                       <Button
                         type="submit"

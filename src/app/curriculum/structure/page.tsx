@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
@@ -60,6 +60,7 @@ const CurriculumStructureMain: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialAction = searchParams?.get("action");
+  const handledActionRef = useRef<string | null>(null);
 
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -109,7 +110,8 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Handle URL action after data is loaded
   useEffect(() => {
-    if (!loading && subjects.length > 0) {
+    if (!loading && subjects.length > 0 && initialAction && handledActionRef.current !== initialAction) {
+      handledActionRef.current = initialAction;
       if (initialAction === "add-course") {
         const firstSubject = subjects[0];
         if (firstSubject) {
@@ -295,6 +297,10 @@ const CurriculumStructureMain: React.FC = () => {
 
   const handleCourseModalSuccess = () => {
     setShowCourseModal(false);
+    if (initialAction) {
+      handledActionRef.current = null;
+      router.replace("/curriculum/structure");
+    }
     fetchSubjects();
   };
 

@@ -4,21 +4,25 @@ import { apiClient } from "@/lib/apiClient";
 // Reusing your existing User and Class interfaces
 interface User {
   _id: string;
+  userId?: string;
   email: string;
   role: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
   userAvatar?: string;
+  schoolId?: string;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
 }
 
 export interface Class {
   _id?: string;
   name: string;
-  schoolId: string;
-  classCapacity: number;
-  classDescription: string;
-  assignedCourses: string[];
+  schoolId?: string;
+  classCapacity?: number;
+  classDescription?: string;
+  assignedCourses?: string[];
 }
 
 export interface Course {
@@ -26,8 +30,8 @@ export interface Course {
   courseCode: string;
   title: string;
   description: string;
-  schoolId: string;
-  teacherId: string;
+  schoolId?: string;
+  teacherId?: string;
   classId: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -36,21 +40,21 @@ export interface Course {
 // In teacher.service.ts - Update the Teacher interface
 export interface Teacher {
   _id: string;
-  userId: User;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  email: string;
-  role: string;
+  userId?: User | string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  email?: string;
+  role?: string;
   userAvatar?: string;
-  highestAcademicQualification: string;
-  yearsOfExperience: number;
-  specialization: string;
-  employmentType: string;
-  employmentRole: string;
-  availabilityDays: string[];
-  availableTime: string;
-  isFormTeacher: boolean;
+  highestAcademicQualification?: string;
+  yearsOfExperience?: number;
+  specialization?: string;
+  employmentType?: string;
+  employmentRole?: string;
+  availabilityDays?: string[];
+  availableTime?: string;
+  isFormTeacher?: boolean;
   assignedClasses?: Class[];
   assignedCourses?: Course[];
   isActive: boolean;
@@ -58,7 +62,8 @@ export interface Teacher {
   updatedAt?: Date;
   classIds?: string[];
   __v?: number;
-  schoolId: string; // Add this line
+  schoolId?: string;
+  hasTeacherProfile?: boolean;
 }
 export interface TeacherById {
   _id: string;
@@ -113,6 +118,7 @@ export interface TeacherById {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  hasTeacherProfile?: boolean;
 }
 
 interface GetTeachersResponse {
@@ -204,7 +210,6 @@ export const teacherService = {
       }
 
       const data: GetTeachersResponse = await response.json();
-      console.log("Fetched teachers:", data);
       return data;
     } catch (error) {
       throw error;
@@ -295,12 +300,69 @@ export const teacherService = {
       }
 
       const data = await response.json();
-      console.log("Teacher data:", data);
-
       return data;
     } catch (error) {
       console.error("Error fetching teacher:", error);
       throw error;
+    }
+  },
+
+  async getTeacherProfileOrFallback(userId: string): Promise<TeacherById> {
+    try {
+      const teacherProfile = await this.getTeacherById(userId);
+      return { ...teacherProfile, hasTeacherProfile: true };
+    } catch (error: any) {
+      const isMissingProfile =
+        error instanceof Error &&
+        error.message.toLowerCase().includes("not found");
+
+      if (!isMissingProfile) {
+        throw error;
+      }
+
+      const teachers = await this.getAllTeachers();
+      const user = teachers.find((teacher) => teacher._id === userId);
+
+      if (!user) {
+        throw error;
+      }
+
+      return {
+        _id: user._id,
+        userId: {
+          _id: user._id,
+          userId: typeof user.userId === "string" ? user.userId : user._id,
+          email: user.email || "",
+          role: user.role || "teacher",
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          phoneNumber: user.phoneNumber || "",
+          isActive: user.isActive,
+          isEmailVerified: false,
+          schoolId: user.schoolId || "",
+          isTwoFactorEnabled: false,
+          devices: [],
+          createdAt: user.createdAt?.toString() || "",
+          updatedAt: user.updatedAt?.toString() || "",
+          __v: user.__v || 0,
+          id: user._id,
+        },
+        assignedClasses: [],
+        classTeacherClasses: [],
+        assignedCourses: [],
+        isFormTeacher: false,
+        highestAcademicQualification: "",
+        yearsOfExperience: 0,
+        specialization: "",
+        employmentType: "",
+        employmentRole: "",
+        availabilityDays: [],
+        availableTime: "",
+        createdAt: user.createdAt?.toString() || "",
+        updatedAt: user.updatedAt?.toString() || "",
+        __v: user.__v || 0,
+        hasTeacherProfile: false,
+      };
     }
   },
 
@@ -321,17 +383,28 @@ export const teacherService = {
     return response.json();
   },
 
-  async deactivateTeacher(teacherId: string): Promise<Teacher> {
-    const response = await apiClient.patch(
-      `${API_ENDPOINTS.DEACTIVATE_TEACHER}/${teacherId}`
+  async updateTeacherStatus(
+    teacherId: string,
+    isActive: boolean
+  ): Promise<Teacher> {
+    const response = await apiClient.put(
+      `${API_ENDPOINTS.BASE_URL}/users/teachers/${teacherId}/status`,
+      { isActive }
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || "Failed to deactivate teacher");
+      throw new Error(
+        error.message ||
+          `Failed to ${isActive ? "activate" : "deactivate"} teacher`
+      );
     }
 
     return response.json();
+  },
+
+  async deactivateTeacher(teacherId: string): Promise<Teacher> {
+    return this.updateTeacherStatus(teacherId, false);
   },
 
   // async getTeachersByClass(

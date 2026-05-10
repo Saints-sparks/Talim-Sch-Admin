@@ -36,6 +36,7 @@ interface Course {
 export interface Class {
   _id: string;
   name: string;
+  gradeLevel: string;
   classCapacity: string;
   classDescription: string;
   schoolId:
@@ -97,6 +98,7 @@ export interface Class {
 
 interface UpdateClassData {
   name: string;
+  gradeLevel?: string;
   classDescription: string;
   classCapacity: string;
 }
@@ -525,6 +527,7 @@ export const updateClass = async (
       `${API_ENDPOINTS.BASE_URL}/classes/${classId}`,
       {
         name: updateData.name,
+        ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
         classDescription: updateData.classDescription,
         classCapacity: updateData.classCapacity,
       }
