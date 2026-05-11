@@ -33,20 +33,20 @@ export default function SignIn() {
     try {
       const success = await login(email, password, keepSignedIn);
       if (success) {
-        // Check onboarding state for this school
+        // Server flag (from introspect) is authoritative; fall back to localStorage
         const userRaw = localStorage.getItem("user");
         const userData = userRaw ? JSON.parse(userRaw) : null;
-        const schoolId = typeof userData?.schoolId === "string"
-          ? userData.schoolId
-          : userData?.schoolId?._id ?? null;
-        const onboardingKey = schoolId ? `onboarding_${schoolId}` : null;
-        const onboardingRaw = onboardingKey ? localStorage.getItem(onboardingKey) : null;
-        const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
 
-        if (!onboardingState?.phase1Completed) {
-          router.push("/onboarding");
-        } else {
+        if (userData?.onboardingCompleted) {
           router.push("/dashboard");
+        } else {
+          // Check localStorage onboarding state as fallback
+          const schoolId = typeof userData?.schoolId === "string"
+            ? userData.schoolId
+            : userData?.schoolId?._id ?? null;
+          const onboardingRaw = schoolId ? localStorage.getItem(`onboarding_${schoolId}`) : null;
+          const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
+          router.push(onboardingState?.phase1Completed ? "/dashboard" : "/onboarding");
         }
       }
     } catch (err: any) {

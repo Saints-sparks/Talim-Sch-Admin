@@ -30,6 +30,7 @@ interface User {
   classId?: string | null;
   className?: string | null;
   termId?: string;
+  onboardingCompleted?: boolean;
 }
 
 interface AuthContextType {

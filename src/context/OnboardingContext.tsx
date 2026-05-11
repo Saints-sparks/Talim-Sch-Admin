@@ -179,7 +179,8 @@ const saveState = (schoolId: string, state: OnboardingState) => {
 export const OnboardingProvider: React.FC<{
   children: React.ReactNode;
   schoolId: string | null;
-}> = ({ children, schoolId }) => {
+  serverOnboardingCompleted?: boolean;
+}> = ({ children, schoolId, serverOnboardingCompleted }) => {
   const [state, setState] = useState<OnboardingState>({
     completedSteps: [],
     phase1Completed: false,
@@ -187,10 +188,12 @@ export const OnboardingProvider: React.FC<{
   });
 
   useEffect(() => {
-    if (schoolId) {
-      setState(loadState(schoolId));
-    }
-  }, [schoolId]);
+    if (!schoolId) return;
+    const local = loadState(schoolId);
+    // Server flag is authoritative for phase1Completed
+    const phase1Completed = serverOnboardingCompleted ?? local.phase1Completed;
+    setState({ ...local, phase1Completed });
+  }, [schoolId, serverOnboardingCompleted]);
 
   const persist = useCallback(
     (next: OnboardingState) => {
@@ -227,10 +230,24 @@ export const OnboardingProvider: React.FC<{
 
   const completePhase1 = useCallback(() => {
     const phase1Ids: OnboardingStepId[] = ["school-profile", "personal-profile"];
-    const merged = Array.from(
-      new Set([...state.completedSteps, ...phase1Ids])
-    );
+    const merged = Array.from(new Set([...state.completedSteps, ...phase1Ids]));
     persist({ ...state, completedSteps: merged, phase1Completed: true });
+
+    // Notify the server — fire-and-forget, localStorage is the fallback
+    try {
+      const token = typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
+        : null;
+      if (token) {
+        const { API_BASE_URL, API_URLS } = require("@/app/lib/api/config");
+        fetch(`${API_BASE_URL}${API_URLS.AUTH.COMPLETE_ONBOARDING}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+      }
+    } catch {
+      // ignore — server flag update is best-effort
+    }
   }, [state, persist]);
 
   const dismissSetup = useCallback(() => {

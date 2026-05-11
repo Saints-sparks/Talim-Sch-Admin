@@ -38,7 +38,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       : null;
 
   return (
-    <OnboardingProvider schoolId={schoolId}>
+    <OnboardingProvider schoolId={schoolId} serverOnboardingCompleted={user?.onboardingCompleted}>
       <TransitionProvider>
         <SidebarProvider>
           <PageIndicatorProvider>

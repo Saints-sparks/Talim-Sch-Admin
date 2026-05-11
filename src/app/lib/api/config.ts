@@ -18,6 +18,7 @@ export const API_URLS = {
     CHANGE_PASSWORD: "/auth/change-password",
     GET_PROFILE: "/auth/profile/:userId",
     UPDATE_PROFILE: "/auth/profile/update",
+    COMPLETE_ONBOARDING: "/auth/onboarding/complete",
   },
   SCHOOL: {
     GET_CLASS: "/classes",
@@ -121,6 +122,7 @@ export const API_ENDPOINTS = {
   GET_USER_PROFILE: (userId: string) =>
     `${API_BASE_URL}${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
   UPDATE_USER_PROFILE: `${API_BASE_URL}${API_URLS.AUTH.UPDATE_PROFILE}`,
+  COMPLETE_ONBOARDING: `${API_BASE_URL}${API_URLS.AUTH.COMPLETE_ONBOARDING}`,
   GET_CLASS: `${API_BASE_URL}/classes`,
   GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
   CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
