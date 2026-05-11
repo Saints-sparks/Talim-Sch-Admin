@@ -13,6 +13,7 @@ import AddClassModal from "@/components/AddClassModal";
 import { useDashboard } from "@/hooks/useDashboard";
 import { Book, BookOpen, Profile, Profile2User } from "@/components/Icons";
 import { LayoutDashboard, TrendingUp } from "lucide-react";
+import SetupProgressWidget from "@/components/SetupProgressWidget";
 
 const Dashboard = () => {
   const router = useRouter();
@@ -177,6 +178,11 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Setup progress widget — visible until onboarding is complete */}
+          <div className="px-6 mb-6">
+            <SetupProgressWidget />
           </div>
 
           {/* Enhanced Dashboard Cards */}

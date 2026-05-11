@@ -31,8 +31,24 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      await login(email, password, keepSignedIn);
-      router.push("/dashboard");
+      const success = await login(email, password, keepSignedIn);
+      if (success) {
+        // Check onboarding state for this school
+        const userRaw = localStorage.getItem("user");
+        const userData = userRaw ? JSON.parse(userRaw) : null;
+        const schoolId = typeof userData?.schoolId === "string"
+          ? userData.schoolId
+          : userData?.schoolId?._id ?? null;
+        const onboardingKey = schoolId ? `onboarding_${schoolId}` : null;
+        const onboardingRaw = onboardingKey ? localStorage.getItem(onboardingKey) : null;
+        const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
+
+        if (!onboardingState?.phase1Completed) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
+      }
     } catch (err: any) {
       const msg: string = err.message || "";
       if (msg.toLowerCase().includes("access denied") || msg.toLowerCase().includes("registered as")) {
