@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   FiPlus,
   FiPaperclip,
@@ -343,6 +344,7 @@ const Announcement: React.FC = () => {
                     • Keep your school community informed
                   </span>
                 </div>
+                <Tooltip content="Post a message to all students and staff at your school." side="top">
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
@@ -350,6 +352,7 @@ const Announcement: React.FC = () => {
                   <FiPlus className="h-4 w-4" />
                   <span className="font-medium">New Announcement</span>
                 </button>
+                </Tooltip>
               </div>
             </div>
 
@@ -596,9 +599,11 @@ const Announcement: React.FC = () => {
 
           {/* Attachment Upload Section */}
           <div className="space-y-4">
+            <Tooltip content="Attach a PDF, image, or document (max 10 MB). Students and teachers will be able to download it." side="right">
             <label className="block text-sm font-semibold text-gray-700">
               Attachment (Optional)
             </label>
+            </Tooltip>
 
             {/* Upload Area */}
             {!attachmentPreview && !newAnnouncement.attachment ? (

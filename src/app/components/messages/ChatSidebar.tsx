@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect, useMemo } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
 import { useChats } from "@/hooks/useChats";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
@@ -384,18 +385,22 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
                   
                   {/* Online indicator for private chats */}
                   {room.type === 'private' && (
-                    <span 
+                    <Tooltip content="One-to-one conversation with a teacher or parent." side="right">
+                    <span
                       className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full ${
                         room.isOnline ? 'bg-green-500' : 'bg-gray-400'
                       }`}
                     />
+                    </Tooltip>
                   )}
                   
                   {/* Group indicator */}
                   {room.type === 'group' && (
+                    <Tooltip content="Broadcast conversations with all members. Any member can send a message." side="right">
                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center">
                       <Users className="w-2 h-2 text-white" />
                     </span>
+                    </Tooltip>
                   )}
                 </div>
 
@@ -417,9 +422,11 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
                       {room.lastMessage?.content || "No messages yet"}
                     </p>
                     {room.unreadCount > 0 && (
+                      <Tooltip content="Number of messages you haven't read yet in this conversation." side="top">
                       <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium text-white bg-blue-600 rounded-full">
                         {room.unreadCount > 99 ? '99+' : room.unreadCount}
                       </span>
+                      </Tooltip>
                     )}
                   </div>
                 </div>

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useOnboarding, ONBOARDING_STEPS, OnboardingStepId } from "@/context/OnboardingContext";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { getSchoolId } from "@/app/services/school.service";
 import {
   createAcademicYear,
@@ -92,12 +93,14 @@ export default function OnboardingSetup() {
             <span className="font-semibold text-[#003366]">{completedCount}</span>
             <span>/ {totalCount} steps complete</span>
           </div>
+          <Tooltip content="Shows how many setup steps you've completed. Required steps must be done before full access is available." side="top">
           <div className="w-32 sm:w-48 bg-gray-200 rounded-full h-2">
             <div
               className="h-2 rounded-full bg-[#003366] transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
+          </Tooltip>
           <span className="text-sm font-bold text-[#003366]">{progressPercent}%</span>
         </div>
       </header>
@@ -134,7 +137,9 @@ export default function OnboardingSetup() {
                         {done ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
                         ) : locked ? (
-                          <Lock className="h-4 w-4 text-gray-300" />
+                          <Tooltip content="Complete the required step(s) above before unlocking this one." side="right">
+                          <span><Lock className="h-4 w-4 text-gray-300" /></span>
+                          </Tooltip>
                         ) : (
                           <Circle className={`h-4 w-4 ${active ? "text-[#003366]" : "text-gray-300"}`} />
                         )}
@@ -311,10 +316,12 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
 
       {subStep === "year" ? (
         <form onSubmit={handleYearSubmit} className="space-y-4 max-w-sm">
+          <Tooltip content='Example: "2025/2026". This groups all your terms, assessments, and timetables for the school year.' side="right">
           <Field label="Academic year name" hint="e.g. 2024/2025">
             <input value={yearForm.year} onChange={(e) => setYearForm({ ...yearForm, year: e.target.value })}
               placeholder="2024/2025" className={inputCls} required />
           </Field>
+          </Tooltip>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Start date">
               <input type="date" value={yearForm.startDate} onChange={(e) => setYearForm({ ...yearForm, startDate: e.target.value })} className={inputCls} required />
@@ -334,10 +341,12 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
           <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
             Academic year created. Now add your first term.
           </p>
+          <Tooltip content='Example: "First Term" or "Spring Term". Set it as the current term once created.' side="right">
           <Field label="Term name" hint="e.g. First Term">
             <input value={termForm.name} onChange={(e) => setTermForm({ ...termForm, name: e.target.value })}
               placeholder="First Term" className={inputCls} required />
           </Field>
+          </Tooltip>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Start date">
               <input type="date" value={termForm.startDate} onChange={(e) => setTermForm({ ...termForm, startDate: e.target.value })} className={inputCls} required />
@@ -383,9 +392,11 @@ function CreateClassStep({ onComplete }: { onComplete: () => void }) {
         <Field label="Class name" hint="e.g. Grade 7A">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 7A" className={inputCls} required />
         </Field>
+        <Tooltip content="Maximum number of students that can be enrolled in this class." side="right">
         <Field label="Capacity" hint="Maximum number of students">
           <input type="number" value={form.classCapacity} onChange={(e) => setForm({ ...form, classCapacity: e.target.value })} placeholder="30" className={inputCls} />
         </Field>
+        </Tooltip>
         <Field label="Description (optional)">
           <textarea value={form.classDescription} onChange={(e) => setForm({ ...form, classDescription: e.target.value })} placeholder="Brief description…" rows={3} className={inputCls} />
         </Field>
@@ -594,7 +605,7 @@ function CreateAnnouncementStep({ onComplete, onSkip }: { onComplete: () => void
         </Field>
         <div className="flex gap-3">
           <PrimaryBtn loading={submitting}><Megaphone className="h-4 w-4" /> Post Announcement</PrimaryBtn>
-          <button type="button" onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 underline">Skip for now</button>
+          <Tooltip content="You can complete this step later from the main app. It won't block your access." side="top"><button type="button" onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 underline">Skip for now</button></Tooltip>
         </div>
       </form>
     </StepCard>
@@ -671,7 +682,7 @@ function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; 
         </div>
         <div className="flex gap-3">
           <PrimaryBtn loading={submitting}><ClipboardList className="h-4 w-4" /> Create Assessment</PrimaryBtn>
-          <button type="button" onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 underline">Skip for now</button>
+          <Tooltip content="You can complete this step later from the main app. It won't block your access." side="top"><button type="button" onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 underline">Skip for now</button></Tooltip>
         </div>
       </form>
     </StepCard>

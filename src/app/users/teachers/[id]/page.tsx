@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { teacherService, TeacherById } from "@/app/services/teacher.service";
 import { Header } from "@/components/Header";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
@@ -285,6 +286,7 @@ const TeacherProfile = () => {
                   <span className="hidden sm:inline">Employment</span>
                   <span className="sm:hidden">Work</span>
                 </TabsTrigger>
+                <Tooltip content="Classes this teacher teaches or is a form teacher for." side="top">
                 <TabsTrigger
                   value="assign"
                   className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hidden sm:flex lg:flex hover:bg-white/50"
@@ -293,6 +295,7 @@ const TeacherProfile = () => {
                   <span className="hidden sm:inline">Assignments</span>
                   <span className="sm:hidden">Assign</span>
                 </TabsTrigger>
+                </Tooltip>
                 <TabsTrigger
                   value="availability"
                   className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hidden sm:flex lg:flex hover:bg-white/50"
@@ -502,10 +505,12 @@ const TeacherProfile = () => {
                       {/* Information Display */}
                       <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 order-2 lg:order-2">
                         <div className="space-y-3">
+                          <Tooltip content="Academic credential. For record-keeping only." side="right">
                           <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                             <Award className="w-4 h-4" />
                             Highest Qualification
                           </Label>
+                          </Tooltip>
                           <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg px-4 py-4">
                             <span className="text-emerald-900 font-semibold text-sm sm:text-base">
                               {teacher.highestAcademicQualification}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   FiEdit,
   FiTrash,
@@ -175,6 +176,7 @@ export default function Classes() {
                 </div>
 
                 <div className="flex items-center space-x-3">
+                  <Tooltip content="Create a new class. You can assign students, teachers, and courses to it afterwards." side="top">
                   <button
                     onClick={toggleModal}
                     className="inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -183,6 +185,7 @@ export default function Classes() {
                     <FiPlus className="h-4 w-4 mr-2" />
                     Add Class
                   </button>
+                  </Tooltip>
                   
                 </div>
               </div>
@@ -458,9 +461,11 @@ export default function Classes() {
                   </div>
 
                   <div>
+                    <Tooltip content="Optional grouping (e.g. Grade 1–12). Used for filtering and reporting." side="right">
                     <label className="block text-gray-700 font-semibold mb-2">
                       Grade Level *
                     </label>
+                    </Tooltip>
                     <select
                       name="gradeLevel"
                       value={formData.gradeLevel}
@@ -478,9 +483,11 @@ export default function Classes() {
                   </div>
 
                   <div>
+                    <Tooltip content="Maximum students that can be enrolled. Students beyond this limit will be flagged during enrolment." side="right">
                     <label className="block text-gray-700 font-semibold mb-2">
                       Class Capacity *
                     </label>
+                    </Tooltip>
                     <select
                       name="classCapacity"
                       value={formData.classCapacity}

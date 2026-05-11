@@ -16,6 +16,7 @@ import Avatar from "@/components/Avatar";
 import Image from "next/image";
 import { ErrorState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const StudentPage: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -120,12 +121,14 @@ const StudentPage: React.FC = () => {
             </span>
           </h1>
         </div>
+        <Tooltip content="Enrol a new student and assign them to a class. An account will be created for them." side="top">
         <button
           onClick={toggleModal}
           className="mt-4 sm:mt-0 bg-[#003366] leading-[120%] hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold text-[15px] flex items-center gap-2 "
         >
           <span className="text-lg font-bold">+</span> Add Student
         </button>
+        </Tooltip>
       </div>
       {/* Search and Filter Section */}
       <div className="bg-white rounded-2xl py-3 mb-6 w-fit">
@@ -151,6 +154,7 @@ const StudentPage: React.FC = () => {
             {/* Simple Class Filter */}
             {/* Class Filter */}
             <div className="relative w-[220px] leading-[120%]">
+              <Tooltip content="Show only students in this class." side="right">
               <select
                 className="appearance-none bg-white border border-[#E0E0E0] h-[40px] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold w-[220px] text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={selectedClass || ""}
@@ -166,6 +170,7 @@ const StudentPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+              </Tooltip>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                 <ChevronDown />
               </span>
@@ -174,6 +179,7 @@ const StudentPage: React.FC = () => {
             {/* Status Filter */}
             {/* Status Filter */}
             <div className="relative w-[191px]">
+              <Tooltip content="Active students are currently enrolled. Inactive students have been deactivated." side="right">
               <select
                 className="appearance-none w-[191px] h-[40px] bg-white border border-[#E0E0E0] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={statusFilter}
@@ -188,6 +194,7 @@ const StudentPage: React.FC = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+              </Tooltip>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                 <ChevronDown />
               </span>

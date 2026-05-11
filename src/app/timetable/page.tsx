@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { BookOpen, Copy, Download, Flash, Trash } from "@/components/Icons";
+import { Tooltip } from "@/components/ui/Tooltip";
 import * as XLSX from "xlsx";
 
 interface TimetableEntry {
@@ -879,6 +880,7 @@ const Timetable = () => {
                 }`}
               />
             </button>
+            <Tooltip content="Download the timetable as an Excel file for printing or sharing." side="top">
             <button
               onClick={downloadTimetable}
               className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-2 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors"
@@ -886,6 +888,7 @@ const Timetable = () => {
               Download
               <Download />
             </button>
+            </Tooltip>
           </div>
         </div>
 
@@ -910,9 +913,11 @@ const Timetable = () => {
               </div>
             </div>
             <div className="relative">
+              <Tooltip content="Narrow the timetable to one class." side="right">
               <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">
                 Class
               </label>
+              </Tooltip>
               <div className="relative">
                 <select
                   value={selectedClassId}
@@ -930,6 +935,7 @@ const Timetable = () => {
                 <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
+            <Tooltip content="Duplicate this session to another day without re-entering all details." side="top">
             <button
               onClick={applyTemplate}
               disabled={isApplyingTemplate || courses.length === 0}
@@ -938,6 +944,8 @@ const Timetable = () => {
               <Copy />
               {isApplyingTemplate ? "Applying..." : "Copy from Template"}
             </button>
+            </Tooltip>
+            <Tooltip content="Schedule a course session for a specific class, day, and time." side="top">
             <button
               onClick={toggleModal}
               disabled={!selectedClassId || courses.length === 0}
@@ -945,6 +953,7 @@ const Timetable = () => {
             >
               Add Entry
             </button>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -1164,9 +1173,11 @@ const Timetable = () => {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
+                  <Tooltip content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged." side="right">
                   <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
                     Start Time
                   </label>
+                  </Tooltip>
                   <input
                     type="time"
                     value={formData.startTime}
@@ -1181,9 +1192,11 @@ const Timetable = () => {
                   />
                 </div>
                 <div>
+                  <Tooltip content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged." side="right">
                   <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
                     End Time
                   </label>
+                  </Tooltip>
                   <input
                     type="time"
                     value={formData.endTime}

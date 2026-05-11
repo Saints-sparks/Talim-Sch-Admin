@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -515,9 +516,11 @@ const AdminRequestDetailPage: React.FC = () => {
               {leaveRequest.attachments &&
                 leaveRequest.attachments.length > 0 && (
                   <div className="mb-6">
+                    <Tooltip content="Supporting documents submitted by the parent (e.g. medical certificate)." side="right">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
                       Attachments
                     </h3>
+                    </Tooltip>
                     <div className="space-y-2">
                       {leaveRequest.attachments.map((attachment, index) => (
                         <div
@@ -567,6 +570,7 @@ const AdminRequestDetailPage: React.FC = () => {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-4">
+                    <Tooltip content="Marks the leave as rejected. The parent and class teacher are notified automatically." side="top">
                     <button
                       onClick={handleReject}
                       disabled={actionLoading}
@@ -574,6 +578,8 @@ const AdminRequestDetailPage: React.FC = () => {
                     >
                       {actionLoading ? "Processing..." : "Reject"}
                     </button>
+                    </Tooltip>
+                    <Tooltip content="Marks the leave as approved. The parent and class teacher are notified automatically." side="top">
                     <button
                       onClick={handleApprove}
                       disabled={actionLoading}
@@ -581,6 +587,7 @@ const AdminRequestDetailPage: React.FC = () => {
                     >
                       {actionLoading ? "Processing..." : "Approve"}
                     </button>
+                    </Tooltip>
                   </div>
                 </div>
               )}

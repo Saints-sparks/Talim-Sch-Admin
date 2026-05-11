@@ -22,6 +22,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import Image from "next/image";
 import {
   getSchoolDashboard,
@@ -529,6 +530,7 @@ export default function Profile() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Tooltip content="Shown alongside your name in messages, announcements, and leave request responses." side="top">
               <label
                 htmlFor="admin-avatar-upload"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
@@ -543,6 +545,7 @@ export default function Profile() {
                   onChange={(e) => handleFileChange(e, "avatar")}
                 />
               </label>
+              </Tooltip>
               {(formData.adminAvatar || avatarPreview) && (
                 <button
                   onClick={() => {
@@ -581,10 +584,12 @@ export default function Profile() {
                 animate={{ opacity: 1, height: "auto" }}
                 className="mt-6 pt-6 border-t border-gray-100 space-y-4"
               >
+                <Tooltip content="Passwords must be at least 8 characters. You'll be logged out of all other devices when changed." side="top">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <Key className="w-4 h-4 text-[#003366]" />
                   Change Password <span className="font-normal text-gray-400">(optional)</span>
                 </h3>
+                </Tooltip>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="relative">
                     <input
@@ -668,6 +673,7 @@ export default function Profile() {
               )}
             </div>
             <div className="flex flex-wrap gap-3">
+              <Tooltip content="Appears on reports, the student app, and the parent app. Square format recommended." side="top">
               <label
                 htmlFor="school-logo-upload"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
@@ -682,6 +688,7 @@ export default function Profile() {
                   onChange={(e) => handleFileChange(e, "logo")}
                 />
               </label>
+              </Tooltip>
               {(formData.logo || logoPreview) && (
                 <button
                   onClick={() => {
@@ -709,7 +716,11 @@ export default function Profile() {
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Field label="School Name" icon={Building} value={formData.schoolName} name="schoolName" editing={isEditingSchool} placeholder="School name" />
-              <Field label="School Prefix" icon={Building} value={formData.schoolPrefix} name="schoolPrefix" editing={isEditingSchool} placeholder="e.g. USS" />
+              <Tooltip content={'A short code prepended to student IDs (e.g. "TLM" → student ID "TLM-0042").'} side="right">
+              <div>
+                <Field label="School Prefix" icon={Building} value={formData.schoolPrefix} name="schoolPrefix" editing={isEditingSchool} placeholder="e.g. USS" />
+              </div>
+              </Tooltip>
               <Field label="Street Address" icon={MapPin} value={formData.street} name="street" editing={isEditingSchool} placeholder="Street address" />
               <SelectField
                 label="State"

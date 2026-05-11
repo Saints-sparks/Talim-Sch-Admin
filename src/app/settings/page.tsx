@@ -27,6 +27,7 @@ import {
   getTerms,
   setCurrentTerm,
 } from "@/app/services/academic.service";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface AcademicYear {
   year: string;
@@ -349,6 +350,7 @@ const Settings: React.FC = () => {
                 <h1 className="text-xl font-semibold text-[#2F2F2F]">
                   Academic Settings
                 </h1>
+                <Tooltip content="Define the school year (e.g. 2025/2026) that all terms, assessments, and timetables will sit under." side="top">
                 <button
                   onClick={() => setIsAcademicYearModalOpen(true)}
                   className="inline-flex items-center gap-2 bg-gray-200 border border-[#E4E4E4] px-2 py-0.5 rounded-full text-base transition-colors"
@@ -356,6 +358,7 @@ const Settings: React.FC = () => {
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add</span>
                 </button>
+                </Tooltip>
               </div>
               <p className="text-base text-[#979797]">
                 Manage academic year and term settings across the platform
@@ -510,6 +513,7 @@ const Settings: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
+                <Tooltip content="Makes this the active term. Assessments and timetable entries will default to this term." side="top">
                 <button
                   onClick={handleSave}
                   disabled={loading || !selectedTerm || submitting}
@@ -517,6 +521,7 @@ const Settings: React.FC = () => {
                 >
                   {submitting ? "Saving..." : "Save Changes"}
                 </button>
+                </Tooltip>
                 <button
                   onClick={() => {
                     setSelectedAcademicYear("");
@@ -721,9 +726,11 @@ const Settings: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Tooltip content="The dates during which this term is active. Used for filtering assessments and reports." side="right">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Date
                     </label>
+                    </Tooltip>
                     <input
                       type="date"
                       value={termForm.startDate}
@@ -736,9 +743,11 @@ const Settings: React.FC = () => {
                   </div>
 
                   <div>
+                    <Tooltip content="The dates during which this term is active. Used for filtering assessments and reports." side="right">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       End Date
                     </label>
+                    </Tooltip>
                     <input
                       type="date"
                       value={termForm.endDate}

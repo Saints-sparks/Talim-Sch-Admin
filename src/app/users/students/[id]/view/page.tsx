@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { studentService, StudentById } from "@/app/services/student.service";
 import { PerformanceMonitor } from "@/app/lib/performance";
 import { Header } from "@/components/Header";
@@ -243,6 +244,7 @@ const StudentProfile = () => {
 
             {/* Right Actions */}
             <div className="flex items-center space-x-3">
+              <Tooltip content="Update student personal details, guardian info, or class assignment." side="top">
               <button
                 onClick={() => router.push(`/users/students/${studentId}/edit`)}
                 className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-200 text-sm font-medium"
@@ -251,6 +253,7 @@ const StudentProfile = () => {
                 <span className="hidden sm:inline">Edit Profile</span>
                 <span className="sm:hidden">Edit</span>
               </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -274,6 +277,7 @@ const StudentProfile = () => {
                   <span className="hidden sm:inline">Personal Details</span>
                   <span className="sm:hidden">Personal</span>
                 </TabsTrigger>
+                <Tooltip content="Contact details for the student's primary guardian. Visible to class teachers." side="top">
                 <TabsTrigger
                   value="parent-guardian"
                   className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50"
@@ -282,6 +286,7 @@ const StudentProfile = () => {
                   <span className="hidden sm:inline">Parent/Guardian</span>
                   <span className="sm:hidden">Parent</span>
                 </TabsTrigger>
+                </Tooltip>
                 <TabsTrigger
                   value="academic-info"
                   className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50"
@@ -674,10 +679,12 @@ const StudentProfile = () => {
                           <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-none">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                               <div className="space-y-3">
+                                <Tooltip content="Percentage of sessions attended this term. Updated by class teachers." side="right">
                                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                   <UserCheck className="w-4 h-4" />
                                   Current Status
                                 </label>
+                                </Tooltip>
                                 <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
                                   {student.attendance || "No attendance data"}
                                 </div>

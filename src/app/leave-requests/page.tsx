@@ -10,6 +10,7 @@ import {
 import { toast } from "react-toastify";
 import LeaveRequestSkeleton from "@/components/LeaveRequestSkeleton";
 import { Search } from "@/components/Icons";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 // Updated interface to match your actual API response
 interface ApiLeaveRequest {
@@ -285,6 +286,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
             >
               All ({leaveRequests.length})
             </button>
+            <Tooltip content="Pending: awaiting your decision. Approved/Rejected: already actioned." side="right">
             <button
               onClick={() => setFilter("pending")}
               className={`px-3 py-1.5 rounded-xl text-[15px] transition font-medium ${
@@ -296,6 +298,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
               Pending (
               {leaveRequests.filter((r) => r.status === "pending").length})
             </button>
+            </Tooltip>
             <button
               onClick={() => setFilter("rejected")}
               className={`px-3 py-1.5 rounded-xl text-[15px] transition font-medium ${
@@ -400,7 +403,9 @@ const AdminLeaveRequestsPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2 font-semibold">
+                      <Tooltip content="Supporting documents submitted by the parent (e.g. medical certificate)." side="right">
                       <span className="text-[15px]">Attachments:</span>
+                      </Tooltip>
                        <span className="text-[#4D4D4D] text-[15px] border border-[#F2F2F2] px-2 py-1 rounded-xl flex gap-2">
                         <svg
                           className="w-4 h-4"
@@ -437,6 +442,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
 
                   {request.status === "pending" && (
                     <div className="flex gap-2 mt-4 pt-3 border-t">
+                      <Tooltip content="Marks the leave as approved. The parent and class teacher are notified automatically." side="top">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -446,6 +452,8 @@ const AdminLeaveRequestsPage: React.FC = () => {
                       >
                         Approve
                       </button>
+                      </Tooltip>
+                      <Tooltip content="Marks the leave as rejected. The parent and class teacher are notified automatically." side="top">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -455,6 +463,7 @@ const AdminLeaveRequestsPage: React.FC = () => {
                       >
                         Reject
                       </button>
+                      </Tooltip>
                     </div>
                   )}
                 </div>

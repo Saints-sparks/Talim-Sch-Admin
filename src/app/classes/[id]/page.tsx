@@ -36,6 +36,7 @@ import CourseModal from "@/components/CourseModal";
 import "react-toastify/dist/ReactToastify.css";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface ClassDetails {
   _id: string;
@@ -442,6 +443,7 @@ const ViewClass: React.FC = () => {
                 <Info className="w-4 h-4" />
                 Class Details
               </TabsTrigger>
+              <Tooltip content="Courses currently assigned to this class. Manage courses in Curriculum." side="top">
               <TabsTrigger
                 value="courses"
                 className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
@@ -449,6 +451,7 @@ const ViewClass: React.FC = () => {
                 <BookOpen className="w-4 h-4" />
                 Courses
               </TabsTrigger>
+              </Tooltip>
               <TabsTrigger
                 value="teacher"
                 className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
@@ -520,10 +523,12 @@ const ViewClass: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
+                        <Tooltip content="The form teacher responsible for this class. Assign a teacher from Users → Teachers." side="right">
                         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                           <User className="w-4 h-4" />
                           Class Teacher
                         </label>
+                        </Tooltip>
                         <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                           <span className="text-gray-900">
                             {getTeacherName(classData)}

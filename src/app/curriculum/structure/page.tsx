@@ -36,6 +36,7 @@ import {
 import CourseModal from "@/components/CourseModal";
 import TalimModal from "@/components/ui/TalimModal";
 import DeleteConfirmModal from "@/components/curricula/DeleteConfirmModal";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface NewSubject {
   name: string;
@@ -398,6 +399,7 @@ const CurriculumStructureMain: React.FC = () => {
               <p className="text-sm text-gray-500">Manage subjects and their associated courses</p>
             </div>
           </div>
+          <Tooltip content="Create a new subject area. You can add courses to it afterwards." side="top">
           <button
             onClick={openAddSubjectModal}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
@@ -405,6 +407,7 @@ const CurriculumStructureMain: React.FC = () => {
             <Plus className="w-4 h-4" />
             Add Subject
           </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -526,6 +529,7 @@ const CurriculumStructureMain: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <Tooltip content="Create a course within the selected subject. Choose which class it belongs to." side="top">
                       <button
                         onClick={(e) => { e.stopPropagation(); openAddCourseModal(subject); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-xs font-medium"
@@ -533,6 +537,7 @@ const CurriculumStructureMain: React.FC = () => {
                         <Plus className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Add Course</span>
                       </button>
+                      </Tooltip>
                       <button
                         onClick={(e) => { e.stopPropagation(); openEditSubjectModal(subject); }}
                         className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
@@ -540,6 +545,7 @@ const CurriculumStructureMain: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
+                      <Tooltip content="Deleting a subject removes all its courses. This cannot be undone." side="top">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject); }}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -547,6 +553,7 @@ const CurriculumStructureMain: React.FC = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      </Tooltip>
                     </div>
                   </div>
 
@@ -738,9 +745,11 @@ const CurriculumStructureMain: React.FC = () => {
             </div>
 
             <div>
+              <Tooltip content="A short unique identifier for the subject (e.g. MTH, ENG). Used on reports and timetables." side="right">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Subject Code *
               </label>
+              </Tooltip>
               <input
                 type="text"
                 value={newSubject.code}

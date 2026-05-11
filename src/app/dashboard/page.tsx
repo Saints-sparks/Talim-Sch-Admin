@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import DashboardCard from "@/components/DashboardCard";
 import ClassTable from "@/components/ClassTable";
+import { Tooltip } from "@/components/ui/Tooltip";
 import AddClassModal from "@/components/AddClassModal";
 import { useDashboard } from "@/hooks/useDashboard";
 import { Book, BookOpen, Profile, Profile2User } from "@/components/Icons";
@@ -30,24 +31,28 @@ const Dashboard = () => {
           icon: <Book />,
           count: dashboardData.totalClasses,
           label: "Total Number of Classes",
+          tooltip: "Click to view and manage all classes.",
         },
         {
           id: 2,
           icon: <Profile2User />,
           count: dashboardData.totalStudents,
           label: "Total Number of Students",
+          tooltip: "Click to view the full student directory.",
         },
         {
           id: 3,
           icon: <Profile />,
           count: dashboardData.totalTeachers,
           label: "Total Number of Teachers",
+          tooltip: "Click to view the full teacher directory.",
         },
         {
           id: 4,
           icon: <BookOpen />,
           count: dashboardData.totalSubjects,
           label: "Total Number of Subjects",
+          tooltip: "Click to view your curriculum (subjects and courses).",
         },
       ]
     : [];
@@ -188,8 +193,8 @@ const Dashboard = () => {
           {/* Enhanced Dashboard Cards */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 px-6">
             {cards.map((card) => (
+              <Tooltip key={card.id} content={card.tooltip}>
               <div
-                key={card.id}
                 onClick={() => handleCardNavigation(card.id)}
                 className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
               >
@@ -209,6 +214,7 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
+              </Tooltip>
             ))}
           </section>
 

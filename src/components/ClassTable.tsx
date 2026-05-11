@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus } from "react-icons/fi";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { AlertTriangle } from "lucide-react";
 import { ChevronLeft, ChevronRight, Edit2, Eye, Search } from "./Icons";
 import { ChevronDown } from "./Icons";
@@ -88,6 +89,7 @@ const ClassTable: React.FC<ClassTableProps> = ({
             <h3 className="text-[15px] font-semibold text-[#2F2F2F]">
               Classes Management
             </h3>
+            <Tooltip content="Create a new class for students and teachers to be assigned to." side="top">
             <button
               className="px-2 py-1 bg-white hover:bg-gray-200 text-[#393939] rounded-xl font-medium text-[15px] border border-[#E4E4E4] flex items-center gap-2"
               onClick={onAdd}
@@ -95,6 +97,7 @@ const ClassTable: React.FC<ClassTableProps> = ({
               <FiPlus className="w-4 h-4" />
               Add
             </button>
+            </Tooltip>
           </div>
           <div className="flex w-[300px] h-[40px] border border-[#E0E0E0] gap-2 bg-white items-center p-2 rounded-xl text-[#898989]">
             <Search />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/legacy/image";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   CheckCircle2,
   Upload,
@@ -270,6 +271,7 @@ export default function OnboardingPhase1() {
                   )}
                 </div>
                 <div>
+                  <Tooltip content="Recommended: square image, at least 200×200px. Appears on reports and student-facing pages." side="top">
                   <button
                     type="button"
                     onClick={() => logoInputRef.current?.click()}
@@ -278,6 +280,7 @@ export default function OnboardingPhase1() {
                     <Upload className="h-4 w-4" />
                     {logoPreview ? "Change logo" : "Upload school logo"}
                   </button>
+                  </Tooltip>
                   <p className="text-xs text-gray-400 mt-0.5">PNG, JPG up to 5MB</p>
                 </div>
                 <input
@@ -291,7 +294,9 @@ export default function OnboardingPhase1() {
 
               {/* Read-only school fields */}
               <div className="space-y-3">
+                <Tooltip content="This was set during registration. Contact support to change it." side="top">
                 <ReadOnlyField icon={<School className="h-4 w-4" />} label="School name" value={schoolInfo.name} />
+                </Tooltip>
                 <ReadOnlyField icon={<Mail className="h-4 w-4" />} label="Email" value={schoolInfo.email} />
                 <ReadOnlyField icon={<Phone className="h-4 w-4" />} label="Contact phone" value={schoolInfo.phone || "Not set"} />
                 <ReadOnlyField
@@ -343,6 +348,7 @@ export default function OnboardingPhase1() {
                   )}
                 </div>
                 <div>
+                  <Tooltip content="Your photo appears in messages and announcements you send." side="top">
                   <button
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
@@ -351,6 +357,7 @@ export default function OnboardingPhase1() {
                     <Upload className="h-4 w-4" />
                     {avatarPreview ? "Change photo" : "Upload photo"}
                   </button>
+                  </Tooltip>
                   <p className="text-xs text-gray-400 mt-0.5">Optional — PNG, JPG up to 5MB</p>
                 </div>
                 <input
@@ -364,6 +371,7 @@ export default function OnboardingPhase1() {
 
               {/* Editable name fields */}
               <div className="space-y-4">
+                <Tooltip content="This name is shown to teachers, students, and parents across the platform." side="top">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-[#030E18] mb-1.5">First name <span className="text-red-500">*</span></label>
@@ -386,6 +394,7 @@ export default function OnboardingPhase1() {
                     />
                   </div>
                 </div>
+                </Tooltip>
 
                 {/* Read-only contact */}
                 <ReadOnlyField icon={<Mail className="h-4 w-4" />} label="Email" value={user?.email ?? ""} />

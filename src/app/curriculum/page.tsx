@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
 import { apiClient } from "@/lib/apiClient";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Class {
   _id: string;
@@ -334,9 +335,11 @@ const CurriculumDashboardMain: React.FC = () => {
               <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div>
+                    <Tooltip content="A broad area of study (e.g. Mathematics, English Language)." side="right">
                     <p className="text-sm font-medium text-gray-500 mb-1">
                       Total Subjects
                     </p>
+                    </Tooltip>
                     <p className="text-3xl font-bold bg-[#003366] bg-clip-text text-transparent">
                       {loadingKpis ? (
                         <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
@@ -354,9 +357,11 @@ const CurriculumDashboardMain: React.FC = () => {
               <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div>
+                    <Tooltip content="A specific unit or module within a subject (e.g. Algebra, Essay Writing). Assigned to a class." side="right">
                     <p className="text-sm font-medium text-gray-500 mb-1">
                       Total Courses
                     </p>
+                    </Tooltip>
                     <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
                       {loadingKpis ? (
                         <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
@@ -453,6 +458,7 @@ const CurriculumDashboardMain: React.FC = () => {
                   </div>
 
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Tooltip content="Create a new subject area. You can add courses to it afterwards." side="top">
                     <button
                       onClick={() =>
                         router.push("/curriculum/structure?action=add-subject")
@@ -472,7 +478,9 @@ const CurriculumDashboardMain: React.FC = () => {
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                     </button>
+                    </Tooltip>
 
+                    <Tooltip content="Create a course within the selected subject. Choose which class it belongs to." side="top">
                     <button
                       onClick={() =>
                         router.push("/curriculum/structure?action=add-course")
@@ -492,6 +500,7 @@ const CurriculumDashboardMain: React.FC = () => {
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                     </button>
+                    </Tooltip>
 
                     <button
                       onClick={() => router.push("/curriculum/structure")}

@@ -10,6 +10,7 @@ import {
 } from "@/components/assessment/AssessmentForm.types";
 import TermSelector from "./TermSelector";
 import { assessmentService } from "@/app/services/assessment.service";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;
@@ -294,9 +295,11 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
         {/* Term Selection */}
         <div>
+          <Tooltip content="Filter assessments by academic term. Set the current term in Settings." side="right">
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             Term *
           </label>
+          </Tooltip>
           <div
             className={`rounded-xl border-2 ${
               errors.termId ? "border-red-300" : "border-gray-200"

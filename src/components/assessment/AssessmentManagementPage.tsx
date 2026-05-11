@@ -26,6 +26,7 @@ import {
 import { assessmentService } from "@/app/services/assessment.service";
 import AssessmentList from "@/components/assessment/AssessmentList";
 import AssessmentCreateModal from "@/components/assessment/AssessmentCreateModal";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface AssessmentManagementPageProps {
   terms: Term[] | any[]; // Allow both Term[] and TermResponse[]
@@ -333,6 +334,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-3">
+                  <Tooltip content="Set up an exam, test, or project for the selected term." side="top">
                   <button
                     onClick={() => {
                       setEditingAssessment(null);
@@ -343,6 +345,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                     <FiPlus className="h-4 w-4 mr-2" />
                     Create Assessment
                   </button>
+                  </Tooltip>
                 </div>
               </div>
             </div>

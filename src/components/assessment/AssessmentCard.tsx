@@ -3,6 +3,7 @@
 import React from 'react';
 import { Calendar, Clock, Edit, Trash2, Eye, Users, CheckCircle, XCircle, AlertCircle, PlayCircle } from 'lucide-react';
 import { Assessment, AssessmentStatus } from '@/components/assessment/AssessmentForm.types';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -24,30 +25,35 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
           color: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
           icon: <Clock className="h-3 w-3" />,
           label: 'Pending',
+          tooltip: 'Not yet visible to teachers. Still being prepared.',
         };
       case 'active':
         return {
           color: 'bg-blue-100 text-blue-800 border border-blue-200',
           icon: <PlayCircle className="h-3 w-3" />,
           label: 'Active',
+          tooltip: 'Visible to teachers. Scores can now be entered.',
         };
       case 'completed':
         return {
           color: 'bg-green-100 text-green-800 border border-green-200',
           icon: <CheckCircle className="h-3 w-3" />,
           label: 'Completed',
+          tooltip: 'Scoring period has ended. Results are finalised.',
         };
       case 'cancelled':
         return {
           color: 'bg-red-100 text-red-800 border border-red-200',
           icon: <XCircle className="h-3 w-3" />,
           label: 'Cancelled',
+          tooltip: null,
         };
       default:
         return {
           color: 'bg-gray-100 text-gray-800 border border-gray-200',
           icon: <AlertCircle className="h-3 w-3" />,
           label: status,
+          tooltip: null,
         };
     }
   };
@@ -97,10 +103,19 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
             </p>
           )}
         </div>
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color} ml-3 flex-shrink-0`}>
-          {statusConfig.icon}
-          {statusConfig.label}
-        </span>
+        {statusConfig.tooltip ? (
+          <Tooltip content={statusConfig.tooltip} side="top">
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color} ml-3 flex-shrink-0`}>
+            {statusConfig.icon}
+            {statusConfig.label}
+          </span>
+          </Tooltip>
+        ) : (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color} ml-3 flex-shrink-0`}>
+            {statusConfig.icon}
+            {statusConfig.label}
+          </span>
+        )}
       </div>
 
       {/* Term and Date Info */}

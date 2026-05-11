@@ -1,6 +1,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,11 +32,12 @@ interface MenuItem {
   path: string;
   icon: React.ReactNode;
   label: string;
+  tooltip: string;
   badge?: number;
   hasDropdown?: boolean;
   expanded?: boolean;
   onClick?: (e: React.MouseEvent) => void;
-  subItems?: { path: string; label: string }[];
+  subItems?: { path: string; label: string; tooltip: string }[];
 }
 
 type SidebarProps = React.ComponentProps<"nav"> & {
@@ -67,11 +69,13 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       path: "/dashboard",
       icon: <Dashboard isActive={pathname.startsWith("/dashboard")} />,
       label: "Dashboard",
+      tooltip: "Dashboard",
     },
     {
       path: "/classes",
       icon: <BookOpen isActive={pathname.startsWith("/classes")} />,
       label: "Classes",
+      tooltip: "Classes",
     },
     {
       path: "/curriculum",
@@ -79,6 +83,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         <Note isActive={pathname.startsWith("/curriculum")} />
       ),
       label: "Curriculum",
+      tooltip: "Curriculum (Subjects & Courses)",
     },
     {
       path: "/assessments",
@@ -86,16 +91,19 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         <Chart2 isActive={pathname.startsWith("/assessments")} />
       ),
       label: "Assessments",
+      tooltip: "Assessments",
     },
     {
       path: "/timetable",
       icon: <Calendar2 isActive={pathname.startsWith("/timetable")} />,
       label: "Timetable",
+      tooltip: "Timetable",
     },
     {
       path: "/users",
       icon: <UserGroup isActive={pathname.startsWith("/users")} />,
       label: "Users",
+      tooltip: "Users",
       hasDropdown: true,
       expanded: expandedUsers,
       onClick: (e: React.MouseEvent) => {
@@ -103,14 +111,15 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         setExpandedUsers(!expandedUsers);
       },
       subItems: [
-        { path: "/users/students", label: "Students" },
-        { path: "/users/teachers", label: "Teachers" },
+        { path: "/users/students", label: "Students", tooltip: "Student Directory" },
+        { path: "/users/teachers", label: "Teachers", tooltip: "Teacher Directory" },
       ],
     },
     {
       path: "/announcements",
       icon: <VolumeHigh isActive={pathname.startsWith("/announcements")} />,
       label: "Announcements",
+      tooltip: "Announcements",
     },
     {
       path: "/leave-requests",
@@ -118,6 +127,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         <ClipboardClose isActive={pathname.startsWith("/leave-requests")} />
       ),
       label: "Leave Requests",
+      tooltip: "Leave Requests",
     },
     // {
     //   path: "/complaints",
@@ -127,12 +137,14 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         path: "/messages",
         icon: <Message isActive={pathname.startsWith("/messages")} />,
         label: "Messages",
+        tooltip: "Messages",
       },
     // },
     {
       path: "/settings",
       icon: <Settings isActive={pathname.startsWith("/settings")} />,
       label: "Settings",
+      tooltip: "Academic Year & Term Settings",
     },
   ];
 
@@ -223,6 +235,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
             transition={{ delay: index * 0.05, duration: 0.3 }}
           >
             {item.hasDropdown ? (
+              <Tooltip content={item.tooltip} side="right">
               <motion.div
                 className={cn(
                   "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 relative",
@@ -252,7 +265,9 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                 </motion.div>
                 {/* Active indicator */}
               </motion.div>
+              </Tooltip>
             ) : (
+              <Tooltip content={item.tooltip} side="right">
               <SmoothLink href={item.path}>
                 <motion.div
                   className={cn(
@@ -275,6 +290,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   <span className="font-medium">{item.label}</span>
                 </motion.div>
               </SmoothLink>
+              </Tooltip>
             )}
 
             {/* Sub-items */}
@@ -295,6 +311,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                       exit={{ opacity: 0, x: -10 }}
                       transition={{ delay: subIndex * 0.05, duration: 0.2 }}
                     >
+                      <Tooltip content={subItem.tooltip} side="right">
                       <SmoothLink href={subItem.path}>
                         <motion.div
                           className={cn(
@@ -315,6 +332,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                           )}
                         </motion.div>
                       </SmoothLink>
+                      </Tooltip>
                     </motion.div>
                   ))}
                 </motion.div>

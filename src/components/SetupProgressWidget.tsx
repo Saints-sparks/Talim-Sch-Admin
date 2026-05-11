@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Circle, ArrowRight, Trophy, X, Zap } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useOnboarding, ONBOARDING_STEPS } from "@/context/OnboardingContext";
 
 export default function SetupProgressWidget() {
@@ -56,7 +57,9 @@ export default function SetupProgressWidget() {
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
+            <Tooltip content="Your school setup checklist. Complete all required steps to unlock the full experience." side="right">
             <Zap className="h-4 w-4 text-[#003366]" />
+            </Tooltip>
             <span className="text-sm font-bold text-gray-900">Setup progress</span>
           </div>
           <span className="text-sm font-bold text-[#003366]">{progressPercent}%</span>
@@ -105,12 +108,14 @@ export default function SetupProgressWidget() {
 
       {/* CTA */}
       <div className="border-t border-gray-100 px-5 py-3">
+        <Tooltip content="Resume where you left off in the setup checklist." side="top">
         <button
           onClick={() => router.push("/onboarding/setup")}
           className="flex items-center gap-2 text-sm font-semibold text-[#003366] hover:underline"
         >
           Continue setup <ArrowRight className="h-4 w-4" />
         </button>
+        </Tooltip>
       </div>
     </div>
   );

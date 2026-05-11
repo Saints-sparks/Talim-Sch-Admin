@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Search, X, AlertCircle, Loader2, BookOpen, User } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { Input } from "@/components/ui/input";
 import {
   getTeachers,
@@ -298,9 +299,11 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   </div>
 
                   <div>
+                    <Tooltip content="A short unique identifier for this course (e.g. MTH101). Used on timetables and assessments." side="right">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Course Code *
                     </label>
+                    </Tooltip>
                     <input
                       type="text"
                       value={newCourse.courseCode}

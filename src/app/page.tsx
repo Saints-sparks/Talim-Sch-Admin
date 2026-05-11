@@ -3,6 +3,7 @@
 import Image from "next/legacy/image";
 import { useState } from "react";
 import { Eye, EyeOff, ShieldAlert, AlertCircle, Loader2 } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ModernLoader from "@/components/ModernLoader";
@@ -177,6 +178,7 @@ export default function SignIn() {
 
             {/* Remember me + Forgot */}
             <div className="flex items-center justify-between">
+              <Tooltip content="Stays signed in for 30 days. Uncheck on shared devices." side="right">
               <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -186,6 +188,7 @@ export default function SignIn() {
                 />
                 Keep me signed in
               </label>
+              </Tooltip>
               <a
                 href="/forgot-password"
                 className="text-sm text-[#003366] hover:underline"

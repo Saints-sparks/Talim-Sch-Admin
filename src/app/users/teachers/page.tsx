@@ -9,6 +9,7 @@ import { getClasses, type Class } from "@/app/services/student.service";
 import { toast } from "react-toastify";
 import { ErrorState, EmptyState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const TeachersPage: React.FC = () => {
   const router = useRouter();
@@ -193,12 +194,14 @@ const TeachersPage: React.FC = () => {
               {totalTeachers} teachers
             </span>
           </div>
+          <Tooltip content="Register a teacher account. They will receive login credentials via email." side="top">
           <button
             onClick={toggleModal}
             className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
           >
             <span className="text-lg font-bold">+</span> Add Teacher
           </button>
+          </Tooltip>
         </div>
 
         {/* Filters Row */}
@@ -351,6 +354,7 @@ const TeachersPage: React.FC = () => {
                         >
                           Edit
                         </button>
+                        <Tooltip content="Prevents the teacher from logging in. Their records and history are retained." side="top">
                         <button
                           className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 rounded-b-lg"
                           onClick={() => handleDeactivateTeacher(teacher)}
@@ -358,6 +362,7 @@ const TeachersPage: React.FC = () => {
                         >
                           Deactivate
                         </button>
+                        </Tooltip>
                       </div>
                     )}
                     {/* Avatar or Initials */}
@@ -380,12 +385,13 @@ const TeachersPage: React.FC = () => {
                       </h3>
                       <div className="flex gap-2 mb-3">
                         {getAssignedClasses(teacher).slice(0, 1).map((cls) => (
+                          <Tooltip key={cls._id} content="Classes this teacher is currently assigned to. Manage assignments in the teacher's profile." side="top">
                           <span
-                            key={cls._id}
                             className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded"
                           >
                             {cls.name}
                           </span>
+                          </Tooltip>
                         ))}
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded ${
