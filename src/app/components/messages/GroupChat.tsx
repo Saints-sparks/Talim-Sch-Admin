@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useWebSocketContext } from "@/context/WebSocketContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChats } from "@/hooks/useChats";
 import { chatService } from "@/services/chatServices";
@@ -58,8 +59,11 @@ export default function GroupChat({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fetchedRoomsRef = useRef(new Set<string>());
   const participationCheckedRef = useRef(false);
+  // Ref so socket callback always sees the current roomId without stale closure
+  const currentRoomIdRef = useRef<string | undefined>(undefined);
 
   const { user } = useAuth();
+  const { isConnected, onChatMessage } = useWebSocketContext();
   const {
     messages: chatMessages,
     isLoading,
@@ -126,6 +130,44 @@ export default function GroupChat({
     }
     return String(value);
   }, []);
+
+  // Keep ref in sync so socket callback always has the latest roomId
+  useEffect(() => {
+    currentRoomIdRef.current = roomId;
+  }, [roomId]);
+
+  // Real-time incoming messages via WebSocket
+  useEffect(() => {
+    if (!isConnected || !roomId) return;
+
+    const currentUserId = user?.userId || (user as any)?._id || '';
+
+    const unsub = onChatMessage((message) => {
+      // Ignore messages for other rooms
+      if (message.roomId !== currentRoomIdRef.current) return;
+      // Skip the sender's own message — it was already added optimistically
+      if (message.senderId === currentUserId) return;
+
+      addMessage({
+        _id: message._id,
+        senderId: message.senderId,
+        senderName: message.senderName,
+        content: message.content,
+        roomId: message.roomId,
+        type: message.type || 'text',
+        duration: message.duration,
+        isRead: false,
+        readBy: message.readBy || [],
+        createdAt: new Date(message.timestamp as any),
+        updatedAt: new Date(message.timestamp as any),
+      } as any);
+
+      // Mark as read since the user is actively viewing this room
+      chatService.markMessageAsRead(message._id).catch(console.error);
+    });
+
+    return unsub;
+  }, [isConnected, roomId, onChatMessage, addMessage, user?.userId, (user as any)?._id]);
 
   // Reset participation state when room changes so the check re-runs
   useEffect(() => {

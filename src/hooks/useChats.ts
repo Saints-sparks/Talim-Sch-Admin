@@ -731,6 +731,12 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
             } as any,
           ];
         });
+
+        // Mark as read — user is actively viewing this room
+        const currentUserId = user?.userId || (user as any)?._id;
+        if (message.senderId !== currentUserId) {
+          chatService.markMessageAsRead(message._id).catch(console.error);
+        }
       }
 
       // Update sidebar: refresh last-message preview and bump unread count
