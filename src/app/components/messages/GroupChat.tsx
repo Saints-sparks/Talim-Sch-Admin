@@ -148,10 +148,14 @@ export default function GroupChat({
       // Skip the sender's own message — it was already added optimistically
       if (message.senderId === currentUserId) return;
 
+      // Resolve sender name from participant map when backend omits it
+      const resolvedSenderName =
+        message.senderName || participantNameByIdRef.current.get(message.senderId) || '';
+
       addMessage({
         _id: message._id,
         senderId: message.senderId,
-        senderName: message.senderName,
+        senderName: resolvedSenderName,
         content: message.content,
         roomId: message.roomId,
         type: message.type || 'text',
@@ -311,6 +315,12 @@ export default function GroupChat({
 
     return map;
   }, [room?.participants, extractId]);
+
+  // Keep a ref so the socket handler always reads the latest map without stale closure
+  const participantNameByIdRef = useRef(participantNameById);
+  useEffect(() => {
+    participantNameByIdRef.current = participantNameById;
+  }, [participantNameById]);
 
   // Get user initials for avatar
   const getUserAvatarInitials = useCallback((senderId: string, senderName: string): string => {

@@ -24,9 +24,9 @@ interface UseChatsReturn {
   isLoadingMore: boolean;
   hasMoreMessages: boolean;
   error: string | null;
-  
+
   // Chat room operations
-  fetchChatRooms: (force?: boolean) => Promise<void>;
+  fetchChatRooms: (force?: boolean) => Promise<ChatRoom[]>;
   createChatRoom: (data: CreateChatRoomDto) => Promise<ChatRoom | null>;
   createGroupChat: (data: CreateGroupChatDto) => Promise<ChatRoom | null>;
   selectChatRoom: (roomId: string) => Promise<void>;
@@ -118,17 +118,17 @@ export const useChats = (): UseChatsReturn => {
   /**
    * Fetch all chat rooms for the current user (with throttling)
    */
-  const fetchChatRooms = useCallback(async (force = false) => {
+  const fetchChatRooms = useCallback(async (force = false): Promise<ChatRoom[]> => {
     if (!isAuthenticated || !accessToken) {
       setChatRooms([]);
-      return;
+      return [];
     }
 
     // Throttle requests unless forced
     const now = Date.now();
     if (!force && now - lastRoomsFetchRef.current < ROOMS_FETCH_INTERVAL) {
       console.log('⏱️ Skipping chat rooms fetch - too soon');
-      return;
+      return [];
     }
 
     setIsLoading(true);
@@ -144,7 +144,7 @@ export const useChats = (): UseChatsReturn => {
         console.warn('⛔ Blocking room list: current user ID unavailable for membership filter');
         setChatRooms([]);
         setUnreadCount(0);
-        return;
+        return [];
       }
 
       const memberRooms = roomsArray.filter(room => {
@@ -154,22 +154,24 @@ export const useChats = (): UseChatsReturn => {
           return pid === currentUserId;
         });
       });
-      
+
       const sortedRooms = memberRooms.sort((a, b) => {
         const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
         const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
         return new Date(tsB).getTime() - new Date(tsA).getTime();
       });
-      
+
       setChatRooms(sortedRooms);
       lastRoomsFetchRef.current = now;
-      
+      return sortedRooms;
+
     } catch (err: any) {
       console.error('❌ Error in fetchChatRooms:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch chat rooms';
       setError(errorMessage);
       toast.error(errorMessage);
       setChatRooms([]);
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -255,12 +257,13 @@ export const useChats = (): UseChatsReturn => {
       return;
     }
 
-    // Find room in existing list; track resolvedRoom to use in guard (avoids stale re-lookup)
+    // Find room in existing list; if not found, force-fetch and use the returned array
+    // (avoids stale-closure: chatRooms state won't update synchronously inside this callback)
     const room = chatRooms.find(r => r._id === roomId);
     let resolvedRoom = room || null;
     if (!room) {
-      await fetchChatRooms(true); // Force fetch
-      const refreshedRoom = chatRooms.find(r => r._id === roomId);
+      const freshRooms = await fetchChatRooms(true);
+      const refreshedRoom = freshRooms.find(r => r._id === roomId);
       if (!refreshedRoom) {
         setError('Chat room not found');
         return;
@@ -712,6 +715,21 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
 
       // Append incoming message to the open conversation (skip if already present)
       if (activeRoom && message.roomId === activeRoom._id) {
+        // Resolve sender name from participants when the backend omits it
+        let resolvedSenderName = message.senderName;
+        if (!resolvedSenderName && activeRoom.participants) {
+          const participant = (activeRoom.participants as any[]).find((p: any) => {
+            const pid = getParticipantId(p);
+            return pid === message.senderId;
+          });
+          if (participant && typeof participant === 'object') {
+            resolvedSenderName =
+              participant.firstName && participant.lastName
+                ? `${participant.firstName} ${participant.lastName}`.trim()
+                : participant.name || participant.email || '';
+          }
+        }
+
         setMessages(prev => {
           if (prev.some(m => m._id === message._id)) return prev;
           return [
@@ -719,7 +737,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
             {
               _id: message._id,
               senderId: message.senderId,
-              senderName: message.senderName,
+              senderName: resolvedSenderName || message.senderName,
               content: message.content,
               roomId: message.roomId,
               type: message.type,

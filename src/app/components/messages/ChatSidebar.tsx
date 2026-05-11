@@ -66,13 +66,13 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
   const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
   const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
   
-  const { 
-    chatRooms: originalRooms, 
-    isLoading, 
-    error, 
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+
+  const {
+    chatRooms: originalRooms,
+    isLoading,
+    error,
     fetchChatRooms,
-    selectChatRoom,
-    currentRoom,
     unreadCount: totalUnreadCount
   } = useChats();
 
@@ -188,11 +188,8 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
   }, [transformedRooms, filterType, searchTerm]);
 
   const handleSelectChat = (room: DisplayChatRoom) => {
-    selectChatRoom(room.roomId);
-    onSelectChat({ 
-      type: room.type, 
-      room 
-    });
+    setSelectedRoomId(room.roomId);
+    onSelectChat({ type: room.type, room });
   };
 
   const handleFilterChange = (newFilter: "all" | "teachers" | "groups") => {
@@ -358,8 +355,8 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
               <div
                 key={room.roomId}
                 className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 ${
-                  currentRoom?._id === room.roomId 
-                    ? 'bg-blue-50 border border-blue-200 shadow-sm' 
+                  selectedRoomId === room.roomId
+                    ? 'bg-blue-50 border border-blue-200 shadow-sm'
                     : ''
                 } touch-manipulation`}
                 onClick={() => handleSelectChat(room)}
