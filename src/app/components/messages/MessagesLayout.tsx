@@ -74,6 +74,7 @@ export default function MessagesLayout({
         {selectedChat ? (
           selectedChat.type === "group" ? (
             <GroupChat
+              key={selectedChat.room?.roomId}
               replyingMessage={replyingMessage}
               setReplyingMessage={setReplyingMessage}
               openSubMenu={openSubMenu}
@@ -83,6 +84,7 @@ export default function MessagesLayout({
             />
           ) : (
             <PrivateChat
+              key={selectedChat.room?.roomId}
               replyingMessage={replyingMessage}
               setReplyingMessage={setReplyingMessage}
               openSubMenu={openSubMenu}
