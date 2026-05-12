@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import TeachersSkeleton from "@/components/TeachersSkeleton";
@@ -421,120 +422,129 @@ const TeachersPage: React.FC = () => {
               })}
             </div>
 
-            {/* Pagination - Modern design */}
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-gray-200 gap-4 bg-white rounded-lg p-4 shadow-sm">
-              {/* Results Info */}
-              <div className="text-sm text-gray-600">
-                Showing{" "}
-                <span className="font-medium text-gray-900">
-                  {showingStart}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium text-gray-900">
-                  {showingEnd}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium text-gray-900">
-                  {filteredTeachers.length}
-                </span>{" "}
-                teachers
-              </div>
-
-              {/* Pagination Controls */}
-              <div className="flex items-center gap-3">
-                {/* Rows per page */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span>Show:</span>
-                  <select
-                    className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={teachersPerPage}
-                    onChange={(e) => {
-                      setTeachersPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <option value="4">4</option>
-                    <option value="9">9</option>
-                    <option value="18">18</option>
-                    <option value="27">27</option>
-                  </select>
-                </div>
-
-                {/* Page Navigation */}
-                <div className="flex items-center gap-1">
-                  <button
-                    className="p-2 rounded-md border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={safeCurrentPage === 1}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Page Numbers */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (safeCurrentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (safeCurrentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = safeCurrentPage - 2 + i;
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                            safeCurrentPage === pageNum
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
+            <div className="mt-8">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="flex flex-col lg:flex-row justify-between items-center px-8 py-6 gap-6">
+                  <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
+                    Showing{" "}
+                    <span className="font-semibold text-blue-600">
+                      {showingStart}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-semibold text-blue-600">
+                      {showingEnd}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold text-blue-600">
+                      {filteredTeachers.length}
+                    </span>{" "}
+                    teachers
                   </div>
 
-                  <button
-                    className="p-2 rounded-md border border-gray-300 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={safeCurrentPage === totalPages}
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <span className="font-medium">Show:</span>
+                      <select
+                        className="bg-white border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                        value={teachersPerPage}
+                        onChange={(e) => {
+                          setTeachersPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <option value="4">4</option>
+                        <option value="9">9</option>
+                        <option value="18">18</option>
+                        <option value="27">27</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                        disabled={safeCurrentPage === 1}
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        aria-label="Previous page"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </motion.button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (safeCurrentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (safeCurrentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = safeCurrentPage - 2 + i;
+                          }
+
+                          return (
+                            <motion.button
+                              key={pageNum}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`w-10 h-10 text-sm rounded-xl font-medium transition-all flex items-center justify-center ${
+                                safeCurrentPage === pageNum
+                                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                              aria-label={`Go to page ${pageNum}`}
+                            >
+                              {pageNum}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                        disabled={safeCurrentPage === totalPages}
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages)
+                          )
+                        }
+                        aria-label="Next page"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </motion.button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
