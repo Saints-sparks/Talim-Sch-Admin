@@ -422,132 +422,134 @@ const TeachersPage: React.FC = () => {
               })}
             </div>
 
-            <div className="mt-8">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="flex flex-col lg:flex-row justify-between items-center px-8 py-6 gap-6">
-                  <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
-                    Showing{" "}
-                    <span className="font-semibold text-blue-600">
-                      {showingStart}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-semibold text-blue-600">
-                      {showingEnd}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-semibold text-blue-600">
-                      {filteredTeachers.length}
-                    </span>{" "}
-                    teachers
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <span className="font-medium">Show:</span>
-                      <select
-                        className="bg-white border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                        value={teachersPerPage}
-                        onChange={(e) => {
-                          setTeachersPerPage(Number(e.target.value));
-                          setCurrentPage(1);
-                        }}
-                      >
-                        <option value="4">4</option>
-                        <option value="9">9</option>
-                        <option value="18">18</option>
-                        <option value="27">27</option>
-                      </select>
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="flex flex-col lg:flex-row justify-between items-center px-8 py-6 gap-6">
+                    <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
+                      Showing{" "}
+                      <span className="font-semibold text-blue-600">
+                        {showingStart}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-semibold text-blue-600">
+                        {showingEnd}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-semibold text-blue-600">
+                        {filteredTeachers.length}
+                      </span>{" "}
+                      teachers
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-                        disabled={safeCurrentPage === 1}
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
-                        aria-label="Previous page"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <span className="font-medium">Show:</span>
+                        <select
+                          className="bg-white border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                          value={teachersPerPage}
+                          onChange={(e) => {
+                            setTeachersPerPage(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
-                      </motion.button>
-
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (safeCurrentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (safeCurrentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = safeCurrentPage - 2 + i;
-                          }
-
-                          return (
-                            <motion.button
-                              key={pageNum}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`w-10 h-10 text-sm rounded-xl font-medium transition-all flex items-center justify-center ${
-                                safeCurrentPage === pageNum
-                                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
-                              aria-label={`Go to page ${pageNum}`}
-                            >
-                              {pageNum}
-                            </motion.button>
-                          );
-                        })}
+                          <option value="4">4</option>
+                          <option value="9">9</option>
+                          <option value="18">18</option>
+                          <option value="27">27</option>
+                        </select>
                       </div>
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-                        disabled={safeCurrentPage === totalPages}
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(prev + 1, totalPages)
-                          )
-                        }
-                        aria-label="Next page"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                          disabled={safeCurrentPage === 1}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          aria-label="Previous page"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </motion.button>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                        </motion.button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (safeCurrentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (safeCurrentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = safeCurrentPage - 2 + i;
+                            }
+
+                            return (
+                              <motion.button
+                                key={pageNum}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`w-10 h-10 text-sm rounded-xl font-medium transition-all flex items-center justify-center ${
+                                  safeCurrentPage === pageNum
+                                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                                aria-label={`Go to page ${pageNum}`}
+                              >
+                                {pageNum}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                          disabled={safeCurrentPage === totalPages}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            )
+                          }
+                          aria-label="Next page"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </motion.button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>
