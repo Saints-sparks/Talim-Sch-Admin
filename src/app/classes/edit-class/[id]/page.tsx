@@ -204,10 +204,7 @@ const EditClass: React.FC = () => {
       // Show success message
       const successMsg = "Class updated successfully!";
       setSuccessMessage(successMsg);
-      toast.success(successMsg, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success(successMsg);
 
       // Refresh class details to show updated data
       const updatedData = await getClass(classId);
@@ -249,10 +246,7 @@ const EditClass: React.FC = () => {
       }
 
       setErrorMessage(errorMessage);
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -261,10 +255,7 @@ const EditClass: React.FC = () => {
   // Handle teacher assignment (separate Assign Teacher button)
   const handleAssignTeacher = async () => {
     if (!selectedTeacher) {
-      toast.error("Please select a teacher to assign", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error("Please select a teacher to assign");
       return;
     }
 
@@ -290,21 +281,11 @@ const EditClass: React.FC = () => {
           "Teacher assignment appeared successful but classTeacherId is null"
         );
         toast.warning(
-          "Teacher assignment may not have completed properly. Please refresh the page.",
-          {
-            position: "top-right",
-            autoClose: 5000,
-          }
+          "Teacher assignment may not have completed properly. Please refresh the page."
         );
       } else {
         toast.success(
-          `${getTeacherName(
-            selectedTeacher
-          )} has been assigned as class teacher!`,
-          {
-            position: "top-right",
-            autoClose: 4000,
-          }
+          `${getTeacherName(selectedTeacher)} has been assigned as class teacher!`
         );
       }
 
@@ -340,10 +321,7 @@ const EditClass: React.FC = () => {
         errorMessage = error.message;
       }
 
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error(errorMessage);
     } finally {
       setIsAssigningTeacher(false);
     }

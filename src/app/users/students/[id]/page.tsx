@@ -88,16 +88,7 @@ const StudentProfile = () => {
           err instanceof Error ? err.message : "Failed to fetch student data";
         setError(errorMessage);
         console.error("Error fetching student data:", err);
-        toast.error("Error loading student data", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
+        toast.error("Error loading student data");
         if (errorMessage.includes("not found")) {
           router.push("/students");
         }
@@ -166,30 +157,12 @@ const StudentProfile = () => {
 
       await updateStudent(studentId, studentData);
 
-      toast.success("Profile updated successfully", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
+      toast.success("Profile updated successfully");
       setEditMode(false);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to update profile";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

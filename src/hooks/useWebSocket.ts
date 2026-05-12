@@ -418,10 +418,7 @@ export const useWebSocket = (): WebSocketContextType => {
 
       socketRef.current.on("notification", (notification: NotificationData) => {
         // Show toast notification using react-toastify
-        toast.success(`${notification.title}: ${notification.body}`, {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        toast.success(`${notification.title}: ${notification.body}`);
 
         callback(notification);
       });

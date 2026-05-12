@@ -482,10 +482,7 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
 
       socketRef.current.on("notification", (notification: NotificationData) => {
         // Show toast notification for admin
-        toast.success(`${notification.title}: ${notification.body}`, {
-          duration: 4000,
-          position: "top-right",
-        });
+        toast.success(`${notification.title}: ${notification.body}`);
 
         callback(notification);
       });

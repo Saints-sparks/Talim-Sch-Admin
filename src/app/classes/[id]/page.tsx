@@ -207,10 +207,7 @@ const ViewClass: React.FC = () => {
 
       await deleteCourseService(courseId);
 
-      toast.success(`${courseTitle} has been deleted successfully!`, {
-        position: "top-right",
-        autoClose: 4000,
-      });
+      toast.success(`${courseTitle} has been deleted successfully!`);
 
       // Refresh class data to reflect the deletion
       const updatedData = await getClass(classId!);
@@ -237,10 +234,7 @@ const ViewClass: React.FC = () => {
         errorMessage = error.message;
       }
 
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 6000,
-      });
+      toast.error(errorMessage);
     } finally {
       setIsDeletingCourse(null);
     }
