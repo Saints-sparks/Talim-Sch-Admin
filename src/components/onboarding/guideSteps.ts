@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock,
   GraduationCap,
+  LayoutGrid,
   Lightbulb,
   ListTree,
   Megaphone,
@@ -26,10 +27,47 @@ export type GuideStep = {
 export type GuideConfig = {
   id: string;
   pathMatchers: string[];
+  exactOnly?: boolean;
   steps: GuideStep[];
 };
 
 export const guideConfigs: GuideConfig[] = [
+  {
+    id: "classes",
+    pathMatchers: ["/classes"],
+    exactOnly: true,
+    steps: [
+      {
+        target: "classes-header",
+        eyebrow: "Academic setup",
+        title: "Class Management",
+        description:
+          "Classes are the containers for students, courses, teachers, and timetables. Start here before connecting the rest of the school workflow.",
+        icon: LayoutGrid,
+      },
+      {
+        target: "classes-create",
+        title: "Create a Class",
+        description:
+          "Use Add Class to define the class name, grade level, capacity, and description before assigning students or courses.",
+        icon: Lightbulb,
+      },
+      {
+        target: "classes-overview",
+        title: "Review Class Coverage",
+        description:
+          "The class list shows each class with its grade level, course count, student capacity, and last update so admins can audit setup quickly.",
+        icon: UsersRound,
+      },
+      {
+        target: "classes-list",
+        title: "Understand Class Cards",
+        description:
+          "Each class card gives quick access to edit actions and Manage Class, where admins connect students, courses, and teacher relationships.",
+        icon: Settings,
+      },
+    ],
+  },
   {
     id: "students",
     pathMatchers: ["/users/students"],
@@ -358,7 +396,9 @@ export function findGuideConfig(pathname: string) {
   return guideConfigs
     .filter((config) =>
       config.pathMatchers.some(
-        (matcher) => pathname === matcher || pathname.startsWith(`${matcher}/`)
+        (matcher) =>
+          pathname === matcher ||
+          (!config.exactOnly && pathname.startsWith(`${matcher}/`))
       )
     )
     .sort((a, b) => {

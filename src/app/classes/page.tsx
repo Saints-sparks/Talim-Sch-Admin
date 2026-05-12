@@ -157,7 +157,11 @@ export default function Classes() {
       ) : (
         <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
           {/* Enhanced Header with Talim Styling */}
-          <div className="flex-shrink-0 m-6 rounded-2xl" style={{ background: 'linear-gradient(to right, #003366, #004488)' }}>
+          <div
+            data-guide="classes-header"
+            className="flex-shrink-0 m-6 rounded-2xl"
+            style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
+          >
             <div className="px-6 py-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
@@ -177,6 +181,7 @@ export default function Classes() {
                 <div className="flex items-center space-x-3">
                   <Tooltip content="Create a new class. You can assign students, teachers, and courses to it afterwards." side="top">
                   <button
+                    data-guide="classes-create"
                     onClick={toggleModal}
                     className="inline-flex items-center px-6 py-2.5 text-sm font-semibold rounded-xl hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     style={{ backgroundColor: 'white', color: '#003366' }}
@@ -194,7 +199,7 @@ export default function Classes() {
           {/* Enhanced Content Area */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto">
-              <div className="px-6">
+              <div className="px-6" data-guide="classes-overview">
                 {/* Enhanced Stats Dashboard Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   
@@ -223,7 +228,10 @@ export default function Classes() {
                   </div>
                 ) : classes.length === 0 ? (
                   /* Empty State */
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+                  <div
+                    data-guide="classes-list"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
+                  >
                     <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8" style={{ background: 'linear-gradient(135deg, #e6f0ff, #cce0ff)' }}>
                       <FiGrid className="h-12 w-12" style={{ color: '#003366' }} />
                     </div>
@@ -245,7 +253,10 @@ export default function Classes() {
                 ) : (
                   /* Classes Grid */
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div
+                      data-guide="classes-list"
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                    >
                       {displayedClasses.map((classItem, index) => (
                         <div
                           key={classItem._id}
@@ -264,22 +275,26 @@ export default function Classes() {
                                 {classItem.name || 'Class 1'}
                               </h3>
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() =>
-                                    router.push(`/classes/edit-class/${classItem._id}`)
-                                  }
-                                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
-                                  title="Edit"
-                                >
-                                  <FiEdit className="w-4 h-4 text-white" />
-                                </button>
-                                <button
-                                  onClick={() => console.log("delete")}
-                                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
-                                  title="Delete"
-                                >
-                                  <FiTrash className="w-4 h-4 text-white" />
-                                </button>
+                                <Tooltip content="Update the class name, grade level, capacity, or description." side="top">
+                                  <button
+                                    onClick={() =>
+                                      router.push(`/classes/edit-class/${classItem._id}`)
+                                    }
+                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
+                                    aria-label={`Edit ${classItem.name || "class"}`}
+                                  >
+                                    <FiEdit className="w-4 h-4 text-white" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip content="Remove this class record when it is no longer needed." side="top">
+                                  <button
+                                    onClick={() => console.log("delete")}
+                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
+                                    aria-label={`Delete ${classItem.name || "class"}`}
+                                  >
+                                    <FiTrash className="w-4 h-4 text-white" />
+                                  </button>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
@@ -353,13 +368,15 @@ export default function Classes() {
 
                           {/* Card Footer */}
                           <div className="px-4 pb-4">
-                            <button
-                              onClick={() => router.push(`/classes/${classItem._id}`)}
-                              className="w-full text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:opacity-90"
-                              style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
-                            >
-                              Manage Class
-                            </button>
+                            <Tooltip content="Open class details to manage students, courses, and teacher relationships." side="top">
+                              <button
+                                onClick={() => router.push(`/classes/${classItem._id}`)}
+                                className="w-full text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:opacity-90"
+                                style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
+                              >
+                                Manage Class
+                              </button>
+                            </Tooltip>
                           </div>
                         </div>
                       ))}

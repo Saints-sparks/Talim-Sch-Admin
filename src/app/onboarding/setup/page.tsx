@@ -100,6 +100,14 @@ export default function OnboardingSetup() {
           <span className="font-bold text-[#030E18]">School Setup</span>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-[#030E18] shadow-sm transition hover:bg-[#F7F7F7] hover:text-[#003366]"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </button>
           <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
             <span className="font-semibold text-[#003366]">{completedCount}</span>
             <span>/ {totalCount} steps complete</span>
