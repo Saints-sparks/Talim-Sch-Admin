@@ -329,20 +329,21 @@ const Announcement: React.FC = () => {
         <div className="flex h-screen bg-[#F8F8F8]">
           <main className="flex-grow flex flex-col">
             {/* Navigation Header */}
-            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4">
+            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4" data-guide="announcements-header">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
                   <FiMessageSquare className="w-5 h-5 mr-2" />
                   <span className="text-gray-900 font-medium text-xl">
                     Announcements
                   </span>
-                  <span className="text-gray-500">
+                  <span className="text-gray-500" data-guide="announcements-attachments">
                     • Keep your school community informed
                   </span>
                 </div>
                 <Tooltip content="Post a message to all students and staff at your school." side="top">
                 <button
                   onClick={() => setIsModalOpen(true)}
+                  data-guide="announcements-create"
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <FiPlus className="h-4 w-4" />
@@ -355,7 +356,7 @@ const Announcement: React.FC = () => {
             {/* Content Area */}
             <div className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto">
-                <div className="p-6">
+                <div className="p-6" data-guide="announcements-list">
                   {error ? (
                     <div className="max-w-2xl mx-auto">
                       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -439,10 +440,10 @@ const Announcement: React.FC = () => {
                                                 )}
                                               </div>
                                               {announcement.attachment && (
-                                                <div className="flex items-center text-sm text-blue-600">
-                                                  <FiPaperclip className="h-4 w-4 mr-1" />
-                                                  Has attachment
-                                                </div>
+                                                  <div className="flex items-center text-sm text-blue-600">
+                                                    <FiPaperclip className="h-4 w-4 mr-1" />
+                                                    Has attachment
+                                                  </div>
                                               )}
                                             </div>
                                           </div>
@@ -468,6 +469,7 @@ const Announcement: React.FC = () => {
                                           </p>
                                           {announcement.attachment && (
                                             <div className="mt-4 pt-4 border-t border-gray-200">
+                                              <Tooltip content="Open the attached circular, image, or document in a new tab." side="top">
                                               <a
                                                 href={announcement.attachment}
                                                 target="_blank"
@@ -477,6 +479,7 @@ const Announcement: React.FC = () => {
                                                 <FiPaperclip className="h-4 w-4" />
                                                 <span>View Attachment</span>
                                               </a>
+                                              </Tooltip>
                                             </div>
                                           )}
                                         </div>
@@ -552,9 +555,11 @@ const Announcement: React.FC = () => {
           className="space-y-6"
         >
           <div className="space-y-2">
+            <Tooltip content="Use a short, scannable title so recipients understand the update at a glance." side="right">
             <label className="block text-sm font-semibold text-gray-700">
               Title
             </label>
+            </Tooltip>
             <input
               type="text"
               name="title"
@@ -573,9 +578,11 @@ const Announcement: React.FC = () => {
           </div>
 
           <div className="space-y-2">
+            <Tooltip content="Write the full message here. Keep urgent actions and dates near the beginning." side="right">
             <label className="block text-sm font-semibold text-gray-700">
               Content
             </label>
+            </Tooltip>
             <textarea
               name="content"
               value={newAnnouncement.content}

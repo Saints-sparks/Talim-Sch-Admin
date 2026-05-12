@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "@/components/CustomToast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   registerStudent,
   createStudentProfile,
@@ -543,7 +544,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
       }}
     >
-      <div className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+      <div className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300" data-guide="student-create-modal">
         {/* Header */}
         <div className="bg-[#003366] px-6 py-5 text-white flex-shrink-0">
           <div className="flex justify-between items-start mb-5">
@@ -591,7 +592,8 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
 
           {/* Progress Steps */}
-          <div className="relative">
+          <div className="relative" data-guide="student-create-progress">
+            <Tooltip content="Student setup has two stages: account credentials first, then class placement and parent contact details." side="bottom">
             <div className="flex items-center justify-between">
               {/* Progress Line */}
               <div className="absolute top-5 left-0 right-0 h-0.5 bg-blue-400"></div>
@@ -642,12 +644,21 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
               ))}
             </div>
+            </Tooltip>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="p-6">
+          <div className="p-6" data-guide="student-create-fields">
+            <div className="mb-5 rounded-2xl border border-[#F4B740]/30 bg-gradient-to-r from-[#FFF8E8] to-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-[#003366]">
+                Student setup guide
+              </p>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Talim creates the learner account first, then links academic details and guardian information for communication and records.
+              </p>
+            </div>
             {renderPageContent()}
           </div>
         </div>
@@ -680,6 +691,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               Back
             </button>
 
+            <Tooltip content={currentStep === 1 ? "Create the student profile and connect it to the selected class and parent details." : "Save the account details and continue to the student profile step."} side="top">
             <button
               onClick={handleSubmit}
               disabled={isLoading}
@@ -727,6 +739,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </>
               )}
             </button>
+            </Tooltip>
           </div>
         </div>
       </div>

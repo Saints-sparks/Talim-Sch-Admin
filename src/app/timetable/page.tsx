@@ -905,11 +905,12 @@ const Timetable = () => {
     <div className="min-h-screen leading-[120%] p-8">
       {/* Header */}
       <div className=" ">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" data-guide="timetable-header">
           <div>
             <h1 className="text-[19px] font-semibold ">Class Timetable</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-guide="timetable-actions">
+            <Tooltip content="Reload classes, courses, and the selected class timetable after curriculum changes." side="top">
             <button
               onClick={refreshTimetablePage}
               disabled={isLoadingTimetable || isLoadingSubjects || isLoadingClasses}
@@ -924,6 +925,7 @@ const Timetable = () => {
                 }`}
               />
             </button>
+            </Tooltip>
             <Tooltip content="Download the timetable as an Excel file for printing or sharing." side="top">
             <button
               onClick={downloadTimetable}
@@ -937,12 +939,14 @@ const Timetable = () => {
         </div>
 
         {/* Class Selection */}
-        <div className=" bg-white gap-4 p-4 mt-4 mb-6 border border-[#F2F2F2] rounded-xl">
+        <div className=" bg-white gap-4 p-4 mt-4 mb-6 border border-[#F2F2F2] rounded-xl" data-guide="timetable-controls">
           <div className="bg-[#F8F8F8] border border-[#F2F2F2] flex p-6 gap-4 items-center rounded-lg">
             <div className="relative">
+              <Tooltip content="This should match the active academic period for the timetable you are building." side="right">
               <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">
                 Session/Term
               </label>
+              </Tooltip>
               <div className="relative">
                 <select
                   value={selectedClass}
@@ -1005,7 +1009,7 @@ const Timetable = () => {
       {/* Main Content */}
       <div className="flex gap-4 h-[calc(100vh-200px)]">
         {/* Subjects Sidebar */}
-        <div className="w-[182px] bg-white border border-[#F0F0F0] flex flex-col rounded-2xl">
+        <div className="w-[182px] bg-white border border-[#F0F0F0] flex flex-col rounded-2xl" data-guide="timetable-subjects">
           <div className="p-4">
             <h2 className="font-semibold text-[15px]">Subject</h2>
           </div>
@@ -1033,8 +1037,12 @@ const Timetable = () => {
             ) : (
               <div className="space-y-2">
                 {courses.map((course) => (
-                  <div
+                  <Tooltip
                     key={course._id}
+                    content="Drag this course into an empty timetable slot. Its assigned teacher follows it automatically."
+                    side="right"
+                  >
+                  <div
                     draggable
                     onDragStart={() => handleDragStart(course)}
                     className="w-[142px] h-[100px] bg-[#F2F2F2] border border-[#E0E0E0] rounded-xl flex px-2 justify-center flex-col cursor-move hover:bg-gray-100 transition-colors border border-gray-200 hover:shadow-sm"
@@ -1047,6 +1055,7 @@ const Timetable = () => {
                       {getCourseTeacherName(course)}
                     </div>
                   </div>
+                  </Tooltip>
                 ))}
               </div>
             )}
@@ -1054,7 +1063,7 @@ const Timetable = () => {
         </div>
 
         {/* Timetable Grid */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" data-guide="timetable-grid">
           {!selectedClassId ? (
             <EmptyState />
           ) : isLoadingTimetable ? (

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   registerTeacher,
   createTeacherProfile,
@@ -725,7 +726,7 @@ const AddTeacherModal: React.FC<{
         }
       }}
     >
-      <div className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+      <div className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300" data-guide="teacher-create-modal">
         {/* Header */}
         <div className="bg-[#003366] p-6 text-white">
           <div className="flex justify-between items-center">
@@ -785,7 +786,8 @@ const AddTeacherModal: React.FC<{
           </div>
 
           {/* Progress Steps */}
-          <div className="mt-6">
+          <div className="mt-6" data-guide="teacher-create-progress">
+            <Tooltip content="Teacher setup has three stages: login account, personal qualifications, then employment and class availability." side="bottom">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-blue-100">
                 Step {currentStep + 1} of 3: {getStepLabel()}
@@ -794,6 +796,7 @@ const AddTeacherModal: React.FC<{
                 {Math.round(((currentStep + 1) / 3) * 100)}% Complete
               </span>
             </div>
+            </Tooltip>
             <div className="bg-blue-500 bg-opacity-30 rounded-full h-2">
               <div
                 className="bg-white rounded-full h-2 transition-all duration-300 ease-out"
@@ -804,7 +807,17 @@ const AddTeacherModal: React.FC<{
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">{renderStepContent()}</div>
+        <div className="flex-1 overflow-y-auto p-6" data-guide="teacher-create-fields">
+          <div className="mb-5 rounded-2xl border border-[#F4B740]/30 bg-gradient-to-r from-[#FFF8E8] to-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-[#003366]">
+              Teacher setup guide
+            </p>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Create the account first, then complete profile details so this teacher can be assigned to classes, courses, and messages.
+            </p>
+          </div>
+          {renderStepContent()}
+        </div>
 
         {/* Footer */}
         <div className="bg-gray-50 border-t border-gray-200 p-6">
@@ -834,6 +847,7 @@ const AddTeacherModal: React.FC<{
               Back
             </button>
 
+            <Tooltip content={currentStep === 2 ? "Finish the teacher profile and make the account available across Talim." : "Save this stage and continue to the next teacher setup step."} side="top">
             <button
               onClick={handleSubmit}
               className="bg-[#003366] text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -881,6 +895,7 @@ const AddTeacherModal: React.FC<{
                 </>
               )}
             </button>
+            </Tooltip>
           </div>
         </div>
       </div>

@@ -381,7 +381,7 @@ const CurriculumStructureMain: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-5">
+      <div className="bg-white border-b border-gray-200 px-6 py-5" data-guide="curriculum-structure-header">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -413,7 +413,7 @@ const CurriculumStructureMain: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-guide="curriculum-structure-stats">
           <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
               <LayoutList className="w-4 h-4 text-[#003366]" />
@@ -444,7 +444,7 @@ const CurriculumStructureMain: React.FC = () => {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3">
+        <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3" data-guide="curriculum-structure-filters">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -473,6 +473,7 @@ const CurriculumStructureMain: React.FC = () => {
         </div>
 
         {/* Subjects List */}
+        <div data-guide="curriculum-structure-list">
         {filteredSubjects.length > 0 ? (
           <div className="space-y-2">
             {filteredSubjects.map((subject) => {
@@ -488,6 +489,7 @@ const CurriculumStructureMain: React.FC = () => {
                   {/* Subject Row */}
                   <div className="flex items-center gap-3 px-4 py-3.5">
                     {/* Expand toggle */}
+                    <Tooltip content="Expand the subject to view its courses, teachers, and course actions." side="right">
                     <button
                       onClick={() => toggleSubject(subject._id)}
                       className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
@@ -499,6 +501,7 @@ const CurriculumStructureMain: React.FC = () => {
                         <ChevronRight className="w-4 h-4 text-gray-500" />
                       )}
                     </button>
+                    </Tooltip>
 
                     {/* Subject icon */}
                     <div className="w-8 h-8 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
@@ -538,6 +541,7 @@ const CurriculumStructureMain: React.FC = () => {
                         <span className="hidden sm:inline">Add Course</span>
                       </button>
                       </Tooltip>
+                      <Tooltip content="Edit the subject name or code used across courses, reports, and timetables." side="top">
                       <button
                         onClick={(e) => { e.stopPropagation(); openEditSubjectModal(subject); }}
                         className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
@@ -545,6 +549,7 @@ const CurriculumStructureMain: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
+                      </Tooltip>
                       <Tooltip content="Deleting a subject removes all its courses. This cannot be undone." side="top">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject); }}
@@ -592,6 +597,7 @@ const CurriculumStructureMain: React.FC = () => {
                                 </p>
                               )}
                               <div className="flex items-center gap-1 flex-shrink-0">
+                                <Tooltip content="Update the course class, teacher, code, or description." side="top">
                                 <button
                                   onClick={() => openEditCourseModal(course)}
                                   className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
@@ -599,6 +605,8 @@ const CurriculumStructureMain: React.FC = () => {
                                 >
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
+                                </Tooltip>
+                                <Tooltip content="Remove this course from the curriculum structure." side="top">
                                 <button
                                   onClick={() => handleDeleteCourse(course._id)}
                                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -606,11 +614,13 @@ const CurriculumStructureMain: React.FC = () => {
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
+                                </Tooltip>
                               </div>
                             </div>
                           ))}
                           {/* Add course row */}
                           <div className="px-5 py-2.5">
+                            <Tooltip content="Add another class-level course under this subject." side="top">
                             <button
                               onClick={() => openAddCourseModal(subject)}
                               className="flex items-center gap-1.5 text-xs text-[#003366] hover:text-[#002244] font-medium transition-colors"
@@ -618,6 +628,7 @@ const CurriculumStructureMain: React.FC = () => {
                               <Plus className="w-3.5 h-3.5" />
                               Add another course
                             </button>
+                            </Tooltip>
                           </div>
                         </div>
                       ) : (
@@ -629,6 +640,7 @@ const CurriculumStructureMain: React.FC = () => {
                             <p className="text-sm font-medium text-gray-700">No courses yet</p>
                             <p className="text-xs text-gray-500 mt-0.5">Add the first course to this subject</p>
                           </div>
+                          <Tooltip content="Create the first course for this subject so it can be assigned to classes and teachers." side="top">
                           <button
                             onClick={() => openAddCourseModal(subject)}
                             className="flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-sm font-medium"
@@ -636,6 +648,7 @@ const CurriculumStructureMain: React.FC = () => {
                             <Plus className="w-4 h-4" />
                             Add Course
                           </button>
+                          </Tooltip>
                         </div>
                       )}
                     </div>
@@ -674,6 +687,7 @@ const CurriculumStructureMain: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Subject Modal */}

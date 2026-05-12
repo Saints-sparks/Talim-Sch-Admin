@@ -3,10 +3,14 @@
 import {
   BookOpen,
   CalendarDays,
+  Clock,
   GraduationCap,
   Lightbulb,
+  ListTree,
+  Megaphone,
   MessageSquarePlus,
   Settings,
+  UserPlus,
   UsersRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -42,8 +46,8 @@ export const guideConfigs: GuideConfig[] = [
         target: "students-add",
         title: "Create Student Accounts",
         description:
-          "Use Add Student to enrol a learner. The flow creates the student account first, then collects profile and guardian details.",
-        icon: GraduationCap,
+          "Use Add Student to enrol a learner. The modal first creates login credentials, then completes class placement and parent contact details.",
+        icon: UserPlus,
       },
       {
         target: "students-filters",
@@ -77,8 +81,8 @@ export const guideConfigs: GuideConfig[] = [
         target: "teachers-add",
         title: "Create Teacher Accounts",
         description:
-          "Add Teacher registers the login account and then completes the teacher profile used across classes, courses, and messaging.",
-        icon: GraduationCap,
+          "Add Teacher registers the staff login first, then gathers personal, qualification, availability, and class assignment details.",
+        icon: UserPlus,
       },
       {
         target: "teachers-filters",
@@ -236,12 +240,130 @@ export const guideConfigs: GuideConfig[] = [
       },
     ],
   },
+  {
+    id: "curriculum-structure",
+    pathMatchers: ["/curriculum/structure"],
+    steps: [
+      {
+        target: "curriculum-structure-header",
+        eyebrow: "Curriculum structure",
+        title: "Build the Academic Map",
+        description:
+          "This page is where Talim turns broad subjects into class-ready courses that can be assigned to teachers and reused in timetables.",
+        icon: ListTree,
+      },
+      {
+        target: "curriculum-structure-stats",
+        title: "Check Setup Coverage",
+        description:
+          "Use these totals to see whether your school has enough subjects, courses, and classes connected for the current setup.",
+        icon: GraduationCap,
+      },
+      {
+        target: "curriculum-structure-filters",
+        title: "Find a Subject Quickly",
+        description:
+          "Search by subject name or code, then filter by class when you need to audit one part of the curriculum.",
+        icon: Lightbulb,
+      },
+      {
+        target: "curriculum-structure-list",
+        title: "Subject to Course Flow",
+        description:
+          "Create the subject first, expand it, then add courses under it with class and teacher assignments for daily learning.",
+        icon: BookOpen,
+      },
+    ],
+  },
+  {
+    id: "timetable",
+    pathMatchers: ["/timetable"],
+    steps: [
+      {
+        target: "timetable-header",
+        eyebrow: "Class scheduling",
+        title: "Class Timetable",
+        description:
+          "The timetable starts with a selected class, loads the courses assigned to that class, then lets you place each course into weekly time slots.",
+        icon: Clock,
+      },
+      {
+        target: "timetable-controls",
+        title: "Choose the Working Class",
+        description:
+          "Pick the class before scheduling. Talim uses that class to fetch available courses and existing timetable entries.",
+        icon: Settings,
+      },
+      {
+        target: "timetable-subjects",
+        title: "Drag Available Courses",
+        description:
+          "Courses in this panel come from Curriculum. Drag one into an empty slot or use Add Entry for a form-based flow.",
+        icon: BookOpen,
+      },
+      {
+        target: "timetable-grid",
+        title: "Drop, Save, and Review",
+        description:
+          "Each grid cell represents a day and time range. Dropping a course creates the timetable entry and keeps the teacher attached.",
+        icon: CalendarDays,
+      },
+      {
+        target: "timetable-actions",
+        title: "Reuse and Share Schedules",
+        description:
+          "Copy a template to start faster, refresh when data changes, and download the timetable as Excel for printing or sharing.",
+        icon: Lightbulb,
+      },
+    ],
+  },
+  {
+    id: "announcements",
+    pathMatchers: ["/announcements"],
+    steps: [
+      {
+        target: "announcements-header",
+        eyebrow: "School communication",
+        title: "Announcements",
+        description:
+          "Announcements are official school-wide updates for students and staff, with optional attachments for circulars or documents.",
+        icon: Megaphone,
+      },
+      {
+        target: "announcements-create",
+        title: "Create a New Update",
+        description:
+          "Use New Announcement to write the title, message, and optional file before publishing it to the school community.",
+        icon: MessageSquarePlus,
+      },
+      {
+        target: "announcements-list",
+        title: "Review Published Messages",
+        description:
+          "The list keeps each announcement expandable, so admins can quickly scan titles and open the full message when needed.",
+        icon: BookOpen,
+      },
+      {
+        target: "announcements-attachments",
+        title: "Share Supporting Files",
+        description:
+          "When an announcement includes an attachment, recipients can open the file from the expanded announcement.",
+        icon: Lightbulb,
+      },
+    ],
+  },
 ];
 
 export function findGuideConfig(pathname: string) {
-  return guideConfigs.find((config) =>
-    config.pathMatchers.some(
-      (matcher) => pathname === matcher || pathname.startsWith(`${matcher}/`)
+  return guideConfigs
+    .filter((config) =>
+      config.pathMatchers.some(
+        (matcher) => pathname === matcher || pathname.startsWith(`${matcher}/`)
+      )
     )
-  );
+    .sort((a, b) => {
+      const longestA = Math.max(...a.pathMatchers.map((matcher) => matcher.length));
+      const longestB = Math.max(...b.pathMatchers.map((matcher) => matcher.length));
+      return longestB - longestA;
+    })[0];
 }
