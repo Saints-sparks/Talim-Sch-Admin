@@ -93,7 +93,9 @@ const CourseModal: React.FC<CourseModalProps> = ({
           teacherId:
             typeof course.teacherId === "string"
               ? course.teacherId
-              : (course.teacherId as any)?._id || "",
+              : (course.teacherId as any)?.userId?._id ||
+                (course.teacherId as any)?._id ||
+                "",
           classId: course.classId || initialClassId || "",
           subjectId:
             typeof course.subjectId === "string"

@@ -462,7 +462,7 @@ const AddTeacherModal: React.FC<{
 
       case 2:
         return (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Employment Details */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
@@ -523,7 +523,7 @@ const AddTeacherModal: React.FC<{
 
             {/* Teaching Assignments */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -539,36 +539,15 @@ const AddTeacherModal: React.FC<{
                 </svg>
                 Teaching Assignments
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subject to Teach
-                  </label>
-                  <select
-                    name="assignedCourses"
-                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                    value={formData.assignedCourses[0] || ""}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Subject</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="English">English</option>
-                    <option value="Science">Science</option>
-                    <option value="History">History</option>
-                    <option value="Geography">Geography</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Biology">Biology</option>
-                  </select>
-                </div>
-                <div>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="max-w-xl">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Assign to Class
                   </label>
                   <select
                     name="assignedClasses"
                     multiple
-                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
+                    className="w-full min-h-[116px] px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
                     value={formData.assignedClasses}
                     onChange={handleMultiSelectChange}
                   >
@@ -581,13 +560,17 @@ const AddTeacherModal: React.FC<{
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Course and subject assignments can be managed from the
+                    course setup.
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Schedule Information */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -603,7 +586,7 @@ const AddTeacherModal: React.FC<{
                 </svg>
                 Schedule & Availability
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Availability Days
@@ -645,7 +628,7 @@ const AddTeacherModal: React.FC<{
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-4">
                 <div className="flex items-center p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <input
                     type="checkbox"

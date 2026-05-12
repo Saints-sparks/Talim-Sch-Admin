@@ -207,6 +207,17 @@ const Settings: React.FC = () => {
     }
   };
 
+  const openTermModal = () => {
+    const academicYear =
+      selectedAcademicYear ||
+      currentAcademicYear?.year ||
+      uniqueAcademicYears[0]?.year ||
+      "";
+
+    setSelectedAcademicYear(academicYear);
+    setIsTermModalOpen(true);
+  };
+
   const handleAcademicYearSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -230,7 +241,8 @@ const Settings: React.FC = () => {
 
       setAcademicYearForm({ year: "", startDate: "", endDate: "", isCurrent: false, schoolId: "" });
       setIsAcademicYearModalOpen(false);
-      fetchAcademicYears();
+      const updatedAcademicYears = await getAcademicYears().catch(() => []);
+      setAcademicYears(updatedAcademicYears || []);
       toast.success("Academic year created successfully!");
     } catch (error) {
       console.error("Error creating academic year:", error);
@@ -378,9 +390,22 @@ const Settings: React.FC = () => {
 
               {/* Term Selection */}
               <div>
-                <label className="block text-lg font-medium text-[#676767] mb-2">
-                  Select Term
-                </label>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <label className="block text-lg font-medium text-[#676767]">
+                    Select Term
+                  </label>
+                  <Tooltip content="Add a term under the selected academic year." side="top">
+                    <button
+                      type="button"
+                      onClick={openTermModal}
+                      disabled={loading || uniqueAcademicYears.length === 0}
+                      className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Term
+                    </button>
+                  </Tooltip>
+                </div>
                 <div className="relative">
                   <select
                     value={selectedTerm || currentTerm?._id || ""}
