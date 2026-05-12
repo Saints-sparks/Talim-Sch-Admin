@@ -1,7 +1,7 @@
 import { teacherService } from '@/app/services/teacher.service';
 import { Course } from '@/app/services/subjects.service';
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from "@/components/CustomToast";
 
 interface AddCourseModalProps {
   courses: Course[];

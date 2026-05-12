@@ -27,7 +27,7 @@ import {
   teacherService,
   type TeacherById,
 } from "@/app/services/teacher.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { API_ENDPOINTS, API_BASE_URL } from "@/app/lib/api/config";
 import { Loader2 } from "lucide-react";
 

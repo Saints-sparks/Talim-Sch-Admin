@@ -20,8 +20,7 @@ import {
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
 import { getSchoolId } from "../services/school.service";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "@/components/CustomToast";
 import ClassesSkeleton from "@/components/ClassesSkeleton";
 
 const GRADE_OPTIONS = Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`);

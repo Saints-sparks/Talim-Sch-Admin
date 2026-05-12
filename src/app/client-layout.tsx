@@ -4,9 +4,6 @@ import { TransitionProvider } from "@/context/TransitionContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
-import { ToastContainer as ReactToastifyContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
 import { usePathname } from "next/navigation";
 
 import { useEffect, useRef } from "react";
@@ -69,18 +66,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <WebSocketProvider>
               <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
               <ToastContainer toasts={toasts} onRemove={removeToast} />
-              <ReactToastifyContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-              />
             </WebSocketProvider>
           </PageIndicatorProvider>
         </SidebarProvider>

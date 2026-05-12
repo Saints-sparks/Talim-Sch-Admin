@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast, Flip, ToastContainer } from "react-toastify";
+import { toast, Flip, ToastContainer } from "@/components/CustomToast";
 import {
   registerTeacher,
   createTeacherProfile,

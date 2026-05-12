@@ -16,7 +16,7 @@ import {
   ArrowRight,
   Lock,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { authService, type UpdateUserProfilePayload } from "@/app/services/auth.service";

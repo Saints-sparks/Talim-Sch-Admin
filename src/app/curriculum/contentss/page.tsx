@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { API_BASE_URL } from "@/app/lib/api/config";
 import {
   Search,

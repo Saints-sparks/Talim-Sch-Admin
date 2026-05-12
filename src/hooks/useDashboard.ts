@@ -4,7 +4,7 @@ import {
   type SchoolDashboardData,
 } from "../app/services/dashboard.service";
 import { getSchoolId } from "../app/services/school.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 
 interface UseDashboardReturn {
   dashboardData: SchoolDashboardData | null;

@@ -3,8 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { createClass } from "../services/student.service";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "@/components/CustomToast";
 import { useRouter } from "next/navigation";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import DashboardCard from "@/components/DashboardCard";

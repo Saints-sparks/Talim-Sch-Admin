@@ -7,7 +7,7 @@ import {
   getLeaveRequests,
   updateLeaveRequestStatus,
 } from "../services/leave.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import LeaveRequestSkeleton from "@/components/LeaveRequestSkeleton";
 import { Search } from "@/components/Icons";
 import { Tooltip } from "@/components/ui/Tooltip";

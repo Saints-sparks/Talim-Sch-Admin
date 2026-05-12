@@ -21,7 +21,7 @@ import {
   Shield,
   Pencil,
 } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import Image from "next/image";
 import {
@@ -220,7 +220,6 @@ export default function Profile() {
     // Upload
     setIsUploadingImage(true);
     setUploadProgress(0);
-    const toastId = toast.loading("Uploading image...");
 
     try {
       const imageUrl = await uploadToCloudinary(file, (p) => setUploadProgress(Math.round(p)));
@@ -229,12 +228,10 @@ export default function Profile() {
       } else {
         setFormData((prev) => ({ ...prev, adminAvatar: imageUrl }));
       }
-      toast.success("Image uploaded successfully!", { id: toastId });
+      toast.success("Image uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to upload image", {
-        id: toastId,
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to upload image");
       if (target === "logo") {
         setLogoPreview(null);
         setFormData((prev) => ({ ...prev, logo: null }));
@@ -256,9 +253,6 @@ export default function Profile() {
     if (isUploadingImage) { toast.error("Please wait for image upload to complete"); return; }
 
     setIsSubmitting(true);
-    const toastId = toast.loading(
-      section === "school" ? "Updating school information..." : "Updating administrator details..."
-    );
 
     try {
       if (section === "school") {
@@ -301,17 +295,14 @@ export default function Profile() {
       }
 
       toast.success(
-        section === "school" ? "School information updated!" : "Administrator details updated!",
-        { id: toastId }
+        section === "school" ? "School information updated!" : "Administrator details updated!"
       );
       setEditingSection(null);
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update profile", {
-        id: toastId,
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to update profile");
     } finally {
       setIsSubmitting(false);
     }
@@ -335,8 +326,7 @@ export default function Profile() {
   if (isLoadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Toaster position="top-center" />
-        <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
+          <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile</h2>
           <p className="text-gray-500 text-sm">Please wait while we fetch your information…</p>
@@ -488,8 +478,6 @@ export default function Profile() {
   // ─── Main render ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Toaster position="top-center" />
-
       {/* Page title */}
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Profile</h1>
 

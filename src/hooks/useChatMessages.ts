@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { chatService } from '@/services/chatServices';
 import { ChatMessage } from '@/types/chat.types';
-import { toast } from 'react-toastify';
+import { toast } from "@/components/CustomToast";
 
 export interface UseChatMessagesReturn {
   // State

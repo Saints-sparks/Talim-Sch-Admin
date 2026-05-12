@@ -6,7 +6,7 @@ import AddTeacherModal from "@/components/AddTeacherModal";
 import TeachersSkeleton from "@/components/TeachersSkeleton";
 import { Teacher, teacherService } from "@/app/services/teacher.service";
 import { getClasses, type Class } from "@/app/services/student.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { ErrorState, EmptyState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
 import { Tooltip } from "@/components/ui/Tooltip";

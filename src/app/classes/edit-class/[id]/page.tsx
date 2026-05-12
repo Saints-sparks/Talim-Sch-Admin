@@ -14,14 +14,13 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import {
   getClass,
   updateClass,
   assignTeacherToClass,
 } from "../../../services/student.service";
 import { getTeachers, Teacher } from "../../../services/subjects.service";
-import "react-toastify/dist/ReactToastify.css";
 
 const GRADE_OPTIONS = Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`);
 
@@ -147,7 +146,7 @@ const EditClass: React.FC = () => {
           setTeachers(teachersData);
         } catch (teacherError) {
           console.warn("Failed to fetch teachers:", teacherError);
-          toast.warn("Failed to load teachers list");
+          toast.warning("Failed to load teachers list");
         } finally {
           setIsLoadingTeachers(false);
         }

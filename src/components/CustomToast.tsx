@@ -259,3 +259,15 @@ export const useToast = () => {
 
 export { ToastContainer };
 export default Toast;
+
+// Standalone toast object — usable outside React components (services, hooks, etc.)
+export const toast = {
+  success: (message: string, title?: string, duration?: number) =>
+    toastManager.addToast({ type: 'success', message, title, duration }),
+  error: (message: string, title?: string, duration?: number) =>
+    toastManager.addToast({ type: 'error', message, title, duration }),
+  warning: (message: string, title?: string, duration?: number) =>
+    toastManager.addToast({ type: 'warning', message, title, duration }),
+  info: (message: string, title?: string, duration?: number) =>
+    toastManager.addToast({ type: 'info', message, title, duration }),
+};

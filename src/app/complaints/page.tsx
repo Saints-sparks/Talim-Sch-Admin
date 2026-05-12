@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { complaintService } from "@/app/services/complaint.service";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "@/components/CustomToast";
 import ComplaintCard from "../components/ComplaintCard";
 import { Complaint as ComplaintService } from "../services/complaint.service";
 
@@ -108,8 +107,6 @@ const Complaints: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100">
-      <ToastContainer />
-
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Complaints</h1>

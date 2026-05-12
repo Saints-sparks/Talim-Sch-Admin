@@ -12,7 +12,7 @@ import {
   ChatRoomType,
   CursorMessagesResponse
 } from '@/types/chat.types';
-import { toast } from 'react-toastify';
+import { toast } from "@/components/CustomToast";
 
 interface UseChatsReturn {
 // State

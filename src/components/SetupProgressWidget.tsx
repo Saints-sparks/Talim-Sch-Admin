@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Circle, ArrowRight, Trophy, X, Zap } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, Trophy, X, Zap, Rocket } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useOnboarding, ONBOARDING_STEPS } from "@/context/OnboardingContext";
 
@@ -19,9 +19,28 @@ export default function SetupProgressWidget() {
     phase1Completed,
   } = useOnboarding();
 
-  // Hide if admin never started onboarding or fully dismissed after completion
-  if (!phase1Completed) return null;
   if (isFullyComplete && setupDismissed) return null;
+
+  // New users who haven't completed Phase 1 — show a "Get started" CTA
+  if (!phase1Completed) {
+    return (
+      <div className="bg-gradient-to-r from-[#003366] to-[#004080] rounded-2xl shadow-sm p-5 flex items-center gap-4">
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <Rocket className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white">Complete your school setup</p>
+          <p className="text-xs text-blue-200 mt-0.5">Add your first class, teachers, and subjects to get started.</p>
+        </div>
+        <button
+          onClick={() => router.push("/onboarding")}
+          className="flex items-center gap-1.5 bg-white text-[#003366] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors shrink-0"
+        >
+          Start <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
 
   // Show a minimal "all done" badge once fully complete
   if (isFullyComplete) {

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { teacherService } from "@/app/services/teacher.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 
 // Define a type for Class from your API
 interface Class {

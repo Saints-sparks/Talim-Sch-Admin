@@ -17,7 +17,7 @@ import {
   School,
   ChevronDown,
 } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "@/components/CustomToast";
 import {
   AcademicYearResponse,
   TermResponse,
@@ -179,11 +179,8 @@ const Settings: React.FC = () => {
   const fetchAcademicYears = async () => {
     try {
       const response = await getAcademicYears();
-      console.log("academicYears", response);
       setAcademicYears(response || []);
-    } catch (error) {
-      console.error("Error fetching academic years:", error);
-      toast.error("Failed to fetch academic years");
+    } catch {
       setAcademicYears([]);
     } finally {
       setLoading(false);
@@ -193,11 +190,9 @@ const Settings: React.FC = () => {
   const fetchTerms = async () => {
     try {
       const response = await getTerms();
-      console.log("terms", response);
       setTerms(response || []);
-    } catch (error) {
-      console.error("Error fetching terms:", error);
-      toast.error("Failed to fetch terms");
+    } catch {
+      // No terms yet — treat as empty, no error shown
       setTerms([]);
     } finally {
       setLoading(false);
@@ -206,18 +201,15 @@ const Settings: React.FC = () => {
 
   const handleAcademicYearSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const validationError = validateAcademicYear(academicYearForm);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setSubmitting(true);
-
-    const loadingToast = toast.loading("Creating academic year...");
-
     try {
-      // Validate form data
-      const validationError = validateAcademicYear(academicYearForm);
-      if (validationError) {
-        toast.error(validationError, { id: loadingToast });
-        return;
-      }
-
       const academicYearData = {
         year: academicYearForm.year.trim(),
         startDate: formatDate(academicYearForm.startDate),
@@ -228,23 +220,13 @@ const Settings: React.FC = () => {
 
       await createAcademicYear(academicYearData);
 
-      setAcademicYearForm({
-        year: "",
-        startDate: "",
-        endDate: "",
-        isCurrent: false,
-        schoolId: "",
-      });
+      setAcademicYearForm({ year: "", startDate: "", endDate: "", isCurrent: false, schoolId: "" });
       setIsAcademicYearModalOpen(false);
       fetchAcademicYears();
-      toast.success("Academic year created successfully!", {
-        id: loadingToast,
-      });
+      toast.success("Academic year created successfully!");
     } catch (error) {
       console.error("Error creating academic year:", error);
-      toast.error("Failed to create academic year. Please try again.", {
-        id: loadingToast,
-      });
+      toast.error("Failed to create academic year. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -252,28 +234,23 @@ const Settings: React.FC = () => {
 
   const handleTermSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const validationError = validateTerm(termForm);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    const selectedAcademicYearObj = academicYears.find(
+      (year) => year.year === selectedAcademicYear
+    );
+    if (!selectedAcademicYearObj?._id) {
+      toast.error("Selected academic year not found");
+      return;
+    }
+
     setSubmitting(true);
-
-    const loadingToast = toast.loading("Creating term...");
-
     try {
-      // Validate form data
-      const validationError = validateTerm(termForm);
-      if (validationError) {
-        toast.error(validationError, { id: loadingToast });
-        return;
-      }
-
-      // Find the academic year object to get the ID
-      const selectedAcademicYearObj = academicYears.find(
-        (year) => year.year === selectedAcademicYear
-      );
-
-      if (!selectedAcademicYearObj?._id) {
-        toast.error("Selected academic year not found", { id: loadingToast });
-        return;
-      }
-
       const termData = {
         name: termForm.name.trim(),
         startDate: termForm.startDate,
@@ -284,50 +261,34 @@ const Settings: React.FC = () => {
 
       await createTerm(termData);
 
-      setTermForm({
-        name: "",
-        startDate: "",
-        endDate: "",
-        isCurrent: false,
-        academicYearId: "",
-        schoolId: "",
-      });
+      setTermForm({ name: "", startDate: "", endDate: "", isCurrent: false, academicYearId: "", schoolId: "" });
       setSelectedAcademicYear("");
       setIsTermModalOpen(false);
       fetchTerms();
-      toast.success("Term created successfully!", { id: loadingToast });
+      toast.success("Term created successfully!");
     } catch (error) {
       console.error("Error creating term:", error);
-      toast.error("Failed to create term. Please try again.", {
-        id: loadingToast,
-      });
+      toast.error("Failed to create term. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleSave = async () => {
+    if (!selectedTerm) {
+      toast.error("Please select a term to set as current");
+      return;
+    }
+
     setSubmitting(true);
-    const loadingToast = toast.loading("Updating current term...");
-
     try {
-      if (!selectedTerm) {
-        toast.error("Please select a term to set as current", {
-          id: loadingToast,
-        });
-        return;
-      }
-
       await setCurrentTerm(selectedTerm);
-      toast.success("Current term updated successfully!", { id: loadingToast });
+      toast.success("Current term updated successfully!");
       fetchTerms();
-      // Also refresh academic years in case the current one changed
       fetchAcademicYears();
     } catch (error) {
       console.error("Error setting current term:", error);
-      toast.error("Failed to update current term. Please try again.", {
-        id: loadingToast,
-      });
+      toast.error("Failed to update current term. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -339,8 +300,6 @@ const Settings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-center" />
-
       {/* Simple Header */}
       <div className="bg-gray-50">
         <div className="max-w-7xl mx-auto px-10 pt-10">

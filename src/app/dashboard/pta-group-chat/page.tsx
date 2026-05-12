@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import PTAGroupChatMessages from "./PTAGroupChatMessages";
 
 const PTAGroupChatPage = () => {

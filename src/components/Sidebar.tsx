@@ -5,7 +5,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
 import {
   X

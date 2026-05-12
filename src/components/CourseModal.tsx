@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { Search, X, AlertCircle, Loader2, BookOpen, User } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Input } from "@/components/ui/input";

@@ -12,7 +12,7 @@ import {
   X,
   ChevronLeft,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { getClasses, getCoursesBySchool } from "@/app/services/subjects.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

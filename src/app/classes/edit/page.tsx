@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FiEdit, FiChevronLeft, FiGrid } from "react-icons/fi";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "@/components/CustomToast";
 import { Class, getClasses } from "@/app/services/student.service";
 
 export default function EditClassesPage() {

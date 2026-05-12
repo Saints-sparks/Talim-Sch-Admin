@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CurriculumSkeleton from "@/components/CurriculumSkeleton";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import {
   BookOpen,
   GraduationCap,

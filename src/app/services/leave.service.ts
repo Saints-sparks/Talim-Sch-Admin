@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from "../lib/api/config";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 
 export interface LeaveRequest {

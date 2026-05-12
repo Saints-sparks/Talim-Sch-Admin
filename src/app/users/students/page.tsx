@@ -9,7 +9,7 @@ import {
   Student,
 } from "@/app/services/student.service";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import AddStudentModal from "@/components/AddStudentModal";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
 import Avatar from "@/components/Avatar";

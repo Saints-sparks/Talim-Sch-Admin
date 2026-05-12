@@ -29,11 +29,10 @@ import {
   Clock,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { getClass } from "../../services/student.service";
 import { deleteCourseService } from "../../services/subjects.service";
 import CourseModal from "@/components/CourseModal";
-import "react-toastify/dist/ReactToastify.css";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "@/components/ui/Tooltip";

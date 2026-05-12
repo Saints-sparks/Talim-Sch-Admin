@@ -8,7 +8,7 @@ import {
   PlusIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "@/components/CustomToast";
 import {
   deleteCourseService,
   getCoursesBySchool,
@@ -75,8 +75,6 @@ const CourseManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-center" />
-
       <div className="container mx-auto p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>

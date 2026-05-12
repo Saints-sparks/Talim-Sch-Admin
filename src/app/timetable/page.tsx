@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
 import { RefreshCw } from "lucide-react";
 import { ChevronDown } from "lucide-react";

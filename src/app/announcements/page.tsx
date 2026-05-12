@@ -17,7 +17,7 @@ import {
   getAnnouncementsBySender,
   CreateAnnouncementResponse,
 } from "../services/announcement.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import TalimModal from "@/components/ui/TalimModal";
@@ -241,19 +241,15 @@ const Announcement: React.FC = () => {
       setIsUploadingAttachment(true);
       setUploadProgress(0);
 
-      const uploadingToast = toast.loading("Uploading attachment...");
-
       try {
         const attachmentUrl = await uploadFileAttachment(file, (progress) => {
           setUploadProgress(progress);
         });
 
         setNewAnnouncement((prev) => ({ ...prev, attachment: attachmentUrl }));
-        toast.dismiss(uploadingToast);
         toast.success("Attachment uploaded successfully!");
       } catch (error) {
         console.error("Error uploading attachment:", error);
-        toast.dismiss(uploadingToast);
         toast.error(
           error instanceof Error ? error.message : "Failed to upload attachment"
         );

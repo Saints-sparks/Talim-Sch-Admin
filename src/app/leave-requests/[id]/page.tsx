@@ -8,7 +8,7 @@ import {
   getLeaveRequestById,
   updateLeaveRequestStatus,
 } from "@/app/services/leave.service";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 
 // Updated interface to match your actual API response
 interface ApiLeaveRequest {

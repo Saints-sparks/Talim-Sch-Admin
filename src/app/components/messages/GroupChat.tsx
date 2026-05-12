@@ -12,7 +12,7 @@ import GroupMessageBubble from "./GroupMessageBubble";
 import ReplyPreview from "./ReplyPreview";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 
 interface Message {
   _id?: string;

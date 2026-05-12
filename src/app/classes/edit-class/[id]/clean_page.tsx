@@ -18,10 +18,9 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { getClass, updateClass, assignTeacherToClass } from "../../../services/student.service";
 import { getTeachers } from "../../../services/subjects.service";
-import "react-toastify/dist/ReactToastify.css";
 
 interface ClassDetails {
   _id: string;

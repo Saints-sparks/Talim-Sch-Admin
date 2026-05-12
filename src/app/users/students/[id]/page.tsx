@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { FiUpload, FiEdit2, FiSave } from "react-icons/fi";
 import { studentService, updateStudent } from "@/app/services/student.service";
 import { useParams } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { useRouter } from "next/navigation";
 
 interface ProfileData {

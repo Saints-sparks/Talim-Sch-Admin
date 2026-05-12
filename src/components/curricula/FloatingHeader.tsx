@@ -2,7 +2,7 @@
 'use client';
 import { Class } from '@/app/services/student.service';
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from "@/components/CustomToast";
 
 interface FloatingHeaderProps {
   selectedClass: string;

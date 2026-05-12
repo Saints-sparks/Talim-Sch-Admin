@@ -2,7 +2,7 @@
 
 import React, { useState, FormEvent, ChangeEvent } from "react";
 
-import { toast, Flip, ToastContainer } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { API_BASE_URL } from "../../lib/api/config";
 
 interface FormData {

@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '../lib/api/config';
 import { getLocalStorageItem } from '../lib/localStorage';
-import { toast } from 'react-toastify';
+import { toast } from "@/components/CustomToast";
 
 export interface SchoolSettings {
   name: string;

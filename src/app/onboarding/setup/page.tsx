@@ -22,7 +22,7 @@ import {
   ClipboardList,
   LayoutDashboard,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { useOnboarding, ONBOARDING_STEPS, OnboardingStepId } from "@/context/OnboardingContext";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { getSchoolId } from "@/app/services/school.service";

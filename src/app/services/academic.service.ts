@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "../lib/api/config";
 import { getLocalStorageItem } from "../lib/localStorage";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { User } from "@/app/types/user";
 import { apiClient } from "@/lib/apiClient";
 

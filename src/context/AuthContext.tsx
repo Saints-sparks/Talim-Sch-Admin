@@ -9,7 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
-import { toast } from "react-toastify";
+import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 
 interface User {
