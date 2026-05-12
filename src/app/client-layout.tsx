@@ -7,18 +7,41 @@ import { OnboardingProvider } from "@/context/OnboardingContext";
 import { ToastContainer as ReactToastifyContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { SidebarProvider } from "@/context/SidebarContext";
 import LayoutShell from "@/components/LayoutShell";
 import { ToastContainer, useToast } from "@/components/CustomToast";
+import { useOnboardingSync } from "@/hooks/useOnboardingSync";
+
+const SYNC_THROTTLE_MS = 60_000; // re-check at most once per minute
+
+// Silently syncs onboarding progress on login and on every route change
+// (throttled). This means any step completed anywhere in the app is reflected
+// in the checklist within one navigation.
+function OnboardingSyncEffect() {
+  const { syncProgress } = useOnboardingSync();
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const lastSyncAt = useRef(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const now = Date.now();
+    if (now - lastSyncAt.current < SYNC_THROTTLE_MS) return;
+    lastSyncAt.current = now;
+    syncProgress().catch(() => {});
+  }, [pathname, user?.userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
 
 // Inner shell — sits inside AuthProvider so it can read the user's schoolId
 function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { toast, toasts, removeToast } = useToast();
+  const { toasts, removeToast } = useToast();
 
   const noSidebarRoutes = [
     "/",
@@ -39,6 +62,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <OnboardingProvider schoolId={schoolId} serverOnboardingCompleted={user?.onboardingCompleted}>
+      <OnboardingSyncEffect />
       <TransitionProvider>
         <SidebarProvider>
           <PageIndicatorProvider>
