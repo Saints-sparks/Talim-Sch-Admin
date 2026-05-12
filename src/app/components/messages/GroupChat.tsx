@@ -63,7 +63,13 @@ export default function GroupChat({
   const currentRoomIdRef = useRef<string | undefined>(undefined);
 
   const { user } = useAuth();
-  const { isConnected, onChatMessage } = useWebSocketContext();
+  const {
+    isConnected,
+    onChatMessage,
+    joinChatRoom,
+    leaveChatRoom,
+    fetchUnreadCountViaSocket,
+  } = useWebSocketContext();
   const {
     messages: chatMessages,
     isLoading,
@@ -136,6 +142,16 @@ export default function GroupChat({
     currentRoomIdRef.current = roomId;
   }, [roomId]);
 
+  useEffect(() => {
+    if (!isConnected || !roomId || isParticipant !== true) return;
+
+    joinChatRoom(roomId);
+
+    return () => {
+      leaveChatRoom(roomId);
+    };
+  }, [isConnected, roomId, isParticipant, joinChatRoom, leaveChatRoom]);
+
   // Real-time incoming messages via WebSocket
   useEffect(() => {
     if (!isConnected || !roomId) return;
@@ -145,16 +161,17 @@ export default function GroupChat({
     const unsub = onChatMessage((message) => {
       // Ignore messages for other rooms
       if (message.roomId !== currentRoomIdRef.current) return;
+      const senderId = extractId(message.senderId);
       // Skip the sender's own message — it was already added optimistically
-      if (message.senderId === currentUserId) return;
+      if (senderId === currentUserId) return;
 
       // Resolve sender name from participant map when backend omits it
       const resolvedSenderName =
-        message.senderName || participantNameByIdRef.current.get(message.senderId) || '';
+        message.senderName || participantNameByIdRef.current.get(senderId) || '';
 
       addMessage({
         _id: message._id,
-        senderId: message.senderId,
+        senderId,
         senderName: resolvedSenderName,
         content: message.content,
         roomId: message.roomId,
@@ -171,7 +188,33 @@ export default function GroupChat({
     });
 
     return unsub;
-  }, [isConnected, roomId, onChatMessage, addMessage, user?.userId, (user as any)?._id]);
+  }, [isConnected, roomId, onChatMessage, addMessage, extractId, user?.userId, (user as any)?._id]);
+
+  useEffect(() => {
+    if (!roomId || !user || chatMessages.length === 0) return;
+
+    const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
+    let markedAnyMessage = false;
+    chatMessages.forEach((message: any) => {
+      const senderId = extractId(message.senderId);
+      const readBy = Array.isArray(message.readBy)
+        ? message.readBy.map((reader: any) => extractId(reader))
+        : [];
+
+      if (
+        message._id &&
+        senderId !== currentUserId &&
+        !readBy.includes(currentUserId)
+      ) {
+        markedAnyMessage = true;
+        chatService.markMessageAsRead(message._id).catch(console.error);
+      }
+    });
+
+    if (markedAnyMessage) {
+      window.setTimeout(() => fetchUnreadCountViaSocket(currentUserId), 250);
+    }
+  }, [roomId, user, chatMessages, extractId, fetchUnreadCountViaSocket]);
 
   // Reset participation state when room changes so the check re-runs
   useEffect(() => {
@@ -561,6 +604,14 @@ export default function GroupChat({
     };
   }, [room]);
 
+  const roomAvatarInitials = useMemo(() => {
+    if (room?.avatarInfo?.type === "initials" && room.avatarInfo.value) {
+      return room.avatarInfo.value;
+    }
+
+    return getUserInitials(roomInfo.name);
+  }, [room?.avatarInfo, roomInfo.name]);
+
   // If not a participant, show a message
   if (roomId && isParticipant === false && !isLoading) {
     return (
@@ -574,7 +625,7 @@ export default function GroupChat({
           currentUserId={currentUserInfo.id}
           onBack={onBack}
           showBackButton={!!onBack}
-          initials={currentUserInfo.initials}
+          initials={roomAvatarInitials}
         />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
@@ -600,7 +651,7 @@ export default function GroupChat({
         currentUserId={currentUserInfo.id}
         onBack={onBack}
         showBackButton={!!onBack}
-        initials={currentUserInfo.initials}
+        initials={roomAvatarInitials}
         isGroup={true}
         chatRoomId={roomId}
         onAddParticipants={() => {

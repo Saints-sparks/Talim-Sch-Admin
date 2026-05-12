@@ -68,6 +68,9 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
   const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
   
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [locallyReadRoomIds, setLocallyReadRoomIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const {
     chatRooms: originalRooms,
@@ -130,7 +133,9 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
         displayName,
         type: displayType,
         lastMessage,
-        unreadCount: room.unreadCount || 0,
+        unreadCount: locallyReadRoomIds.has(room._id)
+          ? 0
+          : room.unreadCount || 0,
         participants: room.participants?.map((p: any) => {
           if (typeof p === 'string') {
             return {
@@ -157,7 +162,12 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
     }).sort((a, b) => 
       (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
     );
-  }, [originalRooms]);
+  }, [originalRooms, locallyReadRoomIds]);
+
+  const visibleUnreadCount = displayRooms.reduce(
+    (sum, room) => sum + (room.unreadCount || 0),
+    0
+  );
 
   // Apply filters and search to rooms
   useEffect(() => {
@@ -190,6 +200,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
 
   const handleSelectChat = (room: DisplayChatRoom) => {
     setSelectedRoomId(room.roomId);
+    setLocallyReadRoomIds((prev) => new Set(prev).add(room.roomId));
     onSelectChat({ type: room.type, room });
   };
 
@@ -217,9 +228,11 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100 bg-white">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
           Messages
-          {totalUnreadCount > 0 && (
+          {(visibleUnreadCount || totalUnreadCount) > 0 && (
             <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+              {(visibleUnreadCount || totalUnreadCount) > 99
+                ? '99+'
+                : visibleUnreadCount || totalUnreadCount}
             </span>
           )}
         </h2>

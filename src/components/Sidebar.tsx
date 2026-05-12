@@ -7,6 +7,8 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
+import { useWebSocketContext } from "@/context/WebSocketContext";
+import { chatService } from "@/services/chatServices";
 import {
   X
 } from "lucide-react";
@@ -49,7 +51,9 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const router = useRouter();
   const [expandedUsers, setExpandedUsers] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const { user, logout } = useAuth();
+  const { onUnreadMessagesUpdate } = useWebSocketContext();
   const { isMobile, isMobileOpen, setMobileOpen } = useSidebar();
 
   // Auto-collapse Users submenu when navigating away from users pages
@@ -62,6 +66,35 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       setExpandedUsers(true);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadMessageCount(0);
+      return;
+    }
+
+    let isActive = true;
+
+    chatService
+      .getUnreadMessageCount()
+      .then((count) => {
+        if (isActive) setUnreadMessageCount(count);
+      })
+      .catch(() => {
+        if (isActive) setUnreadMessageCount(0);
+      });
+
+    const unsubscribe = onUnreadMessagesUpdate((data) => {
+      if (typeof data.unreadCount === "number") {
+        setUnreadMessageCount(data.unreadCount);
+      }
+    });
+
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
+  }, [user, onUnreadMessagesUpdate]);
 
   // Define menu items with better icons and organization
   const menuItems: MenuItem[] = [
@@ -138,6 +171,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         icon: <Message isActive={pathname.startsWith("/messages")} />,
         label: "Messages",
         tooltip: "Messages",
+        badge: unreadMessageCount,
       },
     // },
     {
@@ -277,6 +311,11 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                     {item.icon}
                   </div>
                   <span className="text-base font-medium">{item.label}</span>
+                  {!!item.badge && item.badge > 0 && (
+                    <span className="ml-auto inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
                 </motion.div>
               </SmoothLink>
               </Tooltip>

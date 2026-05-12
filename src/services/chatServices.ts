@@ -11,33 +11,6 @@ import {
   SearchChatRoomsParams
 } from '@/types/chat.types';
 
-// Helper function to get current user from localStorage
-const getCurrentUser = () => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
-    }
-  } catch (e) {
-    console.error('Error parsing user from localStorage:', e);
-  }
-  return null;
-};
-
-// Helper function to get user display name
-const getUserDisplayName = (user: any): string => {
-  if (!user) return 'You';
-  
-  if (user.firstName && user.lastName) {
-    return `${user.firstName} ${user.lastName}`.trim();
-  } else if (user.firstName) {
-    return user.firstName;
-  } else if (user.email) {
-    return user.email;
-  }
-  return 'You';
-};
-
 class ChatService {
   private readonly baseUrl = '/chat';
 
@@ -67,6 +40,62 @@ class ChatService {
       return `HTTP ${response.status}`;
     }
   }
+
+  private normalizeMessagePayload(payload: any, fallbackRoomId?: string): ChatMessage {
+    const message = payload?.message || payload?.data || payload?.result || payload;
+    const sender = message?.senderId || message?.sender || {};
+    const senderId =
+      typeof sender === 'object' && sender !== null
+        ? sender._id || sender.id || sender.userId || ''
+        : sender || message?.senderId || '';
+    const senderName =
+      message?.senderName ||
+      (sender?.firstName || sender?.lastName
+        ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim()
+        : sender?.name || sender?.email || 'Unknown');
+    const createdAt = message?.createdAt || message?.timestamp || new Date();
+    const updatedAt = message?.updatedAt || message?.timestamp || createdAt;
+
+    return {
+      _id: message?._id || message?.id,
+      senderId: String(senderId),
+      senderName,
+      content: message?.content || message?.text || '',
+      roomId:
+        message?.roomId ||
+        message?.chatRoomId?._id ||
+        message?.chatRoomId ||
+        fallbackRoomId ||
+        '',
+      isRead: message?.isRead || false,
+      readBy: message?.readBy || [],
+      type: message?.type || 'text',
+      duration: message?.duration,
+      createdAt: new Date(createdAt),
+      updatedAt: new Date(updatedAt),
+    };
+  }
+
+  private normalizeCursorMessagesPayload(
+    payload: any,
+    fallbackRoomId: string
+  ): CursorMessagesResponse {
+    const source = payload?.data || payload?.result || payload;
+    const messages = Array.isArray(source?.messages)
+      ? source.messages
+      : Array.isArray(source)
+      ? source
+      : [];
+
+    return {
+      messages: messages.map((message: any) =>
+        this.normalizeMessagePayload(message, fallbackRoomId)
+      ),
+      hasMore: Boolean(source?.hasMore),
+      nextCursor: source?.nextCursor,
+      prevCursor: source?.prevCursor,
+    };
+  }
   
   // Debouncing mechanism
   private pendingRequests: Map<string, Promise<CursorMessagesResponse>> = new Map();
@@ -74,8 +103,8 @@ class ChatService {
   private lastRequestTime: Map<string, number> = new Map();
   private cachedResponses: Map<string, { data: CursorMessagesResponse; timestamp: number }> = new Map();
   
-  // Debounce delay in milliseconds (10 seconds)
-  private readonly DEBOUNCE_DELAY = 10000;
+  // Keep message fetches fresh; in-flight requests are still deduplicated below.
+  private readonly DEBOUNCE_DELAY = 0;
 
   /**
    * Create a new chat room
@@ -397,8 +426,11 @@ class ChatService {
       }
       
       const data = await response.json();
-      console.log(`✅ Request successful for ${cacheKey}, hasMore: ${data.hasMore}`);
-      return data;
+      const normalized = this.normalizeCursorMessagesPayload(data, roomId);
+      console.log(
+        `✅ Request successful for ${cacheKey}, messages: ${normalized.messages.length}, hasMore: ${normalized.hasMore}`
+      );
+      return normalized;
     } catch (error) {
       console.error(`❌ Error in executeMessagesRequest for ${cacheKey}:`, error);
       throw error;
@@ -432,36 +464,11 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
     
     const responseData = await response.json();
     console.log('✅ Raw response data:', responseData);
-    
-    // Get current user info from localStorage (for fallback name)
-    const currentUser = getCurrentUser();
-    const currentUserId = currentUser?.userId || currentUser?._id || '';
-    
-    // Extract senderId properly - it might be an object with _id
-    let senderId = responseData.senderId;
-    if (typeof senderId === 'object' && senderId !== null) {
-      senderId = senderId._id || senderId.toString();
-    }
-    
-    console.log('📨 Extracted senderId:', senderId, 'Current userId:', currentUserId);
-    
-    // Determine sender name
-    let senderName = responseData.senderName || 'Unknown';
-    
-    // Transform backend response
-    const transformedMessage: ChatMessage = {
-      _id: responseData._id || responseData.id,
-      senderId: senderId,  // Use the extracted string ID
-      senderName: senderName,
-      content: responseData.text || responseData.content || '',
-      roomId: responseData.roomId || responseData.chatRoomId || data.chatRoomId,
-      isRead: responseData.isRead || false,
-      readBy: responseData.readBy || [],
-      type: responseData.type || 'text',
-      duration: responseData.duration,
-      createdAt: new Date(responseData.createdAt),
-      updatedAt: new Date(responseData.updatedAt)
-    };
+
+    const transformedMessage = this.normalizeMessagePayload(
+      responseData,
+      data.chatRoomId
+    );
     
     console.log('✅ Transformed message:', transformedMessage);
     
