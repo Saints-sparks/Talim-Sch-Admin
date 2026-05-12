@@ -88,7 +88,11 @@ export const createCourse = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create course: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    const msg = Array.isArray(errorData?.message)
+      ? errorData.message.join(", ")
+      : errorData?.message || `Failed to create course (${response.status})`;
+    throw new Error(msg);
   }
 
   return await response.json();

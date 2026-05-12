@@ -100,7 +100,6 @@ const AddTeacherModal: React.FC<{
         };
         const { userId } = await registerTeacher(registrationData);
         if (userId) {
-          console.log("Created user Id: " + userId);
           toast.success("Teacher account created successfully");
         }
         setUserId(userId);
@@ -130,12 +129,15 @@ const AddTeacherModal: React.FC<{
 
         await createTeacherProfile(userId, profileData);
         toast.success("Teacher Profile created successfully");
-        router.push("/users/teachers");
-        if (onSuccess) await onSuccess();
+        if (onSuccess) {
+          await onSuccess();
+        } else {
+          router.push("/users/teachers");
+        }
       }
     } catch (error) {
-      console.log("Error:", error);
-      toast.error("An error occurred. Please try again.");
+      const msg = error instanceof Error ? error.message : "An error occurred. Please try again.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

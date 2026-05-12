@@ -307,7 +307,11 @@ export const createClass = async (payload: Omit<Class, "_id">) => {
   const response = await apiClient.post(API_ENDPOINTS.CREATE_CLASS, payload);
 
   if (!response.ok) {
-    throw new Error("Class creation failed");
+    const errorData = await response.json().catch(() => null);
+    const msg = Array.isArray(errorData?.message)
+      ? errorData.message.join(", ")
+      : errorData?.message || "Class creation failed";
+    throw new Error(msg);
   }
 
   return response.json() as Promise<Class>;

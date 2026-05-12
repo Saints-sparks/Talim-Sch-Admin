@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
 import {
   registerStudent,
@@ -12,7 +11,6 @@ import {
 import { getSchoolId } from "../app/services/school.service";
 
 const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
@@ -37,9 +35,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
     const fetchClasses = async () => {
       const schoolId = getSchoolId();
-      console.log("Current user data:", localStorage.getItem("user"));
-      console.log("Extracted school ID:", schoolId);
-
       if (!schoolId) {
         toast.error("School ID is required");
         return;
@@ -109,7 +104,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           password: generatedPassword,
         };
 
-        console.log("Sending registration data:", registrationData);
         const { userId } = await registerStudent(registrationData);
         setFormData((prev) => ({ ...prev, password: generatedPassword }));
         setUserId(userId);
@@ -145,11 +139,9 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           password: formData.password, // Include password for onboarding email
         };
 
-        console.log("Sending profile data:", profileData);
         await createStudentProfile(profileData);
         toast.success("Student profile created successfully!");
         onClose();
-        router.push("/users/students");
       }
     } catch (error) {
       console.error("Error:", error);

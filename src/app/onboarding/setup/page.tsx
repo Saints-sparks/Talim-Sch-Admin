@@ -36,7 +36,7 @@ import {
 } from "@/app/services/academic.service";
 import { createClass } from "@/app/services/student.service";
 import { getClasses } from "@/app/services/school.service";
-import { createSubject, createCourse, getSubjectsBySchool } from "@/app/services/subjects.service";
+import { createSubject, createCourse, getSubjectsBySchool, getTeachers } from "@/app/services/subjects.service";
 import { assessmentService } from "@/app/services/assessment.service";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import AddStudentModal from "@/components/AddStudentModal";
@@ -60,6 +60,7 @@ const STEP_ICONS: Record<OnboardingStepId, React.ReactNode> = {
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ClassItem { _id: string; name: string; }
 interface SubjectItem { _id: string; name: string; code: string; }
+interface TeacherItem { _id: string; firstName: string; lastName: string; }
 
 export default function OnboardingSetup() {
   const router = useRouter();
@@ -557,30 +558,35 @@ function CreateSubjectStep({ onComplete }: { onComplete: () => void }) {
 // ─── 6. Create Course ────────────────────────────────────────────────────────
 function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
-  const [form, setForm] = useState({ title: "", description: "", courseCode: "", subjectId: "", classId: "" });
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
+  const [form, setForm] = useState({ title: "", description: "", courseCode: "", subjectId: "", classId: "", teacherId: "" });
 
   useEffect(() => {
-    Promise.all([getClasses(), getSubjectsBySchool()])
-      .then(([cls, subs]) => {
+    Promise.all([getClasses(), getSubjectsBySchool(), getTeachers()])
+      .then(([cls, subs, tchs]) => {
         setClasses(cls);
         setSubjects(subs);
-        if (subs.length > 0) setForm((f) => ({ ...f, subjectId: subs[0]._id }));
-        if (cls.length > 0) setForm((f) => ({ ...f, classId: cls[0]._id }));
+        setTeachers(tchs);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.subjectId || !form.classId) {
-      toast.error("Title, subject and class are required."); return;
-    }
+    if (!form.title.trim()) { toast.error("Course title is required."); return; }
+    if (!form.courseCode.trim()) { toast.error("Course code is required."); return; }
+    if (!form.description.trim()) { toast.error("Description is required."); return; }
+    if (!form.subjectId) { toast.error("Please select a subject."); return; }
+    if (!form.classId) { toast.error("Please select a class."); return; }
+    if (!form.teacherId) { toast.error("Please assign a teacher."); return; }
     setSubmitting(true);
     try {
       const schoolId = getSchoolId() ?? "";
-      await createCourse({ title: form.title, description: form.description, courseCode: form.courseCode, subjectId: form.subjectId, classId: form.classId, schoolId } as any);
+      await createCourse({ title: form.title, description: form.description, courseCode: form.courseCode, subjectId: form.subjectId, classId: form.classId, teacherId: form.teacherId, schoolId } as any);
       toast.success("Course created!");
       onComplete();
     } catch (err: any) {
@@ -592,30 +598,61 @@ function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
 
   return (
     <StepCard stepId="create-course">
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
-        <Field label="Course title" hint="e.g. Advanced Mathematics">
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Advanced Mathematics" className={inputCls} required />
-        </Field>
-        <Field label="Course code" hint="Optional">
-          <input value={form.courseCode} onChange={(e) => setForm({ ...form, courseCode: e.target.value.toUpperCase() })} placeholder="ADV-MATH" className={inputCls} />
-        </Field>
-        <Field label="Subject">
-          <select value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })} className={inputCls} required>
-            <option value="">Select subject</option>
-            {subjects.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
-          </select>
-        </Field>
-        <Field label="Assign to class">
-          <select value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} className={inputCls} required>
-            <option value="">Select class</option>
-            {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
-        </Field>
-        <Field label="Description (optional)">
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Brief description…" className={inputCls} />
-        </Field>
-        <PrimaryBtn loading={submitting}><CheckCircle2 className="h-4 w-4" /> Create Course</PrimaryBtn>
-      </form>
+      {/* Explainer */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 text-sm text-blue-800 leading-relaxed">
+        <p className="font-semibold mb-1">Subjects vs. Courses</p>
+        <p>
+          A <span className="font-medium">Subject</span> is a broad academic area — e.g. <span className="font-medium">Mathematics</span>.
+          A <span className="font-medium">Course</span> is how that subject is delivered to a specific class by a specific teacher.
+        </p>
+        <p className="mt-1.5">
+          For example, Mathematics can have separate courses for <span className="font-medium">Grade 7A</span> (taught by Mr. Okonkwo) and <span className="font-medium">Grade 9B</span> (taught by Ms. Ibrahim) — each with their own assessments, timetable slots, and grading.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading classes, subjects and teachers…
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+          <Field label="Subject">
+            <select value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })} className={inputCls} required>
+              <option value="">Select subject…</option>
+              {subjects.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Assign to class">
+            <select value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })} className={inputCls} required>
+              <option value="">Select class…</option>
+              {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Assign teacher">
+            <select value={form.teacherId} onChange={(e) => setForm({ ...form, teacherId: e.target.value })} className={inputCls} required>
+              <option value="">Select teacher…</option>
+              {teachers.map((t: any) => {
+                const user = typeof t.userId === "object" ? t.userId : null;
+                const name = `${user?.firstName || t.firstName || ""} ${user?.lastName || t.lastName || ""}`.trim() || t.email || "Unknown";
+                return <option key={t._id} value={t._id}>{name}</option>;
+              })}
+            </select>
+            {teachers.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">No teachers found — complete the "Add First Teacher" step first.</p>
+            )}
+          </Field>
+          <Field label="Course title" hint="e.g. Mathematics – Grade 7A">
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Mathematics – Grade 7A" className={inputCls} required />
+          </Field>
+          <Field label="Course code" hint="e.g. MATH-G7A">
+            <input value={form.courseCode} onChange={(e) => setForm({ ...form, courseCode: e.target.value.toUpperCase() })} placeholder="MATH-G7A" className={inputCls} required />
+          </Field>
+          <Field label="Description">
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Brief description of what this course covers…" className={`${inputCls} h-auto`} required />
+          </Field>
+          <PrimaryBtn loading={submitting}><CheckCircle2 className="h-4 w-4" /> Create Course</PrimaryBtn>
+        </form>
+      )}
     </StepCard>
   );
 }
@@ -638,7 +675,13 @@ function CreateAnnouncementStep({ onComplete, onSkip }: { onComplete: () => void
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: form.title.trim(), content: form.content.trim(), senderId: user.userId }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        const msg = Array.isArray(errData?.message)
+          ? errData.message.join(", ")
+          : errData?.message || "Failed to post announcement";
+        throw new Error(msg);
+      }
       toast.success("Announcement posted!");
       onComplete();
     } catch {
@@ -702,9 +745,15 @@ function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.termId) { toast.error("Name and term are required."); return; }
+    if (!form.startDate || !form.endDate) { toast.error("Start and end dates are required."); return; }
+    if (new Date(form.startDate) >= new Date(form.endDate)) { toast.error("End date must be after start date."); return; }
     setSubmitting(true);
     try {
-      await assessmentService.createAssessment(form);
+      await assessmentService.createAssessment({
+        ...form,
+        startDate: new Date(form.startDate).toISOString(),
+        endDate: new Date(form.endDate).toISOString(),
+      });
       toast.success("Assessment created!");
       onComplete();
     } catch (err: any) {
@@ -728,10 +777,10 @@ function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; 
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Start date">
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inputCls} />
+            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={inputCls} required />
           </Field>
           <Field label="End date">
-            <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inputCls} />
+            <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className={inputCls} required />
           </Field>
         </div>
         <div className="flex gap-3">
