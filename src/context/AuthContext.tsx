@@ -77,11 +77,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     apiClient.setAccessToken(token);
     setUser(userData);
 
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("user");
+    if (keepSignedIn) {
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("keepSignedIn", "true");
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("user");
+    } else {
+      // Session-only: cleared automatically when the browser tab/window closes
+      sessionStorage.setItem("accessToken", token);
+      sessionStorage.setItem("user", JSON.stringify(userData));
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      localStorage.setItem("keepSignedIn", "false");
+    }
   };
 
   const clearSession = useCallback((redirectToLogin = false) => {
@@ -103,21 +112,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // ✅ FIXED: Set access token and update user info + localStorage
   const setAccessToken = (token: string | null) => {
     setAccessTokenState(token);
-
-    // Update apiClient with new token
     apiClient.setAccessToken(token);
 
     if (token) {
-      // Store in localStorage for service functions
-      localStorage.setItem("accessToken", token);
-      sessionStorage.removeItem("accessToken");
-      // Get updated user info when token changes
+      // Respect the original keepSignedIn preference when storing the refreshed token
+      const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
+      if (keepSignedIn) {
+        localStorage.setItem("accessToken", token);
+        sessionStorage.removeItem("accessToken");
+      } else {
+        sessionStorage.setItem("accessToken", token);
+        localStorage.removeItem("accessToken");
+      }
       introspectToken(token);
     } else {
-      // Remove from localStorage when clearing token
       clearSession();
     }
   };
@@ -150,8 +160,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         setUser(data.user);
 
-        localStorage.setItem("user", JSON.stringify(data.user));
-        sessionStorage.removeItem("user");
+        const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
+        if (keepSignedIn) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          sessionStorage.removeItem("user");
+        } else {
+          sessionStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.removeItem("user");
+        }
 
         // Trigger auth event for WebSocket
         window.dispatchEvent(

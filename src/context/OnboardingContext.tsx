@@ -190,8 +190,10 @@ export const OnboardingProvider: React.FC<{
   useEffect(() => {
     if (!schoolId) return;
     const local = loadState(schoolId);
-    // Server flag is authoritative for phase1Completed
-    const phase1Completed = serverOnboardingCompleted ?? local.phase1Completed;
+    // Server "true" is authoritative (phase1 IS done).
+    // Server "false" is NOT trusted — the backend PATCH may have failed silently.
+    // If local state says completed, keep it.
+    const phase1Completed = serverOnboardingCompleted === true ? true : local.phase1Completed;
     setState({ ...local, phase1Completed });
   }, [schoolId, serverOnboardingCompleted]);
 

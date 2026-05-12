@@ -70,14 +70,22 @@ const Settings: React.FC = () => {
     schoolId: "",
   });
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("");
-  const [academicYears, setAcademicYears] = useState<AcademicYearResponse[]>(
-    []
-  );
+  const [academicYears, setAcademicYears] = useState<AcademicYearResponse[]>([]);
   const [terms, setTerms] = useState<TermResponse[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+
+  // Deduplicate academic years by year string, keeping the current one when duplicates exist
+  const uniqueAcademicYears = academicYears.reduce<AcademicYearResponse[]>((acc, year) => {
+    const existing = acc.find((y) => y.year === year.year);
+    if (!existing) return [...acc, year];
+    if (year.isCurrent && !existing.isCurrent) {
+      return acc.map((y) => (y.year === year.year ? year : y));
+    }
+    return acc;
+  }, []);
 
   const getSchoolId = (): string => {
     const user = localStorage.getItem("user");
@@ -102,7 +110,7 @@ const Settings: React.FC = () => {
     }
 
     // Check if academic year already exists
-    if (academicYears.some((year) => year.year === data.year.trim())) {
+    if (uniqueAcademicYears.some((year) => year.year === data.year.trim())) {
       return "Academic year already exists";
     }
 
@@ -123,7 +131,7 @@ const Settings: React.FC = () => {
     }
 
     // Check if term name already exists for the selected academic year
-    const selectedYear = academicYears.find(
+    const selectedYear = uniqueAcademicYears.find(
       (year) => year.year === selectedAcademicYear
     );
     if (
@@ -241,7 +249,7 @@ const Settings: React.FC = () => {
       return;
     }
 
-    const selectedAcademicYearObj = academicYears.find(
+    const selectedAcademicYearObj = uniqueAcademicYears.find(
       (year) => year.year === selectedAcademicYear
     );
     if (!selectedAcademicYearObj?._id) {
@@ -295,7 +303,7 @@ const Settings: React.FC = () => {
   };
 
   // Get current academic year and term
-  const currentAcademicYear = academicYears.find((y) => y.isCurrent);
+  const currentAcademicYear = uniqueAcademicYears.find((y) => y.isCurrent);
   const currentTerm = terms.find((t) => t.isCurrent);
 
   return (
@@ -350,10 +358,10 @@ const Settings: React.FC = () => {
                     disabled={loading}
                     className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {academicYears.length === 0 ? (
+                    {uniqueAcademicYears.length === 0 ? (
                       <option value="">No academic years available</option>
                     ) : (
-                      academicYears.map((year) => (
+                      uniqueAcademicYears.map((year) => (
                         <option key={year._id} value={year.year}>
                           {year.year} {year.isCurrent ? "(Current)" : ""}
                         </option>
@@ -412,10 +420,10 @@ const Settings: React.FC = () => {
                       disabled={loading}
                       className="w-full appearance-none bg-white border border-gray-300 rounded px-3 py-2 pr-8 focus:border-gray-400 focus:outline-none transition-all text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {academicYears.length === 0 ? (
+                      {uniqueAcademicYears.length === 0 ? (
                         <option value="">No academic years available</option>
                       ) : (
-                        academicYears.map((year) => (
+                        uniqueAcademicYears.map((year) => (
                           <option key={year._id} value={year.year}>
                             {year.year}
                           </option>
@@ -731,7 +739,7 @@ const Settings: React.FC = () => {
                       required
                     >
                       <option value="">Select Academic Year</option>
-                      {academicYears.map((year) => (
+                      {uniqueAcademicYears.map((year) => (
                         <option key={year._id} value={year.year}>
                           {year.year}
                         </option>
