@@ -4,11 +4,14 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiUsers, FiBook, FiInfo } from "react-icons/fi";
 
+const GRADE_LEVELS = Array.from({ length: 15 }, (_, i) => `Grade ${i + 1}`);
+
 interface AddClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: {
     name: string;
+    gradeLevel: string;
     classCapacity: string;
     classDescription: string;
   }) => Promise<void>;
@@ -23,6 +26,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
+    gradeLevel: "",
     classDescription: "",
     classCapacity: "",
   });
@@ -52,6 +56,10 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
+    if (!formData.gradeLevel) {
+      newErrors.gradeLevel = "Please select a grade level";
+    }
+
     if (!formData.name.trim()) {
       newErrors.name = "Class name is required";
     } else if (formData.name.trim().length < 2) {
@@ -74,6 +82,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
       // Reset form on success
       setFormData({
         name: "",
+        gradeLevel: "",
         classDescription: "",
         classCapacity: "",
       });
@@ -88,6 +97,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
     if (!isCreating) {
       setFormData({
         name: "",
+        gradeLevel: "",
         classDescription: "",
         classCapacity: "",
       });
@@ -153,6 +163,43 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Grade Level */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Grade Level *
+                      </label>
+                      <select
+                        name="gradeLevel"
+                        value={formData.gradeLevel}
+                        onChange={handleInputChange}
+                        disabled={isCreating}
+                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/30 transition-all text-gray-900 disabled:bg-gray-50 disabled:cursor-not-allowed ${
+                          errors.gradeLevel
+                            ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                            : "border-gray-200 focus:border-[#003366]"
+                        }`}
+                        required
+                      >
+                        <option value="">Select grade…</option>
+                        {GRADE_LEVELS.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      {errors.gradeLevel && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-red-600 text-sm mt-1 flex items-center gap-1"
+                        >
+                          <FiInfo className="w-3 h-3" />
+                          {errors.gradeLevel}
+                        </motion.p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        You can have multiple classes per grade — e.g. Grade 7A and Grade 7B.
+                      </p>
+                    </div>
+
                     {/* Class Name */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -281,7 +328,7 @@ const AddClassModal: React.FC<AddClassModalProps> = ({
                 onClick={handleSubmit}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={isCreating || !formData.name.trim()}
+                disabled={isCreating || !formData.name.trim() || !formData.gradeLevel}
                 className="px-8 py-3 bg-[#003366] text-white rounded-xl font-medium hover:bg-[#002244] transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isCreating ? (

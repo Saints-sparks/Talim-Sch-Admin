@@ -82,6 +82,7 @@ const Dashboard = () => {
 
   const handleCreateClass = async (classData: {
     name: string;
+    gradeLevel: string;
     classCapacity: string;
     classDescription: string;
   }) => {

@@ -30,7 +30,9 @@ import {
   createAcademicYear,
   createTerm,
   getTerms,
+  getAcademicYears,
   type TermResponse,
+  type AcademicYearResponse,
 } from "@/app/services/academic.service";
 import { createClass } from "@/app/services/student.service";
 import { getClasses } from "@/app/services/school.service";
@@ -264,9 +266,32 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
   const [subStep, setSubStep] = useState<"year" | "term">("year");
   const [createdYearId, setCreatedYearId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [detecting, setDetecting] = useState(true);
 
   const [yearForm, setYearForm] = useState({ year: "", startDate: "", endDate: "", isCurrent: true });
   const [termForm, setTermForm] = useState({ name: "", startDate: "", endDate: "", isCurrent: true });
+
+  // On mount: check if academic year / term already exist from settings or a prior session
+  useEffect(() => {
+    (async () => {
+      try {
+        const [years, terms] = await Promise.all([getAcademicYears(), getTerms()]);
+        if (terms.length > 0) {
+          // Both year and term exist — auto-complete this step
+          onComplete();
+        } else if (years.length > 0) {
+          // Academic year exists but no term yet — skip to term creation
+          const current = years.find((y: AcademicYearResponse) => y.isCurrent) ?? years[0];
+          setCreatedYearId(current._id);
+          setSubStep("term");
+        }
+      } catch {
+        // Network error — let the user fill in manually
+      } finally {
+        setDetecting(false);
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleYearSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +332,16 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
       setSubmitting(false);
     }
   };
+
+  if (detecting) {
+    return (
+      <StepCard stepId="academic-year">
+        <div className="flex items-center gap-3 py-4 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking existing data…
+        </div>
+      </StepCard>
+    );
+  }
 
   return (
     <StepCard stepId="academic-year">
@@ -371,14 +406,17 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+const GRADE_LEVELS = Array.from({ length: 15 }, (_, i) => `Grade ${i + 1}`);
+
 // ─── 2. Create Class ─────────────────────────────────────────────────────────
 function CreateClassStep({ onComplete }: { onComplete: () => void }) {
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ name: "", classCapacity: "", classDescription: "" });
+  const [form, setForm] = useState({ name: "", gradeLevel: "", classCapacity: "", classDescription: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.error("Class name is required."); return; }
+    if (!form.gradeLevel) { toast.error("Please select a grade level."); return; }
     setSubmitting(true);
     try {
       await createClass(form);
@@ -393,10 +431,21 @@ function CreateClassStep({ onComplete }: { onComplete: () => void }) {
 
   return (
     <StepCard stepId="create-class">
+      <p className="text-sm text-gray-500 mb-4 max-w-sm">
+        A class groups students of the same grade together. You can have multiple classes per grade — e.g. <span className="font-medium">Grade 7A</span> and <span className="font-medium">Grade 7B</span>.
+      </p>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+        <Field label="Grade level">
+          <select value={form.gradeLevel} onChange={(e) => setForm({ ...form, gradeLevel: e.target.value })} className={inputCls} required>
+            <option value="">Select grade…</option>
+            {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </Field>
+        <Tooltip content='The class name identifies this specific group within the grade — e.g. "Grade 7A" or "Grade 7 Gold".' side="right">
         <Field label="Class name" hint="e.g. Grade 7A">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 7A" className={inputCls} required />
         </Field>
+        </Tooltip>
         <Tooltip content="Maximum number of students that can be enrolled in this class." side="right">
         <Field label="Capacity" hint="Maximum number of students">
           <input type="number" value={form.classCapacity} onChange={(e) => setForm({ ...form, classCapacity: e.target.value })} placeholder="30" className={inputCls} />
