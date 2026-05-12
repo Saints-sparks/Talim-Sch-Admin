@@ -90,8 +90,23 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       }
     });
 
+    const handleLocalUnreadUpdate = (event: Event) => {
+      const unreadCount = (event as CustomEvent<{ unreadCount?: number }>).detail
+        ?.unreadCount;
+
+      if (typeof unreadCount === "number") {
+        setUnreadMessageCount(unreadCount);
+      }
+    };
+
+    window.addEventListener("talim:chat-unread-count", handleLocalUnreadUpdate);
+
     return () => {
       isActive = false;
+      window.removeEventListener(
+        "talim:chat-unread-count",
+        handleLocalUnreadUpdate
+      );
       unsubscribe();
     };
   }, [user, onUnreadMessagesUpdate]);

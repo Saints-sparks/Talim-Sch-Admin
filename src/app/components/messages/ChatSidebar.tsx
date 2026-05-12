@@ -23,7 +23,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
-import { useChats } from "@/hooks/useChats";
+import type { UseChatsReturn } from "@/hooks/useChats";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { ChatRoomType } from "@/types/chat.types";
 
@@ -58,10 +58,15 @@ interface DisplayChatRoom {
 
 interface ChatSidebarProps {
   onSelectChat: (chat: { type: "private" | "group"; room?: any }) => void;
+  chats: UseChatsReturn;
   className?: string;
 }
 
-export default function ChatSidebar({ onSelectChat, className = "" }: ChatSidebarProps) {
+export default function ChatSidebar({
+  onSelectChat,
+  chats,
+  className = "",
+}: ChatSidebarProps) {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
@@ -77,8 +82,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
     isLoading,
     error,
     fetchChatRooms,
-    unreadCount: totalUnreadCount
-  } = useChats();
+  } = chats;
 
   // Transform original chat rooms to display format
   const transformedRooms = useMemo(() => {
@@ -133,7 +137,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
         displayName,
         type: displayType,
         lastMessage,
-        unreadCount: locallyReadRoomIds.has(room._id)
+        unreadCount: locallyReadRoomIds.has(room._id) && selectedRoomId === room._id
           ? 0
           : room.unreadCount || 0,
         participants: room.participants?.map((p: any) => {
@@ -162,9 +166,9 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
     }).sort((a, b) => 
       (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
     );
-  }, [originalRooms, locallyReadRoomIds]);
+  }, [originalRooms, locallyReadRoomIds, selectedRoomId]);
 
-  const visibleUnreadCount = displayRooms.reduce(
+  const totalVisibleUnreadCount = transformedRooms.reduce(
     (sum, room) => sum + (room.unreadCount || 0),
     0
   );
@@ -201,6 +205,7 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
   const handleSelectChat = (room: DisplayChatRoom) => {
     setSelectedRoomId(room.roomId);
     setLocallyReadRoomIds((prev) => new Set(prev).add(room.roomId));
+    chats.selectChatRoom(room.roomId).catch(console.error);
     onSelectChat({ type: room.type, room });
   };
 
@@ -228,11 +233,11 @@ export default function ChatSidebar({ onSelectChat, className = "" }: ChatSideba
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100 bg-white">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
           Messages
-          {(visibleUnreadCount || totalUnreadCount) > 0 && (
+          {totalVisibleUnreadCount > 0 && (
             <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-              {(visibleUnreadCount || totalUnreadCount) > 99
+              {totalVisibleUnreadCount > 99
                 ? '99+'
-                : visibleUnreadCount || totalUnreadCount}
+                : totalVisibleUnreadCount}
             </span>
           )}
         </h2>

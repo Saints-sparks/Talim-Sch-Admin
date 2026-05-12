@@ -14,7 +14,7 @@ import {
 } from '@/types/chat.types';
 import { toast } from "@/components/CustomToast";
 
-interface UseChatsReturn {
+export interface UseChatsReturn {
 // State
   chatRooms: ChatRoom[];
   currentRoom: ChatRoom | null;
@@ -90,6 +90,18 @@ export const useChats = (): UseChatsReturn => {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const publishUnreadCount = useCallback((count: number) => {
+    setUnreadCount(count);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('talim:chat-unread-count', {
+          detail: { unreadCount: count },
+        })
+      );
+    }
+  }, []);
   
   // Pagination refs
   const nextCursorRef = useRef<string | undefined>();
@@ -143,7 +155,7 @@ export const useChats = (): UseChatsReturn => {
       if (!currentUserId) {
         console.warn('⛔ Blocking room list: current user ID unavailable for membership filter');
         setChatRooms([]);
-        setUnreadCount(0);
+        publishUnreadCount(0);
         return [];
       }
 
@@ -175,7 +187,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
+  }, [isAuthenticated, accessToken, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId, publishUnreadCount]);
 
   /**
    * Create a new chat room
@@ -330,7 +342,8 @@ export const useChats = (): UseChatsReturn => {
 
       // Mark all messages as read
       response.messages.forEach(msg => {
-        if (msg.senderId !== user?.userId) {
+        const senderId = normalizeId((msg as any).senderId);
+        if (msg._id && senderId !== currentUserId) {
           chatService.markMessageAsRead(msg._id).catch(console.error);
         }
       });
@@ -339,6 +352,12 @@ export const useChats = (): UseChatsReturn => {
       setChatRooms(prev => prev.map(r => 
         r._id === roomId ? { ...r, unreadCount: 0 } : r
       ));
+      chatService
+        .getUnreadMessageCount()
+        .then((count) => {
+          if (isMountedRef.current) publishUnreadCount(count);
+        })
+        .catch(console.error);
     } catch (err: any) {
       console.error('❌ Error loading messages in selectChatRoom:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load messages';
@@ -347,7 +366,7 @@ export const useChats = (): UseChatsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, joinChatRoom, leaveChatRoom, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId]);
+  }, [isAuthenticated, accessToken, chatRooms, fetchChatRooms, joinChatRoom, leaveChatRoom, user?.userId, user?._id, (user as any)?.id, normalizeId, getParticipantId, publishUnreadCount]);
 
 
 
@@ -516,7 +535,7 @@ const markMessageAsRead = useCallback(async (messageId: string) => {
     await chatService.markMessageAsRead(messageId);
     
     // Get current user ID
-    const currentUserId = user?.userId || user?._id || '';
+    const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
     
     if (!currentUserId) return;
     
@@ -526,7 +545,10 @@ const markMessageAsRead = useCallback(async (messageId: string) => {
         ? {
             ...msg,
             // If readBy is string[] (array of user IDs)
-            readBy: [...(msg.readBy || []), currentUserId]
+            readBy: Array.from(new Set([
+              ...(msg.readBy || []).map((reader: any) => normalizeId(reader)),
+              currentUserId
+            ]))
           }
         : msg
     ));
@@ -535,7 +557,7 @@ const markMessageAsRead = useCallback(async (messageId: string) => {
   } catch (err) {
     console.error('Error marking message as read:', err);
   }
-}, [isAuthenticated, accessToken, user?.userId, user?._id]);
+  }, [isAuthenticated, accessToken, user?.userId, user?._id, (user as any)?.id, normalizeId]);
   /**
    * Add participant to a chat room
    */
@@ -661,7 +683,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
    */
   const fetchUnreadCount = useCallback(async (force = false) => {
     if (!isAuthenticated || !accessToken) {
-      setUnreadCount(0);
+      publishUnreadCount(0);
       return;
     }
 
@@ -674,13 +696,13 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
     try {
       const count = await chatService.getUnreadMessageCount();
       if (isMountedRef.current) {
-        setUnreadCount(count);
+        publishUnreadCount(count);
         lastUnreadFetchRef.current = now;
       }
     } catch (err) {
       console.error('Error fetching unread count:', err);
     }
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated, accessToken, publishUnreadCount]);
 
   // Initial fetch on mount and auth change
   useEffect(() => {
@@ -693,13 +715,13 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
       setChatRooms([]);
       setCurrentRoom(null);
       setMessages([]);
-      setUnreadCount(0);
+      publishUnreadCount(0);
     }
 
     return () => {
       isMountedRef.current = false;
     };
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated, accessToken, fetchChatRooms, fetchUnreadCount, publishUnreadCount]);
 
   // Keep currentRoomRef in sync so socket callbacks always see the latest room
   useEffect(() => {
@@ -717,10 +739,11 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
       if (activeRoom && message.roomId === activeRoom._id) {
         // Resolve sender name from participants when the backend omits it
         let resolvedSenderName = message.senderName;
+        const messageSenderId = normalizeId(message.senderId);
         if (!resolvedSenderName && activeRoom.participants) {
           const participant = (activeRoom.participants as any[]).find((p: any) => {
             const pid = getParticipantId(p);
-            return pid === message.senderId;
+            return pid === messageSenderId;
           });
           if (participant && typeof participant === 'object') {
             resolvedSenderName =
@@ -751,9 +774,15 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
         });
 
         // Mark as read — user is actively viewing this room
-        const currentUserId = user?.userId || (user as any)?._id;
-        if (message.senderId !== currentUserId) {
-          chatService.markMessageAsRead(message._id).catch(console.error);
+        const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
+        if (messageSenderId !== currentUserId) {
+          chatService
+            .markMessageAsRead(message._id)
+            .then(() => chatService.getUnreadMessageCount())
+            .then((count) => {
+              if (isMountedRef.current) publishUnreadCount(count);
+            })
+            .catch(console.error);
         }
       }
 
@@ -788,19 +817,27 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
         user?.userId || user?._id || (user as any)?.id
       );
       if (!currentUserId) return;
+      const activeRoom = currentRoomRef.current;
       const memberRooms = data.rooms.filter(room => {
         if (!Array.isArray(room.participants)) return false;
         return room.participants.some(
           (p: any) => getParticipantId(p) === currentUserId
         );
-      });
-      setChatRooms(memberRooms);
+      }).map((room) =>
+        activeRoom?._id === room._id ? { ...room, unreadCount: 0 } : room
+      );
+
+      setChatRooms(memberRooms.sort((a, b) => {
+        const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
+        const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
+        return new Date(tsB as any).getTime() - new Date(tsA as any).getTime();
+      }));
     });
 
     // Global unread badge update (triggered after mark-as-read or new message)
     const unsubUnread = onUnreadMessagesUpdate((data) => {
       if (typeof data.unreadCount === 'number') {
-        setUnreadCount(data.unreadCount);
+        publishUnreadCount(data.unreadCount);
       }
     });
 
@@ -815,6 +852,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
     onChatMessage,
     onChatRoomsUpdate,
     onUnreadMessagesUpdate,
+    publishUnreadCount,
     normalizeId,
     getParticipantId,
     user?.userId,

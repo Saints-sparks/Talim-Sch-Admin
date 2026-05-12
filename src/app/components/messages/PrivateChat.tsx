@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useChats } from "@/hooks/useChats";
+import type { UseChatsReturn } from "@/hooks/useChats";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageBubble from "./PrivateMessageBubble";
@@ -37,6 +37,7 @@ interface PrivateChatProps {
   toggleSubMenu: (index: number, type: string) => void;
   room?: any; // The selected chat room
   onBack?: () => void; // Navigation back to chat list
+  chats: UseChatsReturn;
 }
 
 export default function PrivateChat({
@@ -46,6 +47,7 @@ export default function PrivateChat({
   toggleSubMenu,
   room,
   onBack,
+  chats,
 }: PrivateChatProps) {
   const [messageInput, setMessageInput] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -68,7 +70,7 @@ export default function PrivateChat({
     error,
     refreshMessages,
     selectChatRoom
-  } = useChats();
+  } = chats;
 
   const extractId = useCallback((value: any): string => {
     if (!value) return '';
@@ -210,7 +212,14 @@ const messages = useMemo(() => {
 
   // Select room when room prop changes - with debounce to prevent multiple selections
   useEffect(() => {
-    if (room?.roomId && room.roomId !== selectedRoomRef.current) {
+    if (!room?.roomId) return;
+
+    if (currentRoom?._id === room.roomId) {
+      selectedRoomRef.current = room.roomId;
+      return;
+    }
+
+    if (room.roomId !== selectedRoomRef.current) {
       // Clear any existing timeout
       if (selectRoomTimeoutRef.current) {
         clearTimeout(selectRoomTimeoutRef.current);
@@ -219,10 +228,10 @@ const messages = useMemo(() => {
       selectRoomTimeoutRef.current = setTimeout(() => {
         // Pre-check membership before delegating to selectChatRoom
         if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
-          const currentUserId = user?.userId || user?._id;
+          const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
           if (currentUserId) {
             const isMember = room.participants.some((p: any) => {
-              const pid = typeof p === 'string' ? p : (p.userId || p._id || p.id || p)?.toString?.() || '';
+              const pid = extractId(p?.userId || p?._id || p?.id || p);
               return pid === currentUserId;
             });
             if (!isMember) {
@@ -242,7 +251,7 @@ const messages = useMemo(() => {
         clearTimeout(selectRoomTimeoutRef.current);
       }
     };
-  }, [room?.roomId, selectChatRoom]);
+  }, [room, room?.roomId, currentRoom?._id, selectChatRoom, user, extractId]);
 
 
 // Handle sending a new message

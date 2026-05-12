@@ -4,6 +4,7 @@ import ChatSidebar from "./ChatSidebar";
 import GroupChat from "./GroupChat";
 import PrivateChat from "./PrivateChat";
 import { RealtimeChatRoom } from "@/app/hooks/useRealtimeChat";
+import { useChats } from "@/hooks/useChats";
 
 interface SelectedChat {
   type: "private" | "group";
@@ -25,6 +26,7 @@ export default function MessagesLayout({
 }: MessagesLayoutProps) {
   const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const chats = useChats();
 
   // Detect mobile screen size
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function MessagesLayout({
       } bg-white ${
         !isMobile ? 'border-r border-gray-200' : ''
       } flex flex-col h-full`}>
-        <ChatSidebar onSelectChat={handleSelectChat} />
+        <ChatSidebar onSelectChat={handleSelectChat} chats={chats} />
       </div>
 
       {/* Chat Area - Mobile: Take full container when shown, Desktop: Flexible width */}
@@ -81,6 +83,7 @@ export default function MessagesLayout({
               toggleSubMenu={toggleSubMenu}
               room={selectedChat.room}
               onBack={handleBackToChats}
+              chats={chats}
             />
           ) : (
             <PrivateChat
@@ -91,6 +94,7 @@ export default function MessagesLayout({
               toggleSubMenu={toggleSubMenu}
               room={selectedChat.room}
               onBack={handleBackToChats}
+              chats={chats}
             />
           )
         ) : (

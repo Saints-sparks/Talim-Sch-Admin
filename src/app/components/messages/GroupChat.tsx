@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWebSocketContext } from "@/context/WebSocketContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
-import { useChats } from "@/hooks/useChats";
+import type { UseChatsReturn } from "@/hooks/useChats";
 import { chatService } from "@/services/chatServices";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -40,6 +40,7 @@ interface GroupChatProps {
   toggleSubMenu: (index: number, type: string) => void;
   room?: any;
   onBack?: () => void;
+  chats: UseChatsReturn;
 }
 
 export default function GroupChat({
@@ -49,6 +50,7 @@ export default function GroupChat({
   toggleSubMenu,
   room,
   onBack,
+  chats,
 }: GroupChatProps) {
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -85,8 +87,7 @@ export default function GroupChat({
     removeMessage,
   } = useChatMessages();
 
-  // Use the sendMessage from useChats
-  const { sendMessage } = useChats();
+  const { sendMessage, fetchChatRooms } = chats;
 
   // Get room ID safely
   const getRoomId = useCallback((): string | undefined => {
@@ -184,11 +185,14 @@ export default function GroupChat({
       } as any);
 
       // Mark as read since the user is actively viewing this room
-      chatService.markMessageAsRead(message._id).catch(console.error);
+      chatService
+        .markMessageAsRead(message._id)
+        .then(() => fetchChatRooms(true))
+        .catch(console.error);
     });
 
     return unsub;
-  }, [isConnected, roomId, onChatMessage, addMessage, extractId, user?.userId, (user as any)?._id]);
+  }, [isConnected, roomId, onChatMessage, addMessage, extractId, user?.userId, (user as any)?._id, fetchChatRooms]);
 
   useEffect(() => {
     if (!roomId || !user || chatMessages.length === 0) return;
@@ -213,8 +217,9 @@ export default function GroupChat({
 
     if (markedAnyMessage) {
       window.setTimeout(() => fetchUnreadCountViaSocket(currentUserId), 250);
+      window.setTimeout(() => fetchChatRooms(true), 300);
     }
-  }, [roomId, user, chatMessages, extractId, fetchUnreadCountViaSocket]);
+  }, [roomId, user, chatMessages, extractId, fetchUnreadCountViaSocket, fetchChatRooms]);
 
   // Reset participation state when room changes so the check re-runs
   useEffect(() => {
