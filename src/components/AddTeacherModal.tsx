@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast, Flip, ToastContainer } from "@/components/CustomToast";
+import { toast } from "@/components/CustomToast";
 import {
   registerTeacher,
   createTeacherProfile,
@@ -899,7 +899,6 @@ const AddTeacherModal: React.FC<{
           </div>
         </div>
       </div>
-      <ToastContainer position="top-right" autoClose={5000} transition={Flip} />
     </div>
   );
 };

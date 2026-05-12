@@ -66,17 +66,7 @@ const AddCourse: React.FC = () => {
     const authToken = localStorage.getItem("accessToken");
 
     if (!authToken) {
-      toast.error("Authorization token not found. Please log in again.", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      toast.error("Authorization token not found. Please log in again.");
       setButtonLoader(false);
       return;
     }
@@ -102,17 +92,7 @@ const AddCourse: React.FC = () => {
       const data = await response.json();
       console.log("Response Data:", data);
 
-      toast.success("Course created successfully", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      toast.success("Course created successfully");
 
       setButtonLoader(false);
       resetForm();
@@ -121,24 +101,12 @@ const AddCourse: React.FC = () => {
       setButtonLoader(false);
       const errorMessage =
         error.message || "Something went wrong. Please try again.";
-      toast.error(errorMessage, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        transition: Flip,
-      });
+      toast.error(errorMessage);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <ToastContainer />
-
       <h1 className="text-2xl font-semibold text-gray-800">Add New Course</h1>
 
       {/* Form */}
