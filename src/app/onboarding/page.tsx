@@ -41,11 +41,12 @@ interface SchoolInfo {
 export default function OnboardingPhase1() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
-  const { phase1Completed, completePhase1 } = useOnboarding();
+  const { phase1Completed, completePhase1, isHydrated } = useOnboarding();
 
   const [step, setStep] = useState<Step>(0);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   // School profile state
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({
@@ -73,20 +74,27 @@ export default function OnboardingPhase1() {
 
   // Redirect if Phase 1 already done
   useEffect(() => {
-    if (phase1Completed) {
+    if (isHydrated && phase1Completed) {
       router.replace("/onboarding/setup");
     }
-  }, [phase1Completed, router]);
+  }, [isHydrated, phase1Completed, router]);
 
   // Load school + user profile data
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
+      setLoadingProfile(true);
       try {
+        let hasSchoolProfile = false;
+        let hasPersonalProfile = Boolean(user?.firstName?.trim() && user?.lastName?.trim());
         const schoolId = getSchoolId();
         if (schoolId) {
           const data = await getSchoolDashboard(schoolId);
           const si = data.schoolInfo;
-          setSchoolInfo({
+          hasSchoolProfile = Boolean(si?.name && si?.email);
+          if (cancelled) return;
+          const nextSchoolInfo = {
             name: si?.name ?? "",
             email: si?.email ?? "",
             phone: si?.primaryContacts?.[0]?.phone ?? "",
@@ -94,21 +102,35 @@ export default function OnboardingPhase1() {
             country: si?.location?.country ?? "",
             state: si?.location?.state ?? "",
             logo: si?.logo ?? null,
-          });
+          };
+          setSchoolInfo(nextSchoolInfo);
           if (si?.logo) setLogoPreview(si.logo);
         }
         if (user?.userId) {
           const profile = await authService.getUserProfile(user.userId);
+          if (cancelled) return;
+          hasPersonalProfile = Boolean(profile.firstName?.trim() && profile.lastName?.trim());
           setFirstName(profile.firstName ?? "");
           setLastName(profile.lastName ?? "");
           if (profile.userAvatar) setAvatarPreview(profile.userAvatar);
         }
+
+        if (hasSchoolProfile && hasPersonalProfile) {
+          completePhase1();
+          updateUser({ onboardingCompleted: true });
+          router.replace("/onboarding/setup");
+        }
       } catch {
         // non-critical — proceed with empty fields
+      } finally {
+        if (!cancelled) setLoadingProfile(false);
       }
     };
     load();
-  }, [user?.userId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.userId, user?.firstName, user?.lastName, completePhase1, updateUser, router]);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,7 +199,7 @@ export default function OnboardingPhase1() {
         ...(avatarUrl ? { userAvatar: avatarUrl } : {}),
       };
       await authService.updateUserProfile(payload);
-      updateUser({ firstName: firstName.trim(), lastName: lastName.trim(), userAvatar: avatarUrl ?? undefined });
+      updateUser({ firstName: firstName.trim(), lastName: lastName.trim(), userAvatar: avatarUrl ?? undefined, onboardingCompleted: true });
       completePhase1();
       router.push("/onboarding/setup");
     } catch {
@@ -186,6 +208,14 @@ export default function OnboardingPhase1() {
       setSubmitting(false);
     }
   };
+
+  if (!isHydrated || loadingProfile) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#003366]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">

@@ -8,19 +8,19 @@ export const getLocalStorageItem = (key: string): any | null => {
   if (!isBrowser) return null;
 
   try {
-    // Try to get from localStorage first
-    const localStorageData = localStorage.getItem(key);
-    if (localStorageData !== null && localStorageData !== undefined) {
+    const readStorageValue = (storageData: string | null | undefined) => {
+      if (storageData === null || storageData === undefined) return undefined;
+
       // Special handling for token keys - return raw if JWT
       if (
         (key === "accessToken" || key === "token" || key === "refreshToken") &&
-        localStorageData.startsWith("eyJ")
+        storageData.startsWith("eyJ")
       ) {
-        return localStorageData; // Return raw token if it's a JWT token key
+        return storageData; // Return raw token if it's a JWT token key
       }
       // For user data and other keys, always try to parse as JSON
       try {
-        return JSON.parse(localStorageData);
+        return JSON.parse(storageData);
       } catch (parseError) {
         // If parsing fails, return raw data for tokens
         if (
@@ -28,10 +28,22 @@ export const getLocalStorageItem = (key: string): any | null => {
           key === "token" ||
           key === "refreshToken"
         ) {
-          return localStorageData;
+          return storageData;
         }
         return null;
       }
+    };
+
+    // Try to get from localStorage first
+    const localStorageValue = readStorageValue(localStorage.getItem(key));
+    if (localStorageValue !== undefined) {
+      return localStorageValue;
+    }
+
+    // Then try sessionStorage for session-only logins
+    const sessionStorageValue = readStorageValue(sessionStorage.getItem(key));
+    if (sessionStorageValue !== undefined) {
+      return sessionStorageValue;
     }
 
     // If not in localStorage, try cookies

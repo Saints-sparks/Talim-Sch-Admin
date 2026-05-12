@@ -130,6 +130,7 @@ interface OnboardingState {
 interface OnboardingContextType {
   completedSteps: OnboardingStepId[];
   phase1Completed: boolean;
+  isHydrated: boolean;
   setupDismissed: boolean;
   isStepComplete: (id: OnboardingStepId) => boolean;
   isStepLocked: (id: OnboardingStepId) => boolean;
@@ -176,26 +177,60 @@ const saveState = (schoolId: string, state: OnboardingState) => {
   }
 };
 
+const PHASE_1_STEP_IDS: OnboardingStepId[] = ["school-profile", "personal-profile"];
+
+const markStoredUserOnboardingComplete = () => {
+  if (typeof window === "undefined") return;
+
+  ["localStorage", "sessionStorage"].forEach((storageName) => {
+    const storage = window[storageName as "localStorage" | "sessionStorage"];
+    const raw = storage.getItem("user");
+    if (!raw) return;
+
+    try {
+      storage.setItem(
+        "user",
+        JSON.stringify({ ...JSON.parse(raw), onboardingCompleted: true })
+      );
+    } catch {
+      // ignore malformed stored user
+    }
+  });
+};
+
 export const OnboardingProvider: React.FC<{
   children: React.ReactNode;
   schoolId: string | null;
   serverOnboardingCompleted?: boolean;
-}> = ({ children, schoolId, serverOnboardingCompleted }) => {
+  isAuthLoading?: boolean;
+}> = ({ children, schoolId, serverOnboardingCompleted, isAuthLoading = false }) => {
   const [state, setState] = useState<OnboardingState>({
     completedSteps: [],
     phase1Completed: false,
     setupDismissed: false,
   });
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId) {
+      setIsHydrated(!isAuthLoading);
+      return;
+    }
+
+    setIsHydrated(false);
     const local = loadState(schoolId);
     // Server "true" is authoritative (phase1 IS done).
     // Server "false" is NOT trusted — the backend PATCH may have failed silently.
     // If local state says completed, keep it.
     const phase1Completed = serverOnboardingCompleted === true ? true : local.phase1Completed;
-    setState({ ...local, phase1Completed });
-  }, [schoolId, serverOnboardingCompleted]);
+    const completedSteps = phase1Completed
+      ? Array.from(new Set([...local.completedSteps, ...PHASE_1_STEP_IDS]))
+      : local.completedSteps;
+    const next = { ...local, completedSteps, phase1Completed };
+    setState(next);
+    saveState(schoolId, next);
+    setIsHydrated(true);
+  }, [schoolId, serverOnboardingCompleted, isAuthLoading]);
 
   const persist = useCallback(
     (next: OnboardingState) => {
@@ -231,14 +266,14 @@ export const OnboardingProvider: React.FC<{
   );
 
   const completePhase1 = useCallback(() => {
-    const phase1Ids: OnboardingStepId[] = ["school-profile", "personal-profile"];
-    const merged = Array.from(new Set([...state.completedSteps, ...phase1Ids]));
+    const merged = Array.from(new Set([...state.completedSteps, ...PHASE_1_STEP_IDS]));
     persist({ ...state, completedSteps: merged, phase1Completed: true });
+    markStoredUserOnboardingComplete();
 
     // Notify the server — fire-and-forget, localStorage is the fallback
     try {
       const token = typeof window !== "undefined"
-        ? localStorage.getItem("accessToken")
+        ? localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
         : null;
       if (token) {
         const { API_BASE_URL, API_URLS } = require("@/app/lib/api/config");
@@ -274,6 +309,7 @@ export const OnboardingProvider: React.FC<{
       value={{
         completedSteps: state.completedSteps,
         phase1Completed: state.phase1Completed,
+        isHydrated,
         setupDismissed: state.setupDismissed,
         isStepComplete,
         isStepLocked,

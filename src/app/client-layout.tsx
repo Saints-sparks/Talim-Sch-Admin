@@ -37,7 +37,7 @@ function OnboardingSyncEffect() {
 // Inner shell — sits inside AuthProvider so it can read the user's schoolId
 function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { toasts, removeToast } = useToast();
 
   const noSidebarRoutes = [
@@ -58,7 +58,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
       : null;
 
   return (
-    <OnboardingProvider schoolId={schoolId} serverOnboardingCompleted={user?.onboardingCompleted}>
+    <OnboardingProvider
+      schoolId={schoolId}
+      serverOnboardingCompleted={user?.onboardingCompleted}
+      isAuthLoading={isLoading}
+    >
       <OnboardingSyncEffect />
       <TransitionProvider>
         <SidebarProvider>

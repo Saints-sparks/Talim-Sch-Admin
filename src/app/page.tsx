@@ -15,6 +15,36 @@ type LoginError =
   | { kind: "invalid_credentials" }
   | { kind: "unknown"; message: string };
 
+const getSchoolIdFromUser = (userData: any): string | null => {
+  if (!userData?.schoolId) return null;
+  return typeof userData.schoolId === "string"
+    ? userData.schoolId
+    : userData.schoolId?._id ?? userData.schoolId?.id ?? null;
+};
+
+const hasPhase1ProfileData = (userData: any) => {
+  const hasAdminName = Boolean(userData?.firstName?.trim?.() && userData?.lastName?.trim?.());
+  const hasSchool = Boolean(
+    getSchoolIdFromUser(userData) ||
+      userData?.schoolName?.trim?.() ||
+      userData?.schoolId?.name?.trim?.()
+  );
+
+  return hasAdminName && hasSchool;
+};
+
+const hasLocalPhase1Completion = (schoolId: string | null) => {
+  if (!schoolId) return false;
+
+  try {
+    const onboardingRaw = localStorage.getItem(`onboarding_${schoolId}`);
+    const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
+    return onboardingState?.phase1Completed === true;
+  } catch {
+    return false;
+  }
+};
+
 export default function SignIn() {
   const router = useRouter();
   const { login } = useAuth();
@@ -41,13 +71,10 @@ export default function SignIn() {
         if (userData?.onboardingCompleted) {
           router.push("/dashboard");
         } else {
-          // Check localStorage onboarding state as fallback
-          const schoolId = typeof userData?.schoolId === "string"
-            ? userData.schoolId
-            : userData?.schoolId?._id ?? null;
-          const onboardingRaw = schoolId ? localStorage.getItem(`onboarding_${schoolId}`) : null;
-          const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
-          router.push(onboardingState?.phase1Completed ? "/dashboard" : "/onboarding");
+          const schoolId = getSchoolIdFromUser(userData);
+          const phase1Done =
+            hasLocalPhase1Completion(schoolId) || hasPhase1ProfileData(userData);
+          router.push(phase1Done ? "/onboarding/setup" : "/onboarding");
         }
       }
     } catch (err: any) {

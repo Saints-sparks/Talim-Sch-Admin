@@ -64,14 +64,14 @@ interface TeacherItem { _id: string; firstName: string; lastName: string; }
 
 export default function OnboardingSetup() {
   const router = useRouter();
-  const { isStepComplete, isStepLocked, markStepComplete, progressPercent, completedCount, totalCount, phase1Completed, isFullyComplete } = useOnboarding();
+  const { isStepComplete, isStepLocked, markStepComplete, progressPercent, completedCount, totalCount, phase1Completed, isFullyComplete, isHydrated } = useOnboarding();
 
   const [activeStep, setActiveStep] = useState<OnboardingStepId>("academic-year");
 
   // Redirect if Phase 1 not done
   useEffect(() => {
-    if (!phase1Completed) router.replace("/onboarding");
-  }, [phase1Completed, router]);
+    if (isHydrated && !phase1Completed) router.replace("/onboarding");
+  }, [isHydrated, phase1Completed, router]);
 
   // Auto-advance to first incomplete phase-2 step
   useEffect(() => {
@@ -82,6 +82,14 @@ export default function OnboardingSetup() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phase2Steps = ONBOARDING_STEPS.filter((s) => s.phase === 2);
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#003366]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F2F2F2] flex flex-col">
