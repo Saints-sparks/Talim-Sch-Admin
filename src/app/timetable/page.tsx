@@ -77,6 +77,7 @@ const Timetable = () => {
   const [timetableError, setTimetableError] = useState<string | null>(null);
   const [noTimetable, setNoTimetable] = useState(false);
   const [draggedCourse, setDraggedCourse] = useState<Course | null>(null);
+  const coursesRef = React.useRef<Course[]>([]);
   // Ref so getCourseTeacherName always reads the latest teacher data even inside
   // async callbacks that captured a stale closure.
   const teacherMapRef = React.useRef<Map<string, string>>(new Map());
@@ -157,6 +158,14 @@ const Timetable = () => {
     typeof course.subjectId === "string"
       ? "Subject"
       : course.subjectId?.name || course.subjectId?.code || "Subject";
+
+  const getEntryCourseId = (entry: any) =>
+    typeof entry.courseId === "string" ? entry.courseId : entry.courseId?._id || "";
+
+  const getEntryCourse = (entry: any) =>
+    typeof entry.courseId === "object" && entry.courseId?._id
+      ? (entry.courseId as Course)
+      : coursesRef.current.find((course) => course._id === getEntryCourseId(entry));
 
   const getCourseTeacherName = (course?: Course | null) => {
     if (!course?.teacherId) return "Unassigned";
@@ -270,6 +279,8 @@ const Timetable = () => {
         teacherMapRef.current = map;
       }
 
+      coursesRef.current = coursesArray;
+
       const subjectsMap = new Map<string, Subject>();
       coursesArray.forEach((course: Course) => {
         const subjectId = getCourseSubjectId(course);
@@ -325,16 +336,20 @@ const Timetable = () => {
           acc[day] = data[day].map((entry: any) => {
             // Resolve teacherName from the teacher map when the backend omits it
             // or when it still shows as "Unassigned teacher"
+            const matchedCourse = getEntryCourse(entry);
             let teacherName = entry.teacherName;
-            if (!teacherName || teacherName === "Unassigned teacher" || teacherName === "Unassigned") {
-              // Try to look up by courseId in the loaded courses list
-              const matchedCourse = courses.find((c) => c._id === entry.courseId);
-              if (matchedCourse) {
-                teacherName = getCourseTeacherName(matchedCourse);
-              }
+            if (
+              !teacherName ||
+              teacherName === "Unassigned teacher" ||
+              teacherName === "Unassigned"
+            ) {
+              teacherName = getCourseTeacherName(matchedCourse);
             }
             return {
               ...entry,
+              courseId: getEntryCourseId(entry),
+              course: entry.course || matchedCourse?.title || "Course",
+              subject: entry.subject || (matchedCourse ? getCourseSubjectName(matchedCourse) : "Subject"),
               startTime: entry.startTime || entry.startTIme,
               teacherName: teacherName || "Unassigned",
             };

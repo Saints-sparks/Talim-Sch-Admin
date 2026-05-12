@@ -61,7 +61,8 @@ export const getClasses = async (): Promise<Class[]> => {
     throw new Error(`Failed to fetch classes: ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const raw = await response.json();
+  const data = Array.isArray(raw) ? raw : raw?.data || raw?.classes || [];
   if (!Array.isArray(data)) {
     throw new Error("Invalid response format: expected array of classes");
   }

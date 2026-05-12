@@ -42,6 +42,10 @@ function getStorageKey(guideId: string, userId?: string) {
   return `${STORAGE_PREFIX}:${userId || "guest"}:${guideId}`;
 }
 
+function getAutoOpenStorageKey(userId?: string) {
+  return `${STORAGE_PREFIX}:${userId || "guest"}:auto-opened`;
+}
+
 function getCardPosition(rect: TargetRect | null) {
   if (typeof window === "undefined" || !rect) {
     return {
@@ -240,9 +244,16 @@ export default function AppGuide() {
       return;
     }
 
-    const key = getStorageKey(config.id, userId);
-    const hasSeen = localStorage.getItem(key) === "done";
-    setIsOpen(!hasSeen);
+    const autoOpenKey = getAutoOpenStorageKey(userId);
+    const hasAutoOpened = localStorage.getItem(autoOpenKey) === "done";
+
+    if (!hasAutoOpened) {
+      localStorage.setItem(autoOpenKey, "done");
+      setIsOpen(true);
+      return;
+    }
+
+    setIsOpen(false);
   }, [config?.id, isLoading, userId, user, config]);
 
   useEffect(() => {
@@ -271,6 +282,7 @@ export default function AppGuide() {
   }, [isOpen, currentStep?.target]);
 
   const close = (markDone = false) => {
+    localStorage.setItem(getAutoOpenStorageKey(userId), "done");
     if (markDone && config) {
       localStorage.setItem(getStorageKey(config.id, userId), "done");
     }

@@ -256,13 +256,19 @@ export const OnboardingProvider: React.FC<{
 
   const markStepComplete = useCallback(
     (id: OnboardingStepId) => {
-      if (state.completedSteps.includes(id)) return;
-      persist({
-        ...state,
-        completedSteps: [...state.completedSteps, id],
+      setState((current) => {
+        if (current.completedSteps.includes(id)) return current;
+
+        const next = {
+          ...current,
+          completedSteps: [...current.completedSteps, id],
+        };
+
+        if (schoolId) saveState(schoolId, next);
+        return next;
       });
     },
-    [state, persist]
+    [schoolId]
   );
 
   const completePhase1 = useCallback(() => {

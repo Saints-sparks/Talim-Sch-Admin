@@ -300,7 +300,8 @@ export const getClasses = async (): Promise<Class[]> => {
     throw new Error("Failed to fetch classes");
   }
 
-  return response.json();
+  const raw = await response.json();
+  return Array.isArray(raw) ? raw : raw?.data || raw?.classes || [];
 };
 
 export const createClass = async (payload: Omit<Class, "_id">) => {

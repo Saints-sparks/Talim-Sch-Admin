@@ -209,7 +209,8 @@ export const getSubjectsBySchool = async (): Promise<any[]> => {
     throw new Error("Failed to fetch subjects");
   }
 
-  return response.json(); // Returns an array of subjects for the logged-in user's school
+  const raw = await response.json();
+  return Array.isArray(raw) ? raw : raw?.data || raw?.subjects || [];
 };
 
 export const getCoursesBySubject = async (
@@ -237,7 +238,8 @@ export const getCoursesBySubject = async (
     );
   }
 
-  const data = await response.json();
+  const raw = await response.json();
+  const data = Array.isArray(raw) ? raw : raw?.data || raw?.courses || [];
 
   if (!Array.isArray(data)) {
     throw new Error("Expected an array of courses");
@@ -266,7 +268,8 @@ export const getCoursesBySchool = async (): Promise<Course[]> => {
     );
   }
 
-  const data = await response.json();
+  const raw = await response.json();
+  const data = Array.isArray(raw) ? raw : raw?.data || raw?.courses || [];
 
   if (!Array.isArray(data)) {
     throw new Error("Expected an array of courses");

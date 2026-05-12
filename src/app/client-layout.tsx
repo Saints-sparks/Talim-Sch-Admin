@@ -23,11 +23,15 @@ function OnboardingSyncEffect() {
   const { user } = useAuth();
   const pathname = usePathname();
   const lastSyncAt = useRef(0);
+  const lastSyncPath = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const now = Date.now();
-    if (now - lastSyncAt.current < SYNC_THROTTLE_MS) return;
+    const pathChanged = lastSyncPath.current !== pathname;
+    if (!pathChanged && now - lastSyncAt.current < SYNC_THROTTLE_MS) return;
+
+    lastSyncPath.current = pathname;
     lastSyncAt.current = now;
     syncProgress().catch(() => {});
   }, [pathname, user?.userId]); // eslint-disable-line react-hooks/exhaustive-deps
