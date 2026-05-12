@@ -349,15 +349,69 @@ const CurriculumStructureMain: React.FC = () => {
     return classItem ? classItem.name : null;
   };
 
-  const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find((t) => t._id === teacherId);
-    if (!teacher) return "No teacher";
-
-    const firstName = teacher.firstName || "";
-    const lastName = teacher.lastName || "";
+  const getPersonName = (person?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  }) => {
+    const firstName = person?.firstName || "";
+    const lastName = person?.lastName || "";
     return firstName || lastName
       ? `${firstName} ${lastName}`.trim()
-      : "No teacher";
+      : person?.email || "";
+  };
+
+  const getTeacherName = (teacherRef?: unknown) => {
+    if (!teacherRef) return "No teacher";
+
+    if (typeof teacherRef === "object") {
+      const teacherObject = teacherRef as {
+        _id?: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        userId?: string | {
+          _id?: string;
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+        };
+      };
+      const directName = getPersonName(teacherObject);
+      if (directName) return directName;
+
+      if (typeof teacherObject.userId === "object") {
+        const userName = getPersonName(teacherObject.userId);
+        if (userName) return userName;
+      }
+    }
+
+    const teacherObject =
+      typeof teacherRef === "object"
+        ? (teacherRef as {
+            _id?: string;
+            userId?: string | { _id?: string };
+          })
+        : null;
+
+    const teacherId =
+      typeof teacherRef === "string"
+        ? teacherRef
+        : typeof teacherObject?.userId === "string"
+        ? teacherObject.userId
+        : teacherObject?.userId?._id || teacherObject?._id || "";
+
+    const teacher = teachers.find((t) => {
+      const teacherWithUser = t as any;
+      const userId =
+        typeof teacherWithUser.userId === "string"
+          ? teacherWithUser.userId
+          : teacherWithUser.userId?._id;
+      return t._id === teacherId || userId === teacherId;
+    });
+
+    const teacherName = getPersonName(teacher);
+    return teacherName || "No teacher";
   };
 
   const filteredSubjects = subjects.filter((subject) => {
@@ -587,7 +641,7 @@ const CurriculumStructureMain: React.FC = () => {
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <Users className="w-3 h-3 text-gray-400" />
                                   <span className="text-xs text-gray-500 truncate">
-                                    {getTeacherName(course.teacherId || "")}
+                                    {getTeacherName((course as any).teacherId)}
                                   </span>
                                 </div>
                               </div>

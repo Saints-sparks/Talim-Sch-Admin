@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { CalendarDays, Check, Clock, UsersRound } from "lucide-react";
 import {
   registerTeacher,
   createTeacherProfile,
@@ -26,6 +27,14 @@ const ACADEMIC_QUALIFICATIONS = [
 const EMPLOYMENT_TYPES = ["Fulltime", "Parttime"] as const;
 
 const EMPLOYMENT_ROLES = ["Academic"] as const;
+
+const AVAILABILITY_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+
+const AVAILABLE_TIME_SLOTS = [
+  "8:00 AM - 2:00 PM",
+  "9:00 AM - 3:00 PM",
+  "10:00 AM - 4:00 PM",
+] as const;
 
 const AddTeacherModal: React.FC<{
   onClose: () => void;
@@ -165,6 +174,18 @@ const AddTeacherModal: React.FC<{
       .map((option) => option.value);
 
     setFormData({ ...formData, [name]: selectedValues });
+  };
+
+  const toggleArrayField = (
+    field: "assignedClasses" | "availabilityDays",
+    value: string
+  ) => {
+    const currentValues = formData[field] as string[];
+    const nextValues = currentValues.includes(value)
+      ? currentValues.filter((item) => item !== value)
+      : [...currentValues, value];
+
+    setFormData({ ...formData, [field]: nextValues });
   };
 
   const renderStepContent = () => {
@@ -522,144 +543,151 @@ const AddTeacherModal: React.FC<{
               </div>
             </div>
 
-            {/* Teaching Assignments */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                Teaching Assignments
-              </h4>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="max-w-xl">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign to Class
-                  </label>
-                  <select
-                    name="assignedClasses"
-                    multiple
-                    className="w-full min-h-[116px] px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                    value={formData.assignedClasses}
-                    onChange={handleMultiSelectChange}
-                  >
-                    <option value="" disabled>
-                      Select Classes (Hold Ctrl/Cmd for multiple)
-                    </option>
-                    {classes.map((classItem) => (
-                      <option key={classItem._id} value={classItem._id}>
-                        {classItem.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Course and subject assignments can be managed from the
-                    course setup.
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+              {/* Teaching Assignments */}
+              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+                      <UsersRound className="h-4 w-4 text-[#003366]" />
+                      Teaching Assignments
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Select the classes this teacher can support. Course and subject links still happen from course setup.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-xs font-semibold text-[#003366]">
+                    {(formData.assignedClasses as string[]).length} selected
+                  </span>
+                </div>
+
+                {classes.length > 0 ? (
+                  <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                    {classes.map((classItem) => {
+                      const isSelected = (formData.assignedClasses as string[]).includes(classItem._id);
+
+                      return (
+                        <button
+                          key={classItem._id}
+                          type="button"
+                          onClick={() => toggleArrayField("assignedClasses", classItem._id)}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left transition ${
+                            isSelected
+                              ? "border-[#003366] bg-[#EAF2FB] text-[#003366] shadow-sm"
+                              : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#003366]/40 hover:bg-white"
+                          }`}
+                        >
+                          <span className="min-w-0 truncate text-sm font-medium">
+                            {classItem.name}
+                          </span>
+                          <span
+                            className={`ml-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                              isSelected
+                                ? "border-[#003366] bg-[#003366] text-white"
+                                : "border-gray-300 bg-white text-transparent"
+                            }`}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                    No classes available yet.
+                  </div>
+                )}
+              </section>
+
+              {/* Schedule Information */}
+              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-4">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+                    <CalendarDays className="h-4 w-4 text-[#003366]" />
+                    Schedule & Availability
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Choose working days and the usual availability window.
                   </p>
                 </div>
-              </div>
-            </div>
 
-            {/* Schedule Information */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Schedule & Availability
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Availability Days
-                  </label>
-                  <select
-                    name="availabilityDays"
-                    multiple
-                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                    value={formData.availabilityDays}
-                    onChange={handleMultiSelectChange}
-                  >
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hold Ctrl/Cmd to select multiple days
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Available Time
-                  </label>
-                  <select
-                    name="availableTime"
-                    className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
-                    value={formData.availableTime}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Time Slot</option>
-                    <option value="8:00 AM - 2:00 PM">8:00 AM - 2:00 PM</option>
-                    <option value="9:00 AM - 3:00 PM">9:00 AM - 3:00 PM</option>
-                    <option value="10:00 AM - 4:00 PM">
-                      10:00 AM - 4:00 PM
-                    </option>
-                  </select>
-                </div>
-              </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                      Availability Days
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {AVAILABILITY_DAYS.map((day) => {
+                        const isSelected = (formData.availabilityDays as string[]).includes(day);
 
-              <div className="mt-4">
-                <div className="flex items-center p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <input
-                    type="checkbox"
-                    name="isFormTeacher"
-                    id="isFormTeacher"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    checked={formData.isFormTeacher}
-                    onChange={handleCheckboxChange}
-                  />
-                  <label
-                    htmlFor="isFormTeacher"
-                    className="ml-3 block text-sm font-medium text-gray-700"
-                  >
-                    Assign as Form Teacher
-                  </label>
-                  <svg
-                    className="w-4 h-4 ml-2 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleArrayField("availabilityDays", day)}
+                            className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                              isSelected
+                                ? "border-[#003366] bg-[#003366] text-white shadow-sm"
+                                : "border-gray-200 bg-gray-50 text-gray-600 hover:border-[#003366]/40 hover:bg-white"
+                            }`}
+                          >
+                            {day.slice(0, 3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      Available Time
+                    </label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {AVAILABLE_TIME_SLOTS.map((slot) => {
+                        const isSelected = formData.availableTime === slot;
+
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() =>
+                              setFormData({ ...formData, availableTime: slot })
+                            }
+                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                              isSelected
+                                ? "border-[#003366] bg-[#EAF2FB] text-[#003366]"
+                                : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#003366]/40 hover:bg-white"
+                            }`}
+                          >
+                            {slot}
+                            {isSelected && <Check className="h-4 w-4" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#F4B740]/40 bg-[#FFF8E8] p-4 transition hover:border-[#F4B740]">
+                    <input
+                      type="checkbox"
+                      name="isFormTeacher"
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]"
+                      checked={formData.isFormTeacher}
+                      onChange={handleCheckboxChange}
                     />
-                  </svg>
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-800">
+                        Assign as Form Teacher
+                      </span>
+                      <span className="mt-1 block text-xs leading-5 text-gray-600">
+                        Marks this teacher as the primary class coordinator where applicable.
+                      </span>
+                    </span>
+                  </label>
                 </div>
-              </div>
+              </section>
             </div>
 
             {/* Final Review */}
