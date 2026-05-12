@@ -555,7 +555,7 @@ export default function GroupChat({
       .join(', ');
 
     return {
-      name: room.name || "Group Chat",
+      name: room.displayName || room.name || "Group Chat",
       participantCount,
       participantList: participantNames + (participantCount > 3 ? ` and ${participantCount - 3} others` : '')
     };

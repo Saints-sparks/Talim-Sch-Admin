@@ -30,6 +30,7 @@ import {
   createAcademicYear,
   createTerm,
   getTerms,
+  getAcademicYears,
   type TermResponse,
 } from "@/app/services/academic.service";
 import { createClass } from "@/app/services/student.service";
@@ -69,6 +70,25 @@ export default function OnboardingSetup() {
   useEffect(() => {
     if (!phase1Completed) router.replace("/onboarding");
   }, [phase1Completed, router]);
+
+  // Sync progress from real API data so steps completed outside this wizard are reflected
+  useEffect(() => {
+    const sync = async () => {
+      try {
+        const [years, classes, subjects] = await Promise.allSettled([
+          getAcademicYears(),
+          getClasses(),
+          getSubjectsBySchool(),
+        ]);
+        if (years.status === "fulfilled" && years.value.length > 0) markStepComplete("academic-year");
+        if (classes.status === "fulfilled" && classes.value.length > 0) markStepComplete("create-class");
+        if (subjects.status === "fulfilled" && subjects.value.length > 0) markStepComplete("create-subject");
+      } catch {
+        // non-critical — local state is the fallback
+      }
+    };
+    sync();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-advance to first incomplete phase-2 step
   useEffect(() => {
@@ -276,9 +296,11 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
     setSubmitting(true);
     try {
       const res = await createAcademicYear(yearForm);
-      setCreatedYearId(res._id);
+      const yearId = res._id || (res as any).id;
+      if (!yearId) throw new Error("Server returned no ID for the academic year. Please try again.");
+      setCreatedYearId(yearId);
       setSubStep("term");
-      toast.success("Academic year created!");
+      toast.success("Academic year created! Now add your first term.");
     } catch (err: any) {
       toast.error(err.message || "Failed to create academic year.");
     } finally {
@@ -288,8 +310,11 @@ function AcademicYearStep({ onComplete }: { onComplete: () => void }) {
 
   const handleTermSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!termForm.name || !termForm.startDate || !termForm.endDate || !createdYearId) {
+    if (!termForm.name || !termForm.startDate || !termForm.endDate) {
       toast.error("Please fill in all fields."); return;
+    }
+    if (!createdYearId) {
+      toast.error("Session error — go back to step 1 and re-create the academic year."); return;
     }
     setSubmitting(true);
     try {

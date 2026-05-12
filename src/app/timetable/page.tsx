@@ -77,6 +77,9 @@ const Timetable = () => {
   const [timetableError, setTimetableError] = useState<string | null>(null);
   const [noTimetable, setNoTimetable] = useState(false);
   const [draggedCourse, setDraggedCourse] = useState<Course | null>(null);
+  // Ref so getCourseTeacherName always reads the latest teacher data even inside
+  // async callbacks that captured a stale closure.
+  const teacherMapRef = React.useRef<Map<string, string>>(new Map());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingEntry, setIsCreatingEntry] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
@@ -156,13 +159,17 @@ const Timetable = () => {
       : course.subjectId?.name || course.subjectId?.code || "Subject";
 
   const getCourseTeacherName = (course?: Course | null) => {
-    if (!course?.teacherId || typeof course.teacherId === "string") {
-      return "Unassigned teacher";
+    if (!course?.teacherId) return "Unassigned";
+
+    // teacherId is a plain string ID — look it up in the teacher map ref (always current)
+    if (typeof course.teacherId === "string") {
+      return teacherMapRef.current.get(course.teacherId) || "Unassigned";
     }
 
+    // teacherId is a populated object
     const user = course.teacherId.userId;
     const name = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
-    return name || user?.email || "Unassigned teacher";
+    return name || user?.email || "Unassigned";
   };
 
   const normalizeTimeForDisplay = (time: string) => {
@@ -228,15 +235,40 @@ const Timetable = () => {
 
     setIsLoadingSubjects(true);
     try {
-      const response = await apiClient.get(
-        API_ENDPOINTS.GET_COURSES_BY_CLASS(selectedClassId)
-      );
-      if (!response.ok) throw new Error("Failed to fetch courses for class");
+      const [coursesResponse, teachersResponse] = await Promise.all([
+        apiClient.get(API_ENDPOINTS.GET_COURSES_BY_CLASS(selectedClassId)),
+        apiClient.get(API_ENDPOINTS.GET_TEACHERS),
+      ]);
 
-      const coursesData = await response.json();
+      if (!coursesResponse.ok) throw new Error("Failed to fetch courses for class");
+
+      const coursesData = await coursesResponse.json();
       const coursesArray = Array.isArray(coursesData)
         ? coursesData
         : coursesData.data || [];
+
+      // Build a teacher ID → display name map so getCourseTeacherName
+      // can resolve plain string teacherIds without a populated object.
+      if (teachersResponse.ok) {
+        const teachersData = await teachersResponse.json();
+        const teachersArray = Array.isArray(teachersData)
+          ? teachersData
+          : teachersData.data || [];
+        const map = new Map<string, string>();
+        teachersArray.forEach((t: any) => {
+          const userId = t._id || t.id;
+          if (!userId) return;
+          // Teacher records have userId nested with firstName/lastName
+          const user = typeof t.userId === "object" ? t.userId : null;
+          const firstName = user?.firstName || t.firstName || "";
+          const lastName = user?.lastName || t.lastName || "";
+          const name = `${firstName} ${lastName}`.trim() || t.email || "Teacher";
+          map.set(userId, name);
+          // Also index by the inner userId string in case teacherId matches it
+          if (user?._id) map.set(user._id, name);
+        });
+        teacherMapRef.current = map;
+      }
 
       const subjectsMap = new Map<string, Subject>();
       coursesArray.forEach((course: Course) => {
@@ -290,10 +322,23 @@ const Timetable = () => {
 
         const data = await res.json();
         const formattedTimetable = Object.keys(data).reduce((acc, day) => {
-          acc[day] = data[day].map((entry: any) => ({
-            ...entry,
-            startTime: entry.startTime || entry.startTIme,
-          }));
+          acc[day] = data[day].map((entry: any) => {
+            // Resolve teacherName from the teacher map when the backend omits it
+            // or when it still shows as "Unassigned teacher"
+            let teacherName = entry.teacherName;
+            if (!teacherName || teacherName === "Unassigned teacher" || teacherName === "Unassigned") {
+              // Try to look up by courseId in the loaded courses list
+              const matchedCourse = courses.find((c) => c._id === entry.courseId);
+              if (matchedCourse) {
+                teacherName = getCourseTeacherName(matchedCourse);
+              }
+            }
+            return {
+              ...entry,
+              startTime: entry.startTime || entry.startTIme,
+              teacherName: teacherName || "Unassigned",
+            };
+          });
           return acc;
         }, {} as Record<string, TimetableEntry[]>);
 
@@ -320,8 +365,7 @@ const Timetable = () => {
   }, [fetchClasses]);
 
   useEffect(() => {
-    fetchCoursesByClass();
-    fetchTimetableByClass();
+    fetchCoursesByClass().then(() => fetchTimetableByClass());
   }, [fetchCoursesByClass, fetchTimetableByClass]);
 
   // Drag and drop handlers

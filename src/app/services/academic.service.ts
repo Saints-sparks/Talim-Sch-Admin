@@ -67,7 +67,9 @@ export const createAcademicYear = async (
       throw new Error("Failed to create academic year");
     }
 
-    return await response.json();
+    const raw = await response.json();
+    // Normalize: API may wrap result in { data: {...} }
+    return (raw?.data ?? raw) as AcademicYearResponse;
   } catch (error) {
     console.error("Error creating academic year:", error);
     throw error;
