@@ -281,7 +281,7 @@ const CurriculumDashboardMain: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Enhanced Header with Talim Styling */}
-      <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl">
+      <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl" data-guide="curriculum-header">
         <div className="px-6 py-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
@@ -300,6 +300,7 @@ const CurriculumDashboardMain: React.FC = () => {
 
             <div className="flex items-center space-x-3">
               <button
+                data-guide="curriculum-manage-structure"
                 onClick={() => router.push("/curriculum/structure")}
                 className="inline-flex items-center px-6 py-2.5 bg-white text-[#003366] text-sm font-semibold rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
@@ -331,7 +332,10 @@ const CurriculumDashboardMain: React.FC = () => {
         <div className="h-full overflow-y-auto">
           <div className="px-6">
             {/* Enhanced Stats Dashboard Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+              data-guide="curriculum-stats"
+            >
               <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div>
@@ -449,7 +453,10 @@ const CurriculumDashboardMain: React.FC = () => {
             {activeTab === "overview" && (
               <>
                 {/* Enhanced Quick Actions Section */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                <div
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8"
+                  data-guide="curriculum-actions"
+                >
                   <div className="px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                       <Target className="h-5 w-5 mr-2 text-[#003366]" />

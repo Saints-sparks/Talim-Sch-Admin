@@ -316,7 +316,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
     <div className="flex flex-col h-screen bg-gray-50">
       <>
           {/* Enhanced Header with Talim Styling */}
-          <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl">
+          <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl" data-guide="assessments-header">
             <div className="px-6 py-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
@@ -336,6 +336,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                 <div className="flex items-center space-x-3">
                   <Tooltip content="Set up an exam, test, or project for the selected term." side="top">
                   <button
+                    data-guide="assessments-create"
                     onClick={() => {
                       setEditingAssessment(null);
                       setShowCreateModal(true);
@@ -356,7 +357,10 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
             <div className="h-full overflow-y-auto">
               <div className="px-6 ">
                 {/* Enhanced Stats Dashboard Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+                  data-guide="assessments-stats"
+                >
                   <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
                     <div className="flex items-center justify-between">
                       <div>
@@ -472,7 +476,10 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
 
                 {/* Enhanced Assessment Content */}
                 {!error && filteredAssessments.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+                  <div
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
+                    data-guide="assessments-list"
+                  >
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-8">
                       <FiClipboard className="h-12 w-12 text-blue-600" />
                     </div>
@@ -500,7 +507,10 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                    data-guide="assessments-list"
+                  >
                     <AssessmentList
                       assessments={filteredAssessments}
                       terms={terms}

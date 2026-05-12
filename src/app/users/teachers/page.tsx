@@ -186,7 +186,7 @@ const TeachersPage: React.FC = () => {
   return (
     <div className="min-h-screen p-4 leading-[120%] flex flex-col">
       {/* Title and Controls - Redesigned */}
-      <div className="bg-[#F8F8F8] pt-4 x-2 sm:px-6">
+      <div className="bg-[#F8F8F8] pt-4 x-2 sm:px-6" data-guide="teachers-header">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-[19px] font-semibold ">My Teachers</h1>
@@ -196,6 +196,7 @@ const TeachersPage: React.FC = () => {
           </div>
           <Tooltip content="Register a teacher account. They will receive login credentials via email." side="top">
           <button
+            data-guide="teachers-add"
             onClick={toggleModal}
             className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
           >
@@ -205,7 +206,7 @@ const TeachersPage: React.FC = () => {
         </div>
 
         {/* Filters Row */}
-        <div className="bg-white rounded-2xl py-3 mt-4 w-fit">
+        <div className="bg-white rounded-2xl py-3 mt-4 w-fit" data-guide="teachers-filters">
           <div className="flex flex-col md:flex-row gap-3 px-6 py-4">
             {/* Search */}
             <div className="relative flex-1 w-[220px]">
@@ -271,7 +272,7 @@ const TeachersPage: React.FC = () => {
       )}
 
       {/* Main Content Area - Flex container to push pagination to bottom */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1" data-guide="teachers-list">
         {/* Content Section */}
         {isLoading ? (
           <TeachersSkeleton />

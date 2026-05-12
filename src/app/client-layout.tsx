@@ -11,6 +11,7 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import LayoutShell from "@/components/LayoutShell";
 import { ToastContainer, useToast } from "@/components/CustomToast";
 import { useOnboardingSync } from "@/hooks/useOnboardingSync";
+import AppGuide from "@/components/onboarding/AppGuide";
 
 const SYNC_THROTTLE_MS = 60_000; // re-check at most once per minute
 
@@ -69,6 +70,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           <PageIndicatorProvider>
             <WebSocketProvider>
               <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
+              {showSidebar && <AppGuide />}
               <ToastContainer toasts={toasts} onRemove={removeToast} />
             </WebSocketProvider>
           </PageIndicatorProvider>

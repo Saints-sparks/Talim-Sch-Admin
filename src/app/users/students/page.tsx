@@ -112,7 +112,10 @@ const StudentPage: React.FC = () => {
   return (
     <div className="min-h-screen p-4 sm:p-6 flex flex-col">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 mt-2">
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 mt-2"
+        data-guide="students-header"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <h1 className="text-[19px] font-semibold leading-[120%] flex items-center gap-3">
             My Students
@@ -123,6 +126,7 @@ const StudentPage: React.FC = () => {
         </div>
         <Tooltip content="Enrol a new student and assign them to a class. An account will be created for them." side="top">
         <button
+          data-guide="students-add"
           onClick={toggleModal}
           className="mt-4 sm:mt-0 bg-[#003366] leading-[120%] hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold text-[15px] flex items-center gap-2 "
         >
@@ -131,7 +135,7 @@ const StudentPage: React.FC = () => {
         </Tooltip>
       </div>
       {/* Search and Filter Section */}
-      <div className="bg-white rounded-2xl py-3 mb-6 w-fit">
+      <div className="bg-white rounded-2xl py-3 mb-6 w-fit" data-guide="students-filters">
         <div className="px-6 py-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
             
@@ -207,7 +211,7 @@ const StudentPage: React.FC = () => {
 
       {isModalOpen && <AddStudentModal onClose={toggleModal} />}
 
-      <div className="flex-1">
+      <div className="flex-1" data-guide="students-list">
         {isLoading ? (
           <StudentsSkeleton />
         ) : error ? (

@@ -323,7 +323,7 @@ const Settings: React.FC = () => {
       {/* Simple Header */}
       <div className="bg-gray-50">
         <div className="max-w-7xl mx-auto px-10 pt-10">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" data-guide="settings-header">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-xl font-semibold text-[#2F2F2F]">
@@ -331,6 +331,7 @@ const Settings: React.FC = () => {
                 </h1>
                 <Tooltip content="Define the school year (e.g. 2025/2026) that all terms, assessments, and timetables will sit under." side="top">
                 <button
+                  data-guide="settings-add-year"
                   onClick={() => setIsAcademicYearModalOpen(true)}
                   className="inline-flex items-center gap-2 bg-gray-200 border border-[#E4E4E4] px-2 py-0.5 rounded-full text-base transition-colors"
                 >
@@ -354,7 +355,7 @@ const Settings: React.FC = () => {
             {/* Top Section - Two Columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Academic Year Selection */}
-              <div>
+              <div data-guide="settings-year-select">
                 <label className="block text-lg font-medium text-[#676767] mb-2">
                   Academic Year
                 </label>
@@ -396,6 +397,7 @@ const Settings: React.FC = () => {
                   </label>
                   <Tooltip content="Add a term under the selected academic year." side="top">
                     <button
+                      data-guide="settings-add-term"
                       type="button"
                       onClick={openTermModal}
                       disabled={loading || uniqueAcademicYears.length === 0}

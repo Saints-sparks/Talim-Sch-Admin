@@ -64,7 +64,9 @@ export default function MessagesLayout({
       </div>
 
       {/* Chat Area - Mobile: Take full container when shown, Desktop: Flexible width */}
-      <div className={`${
+      <div
+        data-guide="messages-chat-area"
+        className={`${
         isMobile 
           ? selectedChat 
             ? 'block w-full' 
@@ -72,7 +74,8 @@ export default function MessagesLayout({
           : selectedChat 
             ? 'flex flex-1' 
             : 'hidden lg:flex lg:flex-1'
-      } flex-col bg-white h-full`}>
+      } flex-col bg-white h-full`}
+      >
         {selectedChat ? (
           selectedChat.type === "group" ? (
             <GroupChat

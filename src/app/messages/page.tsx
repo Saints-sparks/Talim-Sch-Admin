@@ -27,7 +27,10 @@ export default function AdminChatUI() {
   };
 
   return (
-    <div className="h-full font-manrope text-[#030E18] flex flex-col bg-gray-50">
+    <div
+      className="h-full font-manrope text-[#030E18] flex flex-col bg-gray-50"
+      data-guide="messages-shell"
+    >
       <MessagesLayout
         replyingMessage={replyingMessage}
         setReplyingMessage={setReplyingMessage}
