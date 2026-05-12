@@ -226,7 +226,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 space-y-3 mt-4">
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-3 space-y-1 mt-3">
         {menuItems.map((item, index) => (
           <motion.div
             key={item.path}
@@ -238,24 +238,19 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
               <Tooltip content={item.tooltip} side="right">
               <motion.div
                 className={cn(
-                  "group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 relative",
+                  "group flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all duration-200 relative",
                   pathname.startsWith("/users") ||
                     (item.hasDropdown && item.expanded)
-                    ? "bg-[#BFCCD9] text-[#003366]  border border-[#003366]/20"
-                    : "text-[#929292] hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
+                    ? "bg-[#003366]/20 text-[#003366]"
+                    : "text-[#4A5568] hover:bg-gray-100 hover:text-[#030E18]"
                 )}
                 onClick={item.onClick}
-                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div
-                  className={cn(
-                    "flex items-center justify-center w-10  rounded-lg transition-all duration-300"
-                  )}
-                >
+                <div className="flex items-center justify-center w-6 h-6">
                   {item.icon}
                 </div>
-                <span className="font-medium">{item.label}</span>
+                <span className="text-base font-medium">{item.label}</span>
                 <motion.div
                   animate={{ rotate: item.expanded ? 180 : 0 }}
                   transition={{ duration: 0.3 }}
@@ -263,7 +258,6 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                 >
                   <ChevronDown />
                 </motion.div>
-                {/* Active indicator */}
               </motion.div>
               </Tooltip>
             ) : (
@@ -271,23 +265,18 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
               <SmoothLink href={item.path}>
                 <motion.div
                   className={cn(
-                    "group flex items-center gap-3 px-3 py-1 rounded-xl cursor-pointer transition-all duration-300 relative",
+                    "group flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all duration-200 relative",
                     pathname.startsWith(item.path)
-                      ? "bg-[#BFCCD9] text-[#003366] border border-[#003366]/20"
-                      : "text-[#929292] hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900"
+                      ? "bg-[#003366]/20 text-[#003366]"
+                      : "text-[#4A5568] hover:bg-gray-100 hover:text-[#030E18]"
                   )}
-                  whileHover={{ scale: 1.02, x: 2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleLinkClick(item.path)}
                 >
-                  <div
-                    className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300"
-                    )}
-                  >
+                  <div className="flex items-center justify-center w-6 h-6">
                     {item.icon}
                   </div>
-                  <span className="font-medium">{item.label}</span>
+                  <span className="text-base font-medium">{item.label}</span>
                 </motion.div>
               </SmoothLink>
               </Tooltip>
@@ -297,11 +286,11 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
             <AnimatePresence>
               {item.hasDropdown && item.expanded && item.subItems && (
                 <motion.div
-                  className="ml-6 mt-2 space-y-1 overflow-hidden"
+                  className="ml-5 mt-1 space-y-1 overflow-hidden"
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
                 >
                   {item.subItems.map((subItem, subIndex) => (
                     <motion.div
@@ -315,21 +304,16 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                       <SmoothLink href={subItem.path}>
                         <motion.div
                           className={cn(
-                            "flex items-center gap-3 py-2 px-4 rounded-lg transition-all duration-200 relative",
+                            "flex items-center gap-3 py-2 px-3 rounded-md transition-all duration-200 relative",
                             pathname === subItem.path
-                              ? "text-[#003366] bg-blue-50 font-medium"
-                              : "text-[#929292] hover:text-gray-900 hover:bg-gray-50"
+                              ? "text-[#003366] bg-[#003366]/10 font-medium"
+                              : "text-[#4A5568] hover:text-[#030E18] hover:bg-gray-100"
                           )}
-                          whileHover={{ scale: 1.02, x: 4 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleLinkClick(subItem.path)}
                         >
-                          <div className="w-2 h-2 rounded-full bg-current opacity-40"></div>
-                          <span className="text-sm">{subItem.label}</span>
-                          {/* Active indicator for sub-items */}
-                          {pathname === subItem.path && (
-                            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full"></div>
-                          )}
+                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0"></div>
+                          <span className="text-sm font-medium">{subItem.label}</span>
                         </motion.div>
                       </SmoothLink>
                       </Tooltip>
@@ -343,31 +327,25 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       </div>
 
       {/* Logout Section */}
-      <div className=" border-t border-[#F4F4F4]">
+      <div className="border-t border-[#F4F4F4] px-3 py-2">
         <motion.div
           className={cn(
-            "group flex items-center gap-1 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300",
+            "group flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all duration-200",
             isLoggingOut
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 hover:text-red-600"
+              : "text-[#4A5568] hover:bg-red-50 hover:text-red-600"
           )}
-          whileHover={!isLoggingOut ? { scale: 1.02, x: 2 } : {}}
           whileTap={!isLoggingOut ? { scale: 0.98 } : {}}
           onClick={isLoggingOut ? undefined : handleLogout}
         >
-          <div
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300",
-              isLoggingOut ? "bg-gray-200" : "group-hover:bg-red-100"
-            )}
-          >
+          <div className="flex items-center justify-center w-6 h-6">
             {isLoggingOut ? (
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
             ) : (
               <Power />
             )}
           </div>
-          <span className="font-medium text-[#929292]">
+          <span className="text-base font-medium">
             {isLoggingOut ? "Logging out..." : "Logout Account"}
           </span>
         </motion.div>

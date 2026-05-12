@@ -68,8 +68,8 @@ export const createAcademicYear = async (
     }
 
     const raw = await response.json();
-    // Normalize: API may wrap result in { data: {...} }
-    return (raw?.data ?? raw) as AcademicYearResponse;
+    // Backend returns { message: '...', academicYear: { _id, ... } }
+    return (raw?.academicYear ?? raw?.data ?? raw) as AcademicYearResponse;
   } catch (error) {
     console.error("Error creating academic year:", error);
     throw error;
@@ -119,7 +119,9 @@ export const getAcademicYears = async (): Promise<AcademicYearResponse[]> => {
       throw new Error("Failed to fetch academic years");
     }
 
-    const data = await response.json();
+    const raw = await response.json();
+    // Backend returns { message: '...', academicYears: [...] }
+    const data = raw?.academicYears ?? raw?.data ?? raw;
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching academic years:", error);
