@@ -7,6 +7,8 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   FileText,
@@ -67,8 +69,8 @@ const tabs: ActiveTab[] = ["Published", "Scheduled", "Drafts", "Archived"];
 
 const statConfig = [
   { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366]" },
-  { label: "Published", icon: Send, tone: "bg-emerald-50 text-emerald-700" },
-  { label: "Scheduled", icon: Clock3, tone: "bg-amber-50 text-amber-700" },
+  { label: "Published", icon: Send, tone: "bg-blue-50 text-[#003366]" },
+  { label: "Scheduled", icon: Clock3, tone: "bg-slate-100 text-slate-700" },
   { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700" },
 ];
 
@@ -92,16 +94,16 @@ const defaultAnnouncementStats: AnnouncementStats = {
 
 const audienceStyles: Record<Audience, string> = {
   "All Parents": "bg-blue-50 text-[#003366] border-blue-100",
-  "All Students": "bg-emerald-50 text-emerald-700 border-emerald-100",
-  "All Teachers": "bg-violet-50 text-violet-700 border-violet-100",
+  "All Students": "bg-blue-50 text-[#003366] border-blue-100",
+  "All Teachers": "bg-slate-100 text-slate-700 border-slate-200",
   Custom: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 const statusStyles: Record<AnnouncementStatus, string> = {
-  Published: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  Scheduled: "bg-amber-50 text-amber-700 border-amber-100",
+  Published: "bg-blue-50 text-[#003366] border-blue-100",
+  Scheduled: "bg-blue-50 text-[#003366] border-blue-100",
   Draft: "bg-slate-100 text-slate-700 border-slate-200",
-  Archived: "bg-gray-100 text-gray-600 border-gray-200",
+  Archived: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const formatDateTime = (dateString: string | null) => {
@@ -114,6 +116,8 @@ const formatDateTime = (dateString: string | null) => {
     minute: "2-digit",
   }).format(new Date(dateString));
 };
+
+const clampPercent = (value: number) => Math.min(Math.max(value, 0), 100);
 
 const normalizeStatus = (status?: string): AnnouncementStatus => {
   const normalized = status?.toUpperCase();
@@ -173,7 +177,7 @@ const AnnouncementDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 100,
+    limit: 10,
     total: 0,
     lastPage: 1,
   });
@@ -245,6 +249,15 @@ const AnnouncementDashboard = () => {
 
   const formatWeeklyChange = (value: number) =>
     `${value > 0 ? "+" : ""}${value}% this week`;
+
+  const shouldShowPagination = pagination.total > pagination.limit;
+
+  const goToPage = (page: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      page: Math.min(Math.max(page, 1), prev.lastPage),
+    }));
+  };
 
   const visibleAnnouncements = useMemo(() => {
     const statusByTab: Record<ActiveTab, AnnouncementStatus> = {
@@ -395,9 +408,9 @@ const AnnouncementDashboard = () => {
 
   return (
     <>
-      <div className="min-h-full bg-white">
+      <div className="min-h-full max-w-full overflow-x-hidden bg-white">
         <section className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-[1480px]">
+          <div className="mx-auto w-full max-w-[1480px]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div>
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#003366]">
@@ -414,7 +427,7 @@ const AnnouncementDashboard = () => {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative">
+                <div className="relative min-w-0">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     value={searchTerm}
@@ -466,12 +479,12 @@ const AnnouncementDashboard = () => {
           </div>
         </section>
 
-        <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <div className="space-y-6">
+        <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0 space-y-6">
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex gap-2 overflow-x-auto">
+                  <div className="flex flex-wrap gap-2">
                     {tabs.map((tab) => (
                       <button
                         key={tab}
@@ -488,21 +501,29 @@ const AnnouncementDashboard = () => {
                     ))}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-4 w-4 text-[#003366]" />
                     {visibleAnnouncements.length} records visible
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[980px] text-left">
+                <div className="overflow-hidden">
+                  <table className="w-full table-fixed text-left">
+                    <colgroup>
+                      <col className="w-[28%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[15%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[12%]" />
+                    </colgroup>
                     <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th className="px-5 py-4">Announcement</th>
-                        <th className="px-5 py-4">Audience</th>
-                        <th className="px-5 py-4">Status</th>
-                        <th className="px-5 py-4">Publish Date</th>
-                        <th className="px-5 py-4">Read Rate</th>
-                        <th className="px-5 py-4 text-right">Actions</th>
+                        <th className="px-4 py-4">Announcement</th>
+                        <th className="px-4 py-4">Audience</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-4 py-4">Publish Date</th>
+                        <th className="px-4 py-4">Read Rate</th>
+                        <th className="px-4 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -512,9 +533,9 @@ const AnnouncementDashboard = () => {
                           key={announcement.id}
                           className="group transition hover:bg-slate-50/80"
                         >
-                          <td className="px-5 py-4">
+                          <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
                                 {announcement.pinned ? (
                                   <Pin className="h-5 w-5" />
                                 ) : announcement.hasAttachment ? (
@@ -523,7 +544,7 @@ const AnnouncementDashboard = () => {
                                   <Bell className="h-5 w-5" />
                                 )}
                               </div>
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   <p className="truncate font-semibold text-slate-950">
                                     {announcement.title}
@@ -537,29 +558,29 @@ const AnnouncementDashboard = () => {
                                     <Paperclip className="h-4 w-4 text-slate-400" />
                                   )}
                                 </div>
-                                <p className="mt-1 max-w-md truncate text-sm text-slate-500">
+                                <p className="mt-1 truncate text-sm text-slate-500">
                                   {announcement.content}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-5 py-4">
-                            <div className="flex flex-wrap gap-2">
+                          <td className="px-4 py-4">
+                            <div className="flex flex-wrap gap-1.5">
                               {announcement.audience.map((audience) => (
                                 <span
                                   key={audience}
                                   className={cn(
-                                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold",
+                                    "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold",
                                     audienceStyles[audience]
                                   )}
                                 >
-                                  <Users className="h-3 w-3" />
-                                  {audience}
+                                  <Users className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{audience}</span>
                                 </span>
                               ))}
                             </div>
                           </td>
-                          <td className="px-5 py-4">
+                          <td className="px-4 py-4">
                             <span
                               className={cn(
                                 "inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold",
@@ -569,31 +590,31 @@ const AnnouncementDashboard = () => {
                               {announcement.status}
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-sm font-medium text-slate-600">
-                            <span className="inline-flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-slate-400" />
+                          <td className="px-4 py-4 text-sm font-medium text-slate-600">
+                            <span className="inline-flex min-w-0 items-center gap-2">
+                              <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
                               {formatDateTime(announcement.publishDate)}
                             </span>
                           </td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
                                 <div
                                   className="h-full rounded-full bg-[#003366]"
-                                  style={{ width: `${announcement.readRate}%` }}
+                                  style={{ width: `${clampPercent(announcement.readRate)}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-semibold text-slate-700">
+                              <span className="shrink-0 text-sm font-semibold text-slate-700">
                                 {announcement.readRate}%
                               </span>
                             </div>
                           </td>
-                          <td className="px-5 py-4">
-                            <div className="flex justify-end gap-2">
+                          <td className="px-4 py-4">
+                            <div className="flex justify-end gap-1.5">
                               {[Eye, Pencil, MoreVertical].map((Icon, index) => (
                                 <button
                                   key={index}
-                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-100 hover:bg-blue-50 hover:text-[#003366]"
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-100 hover:bg-blue-50 hover:text-[#003366]"
                                 >
                                   <Icon className="h-4 w-4" />
                                 </button>
@@ -618,13 +639,45 @@ const AnnouncementDashboard = () => {
 
                 <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                   <p>
-                    Showing {visibleAnnouncements.length} of {pagination.total} announcements
+                    {shouldShowPagination
+                      ? `Showing ${
+                          visibleAnnouncements.length
+                            ? (pagination.page - 1) * pagination.limit + 1
+                            : 0
+                        } to ${Math.min(
+                          pagination.page * pagination.limit,
+                          pagination.total
+                        )} of ${pagination.total} announcements`
+                      : `Showing ${visibleAnnouncements.length} of ${pagination.total} announcements`}
                   </p>
+                  {shouldShowPagination && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={pagination.page <= 1}
+                        onClick={() => goToPage(pagination.page - 1)}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-[#003366] px-3 text-sm font-bold text-[#003366]">
+                        {pagination.page}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={pagination.page >= pagination.lastPage}
+                        onClick={() => goToPage(pagination.page + 1)}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <aside className="space-y-6">
+            <aside className="min-w-0 space-y-6">
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
@@ -642,7 +695,7 @@ const AnnouncementDashboard = () => {
                 <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-[#003366]"
-                    style={{ width: `${averageReadRate}%` }}
+                    style={{ width: `${clampPercent(averageReadRate)}%` }}
                   />
                 </div>
               </div>
