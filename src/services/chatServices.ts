@@ -53,6 +53,12 @@ class ChatService {
       (sender?.firstName || sender?.lastName
         ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim()
         : sender?.name || sender?.email || 'Unknown');
+    const senderAvatar =
+      message?.senderAvatar ||
+      message?.userAvatar ||
+      message?.avatar ||
+      sender?.userAvatar ||
+      sender?.avatar;
     const createdAt = message?.createdAt || message?.timestamp || new Date();
     const updatedAt = message?.updatedAt || message?.timestamp || createdAt;
 
@@ -60,6 +66,7 @@ class ChatService {
       _id: message?._id || message?.id,
       senderId: String(senderId),
       senderName,
+      senderAvatar,
       content: message?.content || message?.text || '',
       roomId:
         message?.roomId ||

@@ -136,6 +136,43 @@ export default function PrivateChat({
     return map;
   }, [room?.participants, extractId]);
 
+  const getAvatarUrl = useCallback((value: any): string => {
+    if (!value || typeof value !== 'object') return '';
+    return (
+      value.senderAvatar ||
+      value.userAvatar ||
+      value.avatar ||
+      value.profileImage ||
+      value.user?.userAvatar ||
+      value.user?.avatar ||
+      value.user?.profileImage ||
+      value.participant?.userAvatar ||
+      value.participant?.avatar ||
+      value.participant?.profileImage ||
+      ''
+    );
+  }, []);
+
+  const participantAvatarById = useMemo(() => {
+    const map = new Map<string, string>();
+    const participants = room?.participants || [];
+
+    participants.forEach((participant: any) => {
+      const participantObj = typeof participant === 'object' ? participant : { userId: participant };
+      const participantId =
+        extractId(participantObj?.userId) ||
+        extractId(participantObj?._id) ||
+        extractId(participantObj?.id);
+      const avatar = getAvatarUrl(participantObj);
+
+      if (participantId && avatar) {
+        map.set(participantId, avatar);
+      }
+    });
+
+    return map;
+  }, [room?.participants, extractId, getAvatarUrl]);
+
 const messages = useMemo(() => {
   if (!chatMessages || chatMessages.length === 0) {
     return [];
@@ -168,6 +205,11 @@ const messages = useMemo(() => {
 
       // Check if this message is from the logged-in user
       const isMyMessage = isCurrentUser(senderId, senderName);
+      const senderAvatar =
+        getAvatarUrl(msg) ||
+        getAvatarUrl(msg.sender) ||
+        participantAvatarById.get(senderId) ||
+        '';
 
       // If it's the current user's message, use their name
       if (isMyMessage) {
@@ -191,13 +233,13 @@ const messages = useMemo(() => {
         type: msg.type || 'text',
         senderType: isMyMessage ? 'self' : 'other',  // 'self' for right side, 'other' for left side
         color: isMyMessage ? 'bg-blue-500' : 'bg-gray-500',
-        avatar: '',
+        avatar: senderAvatar,
       };
     })
     .sort((a, b) => 
       new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
     );
-}, [chatMessages, user, extractId, isCurrentUser, participantNameById, room]);
+}, [chatMessages, user, extractId, isCurrentUser, participantNameById, participantAvatarById, getAvatarUrl, room]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -513,7 +555,7 @@ const handleSendMessage = useCallback(async () => {
                     ),
                     type: msg.type,
                     senderType: msg.senderType,
-                    avatar: msg.avatar || '/icons/user-placeholder.svg',
+                    avatar: msg.avatar || '',
                     color: msg.color || 'blue',
                   }}
                   index={index}

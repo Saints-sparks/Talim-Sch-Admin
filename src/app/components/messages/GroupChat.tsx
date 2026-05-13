@@ -63,6 +63,7 @@ export default function GroupChat({
   const participationCheckedRef = useRef(false);
   // Ref so socket callback always sees the current roomId without stale closure
   const currentRoomIdRef = useRef<string | undefined>(undefined);
+  const participantAvatarByIdRef = useRef<Map<string, string>>(new Map());
 
   const { user } = useAuth();
   const {
@@ -174,6 +175,11 @@ export default function GroupChat({
         _id: message._id,
         senderId,
         senderName: resolvedSenderName,
+        senderAvatar:
+          (message as any).senderAvatar ||
+          (message as any).userAvatar ||
+          (message as any).avatar ||
+          participantAvatarByIdRef.current.get(senderId),
         content: message.content,
         roomId: message.roomId,
         type: message.type || 'text',
@@ -364,11 +370,52 @@ export default function GroupChat({
     return map;
   }, [room?.participants, extractId]);
 
+  const getAvatarUrl = useCallback((value: any): string => {
+    if (!value || typeof value !== "object") return "";
+    return (
+      value.senderAvatar ||
+      value.userAvatar ||
+      value.avatar ||
+      value.profileImage ||
+      value.user?.userAvatar ||
+      value.user?.avatar ||
+      value.user?.profileImage ||
+      value.participant?.userAvatar ||
+      value.participant?.avatar ||
+      value.participant?.profileImage ||
+      ""
+    );
+  }, []);
+
+  const participantAvatarById = useMemo(() => {
+    const map = new Map<string, string>();
+    const participants = room?.participants || [];
+
+    participants.forEach((participant: any) => {
+      const participantObj = typeof participant === "object" ? participant : { userId: participant };
+      const participantId =
+        extractId(participantObj?.userId) ||
+        extractId(participantObj?._id) ||
+        extractId(participantObj?.id);
+      const avatar = getAvatarUrl(participantObj);
+
+      if (participantId && avatar) {
+        map.set(participantId, avatar);
+      }
+    });
+
+    return map;
+  }, [room?.participants, extractId, getAvatarUrl]);
+
   // Keep a ref so the socket handler always reads the latest map without stale closure
   const participantNameByIdRef = useRef(participantNameById);
   useEffect(() => {
     participantNameByIdRef.current = participantNameById;
   }, [participantNameById]);
+
+  useEffect(() => {
+    participantAvatarByIdRef.current = participantAvatarById;
+  }, [participantAvatarById]);
 
   // Get user initials for avatar
   const getUserAvatarInitials = useCallback((senderId: string, senderName: string): string => {
@@ -448,6 +495,12 @@ export default function GroupChat({
       if (isMyMessage) {
         senderName = currentUserInfo.name;
       }
+
+      const senderAvatar =
+        getAvatarUrl(msg) ||
+        getAvatarUrl(msg.sender) ||
+        participantAvatarById.get(senderId) ||
+        "";
       
       // Get the message content
       const messageText = msg.content || msg.text || "";
@@ -466,13 +519,13 @@ export default function GroupChat({
         type: msg.type || "text",
         senderType: isMyMessage ? "self" : "other",
         color: generateColorFromString(senderName || senderId),
-        avatar: "",
+        avatar: senderAvatar,
         initials: getUserAvatarInitials(senderId, senderName),
       };
     }).sort((a, b) => 
       new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
     );
-  }, [chatMessages, extractId, isCurrentUser, currentUserInfo.name, getUserAvatarInitials, participantNameById]);
+  }, [chatMessages, extractId, isCurrentUser, currentUserInfo.name, getUserAvatarInitials, participantNameById, participantAvatarById, getAvatarUrl]);
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -511,6 +564,7 @@ export default function GroupChat({
       _id: optimisticId,
       senderId: currentUserInfo.id,
       senderName: currentUserInfo.name || 'You',
+      senderAvatar: user?.userAvatar,
       content: trimmedMessage,
       roomId,
       isRead: false,

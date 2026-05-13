@@ -80,6 +80,22 @@ export const useChats = (): UseChatsReturn => {
 
     return normalizeId(direct || nestedUser || nestedParticipant || participant);
   }, [normalizeId]);
+
+  const getParticipantAvatar = useCallback((participant: any): string | undefined => {
+    if (!participant || typeof participant !== 'object') return undefined;
+
+    return (
+      participant.userAvatar ||
+      participant.avatar ||
+      participant.profileImage ||
+      participant.user?.userAvatar ||
+      participant.user?.avatar ||
+      participant.user?.profileImage ||
+      participant.participant?.userAvatar ||
+      participant.participant?.avatar ||
+      participant.participant?.profileImage
+    );
+  }, []);
   
   // State
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
@@ -412,6 +428,7 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
     _id: `temp-${Date.now()}`,
     senderId: currentUserId,
     senderName: currentUserName,
+    senderAvatar: user?.userAvatar,
     content: messageData.text,
     roomId: targetRoomId,
     isRead: false,
@@ -752,6 +769,17 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
                 : participant.name || participant.email || '';
           }
         }
+        let resolvedSenderAvatar =
+          (message as any).senderAvatar ||
+          (message as any).userAvatar ||
+          (message as any).avatar;
+        if (!resolvedSenderAvatar && activeRoom.participants) {
+          const participant = (activeRoom.participants as any[]).find((p: any) => {
+            const pid = getParticipantId(p);
+            return pid === messageSenderId;
+          });
+          resolvedSenderAvatar = getParticipantAvatar(participant);
+        }
 
         setMessages(prev => {
           if (prev.some(m => m._id === message._id)) return prev;
@@ -761,6 +789,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
               _id: message._id,
               senderId: message.senderId,
               senderName: resolvedSenderName || message.senderName,
+              senderAvatar: resolvedSenderAvatar,
               content: message.content,
               roomId: message.roomId,
               type: message.type,
@@ -855,6 +884,7 @@ const addParticipantsToRoom = useCallback(async (roomId: string, userIds: string
     publishUnreadCount,
     normalizeId,
     getParticipantId,
+    getParticipantAvatar,
     user?.userId,
     user?._id,
   ]);

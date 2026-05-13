@@ -63,6 +63,7 @@ export interface ChatMessage {
   _id: string;
   senderId: string;
   senderName: string;
+  senderAvatar?: string;
   content: string;
   roomId: string;
   isRead: boolean;

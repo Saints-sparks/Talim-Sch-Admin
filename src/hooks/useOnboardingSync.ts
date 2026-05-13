@@ -14,6 +14,32 @@ import { studentService } from "@/app/services/student.service";
 import { assessmentService } from "@/app/services/assessment.service";
 import { getAnnouncementsBySender } from "@/app/services/announcement.service";
 
+const getCollectionItems = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.results)) return value.results;
+  if (Array.isArray(value?.classes)) return value.classes;
+  if (Array.isArray(value?.subjects)) return value.subjects;
+  if (Array.isArray(value?.courses)) return value.courses;
+  if (Array.isArray(value?.teachers)) return value.teachers;
+  if (Array.isArray(value?.students)) return value.students;
+  if (Array.isArray(value?.announcements)) return value.announcements;
+  if (Array.isArray(value?.assessments)) return value.assessments;
+  return [];
+};
+
+const hasCollectionItems = (value: any): boolean => {
+  const total =
+    value?.meta?.total ??
+    value?.pagination?.totalItems ??
+    value?.count ??
+    value?.total ??
+    getCollectionItems(value).length;
+
+  return Number(total) > 0;
+};
+
 /**
  * Returns syncProgress() — checks all 8 phase-2 steps against real API data
  * (using limit=1 for paginated endpoints to keep it cheap) and marks any
@@ -36,42 +62,42 @@ export function useOnboardingSync() {
         id: "academic-year",
         fn: async () => {
           const data = await getAcademicYears();
-          return Array.isArray(data) && data.length > 0;
+          return hasCollectionItems(data);
         },
       },
       {
         id: "create-class",
         fn: async () => {
           const data = await getClasses();
-          return Array.isArray(data) && data.length > 0;
+          return hasCollectionItems(data);
         },
       },
       {
         id: "add-teacher",
         fn: async () => {
           const res = await teacherService.getTeachers(1, 1);
-          return (res?.meta?.total ?? res?.data?.length ?? 0) > 0;
+          return hasCollectionItems(res);
         },
       },
       {
         id: "add-student",
         fn: async () => {
           const res = await studentService.getStudents(1, 1);
-          return (res?.meta?.total ?? res?.data?.length ?? 0) > 0;
+          return hasCollectionItems(res);
         },
       },
       {
         id: "create-subject",
         fn: async () => {
           const data = await getSubjectsBySchool();
-          return Array.isArray(data) && data.length > 0;
+          return hasCollectionItems(data);
         },
       },
       {
         id: "create-course",
         fn: async () => {
           const data = await getCoursesBySchool();
-          return Array.isArray(data) && data.length > 0;
+          return hasCollectionItems(data);
         },
       },
       {
@@ -80,16 +106,14 @@ export function useOnboardingSync() {
           const userId = user.userId || (user as any)._id;
           if (!userId) return false;
           const res = await getAnnouncementsBySender(userId, 1, 1);
-          return (res?.meta?.total ?? res?.data?.length ?? 0) > 0;
+          return hasCollectionItems(res);
         },
       },
       {
         id: "create-assessment",
         fn: async () => {
           const res = await assessmentService.getAssessmentsBySchool(1, 1);
-          return (
-            (res?.pagination?.totalItems ?? res?.assessments?.length ?? 0) > 0
-          );
+          return hasCollectionItems(res);
         },
       },
     ];

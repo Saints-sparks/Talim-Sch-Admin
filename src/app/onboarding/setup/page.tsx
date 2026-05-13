@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { useOnboarding, ONBOARDING_STEPS, OnboardingStepId } from "@/context/OnboardingContext";
+import { useOnboardingSync } from "@/hooks/useOnboardingSync";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { getSchoolId } from "@/app/services/school.service";
 import {
@@ -36,7 +37,8 @@ import {
 } from "@/app/services/academic.service";
 import { createClass } from "@/app/services/student.service";
 import { getClasses } from "@/app/services/school.service";
-import { createSubject, createCourse, getSubjectsBySchool, getTeachers } from "@/app/services/subjects.service";
+import { createSubject, createCourse, getSubjectsBySchool, getCoursesBySchool } from "@/app/services/subjects.service";
+import { teacherService } from "@/app/services/teacher.service";
 import { assessmentService } from "@/app/services/assessment.service";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import AddStudentModal from "@/components/AddStudentModal";
@@ -62,9 +64,35 @@ interface ClassItem { _id: string; name: string; }
 interface SubjectItem { _id: string; name: string; code: string; }
 interface TeacherItem { _id: string; firstName: string; lastName: string; }
 
+const getCollectionItems = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.results)) return value.results;
+  if (Array.isArray(value?.classes)) return value.classes;
+  if (Array.isArray(value?.subjects)) return value.subjects;
+  if (Array.isArray(value?.courses)) return value.courses;
+  if (Array.isArray(value?.teachers)) return value.teachers;
+  if (Array.isArray(value?.students)) return value.students;
+  if (Array.isArray(value?.assessments)) return value.assessments;
+  return [];
+};
+
+const hasCollectionItems = (value: any): boolean => {
+  const total =
+    value?.meta?.total ??
+    value?.pagination?.totalItems ??
+    value?.count ??
+    value?.total ??
+    getCollectionItems(value).length;
+
+  return Number(total) > 0;
+};
+
 export default function OnboardingSetup() {
   const router = useRouter();
-  const { isStepComplete, isStepLocked, markStepComplete, progressPercent, completedCount, totalCount, phase1Completed, isFullyComplete, isHydrated } = useOnboarding();
+  const { isStepComplete, isStepLocked, markStepComplete, progressPercent, completedCount, totalCount, phase1Completed, isFullyComplete, isHydrated, completedSteps } = useOnboarding();
+  const { syncProgress } = useOnboardingSync();
 
   const [activeStep, setActiveStep] = useState<OnboardingStepId>("academic-year");
 
@@ -73,13 +101,19 @@ export default function OnboardingSetup() {
     if (isHydrated && !phase1Completed) router.replace("/onboarding");
   }, [isHydrated, phase1Completed, router]);
 
+  useEffect(() => {
+    if (!isHydrated || !phase1Completed) return;
+    syncProgress().catch(() => {});
+  }, [isHydrated, phase1Completed, syncProgress]);
+
   // Auto-advance to first incomplete phase-2 step
   useEffect(() => {
+    if (!isHydrated || !phase1Completed) return;
     const first = ONBOARDING_STEPS.find(
       (s) => s.phase === 2 && !isStepComplete(s.id) && !isStepLocked(s.id)
     );
     if (first) setActiveStep(first.id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [completedSteps, isHydrated, phase1Completed, isStepComplete, isStepLocked]);
 
   const phase2Steps = ONBOARDING_STEPS.filter((s) => s.phase === 2);
 
@@ -581,15 +615,60 @@ function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
   const [form, setForm] = useState({ title: "", description: "", courseCode: "", subjectId: "", classId: "", teacherId: "" });
 
   useEffect(() => {
-    Promise.all([getClasses(), getSubjectsBySchool(), getTeachers()])
-      .then(([cls, subs, tchs]) => {
-        setClasses(cls);
-        setSubjects(subs);
-        setTeachers(tchs);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [coursesResult, classesResult, subjectsResult, teachersResult] =
+          await Promise.allSettled([
+            getCoursesBySchool(),
+            getClasses(),
+            getSubjectsBySchool(),
+            teacherService.getTeachers(1, 1000),
+          ]);
+
+        if (cancelled) return;
+
+        if (
+          coursesResult.status === "fulfilled" &&
+          hasCollectionItems(coursesResult.value)
+        ) {
+          onComplete();
+          return;
+        }
+
+        setClasses(
+          classesResult.status === "fulfilled"
+            ? getCollectionItems(classesResult.value)
+            : []
+        );
+        setSubjects(
+          subjectsResult.status === "fulfilled"
+            ? getCollectionItems(subjectsResult.value)
+            : []
+        );
+        setTeachers(
+          teachersResult.status === "fulfilled"
+            ? getCollectionItems(teachersResult.value)
+            : []
+        );
+
+        if (
+          classesResult.status === "rejected" ||
+          subjectsResult.status === "rejected" ||
+          teachersResult.status === "rejected"
+        ) {
+          toast.error("Some setup data could not be loaded. Please refresh and try again.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -751,12 +830,48 @@ function TimetableStep({ onComplete, onSkip }: { onComplete: () => void; onSkip:
 // ─── 9. Create Assessment ────────────────────────────────────────────────────
 function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; onSkip: () => void }) {
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [terms, setTerms] = useState<TermResponse[]>([]);
   const [form, setForm] = useState({ name: "", description: "", termId: "", startDate: "", endDate: "", status: "pending" as const });
 
   useEffect(() => {
-    getTerms().then(setTerms).catch(() => {});
-  }, []);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [assessmentsResult, termsResult] = await Promise.allSettled([
+          assessmentService.getAssessmentsBySchool(1, 1),
+          getTerms(),
+        ]);
+
+        if (cancelled) return;
+
+        if (
+          assessmentsResult.status === "fulfilled" &&
+          hasCollectionItems(assessmentsResult.value)
+        ) {
+          onComplete();
+          return;
+        }
+
+        setTerms(
+          termsResult.status === "fulfilled"
+            ? getCollectionItems(termsResult.value)
+            : []
+        );
+
+        if (termsResult.status === "rejected") {
+          toast.error("Could not load terms for assessment setup.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -781,6 +896,11 @@ function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; 
 
   return (
     <StepCard stepId="create-assessment">
+      {loading ? (
+        <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking existing assessments and terms...
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
         <Field label="Assessment name" hint="e.g. Mid-Term Exam">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mid-Term Exam" className={inputCls} required />
@@ -804,6 +924,7 @@ function CreateAssessmentStep({ onComplete, onSkip }: { onComplete: () => void; 
           <Tooltip content="You can complete this step later from the main app. It won't block your access." side="top"><button type="button" onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 underline">Skip for now</button></Tooltip>
         </div>
       </form>
+      )}
     </StepCard>
   );
 }
