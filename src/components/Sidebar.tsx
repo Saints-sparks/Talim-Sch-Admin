@@ -161,6 +161,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       subItems: [
         { path: "/users/students", label: "Students", tooltip: "Student Directory" },
         { path: "/users/teachers", label: "Teachers", tooltip: "Teacher Directory" },
+        { path: "/users/parents", label: "Parents", tooltip: "Parent Directory" },
       ],
     },
     {
