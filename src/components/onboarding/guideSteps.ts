@@ -364,28 +364,35 @@ export const guideConfigs: GuideConfig[] = [
         eyebrow: "School communication",
         title: "Announcements",
         description:
-          "Announcements are official school-wide updates for students and staff, with optional attachments for circulars or documents.",
+          "Use this dashboard to create, schedule, monitor, and review official school announcements from one place.",
         icon: Megaphone,
       },
       {
         target: "announcements-create",
         title: "Create a New Update",
         description:
-          "Use New Announcement to write the title, message, and optional file before publishing it to the school community.",
+          "New Announcement opens the composer where admins choose the audience, publish timing, attachments, and preview before sending.",
         icon: MessageSquarePlus,
       },
       {
-        target: "announcements-list",
-        title: "Review Published Messages",
+        target: "announcements-stats",
+        title: "Track Announcement Volume",
         description:
-          "The list keeps each announcement expandable, so admins can quickly scan titles and open the full message when needed.",
+          "These cards come from the backend and show total, published, scheduled, and draft counts with week-over-week changes.",
+        icon: LayoutGrid,
+      },
+      {
+        target: "announcements-list",
+        title: "Filter by Workflow Stage",
+        description:
+          "Use the tabs to switch between published, scheduled, draft, and archived announcements, then scan audience, status, date, and read rate.",
         icon: BookOpen,
       },
       {
-        target: "announcements-attachments",
-        title: "Share Supporting Files",
+        target: "announcements-analytics",
+        title: "Review Engagement",
         description:
-          "When an announcement includes an attachment, recipients can open the file from the expanded announcement.",
+          "The analytics panel summarizes read rate, parent engagement, student engagement, and daily views using live announcement data.",
         icon: Lightbulb,
       },
     ],

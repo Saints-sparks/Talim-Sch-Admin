@@ -409,7 +409,10 @@ const AnnouncementDashboard = () => {
   return (
     <>
       <div className="min-h-full max-w-full overflow-x-hidden bg-white">
-        <section className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
+        <section
+          className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8"
+          data-guide="announcements-header"
+        >
           <div className="mx-auto w-full max-w-[1480px]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div>
@@ -442,6 +445,7 @@ const AnnouncementDashboard = () => {
                 </button>
                 <button
                   onClick={() => setIsModalOpen(true)}
+                  data-guide="announcements-create"
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
                 >
                   <Plus className="h-4 w-4" />
@@ -450,7 +454,10 @@ const AnnouncementDashboard = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+              data-guide="announcements-stats"
+            >
               {statConfig.map((stat, index) => {
                 const Icon = stat.icon;
                 return (
@@ -482,7 +489,10 @@ const AnnouncementDashboard = () => {
         <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div
+                className="rounded-2xl border border-slate-200 bg-white shadow-sm"
+                data-guide="announcements-list"
+              >
                 <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-wrap gap-2">
                     {tabs.map((tab) => (
@@ -677,7 +687,7 @@ const AnnouncementDashboard = () => {
               </div>
             </div>
 
-            <aside className="min-w-0 space-y-6">
+            <aside className="min-w-0 space-y-6" data-guide="announcements-analytics">
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>

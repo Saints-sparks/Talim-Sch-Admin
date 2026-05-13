@@ -185,12 +185,6 @@ const ViewClass: React.FC = () => {
     }
   };
 
-  const handleAddCourse = () => {
-    setSelectedCourse(null);
-    setCourseModalMode("add");
-    setShowCourseModal(true);
-  };
-
   const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${courseTitle}"?\n\nThis action cannot be undone.`
@@ -604,12 +598,6 @@ const ViewClass: React.FC = () => {
                           Manage courses for this class
                         </p>
                       </div>
-                      <button
-                        onClick={handleAddCourse}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors shadow-sm font-medium"
-                      >
-                        + Add Course
-                      </button>
                     </div>
 
                     {!classData.courses || classData.courses.length === 0 ? (
@@ -618,15 +606,9 @@ const ViewClass: React.FC = () => {
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
                           No courses yet
                         </h3>
-                        <p className="text-sm text-gray-500 mb-6">
-                          You haven't added any courses to this class.
+                        <p className="text-sm text-gray-500">
+                          Courses assigned from Curriculum will appear here.
                         </p>
-                        <button
-                          onClick={handleAddCourse}
-                          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] text-sm font-medium"
-                        >
-                          Add First Course
-                        </button>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
