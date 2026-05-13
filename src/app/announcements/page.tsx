@@ -7,8 +7,6 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Eye,
   FileText,
@@ -27,8 +25,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  AnnouncementStats,
   createAnnouncement,
   CreateAnnouncementResponse,
+  getAnnouncementStatsBySender,
   getAnnouncementsBySender,
 } from "../services/announcement.service";
 import { uploadFileAttachment } from "../services/files.service";
@@ -59,88 +59,11 @@ type NewAnnouncement = {
   attachment?: string;
   audience: Audience[];
   schedule: "now" | "later";
+  scheduledFor?: string;
   preview: boolean;
 };
 
 const tabs: ActiveTab[] = ["Published", "Scheduled", "Drafts", "Archived"];
-
-const fallbackAnnouncements: DashboardAnnouncement[] = [
-  {
-    id: "sample-1",
-    title: "Parent-Teacher Meeting",
-    content:
-      "We are pleased to inform you about the upcoming parent-teacher meeting scheduled for next week.",
-    attachment: undefined,
-    createdAt: "2026-05-12T10:30:00.000Z",
-    reactions: {},
-    audience: ["All Parents"],
-    status: "Published",
-    publishDate: "2026-05-12T10:30:00.000Z",
-    readRate: 86,
-    pinned: true,
-    views: 1284,
-  },
-  {
-    id: "sample-2",
-    title: "Science Fair 2026",
-    content:
-      "Our annual Science Fair is scheduled for next month. Students can begin project registration this week.",
-    attachment: "science-fair.pdf",
-    createdAt: "2026-05-10T14:00:00.000Z",
-    reactions: {},
-    audience: ["All Students", "All Teachers"],
-    status: "Published",
-    publishDate: "2026-05-10T14:00:00.000Z",
-    readRate: 74,
-    pinned: false,
-    views: 932,
-  },
-  {
-    id: "sample-3",
-    title: "School Holiday Notice",
-    content:
-      "Please be informed that the school will remain closed on Monday for the public holiday.",
-    attachment: undefined,
-    createdAt: "2026-05-13T09:00:00.000Z",
-    reactions: {},
-    audience: ["All Parents", "All Students"],
-    status: "Scheduled",
-    publishDate: "2026-05-15T09:00:00.000Z",
-    readRate: 0,
-    pinned: false,
-    views: 0,
-  },
-  {
-    id: "sample-4",
-    title: "New Library Books Available",
-    content:
-      "We have added new books to our library collection. Check them out during break periods.",
-    attachment: "library-list.xlsx",
-    createdAt: "2026-05-11T12:00:00.000Z",
-    reactions: {},
-    audience: ["All Students"],
-    status: "Draft",
-    publishDate: null,
-    readRate: 0,
-    pinned: false,
-    views: 0,
-  },
-  {
-    id: "sample-5",
-    title: "Term One Club Registration Closed",
-    content:
-      "Registration for Term One extracurricular clubs has closed. Final lists will be shared with class teachers.",
-    attachment: undefined,
-    createdAt: "2026-04-22T11:00:00.000Z",
-    reactions: {},
-    audience: ["All Teachers"],
-    status: "Archived",
-    publishDate: "2026-04-22T11:00:00.000Z",
-    readRate: 91,
-    pinned: false,
-    views: 511,
-  },
-];
 
 const statConfig = [
   { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366]" },
@@ -148,6 +71,24 @@ const statConfig = [
   { label: "Scheduled", icon: Clock3, tone: "bg-amber-50 text-amber-700" },
   { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700" },
 ];
+
+const defaultAnnouncementStats: AnnouncementStats = {
+  totalAnnouncements: 0,
+  published: 0,
+  scheduled: 0,
+  drafts: 0,
+  archived: 0,
+  readRate: 0,
+  parentEngagement: 0,
+  studentEngagement: 0,
+  dailyViews: [],
+  weeklyChange: {
+    totalAnnouncements: 0,
+    published: 0,
+    scheduled: 0,
+    drafts: 0,
+  },
+};
 
 const audienceStyles: Record<Audience, string> = {
   "All Parents": "bg-blue-50 text-[#003366] border-blue-100",
@@ -204,22 +145,16 @@ const normalizeAudience = (audience?: string[]): Audience[] => {
 };
 
 const getDerivedAnnouncement = (
-  announcement: CreateAnnouncementResponse,
-  index: number
+  announcement: CreateAnnouncementResponse
 ): DashboardAnnouncement => ({
   ...announcement,
-  audience:
-    normalizeAudience(announcement.audience) ??
-    (index % 3 === 0
-      ? ["All Parents"]
-      : index % 3 === 1
-      ? ["All Students"]
-      : ["All Teachers", "All Parents"]),
+  audience: normalizeAudience(announcement.audience),
   status: normalizeStatus(announcement.status),
-  publishDate: announcement.scheduledFor ?? announcement.createdAt,
-  readRate: announcement.readRate ?? Math.min(96, 68 + index * 7),
-  pinned: announcement.isPinned ?? index === 0,
-  views: announcement.readCount ?? 420 + index * 186,
+  publishDate:
+    announcement.publishedAt ?? announcement.scheduledFor ?? announcement.createdAt,
+  readRate: announcement.readRate ?? 0,
+  pinned: announcement.isPinned ?? false,
+  views: announcement.readCount ?? 0,
 });
 
 const AnnouncementDashboard = () => {
@@ -231,12 +166,15 @@ const AnnouncementDashboard = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<DashboardAnnouncement[]>([]);
+  const [announcementStats, setAnnouncementStats] = useState<AnnouncementStats>(
+    defaultAnnouncementStats
+  );
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
-    total: fallbackAnnouncements.length,
+    limit: 100,
+    total: 0,
     lastPage: 1,
   });
   const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncement>({
@@ -245,6 +183,7 @@ const AnnouncementDashboard = () => {
     attachment: undefined,
     audience: ["All Parents"],
     schedule: "now",
+    scheduledFor: undefined,
     preview: false,
   });
 
@@ -252,31 +191,34 @@ const AnnouncementDashboard = () => {
     if (isAuthLoading) return;
 
     if (!user?.userId) {
-      setAnnouncements(fallbackAnnouncements);
+      setAnnouncements([]);
+      setAnnouncementStats(defaultAnnouncementStats);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const response = await getAnnouncementsBySender(
-        user.userId,
-        pagination.page,
-        pagination.limit
-      );
+      const [response, statsResponse] = await Promise.all([
+        getAnnouncementsBySender(user.userId, {
+          page: pagination.page,
+          limit: pagination.limit,
+        }),
+        getAnnouncementStatsBySender(user.userId),
+      ]);
       const apiAnnouncements = response.data.map(getDerivedAnnouncement);
-      setAnnouncements(
-        apiAnnouncements.length > 0 ? apiAnnouncements : fallbackAnnouncements
-      );
+      setAnnouncements(apiAnnouncements);
+      setAnnouncementStats(statsResponse ?? defaultAnnouncementStats);
       setPagination((prev) => ({
         ...prev,
-        total: Math.max(response.meta.total, fallbackAnnouncements.length),
+        total: response.meta.total,
         lastPage: Math.max(response.meta.lastPage, 1),
       }));
     } catch (error) {
       console.error("Error fetching announcements:", error);
-      setAnnouncements(fallbackAnnouncements);
-      toast.error("Showing sample announcements while the server is unavailable.");
+      setAnnouncements([]);
+      setAnnouncementStats(defaultAnnouncementStats);
+      toast.error("Failed to fetch announcements.");
     } finally {
       setLoading(false);
     }
@@ -287,14 +229,22 @@ const AnnouncementDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthLoading, user?.userId, pagination.page]);
 
-  const stats = useMemo(() => {
-    const total = announcements.length;
-    const published = announcements.filter((item) => item.status === "Published").length;
-    const scheduled = announcements.filter((item) => item.status === "Scheduled").length;
-    const drafts = announcements.filter((item) => item.status === "Draft").length;
+  const stats = [
+    announcementStats.totalAnnouncements,
+    announcementStats.published,
+    announcementStats.scheduled,
+    announcementStats.drafts,
+  ];
 
-    return [total, published, scheduled, drafts];
-  }, [announcements]);
+  const weeklyChanges = [
+    announcementStats.weeklyChange?.totalAnnouncements ?? 0,
+    announcementStats.weeklyChange?.published ?? 0,
+    announcementStats.weeklyChange?.scheduled ?? 0,
+    announcementStats.weeklyChange?.drafts ?? 0,
+  ];
+
+  const formatWeeklyChange = (value: number) =>
+    `${value > 0 ? "+" : ""}${value}% this week`;
 
   const visibleAnnouncements = useMemo(() => {
     const statusByTab: Record<ActiveTab, AnnouncementStatus> = {
@@ -318,12 +268,22 @@ const AnnouncementDashboard = () => {
   }, [activeTab, announcements, searchTerm]);
 
   const averageReadRate = useMemo(() => {
-    const published = announcements.filter((item) => item.status === "Published");
-    if (!published.length) return 0;
-    return Math.round(
-      published.reduce((sum, item) => sum + item.readRate, 0) / published.length
-    );
-  }, [announcements]);
+    return Math.round(announcementStats.readRate ?? 0);
+  }, [announcementStats.readRate]);
+
+  const dailyViews = useMemo(() => {
+    if (announcementStats.dailyViews?.length) {
+      return announcementStats.dailyViews;
+    }
+
+    return Array.from({ length: 7 }).map((_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      return { date: date.toISOString(), views: 0 };
+    });
+  }, [announcementStats.dailyViews]);
+
+  const maxDailyViews = Math.max(...dailyViews.map((item) => item.views), 1);
 
   const handleAudienceToggle = (audience: Audience) => {
     setNewAnnouncement((prev) => {
@@ -382,8 +342,18 @@ const AnnouncementDashboard = () => {
       return;
     }
 
+    if (newAnnouncement.schedule === "later" && !newAnnouncement.scheduledFor) {
+      toast.error("Choose a date and time for scheduled announcements.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      const scheduledFor =
+        newAnnouncement.schedule === "later" && newAnnouncement.scheduledFor
+          ? new Date(newAnnouncement.scheduledFor).toISOString()
+          : undefined;
+
       const created = await createAnnouncement({
         title: newAnnouncement.title,
         content: newAnnouncement.content,
@@ -394,37 +364,22 @@ const AnnouncementDashboard = () => {
         audience: newAnnouncement.audience,
         status:
           newAnnouncement.schedule === "later" ? "SCHEDULED" : "PUBLISHED",
-        scheduledFor:
-          newAnnouncement.schedule === "later"
-            ? "2026-05-15T09:00:00.000Z"
-            : undefined,
+        scheduledFor,
       });
 
-      setAnnouncements((prev) => [
-        {
-          ...created,
-          audience: newAnnouncement.audience,
-          status: newAnnouncement.schedule === "later" ? "Scheduled" : "Published",
-          publishDate:
-            newAnnouncement.schedule === "later"
-              ? "2026-05-15T09:00:00.000Z"
-              : created.createdAt,
-          readRate: 0,
-          pinned: false,
-          views: 0,
-        },
-        ...prev,
-      ]);
+      setAnnouncements((prev) => [getDerivedAnnouncement(created), ...prev]);
       setNewAnnouncement({
         title: "",
         content: "",
         attachment: undefined,
         audience: ["All Parents"],
         schedule: "now",
+        scheduledFor: undefined,
         preview: false,
       });
       setAttachmentName(null);
       setIsModalOpen(false);
+      await fetchAnnouncements();
       toast.success("Announcement created successfully.");
     } catch (error: any) {
       console.error("Error creating announcement:", error);
@@ -495,7 +450,7 @@ const AnnouncementDashboard = () => {
                         <Icon className="h-5 w-5" />
                       </div>
                       <span className="text-xs font-medium text-slate-400">
-                        +{index + 4}% this week
+                        {formatWeeklyChange(weeklyChanges[index])}
                       </span>
                     </div>
                     <p className="mt-5 text-3xl font-bold text-slate-950">
@@ -551,7 +506,8 @@ const AnnouncementDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {visibleAnnouncements.map((announcement) => (
+                      {visibleAnnouncements.length ? (
+                        visibleAnnouncements.map((announcement) => (
                         <tr
                           key={announcement.id}
                           className="group transition hover:bg-slate-50/80"
@@ -561,7 +517,7 @@ const AnnouncementDashboard = () => {
                               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
                                 {announcement.pinned ? (
                                   <Pin className="h-5 w-5" />
-                                ) : announcement.attachment ? (
+                                ) : announcement.hasAttachment ? (
                                   <FileText className="h-5 w-5" />
                                 ) : (
                                   <Bell className="h-5 w-5" />
@@ -577,7 +533,7 @@ const AnnouncementDashboard = () => {
                                       Pinned
                                     </span>
                                   )}
-                                  {announcement.attachment && (
+                                  {announcement.hasAttachment && (
                                     <Paperclip className="h-4 w-4 text-slate-400" />
                                   )}
                                 </div>
@@ -645,27 +601,25 @@ const AnnouncementDashboard = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="px-5 py-12 text-center text-sm text-slate-500"
+                          >
+                            No announcements found for this view.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                   <p>
-                    Showing 1 to {visibleAnnouncements.length} of{" "}
-                    {visibleAnnouncements.length} announcements
+                    Showing {visibleAnnouncements.length} of {pagination.total} announcements
                   </p>
-                  <div className="flex items-center gap-2">
-                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50">
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#003366] text-sm font-bold text-[#003366]">
-                      1
-                    </button>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -695,8 +649,16 @@ const AnnouncementDashboard = () => {
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
                 {[
-                  ["Parent engagement", "82%", "Open rate across guardians"],
-                  ["Student engagement", "76%", "Average student reads"],
+                  [
+                    "Parent engagement",
+                    `${announcementStats.parentEngagement ?? 0}%`,
+                    "Read rate across guardians",
+                  ],
+                  [
+                    "Student engagement",
+                    `${announcementStats.studentEngagement ?? 0}%`,
+                    "Average student reads",
+                  ],
                 ].map(([label, value, caption]) => (
                   <div
                     key={label}
@@ -722,14 +684,24 @@ const AnnouncementDashboard = () => {
                   <Eye className="h-5 w-5 text-slate-400" />
                 </div>
                 <div className="mt-6 flex h-44 items-end gap-3">
-                  {[42, 68, 54, 88, 73, 96, 61].map((height, index) => (
-                    <div key={index} className="flex flex-1 flex-col items-center gap-2">
+                  {dailyViews.map((item) => (
+                    <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
                       <div
                         className="w-full rounded-t-xl bg-[#003366]"
-                        style={{ height: `${height}%` }}
+                        style={{
+                          height: `${Math.max(
+                            item.views ? (item.views / maxDailyViews) * 100 : 4,
+                            4
+                          )}%`,
+                        }}
+                        title={`${item.views} views`}
                       />
                       <span className="text-xs font-semibold text-slate-400">
-                        {["M", "T", "W", "T", "F", "S", "S"][index]}
+                        {new Intl.DateTimeFormat("en-GB", {
+                          weekday: "short",
+                        })
+                          .format(new Date(item.date))
+                          .slice(0, 1)}
                       </span>
                     </div>
                   ))}
@@ -878,6 +850,8 @@ const AnnouncementDashboard = () => {
                             setNewAnnouncement((prev) => ({
                               ...prev,
                               schedule: value as "now" | "later",
+                              scheduledFor:
+                                value === "now" ? undefined : prev.scheduledFor,
                             }))
                           }
                           className={cn(
@@ -892,6 +866,19 @@ const AnnouncementDashboard = () => {
                         </button>
                       ))}
                     </div>
+                    {newAnnouncement.schedule === "later" && (
+                      <input
+                        type="datetime-local"
+                        value={newAnnouncement.scheduledFor ?? ""}
+                        onChange={(event) =>
+                          setNewAnnouncement((prev) => ({
+                            ...prev,
+                            scheduledFor: event.target.value,
+                          }))
+                        }
+                        className="mt-3 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 shadow-sm focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

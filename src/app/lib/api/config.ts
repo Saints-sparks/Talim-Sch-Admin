@@ -70,8 +70,9 @@ export const API_URLS = {
   },
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: "/notifications/announcements",
-    GET_ANNOUNCEMENTS_BY_SENDER:
-      "/notifications/announcements/sender/:senderId?page=:page&limit=:limit",
+    GET_ANNOUNCEMENTS_BY_SENDER: "/notifications/announcements/sender/:senderId",
+    GET_ANNOUNCEMENT_STATS_BY_SENDER:
+      "/notifications/announcements/sender/:senderId/stats",
   },
   FILES: {
     UPLOAD_IMAGE: "/upload/image",
@@ -142,17 +143,16 @@ export const API_ENDPOINTS = {
   CREATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENT.CREATE}`,
   UPLOAD_IMAGE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_IMAGE}`,
   UPLOAD_FILE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_FILE}`,
-  GET_ANNOUNCEMENTS_BY_SENDER: (
-    senderId: string,
-    page: number,
-    limit: number
-  ) =>
+  GET_ANNOUNCEMENTS_BY_SENDER: (senderId: string) =>
     `${API_BASE_URL}${API_URLS.NOTIFICATION.GET_ANNOUNCEMENTS_BY_SENDER.replace(
       ":senderId",
       senderId
-    )
-      .replace(":page", page.toString())
-      .replace(":limit", limit.toString())}`,
+    )}`,
+  GET_ANNOUNCEMENT_STATS_BY_SENDER: (senderId: string) =>
+    `${API_BASE_URL}${API_URLS.NOTIFICATION.GET_ANNOUNCEMENT_STATS_BY_SENDER.replace(
+      ":senderId",
+      senderId
+    )}`,
   CREATE_ACADEMIC_YEAR: `${API_BASE_URL}${API_URLS.ACADEMIC.CREATE_ACADEMIC_YEAR}`,
   GET_ACADEMIC_YEARS: `${API_BASE_URL}${API_URLS.ACADEMIC.GET_ACADEMIC_YEARS}`,
   CREATE_TERM: `${API_BASE_URL}${API_URLS.ACADEMIC.CREATE_TERM}`,
