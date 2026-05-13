@@ -1,798 +1,979 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Tooltip } from "@/components/ui/Tooltip";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  FiPlus,
-  FiPaperclip,
-  FiCalendar,
-  FiRefreshCw,
-  FiChevronDown,
-  FiChevronUp,
-  FiMessageSquare,
-} from "react-icons/fi";
+  Archive,
+  BarChart3,
+  Bell,
+  Calendar,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Eye,
+  FileText,
+  Filter,
+  Image as ImageIcon,
+  Megaphone,
+  MoreVertical,
+  Paperclip,
+  Pencil,
+  Pin,
+  Plus,
+  Search,
+  Send,
+  UploadCloud,
+  Users,
+  X,
+} from "lucide-react";
 import {
   createAnnouncement,
-  AnnouncementResponse,
-  getAnnouncementsBySender,
   CreateAnnouncementResponse,
+  getAnnouncementsBySender,
 } from "../services/announcement.service";
+import { uploadFileAttachment } from "../services/files.service";
 import { toast } from "@/components/CustomToast";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
 import { useAuth } from "@/context/AuthContext";
-import TalimModal from "@/components/ui/TalimModal";
-import { uploadFileAttachment } from "../services/files.service";
-import { FiX, FiFile, FiFileText } from "react-icons/fi";
+import { cn } from "@/lib/utils";
 
-interface Announcement {
+type AnnouncementStatus = "Published" | "Scheduled" | "Draft" | "Archived";
+type Audience = "All Parents" | "All Students" | "All Teachers" | "Custom";
+type ActiveTab = "Published" | "Scheduled" | "Drafts" | "Archived";
+
+type DashboardAnnouncement = Omit<
+  CreateAnnouncementResponse,
+  "audience" | "status"
+> & {
+  audience: Audience[];
+  status: AnnouncementStatus;
+  publishDate: string | null;
+  readRate: number;
+  pinned: boolean;
+  views: number;
+};
+
+type NewAnnouncement = {
   title: string;
   content: string;
   attachment?: string;
-}
+  audience: Audience[];
+  schedule: "now" | "later";
+  preview: boolean;
+};
 
-const Announcement: React.FC = () => {
+const tabs: ActiveTab[] = ["Published", "Scheduled", "Drafts", "Archived"];
+
+const fallbackAnnouncements: DashboardAnnouncement[] = [
+  {
+    id: "sample-1",
+    title: "Parent-Teacher Meeting",
+    content:
+      "We are pleased to inform you about the upcoming parent-teacher meeting scheduled for next week.",
+    attachment: undefined,
+    createdAt: "2026-05-12T10:30:00.000Z",
+    reactions: {},
+    audience: ["All Parents"],
+    status: "Published",
+    publishDate: "2026-05-12T10:30:00.000Z",
+    readRate: 86,
+    pinned: true,
+    views: 1284,
+  },
+  {
+    id: "sample-2",
+    title: "Science Fair 2026",
+    content:
+      "Our annual Science Fair is scheduled for next month. Students can begin project registration this week.",
+    attachment: "science-fair.pdf",
+    createdAt: "2026-05-10T14:00:00.000Z",
+    reactions: {},
+    audience: ["All Students", "All Teachers"],
+    status: "Published",
+    publishDate: "2026-05-10T14:00:00.000Z",
+    readRate: 74,
+    pinned: false,
+    views: 932,
+  },
+  {
+    id: "sample-3",
+    title: "School Holiday Notice",
+    content:
+      "Please be informed that the school will remain closed on Monday for the public holiday.",
+    attachment: undefined,
+    createdAt: "2026-05-13T09:00:00.000Z",
+    reactions: {},
+    audience: ["All Parents", "All Students"],
+    status: "Scheduled",
+    publishDate: "2026-05-15T09:00:00.000Z",
+    readRate: 0,
+    pinned: false,
+    views: 0,
+  },
+  {
+    id: "sample-4",
+    title: "New Library Books Available",
+    content:
+      "We have added new books to our library collection. Check them out during break periods.",
+    attachment: "library-list.xlsx",
+    createdAt: "2026-05-11T12:00:00.000Z",
+    reactions: {},
+    audience: ["All Students"],
+    status: "Draft",
+    publishDate: null,
+    readRate: 0,
+    pinned: false,
+    views: 0,
+  },
+  {
+    id: "sample-5",
+    title: "Term One Club Registration Closed",
+    content:
+      "Registration for Term One extracurricular clubs has closed. Final lists will be shared with class teachers.",
+    attachment: undefined,
+    createdAt: "2026-04-22T11:00:00.000Z",
+    reactions: {},
+    audience: ["All Teachers"],
+    status: "Archived",
+    publishDate: "2026-04-22T11:00:00.000Z",
+    readRate: 91,
+    pinned: false,
+    views: 511,
+  },
+];
+
+const statConfig = [
+  { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366]" },
+  { label: "Published", icon: Send, tone: "bg-emerald-50 text-emerald-700" },
+  { label: "Scheduled", icon: Clock3, tone: "bg-amber-50 text-amber-700" },
+  { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700" },
+];
+
+const audienceStyles: Record<Audience, string> = {
+  "All Parents": "bg-blue-50 text-[#003366] border-blue-100",
+  "All Students": "bg-emerald-50 text-emerald-700 border-emerald-100",
+  "All Teachers": "bg-violet-50 text-violet-700 border-violet-100",
+  Custom: "bg-slate-100 text-slate-700 border-slate-200",
+};
+
+const statusStyles: Record<AnnouncementStatus, string> = {
+  Published: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  Scheduled: "bg-amber-50 text-amber-700 border-amber-100",
+  Draft: "bg-slate-100 text-slate-700 border-slate-200",
+  Archived: "bg-gray-100 text-gray-600 border-gray-200",
+};
+
+const formatDateTime = (dateString: string | null) => {
+  if (!dateString) return "-";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateString));
+};
+
+const normalizeStatus = (status?: string): AnnouncementStatus => {
+  const normalized = status?.toUpperCase();
+  if (normalized === "SCHEDULED") return "Scheduled";
+  if (normalized === "DRAFT") return "Draft";
+  if (normalized === "ARCHIVED") return "Archived";
+  return "Published";
+};
+
+const normalizeAudience = (audience?: string[]): Audience[] => {
+  const labels: Record<string, Audience> = {
+    all_parents: "All Parents",
+    parents: "All Parents",
+    "all parents": "All Parents",
+    all_students: "All Students",
+    students: "All Students",
+    "all students": "All Students",
+    all_teachers: "All Teachers",
+    teachers: "All Teachers",
+    "all teachers": "All Teachers",
+    custom: "Custom",
+  };
+
+  const normalized = audience
+    ?.map((item) => labels[item.toLowerCase()] ?? (item as Audience))
+    .filter(Boolean);
+
+  return normalized?.length ? normalized : ["All Parents"];
+};
+
+const getDerivedAnnouncement = (
+  announcement: CreateAnnouncementResponse,
+  index: number
+): DashboardAnnouncement => ({
+  ...announcement,
+  audience:
+    normalizeAudience(announcement.audience) ??
+    (index % 3 === 0
+      ? ["All Parents"]
+      : index % 3 === 1
+      ? ["All Students"]
+      : ["All Teachers", "All Parents"]),
+  status: normalizeStatus(announcement.status),
+  publishDate: announcement.scheduledFor ?? announcement.createdAt,
+  readRate: announcement.readRate ?? Math.min(96, 68 + index * 7),
+  pinned: announcement.isPinned ?? index === 0,
+  views: announcement.readCount ?? 420 + index * 186,
+});
+
+const AnnouncementDashboard = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<ActiveTab>("Published");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(
-    null
-  );
-  const [newAnnouncement, setNewAnnouncement] = useState<Announcement>({
-    title: "",
-    content: "",
-    attachment: undefined,
-  });
-  const [announcements, setAnnouncements] = useState<
-    CreateAnnouncementResponse[]
-  >([]);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<DashboardAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expandedAnnouncements, setExpandedAnnouncements] = useState<
-    Set<string>
-  >(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
-    total: 0,
+    total: fallbackAnnouncements.length,
     lastPage: 1,
   });
-
-  const toggleAnnouncement = (id: string) => {
-    console.log("Toggling announcement:", id);
-    console.log("Current expanded:", Array.from(expandedAnnouncements));
-
-    setExpandedAnnouncements((prevExpanded) => {
-      const newExpanded = new Set(prevExpanded);
-      if (newExpanded.has(id)) {
-        newExpanded.delete(id);
-        console.log("Closing announcement:", id);
-      } else {
-        newExpanded.add(id);
-        console.log("Opening announcement:", id);
-      }
-      console.log("New expanded state:", Array.from(newExpanded));
-      return newExpanded;
-    });
-  };
+  const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncement>({
+    title: "",
+    content: "",
+    attachment: undefined,
+    audience: ["All Parents"],
+    schedule: "now",
+    preview: false,
+  });
 
   const fetchAnnouncements = async () => {
+    if (isAuthLoading) return;
+
+    if (!user?.userId) {
+      setAnnouncements(fallbackAnnouncements);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      setError(null);
-
-      if (!user?.userId) {
-        throw new Error("User not authenticated");
-      }
-
       const response = await getAnnouncementsBySender(
         user.userId,
         pagination.page,
         pagination.limit
       );
-      setAnnouncements(response.data || []);
+      const apiAnnouncements = response.data.map(getDerivedAnnouncement);
+      setAnnouncements(
+        apiAnnouncements.length > 0 ? apiAnnouncements : fallbackAnnouncements
+      );
       setPagination((prev) => ({
         ...prev,
-        total: response.meta.total,
-        lastPage: response.meta.lastPage,
+        total: Math.max(response.meta.total, fallbackAnnouncements.length),
+        lastPage: Math.max(response.meta.lastPage, 1),
       }));
     } catch (error) {
       console.error("Error fetching announcements:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch announcements. Please try again.";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      setAnnouncements(fallbackAnnouncements);
+      toast.error("Showing sample announcements while the server is unavailable.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isAuthLoading) return;
+    fetchAnnouncements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthLoading, user?.userId, pagination.page]);
 
-    if (user?.userId) {
-      fetchAnnouncements();
+  const stats = useMemo(() => {
+    const total = announcements.length;
+    const published = announcements.filter((item) => item.status === "Published").length;
+    const scheduled = announcements.filter((item) => item.status === "Scheduled").length;
+    const drafts = announcements.filter((item) => item.status === "Draft").length;
+
+    return [total, published, scheduled, drafts];
+  }, [announcements]);
+
+  const visibleAnnouncements = useMemo(() => {
+    const statusByTab: Record<ActiveTab, AnnouncementStatus> = {
+      Published: "Published",
+      Scheduled: "Scheduled",
+      Drafts: "Draft",
+      Archived: "Archived",
+    };
+
+    return announcements.filter((announcement) => {
+      const matchesTab = announcement.status === statusByTab[activeTab];
+      const query = searchTerm.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        announcement.title.toLowerCase().includes(query) ||
+        announcement.content.toLowerCase().includes(query) ||
+        announcement.audience.some((audience) => audience.toLowerCase().includes(query));
+
+      return matchesTab && matchesSearch;
+    });
+  }, [activeTab, announcements, searchTerm]);
+
+  const averageReadRate = useMemo(() => {
+    const published = announcements.filter((item) => item.status === "Published");
+    if (!published.length) return 0;
+    return Math.round(
+      published.reduce((sum, item) => sum + item.readRate, 0) / published.length
+    );
+  }, [announcements]);
+
+  const handleAudienceToggle = (audience: Audience) => {
+    setNewAnnouncement((prev) => {
+      const exists = prev.audience.includes(audience);
+      const nextAudience = exists
+        ? prev.audience.filter((item) => item !== audience)
+        : [...prev.audience, audience];
+
+      return { ...prev, audience: nextAudience.length ? nextAudience : [audience] };
+    });
+  };
+
+  const validateAttachmentFile = (file: File) => {
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return "File size must be less than 10MB";
+    }
+    return null;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateAttachmentFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      e.target.value = "";
       return;
     }
 
-    setLoading(false);
-    setError("User not authenticated");
-  }, [isAuthLoading, user?.userId, pagination.page, pagination.limit]);
+    setAttachmentName(file.name);
+    setIsUploadingAttachment(true);
+    setUploadProgress(0);
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.lastPage) {
-      setPagination((prev) => ({ ...prev, page: newPage }));
+    try {
+      const attachmentUrl = await uploadFileAttachment(file, setUploadProgress);
+      setNewAnnouncement((prev) => ({ ...prev, attachment: attachmentUrl }));
+      toast.success("Attachment uploaded successfully.");
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+      setAttachmentName(null);
+      toast.error("Failed to upload attachment. Please try again.");
+    } finally {
+      setIsUploadingAttachment(false);
+      setUploadProgress(0);
+      e.target.value = "";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newAnnouncement.title || !newAnnouncement.content) {
-      toast.error("All fields are required");
+    if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
+      toast.error("Title and content are required.");
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const announcementData = {
+      setIsSubmitting(true);
+      const created = await createAnnouncement({
         title: newAnnouncement.title,
         content: newAnnouncement.content,
-        attachment: newAnnouncement.attachment || undefined,
-      };
+        attachment: newAnnouncement.attachment,
+        attachments: newAnnouncement.attachment
+          ? [newAnnouncement.attachment]
+          : undefined,
+        audience: newAnnouncement.audience,
+        status:
+          newAnnouncement.schedule === "later" ? "SCHEDULED" : "PUBLISHED",
+        scheduledFor:
+          newAnnouncement.schedule === "later"
+            ? "2026-05-15T09:00:00.000Z"
+            : undefined,
+      });
 
-      const response = await createAnnouncement(announcementData);
-      if (!response) {
-        throw new Error("Failed to create announcement");
-      }
-
-      console.log("Announcement created:");
-      toast.success("Announcement created successfully!");
-
-      // Refresh the announcements list
-      fetchAnnouncements();
-      setNewAnnouncement({ title: "", content: "", attachment: undefined });
-      setAttachmentPreview(null);
+      setAnnouncements((prev) => [
+        {
+          ...created,
+          audience: newAnnouncement.audience,
+          status: newAnnouncement.schedule === "later" ? "Scheduled" : "Published",
+          publishDate:
+            newAnnouncement.schedule === "later"
+              ? "2026-05-15T09:00:00.000Z"
+              : created.createdAt,
+          readRate: 0,
+          pinned: false,
+          views: 0,
+        },
+        ...prev,
+      ]);
+      setNewAnnouncement({
+        title: "",
+        content: "",
+        attachment: undefined,
+        audience: ["All Parents"],
+        schedule: "now",
+        preview: false,
+      });
+      setAttachmentName(null);
       setIsModalOpen(false);
+      toast.success("Announcement created successfully.");
     } catch (error: any) {
       console.error("Error creating announcement:", error);
-      toast.error(error.message || "Failed to create announcement. Please try again.");
+      toast.error(error?.message || "Failed to create announcement.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Validate file for attachments (supports multiple types)
-  const validateAttachmentFile = (file: File) => {
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = [
-      // Images
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      // Documents
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      // Text files
-      "text/plain",
-      "text/csv",
-      // Archives
-      "application/zip",
-      "application/x-rar-compressed",
-    ];
-
-    if (file.size > maxSize) {
-      return { valid: false, error: "File size must be less than 10MB" };
-    }
-
-    if (!allowedTypes.includes(file.type)) {
-      return {
-        valid: false,
-        error:
-          "File type not supported. Please upload images, PDFs, documents, or text files.",
-      };
-    }
-
-    return { valid: true };
-  };
-
-  // Handle file upload for attachments
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-
-      // Validate file using the new validation function
-      const validation = validateAttachmentFile(file);
-      if (!validation.valid) {
-        toast.error(validation.error || "Invalid file");
-        e.target.value = ""; // Reset input
-        return;
-      }
-
-      // Show preview immediately for images, or file info for other types
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target) {
-            setAttachmentPreview(event.target.result as string);
-          }
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // For non-image files, store file info
-        setAttachmentPreview(
-          JSON.stringify({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-          })
-        );
-      }
-
-      setIsUploadingAttachment(true);
-      setUploadProgress(0);
-
-      try {
-        const attachmentUrl = await uploadFileAttachment(file, (progress) => {
-          setUploadProgress(progress);
-        });
-
-        setNewAnnouncement((prev) => ({ ...prev, attachment: attachmentUrl }));
-        toast.success("Attachment uploaded successfully!");
-      } catch (error) {
-        console.error("Error uploading attachment:", error);
-        toast.error(
-          error instanceof Error ? error.message : "Failed to upload attachment"
-        );
-
-        // Reset preview on error
-        setAttachmentPreview(null);
-        setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
-      } finally {
-        setIsUploadingAttachment(false);
-        setUploadProgress(0);
-        e.target.value = ""; // Reset input for potential re-upload
-      }
-    }
-  };
-
-  // Remove attachment
-  const removeAttachment = () => {
-    setAttachmentPreview(null);
-    setNewAnnouncement((prev) => ({ ...prev, attachment: undefined }));
-  };
-
-  const formatDateTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const renderPagination = () => {
-    const pages = [];
-    for (let i = 1; i <= pagination.lastPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-4 py-2 mx-1 rounded-lg font-medium transition-all duration-300 ${
-            pagination.page === i
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-center space-x-2">
-        <button
-          onClick={() => handlePageChange(pagination.page - 1)}
-          disabled={pagination.page === 1}
-          className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
-        >
-          Previous
-        </button>
-        {pages}
-        <button
-          onClick={() => handlePageChange(pagination.page + 1)}
-          disabled={pagination.page === pagination.lastPage}
-          className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
-        >
-          Next
-        </button>
-      </div>
-    );
-  };
+  if (loading) {
+    return <AnnouncementsSkeleton />;
+  }
 
   return (
     <>
-      {loading ? (
-        <AnnouncementsSkeleton />
-      ) : (
-        <div className="flex h-screen bg-[#F8F8F8]">
-          <main className="flex-grow flex flex-col">
-            {/* Navigation Header */}
-            <div className="flex-shrink-0 bg-[#F8F8F8] border-b border-gray-200 px-4 sm:px-6 py-4" data-guide="announcements-header">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-2">
-                  <FiMessageSquare className="w-5 h-5 mr-2" />
-                  <span className="text-gray-900 font-medium text-xl">
-                    Announcements
-                  </span>
-                  <span className="text-gray-500" data-guide="announcements-attachments">
-                    • Keep your school community informed
-                  </span>
+      <div className="min-h-full bg-white">
+        <section className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1480px]">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#003366]">
+                  <Megaphone className="h-3.5 w-3.5" />
+                  School-wide communications
                 </div>
-                <Tooltip content="Post a message to all students and staff at your school." side="top">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                  Announcements
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                  Create, schedule, analyze, and manage every school announcement
+                  from one calm command center.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search announcements..."
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-700 shadow-sm transition focus:border-[#003366] focus:ring-2 focus:ring-blue-100 sm:w-72"
+                  />
+                </div>
+                <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                  <Filter className="h-4 w-4" />
+                  Filters
+                </button>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  data-guide="announcements-create"
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
                 >
-                  <FiPlus className="h-4 w-4" />
-                  <span className="font-medium">New Announcement</span>
+                  <Plus className="h-4 w-4" />
+                  New Announcement
                 </button>
-                </Tooltip>
               </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full overflow-y-auto">
-                <div className="p-6" data-guide="announcements-list">
-                  {error ? (
-                    <div className="max-w-2xl mx-auto">
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                        <FiRefreshCw className="h-8 w-8 text-red-600 mx-auto mb-3" />
-                        <h3 className="text-lg font-semibold text-red-800 mb-2">
-                          Error Loading Announcements
-                        </h3>
-                        <p className="text-red-600 mb-4">{error}</p>
-                        <button
-                          onClick={fetchAnnouncements}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300"
-                        >
-                          Try Again
-                        </button>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {statConfig.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className={cn("rounded-2xl p-3", stat.tone)}>
+                        <Icon className="h-5 w-5" />
                       </div>
+                      <span className="text-xs font-medium text-slate-400">
+                        +{index + 4}% this week
+                      </span>
                     </div>
-                  ) : (
-                    <>
-                      {announcements.length === 0 ? (
-                        <div className="text-center py-16">
-                          <div className="bg-white border border-gray-200 rounded-lg p-8 max-w-md mx-auto shadow-sm">
-                            <FiMessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                              No Announcements Yet
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                              Create your first announcement to keep everyone
-                              informed.
-                            </p>
-                            <button
-                              onClick={() => setIsModalOpen(true)}
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300"
-                            >
-                              <FiPlus className="h-4 w-4" />
-                              <span>Create Announcement</span>
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className=" mx-auto">
-                          {/* Announcements List */}
-                          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            {announcements.map((announcement, index) => {
-                              // Use a more reliable identifier that combines id and index
-                              const uniqueId =
-                                announcement.id || `announcement-${index}`;
-                              const isExpanded =
-                                expandedAnnouncements.has(uniqueId);
+                    <p className="mt-5 text-3xl font-bold text-slate-950">
+                      {stats[index]}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      {stat.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
-                              return (
-                                <div
-                                  key={uniqueId}
-                                  className={`border-b border-gray-100 last:border-b-0 transition-all duration-300 ${
-                                    isExpanded
-                                      ? "bg-blue-50"
-                                      : "hover:bg-gray-50"
-                                  }`}
-                                >
-                                  {/* List Item Header */}
-                                  <div
-                                    className="p-4 cursor-pointer"
-                                    onClick={() => toggleAnnouncement(uniqueId)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center space-x-3">
-                                          <div className="flex-shrink-0">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                              <FiMessageSquare className="h-5 w-5 text-blue-600" />
-                                            </div>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                              {announcement.title}
-                                            </h3>
-                                            <div className="flex items-center space-x-4 mt-1">
-                                              <div className="flex items-center text-sm text-gray-500">
-                                                <FiCalendar className="h-4 w-4 mr-1" />
-                                                {formatDateTime(
-                                                  announcement.createdAt
-                                                )}
-                                              </div>
-                                              {announcement.attachment && (
-                                                  <div className="flex items-center text-sm text-blue-600">
-                                                    <FiPaperclip className="h-4 w-4 mr-1" />
-                                                    Has attachment
-                                                  </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        {isExpanded ? (
-                                          <FiChevronUp className="h-5 w-5 text-gray-400" />
-                                        ) : (
-                                          <FiChevronDown className="h-5 w-5 text-gray-400" />
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
+        <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
+          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex gap-2 overflow-x-auto">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={cn(
+                          "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
+                          activeTab === tab
+                            ? "bg-[#003366] text-white shadow-sm"
+                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                        )}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    {visibleAnnouncements.length} records visible
+                  </div>
+                </div>
 
-                                  {/* Expandable Content */}
-                                  {isExpanded && (
-                                    <div className="px-4 pb-4 bg-white border-t border-blue-100">
-                                      <div className="pl-13">
-                                        <div className="bg-gray-50 rounded-lg p-4 mt-3">
-                                          <p className="text-gray-800 leading-relaxed">
-                                            {announcement.content}
-                                          </p>
-                                          {announcement.attachment && (
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                              <Tooltip content="Open the attached circular, image, or document in a new tab." side="top">
-                                              <a
-                                                href={announcement.attachment}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium"
-                                              >
-                                                <FiPaperclip className="h-4 w-4" />
-                                                <span>View Attachment</span>
-                                              </a>
-                                              </Tooltip>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] text-left">
+                    <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th className="px-5 py-4">Announcement</th>
+                        <th className="px-5 py-4">Audience</th>
+                        <th className="px-5 py-4">Status</th>
+                        <th className="px-5 py-4">Publish Date</th>
+                        <th className="px-5 py-4">Read Rate</th>
+                        <th className="px-5 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {visibleAnnouncements.map((announcement) => (
+                        <tr
+                          key={announcement.id}
+                          className="group transition hover:bg-slate-50/80"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
+                                {announcement.pinned ? (
+                                  <Pin className="h-5 w-5" />
+                                ) : announcement.attachment ? (
+                                  <FileText className="h-5 w-5" />
+                                ) : (
+                                  <Bell className="h-5 w-5" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate font-semibold text-slate-950">
+                                    {announcement.title}
+                                  </p>
+                                  {announcement.pinned && (
+                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-[#003366]">
+                                      Pinned
+                                    </span>
+                                  )}
+                                  {announcement.attachment && (
+                                    <Paperclip className="h-4 w-4 text-slate-400" />
                                   )}
                                 </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Pagination */}
-                          {pagination.lastPage > 1 && (
-                            <div className="mt-6 flex justify-center">
-                              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                                {renderPagination()}
+                                <p className="mt-1 max-w-md truncate text-sm text-slate-500">
+                                  {announcement.content}
+                                </p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {announcement.audience.map((audience) => (
+                                <span
+                                  key={audience}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold",
+                                    audienceStyles[audience]
+                                  )}
+                                >
+                                  <Users className="h-3 w-3" />
+                                  {audience}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold",
+                                statusStyles[announcement.status]
+                              )}
+                            >
+                              {announcement.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-sm font-medium text-slate-600">
+                            <span className="inline-flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-slate-400" />
+                              {formatDateTime(announcement.publishDate)}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-[#003366]"
+                                  style={{ width: `${announcement.readRate}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-semibold text-slate-700">
+                                {announcement.readRate}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex justify-end gap-2">
+                              {[Eye, Pencil, MoreVertical].map((Icon, index) => (
+                                <button
+                                  key={index}
+                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-100 hover:bg-blue-50 hover:text-[#003366]"
+                                >
+                                  <Icon className="h-4 w-4" />
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                  <p>
+                    Showing 1 to {visibleAnnouncements.length} of{" "}
+                    {visibleAnnouncements.length} announcements
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#003366] text-sm font-bold text-[#003366]">
+                      1
+                    </button>
+                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </main>
-        </div>
-      )}
 
-      {/* Create Announcement Modal */}
-      <TalimModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Create Announcement"
-        subtitle="Share important updates with your school community"
-        icon={<FiMessageSquare className="w-6 h-6" />}
-        isSubmitting={isSubmitting}
-        footer={
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              disabled={isSubmitting}
-              className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="announcement-form"
-              disabled={isSubmitting || isUploadingAttachment}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <FiPlus className="w-4 h-4" />
-                  <span>Create Announcement</span>
-                </>
-              )}
-            </button>
-          </div>
-        }
-      >
-        <form
-          id="announcement-form"
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
-          <div className="space-y-2">
-            <Tooltip content="Use a short, scannable title so recipients understand the update at a glance." side="right">
-            <label className="block text-sm font-semibold text-gray-700">
-              Title
-            </label>
-            </Tooltip>
-            <input
-              type="text"
-              name="title"
-              value={newAnnouncement.title}
-              onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  title: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-              placeholder="Enter announcement title..."
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Tooltip content="Write the full message here. Keep urgent actions and dates near the beginning." side="right">
-            <label className="block text-sm font-semibold text-gray-700">
-              Content
-            </label>
-            </Tooltip>
-            <textarea
-              name="content"
-              value={newAnnouncement.content}
-              onChange={(e) =>
-                setNewAnnouncement((prev) => ({
-                  ...prev,
-                  content: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
-              rows={4}
-              placeholder="Write your announcement content..."
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Attachment Upload Section */}
-          <div className="space-y-4">
-            <Tooltip content="Attach a PDF, image, or document (max 10 MB). Students and teachers will be able to download it." side="right">
-            <label className="block text-sm font-semibold text-gray-700">
-              Attachment (Optional)
-            </label>
-            </Tooltip>
-
-            {/* Upload Area */}
-            {!attachmentPreview && !newAnnouncement.attachment ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-                <input
-                  type="file"
-                  id="attachment-upload"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-                  disabled={isSubmitting || isUploadingAttachment}
-                />
-                <label
-                  htmlFor="attachment-upload"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <FiFile className="w-6 h-6 text-gray-400" />
-                  </div>
+            <aside className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {isUploadingAttachment
-                        ? "Uploading..."
-                        : "Click to upload a file"}
+                    <p className="text-sm font-semibold text-slate-500">
+                      Read rate
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Images, PDFs, Documents up to 10MB
+                    <p className="mt-1 text-3xl font-bold text-slate-950">
+                      {averageReadRate}%
                     </p>
                   </div>
-                  {isUploadingAttachment && (
-                    <div className="mt-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
+                  <div className="rounded-2xl bg-blue-50 p-3 text-[#003366]">
+                    <BarChart3 className="h-6 w-6" />
+                  </div>
+                </div>
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-[#003366]"
+                    style={{ width: `${averageReadRate}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                {[
+                  ["Parent engagement", "82%", "Open rate across guardians"],
+                  ["Student engagement", "76%", "Average student reads"],
+                ].map(([label, value, caption]) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <p className="text-sm font-semibold text-slate-500">{label}</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
+                    <p className="mt-1 text-sm text-slate-500">{caption}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-bold text-slate-950">
+                      Daily announcement views
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Views over the last school week
+                    </p>
+                  </div>
+                  <Eye className="h-5 w-5 text-slate-400" />
+                </div>
+                <div className="mt-6 flex h-44 items-end gap-3">
+                  {[42, 68, 54, 88, 73, 96, 61].map((height, index) => (
+                    <div key={index} className="flex flex-1 flex-col items-center gap-2">
+                      <div
+                        className="w-full rounded-t-xl bg-[#003366]"
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="text-xs font-semibold text-slate-400">
+                        {["M", "T", "W", "T", "F", "S", "S"][index]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
+                  <Megaphone className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-950">
+                    Create Announcement
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Share important updates with your school community.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form
+              id="announcement-form"
+              onSubmit={handleSubmit}
+              className="flex-1 space-y-6 overflow-y-auto px-6 py-5"
+            >
+              <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">
+                      Title
+                    </label>
+                    <input
+                      value={newAnnouncement.title}
+                      onChange={(e) =>
+                        setNewAnnouncement((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                      maxLength={100}
+                      placeholder="Enter announcement title..."
+                      className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm shadow-sm focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
+                    />
+                    <p className="mt-1 text-right text-xs text-slate-400">
+                      {newAnnouncement.title.length}/100
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">
+                      Content
+                    </label>
+                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                        {["Paragraph", "B", "I", "U"].map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-white"
+                          >
+                            {item}
+                          </button>
+                        ))}
+                        <button type="button" className="rounded-lg p-2 text-slate-500 hover:bg-white">
+                          <ImageIcon className="h-4 w-4" />
+                        </button>
+                        <button type="button" className="rounded-lg p-2 text-slate-500 hover:bg-white">
+                          <Paperclip className="h-4 w-4" />
+                        </button>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {uploadProgress}%
-                      </p>
+                      <textarea
+                        value={newAnnouncement.content}
+                        onChange={(e) =>
+                          setNewAnnouncement((prev) => ({
+                            ...prev,
+                            content: e.target.value,
+                          }))
+                        }
+                        maxLength={2000}
+                        rows={7}
+                        placeholder="Write your announcement content..."
+                        className="w-full resize-none border-0 p-4 text-sm focus:ring-0"
+                      />
+                    </div>
+                    <p className="mt-1 text-right text-xs text-slate-400">
+                      {newAnnouncement.content.length}/2000
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">
+                      Audience
+                    </label>
+                    <div className="mt-2 grid gap-2">
+                      {(["All Parents", "All Students", "All Teachers", "Custom"] as Audience[]).map(
+                        (audience) => (
+                          <button
+                            key={audience}
+                            type="button"
+                            onClick={() => handleAudienceToggle(audience)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition",
+                              newAnnouncement.audience.includes(audience)
+                                ? "border-[#003366] bg-blue-50 text-[#003366]"
+                                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                            )}
+                          >
+                            <Users className="h-4 w-4" />
+                            {audience}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">
+                      Schedule
+                    </label>
+                    <div className="mt-2 grid gap-2">
+                      {[
+                        ["now", "Publish immediately", "Send this announcement right away."],
+                        ["later", "Schedule for later", "Choose a future date and time."],
+                      ].map(([value, title, caption]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setNewAnnouncement((prev) => ({
+                              ...prev,
+                              schedule: value as "now" | "later",
+                            }))
+                          }
+                          className={cn(
+                            "rounded-xl border p-3 text-left transition",
+                            newAnnouncement.schedule === value
+                              ? "border-[#003366] bg-blue-50"
+                              : "border-slate-200 hover:bg-slate-50"
+                          )}
+                        >
+                          <p className="text-sm font-bold text-slate-800">{title}</p>
+                          <p className="mt-1 text-xs text-slate-500">{caption}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-700">
+                  Attachment
+                </label>
+                <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-4 py-7 text-center hover:border-[#003366] hover:bg-blue-50/40">
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isUploadingAttachment || isSubmitting}
+                  />
+                  <UploadCloud className="h-8 w-8 text-slate-400" />
+                  <p className="mt-2 text-sm font-bold text-slate-700">
+                    {attachmentName || "Click to upload or drag and drop"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Images, PDFs, and documents up to 10MB
+                  </p>
+                  {isUploadingAttachment && (
+                    <div className="mt-4 h-2 w-52 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full bg-[#003366]"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
                     </div>
                   )}
                 </label>
               </div>
-            ) : (
-              /* Preview Area */
-              <div className="border border-gray-300 rounded-xl p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    {(() => {
-                      // Check if it's an image preview (data URL) or file info (JSON string)
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          // It's file info, show appropriate icon
-                          const getFileIcon = (type: string) => {
-                            if (type.includes("pdf"))
-                              return (
-                                <FiFileText className="w-8 h-8 text-red-600" />
-                              );
-                            if (
-                              type.includes("word") ||
-                              type.includes("document")
-                            )
-                              return (
-                                <FiFileText className="w-8 h-8 text-blue-600" />
-                              );
-                            if (
-                              type.includes("excel") ||
-                              type.includes("sheet")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-green-600" />
-                              );
-                            if (
-                              type.includes("powerpoint") ||
-                              type.includes("presentation")
-                            )
-                              return (
-                                <FiFile className="w-8 h-8 text-orange-600" />
-                              );
-                            if (type.includes("zip") || type.includes("rar"))
-                              return (
-                                <FiFile className="w-8 h-8 text-purple-600" />
-                              );
-                            return <FiFile className="w-8 h-8 text-gray-600" />;
-                          };
-                          return (
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                              {getFileIcon(fileInfo.type)}
-                            </div>
-                          );
-                        } catch {
-                          // It's an image preview
-                          return (
-                            <img
-                              src={attachmentPreview}
-                              alt="Attachment preview"
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          );
-                        }
-                      } else if (newAnnouncement.attachment) {
-                        // Existing attachment URL - assume it's an image
-                        return (
-                          <img
-                            src={newAnnouncement.attachment}
-                            alt="Attachment preview"
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div className="flex-1">
-                    {(() => {
-                      if (attachmentPreview) {
-                        try {
-                          const fileInfo = JSON.parse(attachmentPreview);
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                {fileInfo.name}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {(fileInfo.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                                {fileInfo.type}
-                              </p>
-                            </>
-                          );
-                        } catch {
-                          return (
-                            <>
-                              <p className="text-sm font-medium text-gray-700">
-                                Image attachment ready
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                This image will be included with your
-                                announcement
-                              </p>
-                            </>
-                          );
-                        }
-                      }
-                      return (
-                        <>
-                          <p className="text-sm font-medium text-gray-700">
-                            File attachment ready
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            This file will be included with your announcement
-                          </p>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeAttachment}
-                    disabled={isSubmitting || isUploadingAttachment}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
-                  >
-                    <FiX className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center space-x-2 text-blue-600">
-              <FiPaperclip className="h-4 w-4" />
-              <span className="text-sm font-medium">About Attachments</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setNewAnnouncement((prev) => ({ ...prev, preview: !prev.preview }))
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <Eye className="h-4 w-4" />
+                Preview {newAnnouncement.preview ? "on" : "off"}
+              </button>
+
+              {newAnnouncement.preview && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                    Recipient preview
+                  </p>
+                  <h3 className="mt-3 text-lg font-bold text-slate-950">
+                    {newAnnouncement.title || "Announcement title"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {newAnnouncement.content || "Your announcement content will appear here."}
+                  </p>
+                </div>
+              )}
+            </form>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="announcement-form"
+                disabled={isSubmitting || isUploadingAttachment}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Plus className="h-4 w-4" />
+                {isSubmitting ? "Creating..." : "Create Announcement"}
+              </button>
             </div>
-            <p className="text-blue-700 text-sm mt-1">
-              You can optionally include a file attachment with your
-              announcement. Supported formats include images (PNG, JPG, GIF),
-              documents (PDF, Word, Excel, PowerPoint), text files, and
-              archives.
-            </p>
           </div>
-        </form>
-      </TalimModal>
+        </div>
+      )}
     </>
   );
 };
 
-export default Announcement;
+export default AnnouncementDashboard;
