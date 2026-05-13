@@ -83,16 +83,23 @@ export interface GetParentsParams {
   sortBy?: string;
 }
 
-const getLocalStorageItem = (key: string) => {
-  const item = localStorage.getItem(key);
-  return item ? JSON.parse(item) : null;
+const getStoredJSON = (key: string) => {
+  if (typeof window === "undefined") return null;
+  const item = localStorage.getItem(key) || sessionStorage.getItem(key);
+  if (!item) return null;
+
+  try {
+    return JSON.parse(item);
+  } catch {
+    return null;
+  }
 };
 
 export const parentService = {
   async getParentsDashboard(
     params: GetParentsParams = {}
   ): Promise<GetParentsResponse> {
-    const user = getLocalStorageItem("user");
+    const user = getStoredJSON("user");
     const schoolId =
       typeof user?.schoolId === "string" ? user.schoolId : user?.schoolId?._id;
     if (!schoolId) {
@@ -105,11 +112,12 @@ export const parentService = {
       }
     });
 
-    const response = await apiClient.get(
-      `${API_ENDPOINTS.GET_PARENT(schoolId)}${
+    const url = `${API_ENDPOINTS.GET_PARENT(schoolId)}${
         query.toString() ? `?${query.toString()}` : ""
-      }`
-    );
+      }`;
+    console.info("[Parents] Fetching parents dashboard", url);
+
+    const response = await apiClient.get(url);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || "Failed to fetch parents");

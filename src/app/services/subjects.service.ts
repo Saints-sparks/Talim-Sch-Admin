@@ -28,6 +28,7 @@ export interface Teacher {
   userId?: string;
 }
 
+
 export interface Course {
   _id: string;
   title: string;
@@ -197,16 +198,11 @@ export const createSubject = async (payload: {
 };
 
 export const getSubjectsBySchool = async (): Promise<any[]> => {
-  const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-  });
+  const response = await apiClient.get(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch subjects");
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to fetch subjects");
   }
 
   const raw = await response.json();
@@ -249,22 +245,13 @@ export const getCoursesBySubject = async (
 };
 
 export const getCoursesBySchool = async (): Promise<Course[]> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(API_ENDPOINTS.GET_COURSES_BY_SCHOOL, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await apiClient.get(API_ENDPOINTS.GET_COURSES_BY_SCHOOL);
 
   if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
     throw new Error(
-      `Failed to fetch courses by school: ${response.statusText}`
+      errorData?.message ||
+        `Failed to fetch courses by school: ${response.statusText}`
     );
   }
 
@@ -435,21 +422,11 @@ export const deleteCourseService = async (courseId: string): Promise<void> => {
 
 // Enhanced subjects with courses fetch
 export const getSubjectsWithCourses = async (): Promise<Subject[]> => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await apiClient.get(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch subjects");
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to fetch subjects");
   }
 
   const subjects = await response.json();
