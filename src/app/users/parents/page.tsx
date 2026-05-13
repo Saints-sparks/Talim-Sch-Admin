@@ -3,8 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Eye,
   Filter,
@@ -12,7 +10,6 @@ import {
   MoreVertical,
   Pencil,
   Phone,
-  Plus,
   Search,
   UserRound,
   UsersRound,
@@ -71,12 +68,11 @@ const ParentsPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
   const [sortBy, setSortBy] = useState("az");
-  const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({
     total: 0,
     page: 1,
     lastPage: 1,
-    limit: 7,
+    limit: 100,
   });
 
   const selectedParent = useMemo(
@@ -88,8 +84,8 @@ const ParentsPage = () => {
     try {
       setIsLoading(true);
       const response = await parentService.getParentsDashboard({
-        page,
-        limit: 7,
+        page: 1,
+        limit: 100,
         search: searchTerm,
         status: statusFilter,
         gender: genderFilter,
@@ -110,7 +106,7 @@ const ParentsPage = () => {
     const timer = window.setTimeout(fetchParents, 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchTerm, statusFilter, genderFilter, sortBy]);
+  }, [searchTerm, statusFilter, genderFilter, sortBy]);
 
   const exportParents = () => {
     const rows = parents.map((parent) => ({
@@ -178,15 +174,6 @@ const ParentsPage = () => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              onClick={() =>
-                toast.info("Parent accounts are created when enrolling students.")
-              }
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#002952]"
-            >
-              <Plus className="h-4 w-4" />
-              Add Parent
-            </button>
-            <button
               onClick={exportParents}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
             >
@@ -228,10 +215,7 @@ const ParentsPage = () => {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchTerm}
-                onChange={(event) => {
-                  setSearchTerm(event.target.value);
-                  setPage(1);
-                }}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search parents..."
                 className="h-11 w-full rounded-xl border border-slate-200 pl-10 pr-4 text-sm focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
               />
@@ -242,10 +226,7 @@ const ParentsPage = () => {
             </button>
             <select
               value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setStatusFilter(event.target.value)}
               className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700"
             >
               <option value="all">Status: All</option>
@@ -254,10 +235,7 @@ const ParentsPage = () => {
             </select>
             <select
               value={genderFilter}
-              onChange={(event) => {
-                setGenderFilter(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setGenderFilter(event.target.value)}
               className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700"
             >
               <option value="all">Gender: All</option>
@@ -369,44 +347,8 @@ const ParentsPage = () => {
 
             <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
               <p>
-                Showing {parents.length ? (meta.page - 1) * meta.limit + 1 : 0} to{" "}
-                {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} parents
+                Showing {parents.length} of {meta.total} parents
               </p>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                {Array.from({ length: Math.min(meta.lastPage, 4) }).map((_, index) => {
-                  const pageNumber = index + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => setPage(pageNumber)}
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-bold",
-                        page === pageNumber
-                          ? "border-[#003366] text-[#003366]"
-                          : "border-slate-200 text-slate-600"
-                      )}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
-                <button
-                  disabled={page >= meta.lastPage}
-                  onClick={() =>
-                    setPage((current) => Math.min(current + 1, meta.lastPage))
-                  }
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
             </div>
           </section>
 
@@ -489,7 +431,6 @@ const ParentDetail = ({ parent }: { parent?: Parent }) => {
             Children ({parent.children?.length ?? 0})
           </h3>
           <button className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-50 px-3 text-sm font-semibold text-[#003366] hover:bg-blue-100">
-            <Plus className="h-4 w-4" />
             Link Child
           </button>
         </div>
