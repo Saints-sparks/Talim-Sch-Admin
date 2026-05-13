@@ -23,6 +23,12 @@ export interface Announcement {
    * Attachment URL of the announcement (optional)
    */
   attachment?: string;
+  attachments?: string[];
+  audience?: string[];
+  targetAudience?: string[];
+  status?: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+  scheduledFor?: string;
+  isPinned?: boolean;
 }
 
 /**
@@ -45,6 +51,16 @@ export interface CreateAnnouncementResponse {
    * Attachment URL of the announcement (optional)
    */
   attachment?: string;
+  attachments?: string[];
+  audience?: string[];
+  targetAudience?: string[];
+  status?: string;
+  scheduledFor?: string;
+  isPinned?: boolean;
+  readRate?: number;
+  readCount?: number;
+  audienceCount?: number;
+  hasAttachment?: boolean;
   /**
    * Created at timestamp of the announcement
    */
