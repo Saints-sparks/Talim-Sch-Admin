@@ -145,6 +145,17 @@ export const getTerms = async (): Promise<TermResponse[]> => {
   }
 };
 
+export const getTimetableEntries = async (): Promise<any> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.GET_TIMETABLE(1, 1));
+    if (!response.ok) throw new Error("Failed to fetch timetable");
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching timetable entries:", error);
+    throw error;
+  }
+};
+
 export const setCurrentTerm = async (termId: string): Promise<void> => {
   try {
     const url = API_ENDPOINTS.SET_CURRENT_TERM(termId);

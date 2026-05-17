@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useOnboarding, OnboardingStepId } from "@/context/OnboardingContext";
 import { useAuth } from "@/context/AuthContext";
-import { getAcademicYears } from "@/app/services/academic.service";
+import { getAcademicYears, getTimetableEntries } from "@/app/services/academic.service";
 import { getClasses } from "@/app/services/school.service";
 import {
   getSubjectsBySchool,
@@ -114,6 +114,19 @@ export function useOnboardingSync() {
         fn: async () => {
           const res = await assessmentService.getAssessmentsBySchool(1, 1);
           return hasCollectionItems(res);
+        },
+      },
+      {
+        id: "timetable-entry",
+        fn: async () => {
+          const data = await getTimetableEntries();
+          // Response is a day-keyed object: { Monday: [...], Tuesday: [...], ... }
+          if (data && typeof data === "object" && !Array.isArray(data)) {
+            return Object.values(data).some(
+              (entries) => Array.isArray(entries) && entries.length > 0
+            );
+          }
+          return hasCollectionItems(data);
         },
       },
     ];
