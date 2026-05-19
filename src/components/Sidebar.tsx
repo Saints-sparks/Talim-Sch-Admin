@@ -11,7 +11,8 @@ import { useWebSocketContext } from "@/context/WebSocketContext";
 import { chatService } from "@/services/chatServices";
 import {
   Bell,
-  X
+  X,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
@@ -147,6 +148,21 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       icon: <Calendar2 isActive={pathname.startsWith("/timetable")} />,
       label: "Timetable",
       tooltip: "Timetable",
+    },
+    {
+      path: "/fees-management",
+      icon: (
+        <CreditCard
+          className={cn(
+            "h-5 w-5",
+            pathname.startsWith("/fees-management")
+              ? "text-[#003366]"
+              : "text-[#929292]"
+          )}
+        />
+      ),
+      label: "Fees Management",
+      tooltip: "Fees Management",
     },
     {
       path: "/users",
