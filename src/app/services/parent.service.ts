@@ -96,6 +96,19 @@ const getStoredJSON = (key: string) => {
 };
 
 export const parentService = {
+  async getUserProfile(userId: string): Promise<Partial<ParentUser>> {
+    try {
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.GET_USER_PROFILE(userId)}`
+      );
+      if (!response.ok) return {};
+      const data = await response.json();
+      return data.user ?? data ?? {};
+    } catch {
+      return {};
+    }
+  },
+
   async getParentsDashboard(
     params: GetParentsParams = {}
   ): Promise<GetParentsResponse> {

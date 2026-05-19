@@ -74,6 +74,7 @@ const ParentsPage = () => {
     lastPage: 1,
     limit: 100,
   });
+  const [profileCache, setProfileCache] = useState<Record<string, { dateOfBirth?: string; gender?: string }>>({});
 
   const selectedParent = useMemo(
     () => parents.find((parent) => parent._id === selectedParentId) ?? parents[0],
@@ -107,6 +108,24 @@ const ParentsPage = () => {
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter, genderFilter, sortBy]);
+
+  useEffect(() => {
+    if (!selectedParent) return;
+    const userIds = [
+      selectedParent.userId?._id,
+      ...(selectedParent.children ?? []).map((child) => child.userId?._id),
+    ].filter((id): id is string => !!id && !(id in profileCache));
+
+    if (!userIds.length) return;
+
+    userIds.forEach(async (userId) => {
+      const profile = await parentService.getUserProfile(userId);
+      if (profile.dateOfBirth || profile.gender) {
+        setProfileCache((cache) => ({ ...cache, [userId]: profile }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedParent?._id]);
 
   const exportParents = () => {
     const rows = parents.map((parent) => ({
@@ -352,7 +371,7 @@ const ParentsPage = () => {
             </div>
           </section>
 
-          <ParentDetail parent={selectedParent} />
+          <ParentDetail parent={selectedParent} profileCache={profileCache} />
         </div>
       </div>
     </div>
@@ -376,7 +395,13 @@ const StatusBadge = ({ active }: { active: boolean }) => (
   </span>
 );
 
-const ParentDetail = ({ parent }: { parent?: Parent }) => {
+const ParentDetail = ({
+  parent,
+  profileCache,
+}: {
+  parent?: Parent;
+  profileCache: Record<string, { dateOfBirth?: string; gender?: string }>;
+}) => {
   if (!parent) {
     return (
       <aside className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
@@ -384,6 +409,8 @@ const ParentDetail = ({ parent }: { parent?: Parent }) => {
       </aside>
     );
   }
+
+  const parentProfile = profileCache[parent.userId?._id] ?? {};
 
   return (
     <aside className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -419,8 +446,8 @@ const ParentDetail = ({ parent }: { parent?: Parent }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
-        <Info label="Date of Birth" value={formatDate(parent.userId?.dateOfBirth)} />
-        <Info label="Gender" value={parent.userId?.gender ?? "-"} />
+        <Info label="Date of Birth" value={formatDate(parentProfile.dateOfBirth ?? parent.userId?.dateOfBirth)} />
+        <Info label="Gender" value={parentProfile.gender ?? parent.userId?.gender ?? "-"} />
         <Info label="Joined On" value={formatDate(parent.userId?.createdAt ?? parent.createdAt)} />
         <Info label="Last Login" value={formatDateTime(parent.userId?.lastLogin)} />
       </div>
@@ -468,7 +495,7 @@ const ParentDetail = ({ parent }: { parent?: Parent }) => {
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <Info label="Date of Birth" value={formatDate(child.userId?.dateOfBirth)} />
+                  <Info label="Date of Birth" value={formatDate((profileCache[child.userId?._id]?.dateOfBirth) ?? child.userId?.dateOfBirth)} />
                   <Info label="Status" value={child.isActive ? "Active" : "Inactive"} />
                 </div>
               </div>

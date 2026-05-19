@@ -3,9 +3,7 @@
 import React from "react";
 import {
   Bell,
-  CalendarClock,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   Copy,
   Eye,
@@ -17,7 +15,6 @@ import {
   Plus,
   Search,
   Send,
-  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -25,109 +22,27 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/CustomToast";
 import { cn } from "@/lib/utils";
 import {
-  AdminNotification,
-  AdminNotificationCategory,
-  AdminNotificationSource,
-  createAdminNotification,
-  getAdminNotifications,
-  NotificationFormPayload,
-} from "../services/notification.service";
+  Announcement,
+  AnnouncementStats,
+  CreateAnnouncementResponse,
+  createAnnouncement,
+  getAnnouncementsBySender,
+  getAnnouncementStatsBySender,
+} from "../services/announcement.service";
 
-type TabKey = "all" | "sent" | "scheduled" | "draft";
+type TabKey = "all" | "published" | "scheduled" | "draft";
 
-const templates = [
-  {
-    title: "Maintenance Alert",
-    message:
-      "We would like to inform you that Talim will undergo scheduled maintenance. During this time, the platform may be temporarily unavailable.",
-    category: "account" as AdminNotificationCategory,
-  },
-  {
-    title: "New Feature Announcement",
-    message:
-      "We are excited to announce new improvements to Talim. Please explore the latest updates in your dashboard.",
-    category: "other" as AdminNotificationCategory,
-  },
-  {
-    title: "Subscription Reminder",
-    message:
-      "This is a reminder about your upcoming Talim subscription renewal. Please contact support for assistance.",
-    category: "account" as AdminNotificationCategory,
-  },
-  {
-    title: "Policy Update",
-    message:
-      "Talim policies have been updated. Please review the latest platform guidelines.",
-    category: "account" as AdminNotificationCategory,
-  },
-  {
-    title: "General Announcement",
-    message: "Please take note of this important update from Talim.",
-    category: "announcement" as AdminNotificationCategory,
-  },
+const audienceOptions = [
+  { value: "all_teachers", label: "Teachers" },
+  { value: "all_students", label: "Students" },
+  { value: "all_parents", label: "Parents" },
 ];
 
-const sourceMeta: Record<
-  AdminNotificationSource,
-  { label: string; Icon: React.ComponentType<{ className?: string }>; color: string; badge: string }
-> = {
-  talim: {
-    label: "Talim",
-    Icon: Send,
-    color: "bg-blue-50 text-blue-700",
-    badge: "bg-blue-50 text-blue-700 ring-blue-100",
-  },
-  system: {
-    label: "System",
-    Icon: ShieldCheck,
-    color: "bg-violet-50 text-violet-700",
-    badge: "bg-violet-50 text-violet-700 ring-violet-100",
-  },
-  school: {
-    label: "School",
-    Icon: Bell,
-    color: "bg-emerald-50 text-emerald-700",
-    badge: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  },
-};
-
-const statusStyles = {
-  delivered: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  scheduled: "bg-amber-50 text-amber-700 ring-amber-100",
-  draft: "bg-blue-50 text-blue-700 ring-blue-100",
-  pending: "bg-slate-50 text-slate-700 ring-slate-100",
-};
-
-const roleOptions = [
-  { value: "teachers", label: "Teachers" },
-  { value: "students", label: "Students" },
-  { value: "parents", label: "Parents" },
-  { value: "school_admin", label: "School Admins" },
-];
-
-const categoryOptions: Array<{ value: AdminNotificationCategory; label: string }> = [
-  { value: "announcement", label: "Announcement" },
-  { value: "attendance", label: "Attendance" },
-  { value: "academics", label: "Academics" },
-  { value: "grading", label: "Grading" },
-  { value: "resources", label: "Resources" },
-  { value: "messages", label: "Messages" },
-  { value: "account", label: "Account" },
-  { value: "other", label: "Other" },
-];
-
-const getSchoolId = (schoolId: any): string => {
-  if (!schoolId) return "";
-  if (typeof schoolId === "string") return schoolId;
-  return schoolId._id || schoolId.id || "";
-};
-
-const getSchoolName = (user: any) => {
-  if (user?.schoolName) return user.schoolName;
-  if (user?.schoolId && typeof user.schoolId === "object") {
-    return user.schoolId.name || user.schoolId.schoolName || "Current School";
-  }
-  return "Current School";
+const statusStyles: Record<string, string> = {
+  PUBLISHED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  SCHEDULED: "bg-amber-50 text-amber-700 ring-amber-100",
+  DRAFT: "bg-blue-50 text-blue-700 ring-blue-100",
+  ARCHIVED: "bg-slate-50 text-slate-700 ring-slate-100",
 };
 
 const formatDateTime = (date?: string | null) => {
@@ -141,98 +56,86 @@ const formatDateTime = (date?: string | null) => {
   }).format(new Date(date));
 };
 
-const formatRole = (role: string) =>
-  role.replace(/^all_/, "").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+const defaultStats: AnnouncementStats = {
+  totalAnnouncements: 0,
+  published: 0,
+  scheduled: 0,
+  drafts: 0,
+  archived: 0,
+  readRate: 0,
+  parentEngagement: 0,
+  studentEngagement: 0,
+  dailyViews: [],
+};
 
 export default function NotificationsPage() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = React.useState<AdminNotification[]>([]);
+  const [announcements, setAnnouncements] = React.useState<CreateAnnouncementResponse[]>([]);
+  const [stats, setStats] = React.useState<AnnouncementStats>(defaultStats);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<TabKey>("all");
   const [search, setSearch] = React.useState("");
-  const [sourceFilter, setSourceFilter] = React.useState<"all" | AdminNotificationSource>("all");
-  const [statusFilter, setStatusFilter] = React.useState<"all" | TabKey>("all");
-  const [selected, setSelected] = React.useState<AdminNotification | null>(null);
+  const [selected, setSelected] = React.useState<CreateAnnouncementResponse | null>(null);
   const [isCreateOpen, setCreateOpen] = React.useState(false);
-  const [draftTemplate, setDraftTemplate] = React.useState<(typeof templates)[number] | null>(null);
 
-  const userId = user?.userId || user?._id || "";
-  const schoolId = getSchoolId(user?.schoolId);
-  const schoolName = getSchoolName(user);
+  const senderId = user?.userId || user?._id || "";
 
-  const loadNotifications = React.useCallback(async () => {
+  const loadData = React.useCallback(async () => {
+    if (!senderId) return;
     try {
       setLoading(true);
       setError(null);
-      const items = await getAdminNotifications(userId);
-      setNotifications(items);
+      const [announcementResponse, statsResponse] = await Promise.allSettled([
+        getAnnouncementsBySender(senderId, { page: 1, limit: 100 }),
+        getAnnouncementStatsBySender(senderId),
+      ]);
+
+      const items =
+        announcementResponse.status === "fulfilled" ? announcementResponse.value.data : [];
+      const resolvedStats =
+        statsResponse.status === "fulfilled" ? statsResponse.value : defaultStats;
+
+      setAnnouncements(items);
+      setStats(resolvedStats);
       setSelected((current) => current || items[0] || null);
     } catch (err: any) {
-      setError(err.message || "Failed to load notifications");
+      setError(err.message || "Failed to load announcements");
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [senderId]);
 
   React.useEffect(() => {
-    if (userId) {
-      loadNotifications();
+    if (senderId) {
+      loadData();
     }
-  }, [loadNotifications, userId]);
+  }, [loadData, senderId]);
 
-  const stats = React.useMemo(() => {
-    const delivered = notifications.filter((item) => item.status === "delivered");
-    return {
-      total: notifications.length,
-      delivered: delivered.length,
-      scheduled: notifications.filter((item) => item.status === "scheduled").length,
-      drafts: notifications.filter((item) => item.status === "draft").length,
-      deliveryRate: notifications.length ? Math.round((delivered.length / notifications.length) * 100) : 0,
-    };
-  }, [notifications]);
-
-  const filteredNotifications = React.useMemo(() => {
+  const filteredAnnouncements = React.useMemo(() => {
     const query = search.trim().toLowerCase();
-    return notifications.filter((notification) => {
-      const matchesTab =
+    return announcements.filter((item) => {
+      const status = item.status ?? "PUBLISHED";
+      const tabMatch =
         activeTab === "all"
           ? true
-          : activeTab === "sent"
-            ? notification.status === "delivered"
+          : activeTab === "published"
+            ? status === "PUBLISHED"
             : activeTab === "scheduled"
-              ? notification.status === "scheduled"
-              : notification.status === "draft";
-      const matchesSource = sourceFilter === "all" || notification.source === sourceFilter;
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "sent" ? notification.status === "delivered" : notification.status === statusFilter);
-      const matchesSearch = query
-        ? [notification.title, notification.message, notification.sentBy, notification.audienceLabel]
-            .join(" ")
-            .toLowerCase()
-            .includes(query)
+              ? status === "SCHEDULED"
+              : status === "DRAFT";
+      const searchMatch = query
+        ? [item.title, item.content].join(" ").toLowerCase().includes(query)
         : true;
-      return matchesTab && matchesSource && matchesStatus && matchesSearch;
+      return tabMatch && searchMatch;
     });
-  }, [activeTab, notifications, search, sourceFilter, statusFilter]);
+  }, [activeTab, announcements, search]);
 
-  const handleCreate = async (payload: NotificationFormPayload) => {
-    if (!userId) {
-      toast.error("You need to be signed in to send notifications.");
-      return;
-    }
-
-    await createAdminNotification(payload, userId, schoolId);
-    toast.success(payload.source === "school" ? "School announcement created" : "Talim notification sent");
+  const handleCreate = async (payload: Announcement) => {
+    await createAnnouncement(payload);
+    toast.success("Announcement created successfully");
     setCreateOpen(false);
-    setDraftTemplate(null);
-    await loadNotifications();
-  };
-
-  const openTemplate = (template: (typeof templates)[number]) => {
-    setDraftTemplate(template);
-    setCreateOpen(true);
+    await loadData();
   };
 
   return (
@@ -240,32 +143,23 @@ export default function NotificationsPage() {
       <div className="mx-auto flex max-w-[1500px] flex-col gap-5">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-[#101828]">Notifications</h1>
+            <h1 className="text-2xl font-semibold text-[#101828]">Notifications & Announcements</h1>
             <p className="mt-1 text-sm text-[#667085]">
-              Send and manage Talim notifications and school announcements.
+              Send and manage school announcements for your teachers, students, and parents.
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#DCE5F2] bg-white px-4 text-sm font-semibold text-[#344054] transition hover:bg-[#F8FBFF]">
-              <ShieldCheck className="h-4 w-4" />
-              Notification Templates
-            </button>
-            <button
-              onClick={() => {
-                setDraftTemplate(null);
-                setCreateOpen(true);
-              }}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#003366] px-4 text-sm font-semibold text-white shadow-sm shadow-[#003366]/20 transition hover:bg-[#00264D]"
-            >
-              <Plus className="h-4 w-4" />
-              New Notification
-            </button>
-          </div>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#003366] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00264D]"
+          >
+            <Plus className="h-4 w-4" />
+            New Announcement
+          </button>
         </header>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard icon={<Send className="h-5 w-5" />} label="Total Sent" value={stats.total} tone="blue" />
-          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Delivered" value={stats.delivered} tone="emerald" />
+          <StatCard icon={<Send className="h-5 w-5" />} label="Total" value={stats.totalAnnouncements} tone="blue" />
+          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Published" value={stats.published} tone="emerald" />
           <StatCard icon={<Clock3 className="h-5 w-5" />} label="Scheduled" value={stats.scheduled} tone="amber" />
           <StatCard icon={<FileText className="h-5 w-5" />} label="Drafts" value={stats.drafts} tone="violet" />
         </div>
@@ -274,15 +168,17 @@ export default function NotificationsPage() {
           <section className="rounded-xl border border-[#E5EAF2] bg-white shadow-sm">
             <div className="border-b border-[#E8EDF5] px-4 pt-4">
               <div className="flex gap-6 overflow-x-auto">
-                {[
-                  ["all", "All Notifications"],
-                  ["sent", "Sent"],
-                  ["scheduled", "Scheduled"],
-                  ["draft", "Drafts"],
-                ].map(([key, label]) => (
+                {(
+                  [
+                    ["all", "All"],
+                    ["published", "Published"],
+                    ["scheduled", "Scheduled"],
+                    ["draft", "Drafts"],
+                  ] as const
+                ).map(([key, label]) => (
                   <button
                     key={key}
-                    onClick={() => setActiveTab(key as TabKey)}
+                    onClick={() => setActiveTab(key)}
                     className={cn(
                       "border-b-2 px-1 pb-3 text-sm font-semibold transition",
                       activeTab === key
@@ -296,93 +192,42 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 border-b border-[#E8EDF5] p-4 md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
+            <div className="grid gap-3 border-b border-[#E8EDF5] p-4 md:grid-cols-[minmax(0,1fr)_auto]">
               <div className="flex h-10 items-center rounded-lg border border-[#DCE5F2] bg-white px-3">
                 <Search className="mr-2 h-4 w-4 text-[#98A2B3]" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search notifications..."
+                  placeholder="Search announcements..."
                   className="h-full min-w-0 flex-1 border-0 bg-transparent text-sm outline-none"
                 />
               </div>
-              <select
-                value={sourceFilter}
-                onChange={(event) => setSourceFilter(event.target.value as any)}
-                className="h-10 rounded-lg border border-[#DCE5F2] bg-white px-3 text-sm text-[#344054] outline-none"
-              >
-                <option value="all">All Sources</option>
-                <option value="talim">Talim</option>
-                <option value="system">System</option>
-                <option value="school">School</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as any)}
-                className="h-10 rounded-lg border border-[#DCE5F2] bg-white px-3 text-sm text-[#344054] outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="sent">Delivered</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="draft">Draft</option>
-              </select>
               <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#DCE5F2] bg-white px-4 text-sm font-semibold text-[#344054]">
                 <Filter className="h-4 w-4" />
                 Filter
               </button>
             </div>
 
-            <NotificationTable
+            <AnnouncementTable
               loading={loading}
               error={error}
-              notifications={filteredNotifications}
-              total={notifications.length}
+              announcements={filteredAnnouncements}
+              total={announcements.length}
               selectedId={selected?.id}
               onSelect={setSelected}
-              onRetry={loadNotifications}
+              onRetry={loadData}
             />
           </section>
 
           <aside className="space-y-4">
-            <section className="rounded-xl border border-[#E5EAF2] bg-white p-4 shadow-sm">
-              <h2 className="font-semibold text-[#101828]">Quick Templates</h2>
-              <p className="mt-1 text-xs text-[#667085]">Use templates to send notifications quickly.</p>
-              <div className="mt-4 space-y-2">
-                {templates.map((template) => (
-                  <button
-                    key={template.title}
-                    onClick={() => openTemplate(template)}
-                    className="flex w-full items-center justify-between rounded-lg border border-[#E8EDF5] bg-white p-3 text-left transition hover:border-[#BFD7FF] hover:bg-[#F8FBFF]"
-                  >
-                    <span>
-                      <span className="block text-sm font-semibold text-[#101828]">{template.title}</span>
-                      <span className="line-clamp-1 text-xs text-[#667085]">{template.message}</span>
-                    </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EFF5FF] text-[#0B63CE]">
-                      <Send className="h-4 w-4" />
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <button className="mt-3 h-10 w-full rounded-lg border border-[#DCE5F2] text-sm font-semibold text-[#344054] transition hover:bg-[#F8FBFF]">
-                View All Templates
-              </button>
-            </section>
-
-            {selected ? <NotificationPreview notification={selected} /> : null}
+            {selected ? <AnnouncementPreview announcement={selected} /> : null}
           </aside>
         </div>
       </div>
 
       {isCreateOpen ? (
-        <CreateNotificationModal
-          template={draftTemplate}
-          schoolId={schoolId}
-          schoolName={schoolName}
-          onClose={() => {
-            setCreateOpen(false);
-            setDraftTemplate(null);
-          }}
+        <CreateAnnouncementModal
+          onClose={() => setCreateOpen(false)}
           onSubmit={handleCreate}
         />
       ) : null}
@@ -410,7 +255,9 @@ function StatCard({
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-[#E5EAF2] bg-white p-5 shadow-sm">
-      <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", tones[tone])}>{icon}</div>
+      <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", tones[tone])}>
+        {icon}
+      </div>
       <div>
         <p className="text-2xl font-semibold text-[#101828]">{value}</p>
         <p className="text-xs text-[#667085]">{label}</p>
@@ -419,10 +266,10 @@ function StatCard({
   );
 }
 
-function NotificationTable({
+function AnnouncementTable({
   loading,
   error,
-  notifications,
+  announcements,
   total,
   selectedId,
   onSelect,
@@ -430,10 +277,10 @@ function NotificationTable({
 }: {
   loading: boolean;
   error: string | null;
-  notifications: AdminNotification[];
+  announcements: CreateAnnouncementResponse[];
   total: number;
   selectedId?: string;
-  onSelect: (notification: AdminNotification) => void;
+  onSelect: (announcement: CreateAnnouncementResponse) => void;
   onRetry: () => void;
 }) {
   if (loading) {
@@ -448,105 +295,112 @@ function NotificationTable({
     return (
       <div className="flex min-h-[340px] flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="font-semibold text-red-600">{error}</p>
-        <button onClick={onRetry} className="rounded-lg bg-[#003366] px-4 py-2 text-sm font-semibold text-white">
+        <button
+          onClick={onRetry}
+          className="rounded-lg bg-[#003366] px-4 py-2 text-sm font-semibold text-white"
+        >
           Try again
         </button>
       </div>
     );
   }
 
-  if (!notifications.length) {
+  if (!announcements.length) {
     return (
       <div className="flex min-h-[340px] items-center justify-center p-6 text-center text-sm text-[#667085]">
-        No notifications match this view.
+        No announcements match this view.
       </div>
     );
   }
 
   return (
     <div>
-      <div className="hidden grid-cols-[minmax(240px,1.3fr)_180px_180px_140px_160px_120px] gap-4 border-b border-[#E8EDF5] px-4 py-3 text-xs font-semibold uppercase text-[#667085] lg:grid">
+      <div className="hidden grid-cols-[minmax(240px,1.3fr)_180px_140px_160px_120px] gap-4 border-b border-[#E8EDF5] px-4 py-3 text-xs font-semibold uppercase text-[#667085] lg:grid">
         <span>Title</span>
         <span>Audience</span>
-        <span>Sent By</span>
         <span>Status</span>
-        <span>Sent / Scheduled</span>
+        <span>Date</span>
         <span>Actions</span>
       </div>
       <div className="divide-y divide-[#EEF2F7]">
-        {notifications.map((notification) => (
-          <NotificationRow
-            key={notification.id}
-            notification={notification}
-            selected={selectedId === notification.id}
+        {announcements.map((announcement) => (
+          <AnnouncementRow
+            key={announcement.id}
+            announcement={announcement}
+            selected={selectedId === announcement.id}
             onSelect={onSelect}
           />
         ))}
       </div>
       <div className="flex items-center justify-between px-4 py-4 text-xs text-[#667085]">
         <span>
-          Showing {notifications.length} of {total} notifications
+          Showing {announcements.length} of {total} announcements
         </span>
-        <span className="hidden sm:inline">Talim notifications and school announcements are shown together.</span>
       </div>
     </div>
   );
 }
 
-function NotificationRow({
-  notification,
+function AnnouncementRow({
+  announcement,
   selected,
   onSelect,
 }: {
-  notification: AdminNotification;
+  announcement: CreateAnnouncementResponse;
   selected: boolean;
-  onSelect: (notification: AdminNotification) => void;
+  onSelect: (announcement: CreateAnnouncementResponse) => void;
 }) {
-  const meta = sourceMeta[notification.source] || sourceMeta.system;
-  const Icon = meta.Icon;
+  const status = announcement.status ?? "PUBLISHED";
+  const audience = (announcement.audience ?? announcement.targetAudience ?? [])
+    .map((role) =>
+      role
+        .replace(/^all_/, "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+    )
+    .join(", ");
 
   return (
     <div
       className={cn(
-        "grid gap-4 px-4 py-4 transition hover:bg-[#F8FBFF] lg:grid-cols-[minmax(240px,1.3fr)_180px_180px_140px_160px_120px]",
+        "grid gap-4 px-4 py-4 transition hover:bg-[#F8FBFF] lg:grid-cols-[minmax(240px,1.3fr)_180px_140px_160px_120px]",
         selected && "bg-[#F4F8FF]",
       )}
     >
-      <button onClick={() => onSelect(notification)} className="flex min-w-0 gap-3 text-left">
-        <span className={cn("mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", meta.color)}>
-          <Icon className="h-4 w-4" />
+      <button onClick={() => onSelect(announcement)} className="flex min-w-0 gap-3 text-left">
+        <span className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+          <Bell className="h-4 w-4" />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-[#101828]">{notification.title}</span>
-          <span className="mt-1 line-clamp-1 text-xs text-[#667085]">{notification.message}</span>
-          <span className={cn("mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1", meta.badge)}>
-            {notification.sourceLabel}
+          <span className="block truncate text-sm font-semibold text-[#101828]">
+            {announcement.title}
+          </span>
+          <span className="mt-1 line-clamp-1 text-xs text-[#667085]">
+            {announcement.content}
           </span>
         </span>
       </button>
       <div className="text-sm text-[#344054]">
-        <p className="font-medium">{notification.audienceLabel}</p>
-        <p className="text-xs text-[#667085]">
-          {notification.recipientRoles.length
-            ? notification.recipientRoles.map(formatRole).join(", ")
-            : "All Users"}
-        </p>
-      </div>
-      <div className="text-sm">
-        <p className="font-medium text-[#344054]">{notification.sentBy}</p>
-        <p className="truncate text-xs text-[#667085]">{notification.sentByEmail || "admin@talim.com"}</p>
+        <p className="text-xs text-[#667085]">{audience || "All Users"}</p>
       </div>
       <div>
-        <span className={cn("rounded-full px-2 py-1 text-xs font-semibold capitalize ring-1", statusStyles[notification.status])}>
-          {notification.status}
+        <span
+          className={cn(
+            "rounded-full px-2 py-1 text-xs font-semibold capitalize ring-1",
+            statusStyles[status] || statusStyles.PUBLISHED,
+          )}
+        >
+          {status.toLowerCase()}
         </span>
-        {notification.status === "delivered" ? (
-          <p className="mt-1 text-xs text-emerald-600">{notification.deliveredRate}%</p>
-        ) : null}
       </div>
-      <div className="text-sm text-[#344054]">{formatDateTime(notification.scheduledFor || notification.createdAt)}</div>
+      <div className="text-sm text-[#344054]">
+        {formatDateTime(announcement.scheduledFor || announcement.createdAt)}
+      </div>
       <div className="flex items-center gap-2">
-        <button onClick={() => onSelect(notification)} className="rounded-lg border border-[#DCE5F2] p-2 text-[#667085] hover:bg-white">
+        <button
+          onClick={() => onSelect(announcement)}
+          className="rounded-lg border border-[#DCE5F2] p-2 text-[#667085] hover:bg-white"
+        >
           <Eye className="h-4 w-4" />
         </button>
         <button className="rounded-lg border border-[#DCE5F2] p-2 text-[#667085] hover:bg-white">
@@ -560,44 +414,50 @@ function NotificationRow({
   );
 }
 
-function NotificationPreview({ notification }: { notification: AdminNotification }) {
-  const meta = sourceMeta[notification.source] || sourceMeta.system;
-  const Icon = meta.Icon;
+function AnnouncementPreview({
+  announcement,
+}: {
+  announcement: CreateAnnouncementResponse;
+}) {
+  const status = announcement.status ?? "PUBLISHED";
 
   return (
     <section className="rounded-xl border border-[#E5EAF2] bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-[#101828]">{notification.title}</h2>
-          <p className="mt-1 text-xs text-[#667085]">{notification.sourceLabel}</p>
+          <h2 className="font-semibold text-[#101828]">{announcement.title}</h2>
+          <p className="mt-1 text-xs text-[#667085]">School Announcement</p>
         </div>
-        <span className={cn("flex h-10 w-10 items-center justify-center rounded-xl", meta.color)}>
-          <Icon className="h-5 w-5" />
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+          <Bell className="h-5 w-5" />
         </span>
       </div>
       <div className="mt-4 rounded-xl bg-gradient-to-br from-[#EAF3FF] via-white to-[#FFF6DF] p-5 text-center">
-        <Icon className="mx-auto h-12 w-12 text-[#003366]" />
+        <Bell className="mx-auto h-12 w-12 text-[#003366]" />
       </div>
-      <p className="mt-4 text-sm leading-6 text-[#344054]">{notification.message}</p>
+      <p className="mt-4 text-sm leading-6 text-[#344054]">{announcement.content}</p>
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <InfoPill label="Recipients" value={String(notification.totalRecipients)} />
-        <InfoPill label="Delivered" value={String(notification.deliveredCount)} />
-        <InfoPill label="Pending" value={String(notification.pendingCount)} />
-        <InfoPill label="Failed" value={String(notification.failedCount)} />
+        <InfoPill label="Status" value={status.toLowerCase()} />
+        <InfoPill
+          label="Read Rate"
+          value={announcement.readRate != null ? `${announcement.readRate}%` : "-"}
+        />
+        <InfoPill label="Read Count" value={String(announcement.readCount ?? 0)} />
+        <InfoPill label="Audience" value={String(announcement.audienceCount ?? "-")} />
       </div>
-      {notification.attachments.length ? (
+      {(announcement.attachments ?? (announcement.attachment ? [announcement.attachment] : [])).length ? (
         <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-[#101828]">Attachments ({notification.attachments.length})</p>
-          {notification.attachments.map((attachment) => (
+          <p className="mb-2 text-sm font-semibold text-[#101828]">Attachments</p>
+          {(announcement.attachments ?? [announcement.attachment!]).map((url) => (
             <a
-              key={attachment}
-              href={attachment}
+              key={url}
+              href={url}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 rounded-lg border border-[#E8EDF5] p-3 text-sm text-[#344054]"
             >
               <Paperclip className="h-4 w-4 text-[#667085]" />
-              <span className="truncate">{attachment.split("/").pop() || "Attachment"}</span>
+              <span className="truncate">{url.split("/").pop() || "Attachment"}</span>
             </a>
           ))}
         </div>
@@ -615,57 +475,33 @@ function InfoPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CreateNotificationModal({
-  template,
-  schoolId,
-  schoolName,
+function CreateAnnouncementModal({
   onClose,
   onSubmit,
 }: {
-  template: (typeof templates)[number] | null;
-  schoolId: string;
-  schoolName: string;
   onClose: () => void;
-  onSubmit: (payload: NotificationFormPayload) => Promise<void>;
+  onSubmit: (payload: Announcement) => Promise<void>;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
-  const [form, setForm] = React.useState<NotificationFormPayload>({
-    title: template?.title || "",
-    message: template?.message || "",
-    source: "talim",
-    category: template?.category || "other",
-    priority: "medium",
-    status: "send_now",
-    targetSchools: schoolId ? [schoolId] : [],
-    recipientRoles: ["teachers"],
-    deliveryMethods: ["in_app", "email", "push"],
+  const [form, setForm] = React.useState<Announcement>({
+    title: "",
+    content: "",
+    audience: ["all_teachers"],
+    status: "PUBLISHED",
   });
 
-  const setField = <K extends keyof NotificationFormPayload>(key: K, value: NotificationFormPayload[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
-  };
-
-  const toggleRole = (role: string) => {
+  const toggleAudience = (value: string) => {
     setForm((current) => ({
       ...current,
-      recipientRoles: current.recipientRoles.includes(role)
-        ? current.recipientRoles.filter((item) => item !== role)
-        : [...current.recipientRoles, role],
-    }));
-  };
-
-  const toggleDelivery = (method: string) => {
-    setForm((current) => ({
-      ...current,
-      deliveryMethods: current.deliveryMethods.includes(method)
-        ? current.deliveryMethods.filter((item) => item !== method)
-        : [...current.deliveryMethods, method],
+      audience: current.audience?.includes(value)
+        ? current.audience.filter((item) => item !== value)
+        : [...(current.audience ?? []), value],
     }));
   };
 
   const submit = async () => {
-    if (!form.title.trim() || !form.message.trim()) {
-      toast.error("Title and message are required.");
+    if (!form.title.trim() || !form.content.trim()) {
+      toast.error("Title and content are required.");
       return;
     }
 
@@ -673,7 +509,7 @@ function CreateNotificationModal({
       setSubmitting(true);
       await onSubmit(form);
     } catch (err: any) {
-      toast.error(err.message || "Failed to send notification");
+      toast.error(err.message || "Failed to create announcement");
     } finally {
       setSubmitting(false);
     }
@@ -681,190 +517,116 @@ function CreateNotificationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
-      <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+      <div className="max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="flex items-start justify-between border-b border-[#E8EDF5] p-5">
           <div className="flex gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EFF5FF] text-[#0B63CE]">
-              <Send className="h-6 w-6" />
+              <Bell className="h-6 w-6" />
             </span>
             <div>
-              <h2 className="text-xl font-semibold text-[#101828]">Create New Notification</h2>
-              <p className="text-sm text-[#667085]">Send a notification to schools, user types or specific users.</p>
+              <h2 className="text-xl font-semibold text-[#101828]">Create Announcement</h2>
+              <p className="text-sm text-[#667085]">
+                Send a school announcement to your teachers, students, or parents.
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg border border-[#DCE5F2] p-2 text-[#667085] hover:bg-[#F8FBFF]">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-[#DCE5F2] p-2 text-[#667085] hover:bg-[#F8FBFF]"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="space-y-6 p-5">
-          <FormStep number={1} title="Basic Information" />
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
-            <label className="text-sm font-medium text-[#344054]">
-              Title *
-              <input
-                value={form.title}
-                onChange={(event) => setField("title", event.target.value)}
-                placeholder="Enter notification title..."
-                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none focus:border-[#0B63CE] focus:ring-4 focus:ring-blue-100"
-              />
-            </label>
-            <label className="text-sm font-medium text-[#344054]">
-              Priority
-              <select
-                value={form.priority}
-                onChange={(event) => setField("priority", event.target.value as any)}
-                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-          </div>
+          <label className="block text-sm font-medium text-[#344054]">
+            Title *
+            <input
+              value={form.title}
+              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+              placeholder="Enter announcement title..."
+              className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none focus:border-[#0B63CE] focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
 
           <label className="block text-sm font-medium text-[#344054]">
-            Message *
+            Content *
             <textarea
-              value={form.message}
-              onChange={(event) => setField("message", event.target.value)}
-              placeholder="Write your notification message..."
+              value={form.content}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, content: event.target.value }))
+              }
+              placeholder="Write your announcement..."
               maxLength={2000}
               className="mt-2 min-h-32 w-full rounded-lg border border-[#DCE5F2] p-3 text-sm outline-none focus:border-[#0B63CE] focus:ring-4 focus:ring-blue-100"
             />
-            <span className="mt-1 block text-right text-xs text-[#667085]">{form.message.length}/2000</span>
+            <span className="mt-1 block text-right text-xs text-[#667085]">
+              {form.content.length}/2000
+            </span>
           </label>
 
-          <FormStep number={2} title="Audience" />
-          <div className="grid gap-3 md:grid-cols-3">
-            {([
-              ["talim", "Talim Notification", "Platform-wide alert from Talim."],
-              ["system", "System Notification", "Automated platform notification."],
-              ["school", "School Announcement", "Message from this school."],
-            ] as const).map(([value, label, description]) => (
-              <button
-                key={value}
-                onClick={() => setField("source", value)}
-                className={cn(
-                  "rounded-xl border p-4 text-left transition",
-                  form.source === value
-                    ? "border-[#0B63CE] bg-[#F4F8FF] ring-2 ring-blue-100"
-                    : "border-[#DCE5F2] hover:bg-[#F8FBFF]",
-                )}
-              >
-                <span className="block font-semibold text-[#101828]">{label}</span>
-                <span className="mt-1 block text-xs text-[#667085]">{description}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="text-sm font-medium text-[#344054]">
-              Select Schools *
-              <select
-                value={form.targetSchools[0] || ""}
-                onChange={(event) => setField("targetSchools", event.target.value ? [event.target.value] : [])}
-                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
-              >
-                <option value={schoolId}>{schoolName}</option>
-              </select>
-            </label>
-            <label className="text-sm font-medium text-[#344054]">
-              Category
-              <select
-                value={form.category}
-                onChange={(event) => setField("category", event.target.value as AdminNotificationCategory)}
-                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
-              >
-                {categoryOptions.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm font-medium text-[#344054]">
-              Schedule
-              <select
-                value={form.status}
-                onChange={(event) => setField("status", event.target.value as any)}
-                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
-              >
-                <option value="send_now">Send Now</option>
-                <option value="scheduled">Schedule for Later</option>
-                <option value="draft">Save as Draft</option>
-              </select>
-            </label>
-          </div>
-
-          {form.status === "scheduled" ? (
-            <input
-              type="datetime-local"
-              value={form.scheduledFor || ""}
-              onChange={(event) => setField("scheduledFor", event.target.value)}
-              className="h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none md:w-64"
-            />
-          ) : null}
-
           <div>
-            <p className="mb-2 text-sm font-medium text-[#344054]">Select User Types</p>
+            <p className="mb-2 text-sm font-medium text-[#344054]">Audience</p>
             <div className="flex flex-wrap gap-2">
-              {roleOptions.map((role) => (
+              {audienceOptions.map((option) => (
                 <button
-                  key={role.value}
-                  onClick={() => toggleRole(role.value)}
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleAudience(option.value)}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition",
-                    form.recipientRoles.includes(role.value)
+                    form.audience?.includes(option.value)
                       ? "border-[#0B63CE] bg-[#EFF5FF] text-[#0B63CE]"
                       : "border-[#DCE5F2] text-[#344054] hover:bg-[#F8FBFF]",
                   )}
                 >
                   <Users className="h-4 w-4" />
-                  {role.label}
+                  {option.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl bg-[#EFF6FF] p-3 text-sm text-[#315A8A]">
-            Notification will be sent to selected user types under {schoolName}.
-          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-medium text-[#344054]">
+              Schedule
+              <select
+                value={form.status}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    status: event.target.value as Announcement["status"],
+                  }))
+                }
+                className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
+              >
+                <option value="PUBLISHED">Publish Now</option>
+                <option value="SCHEDULED">Schedule for Later</option>
+                <option value="DRAFT">Save as Draft</option>
+              </select>
+            </label>
 
-          <FormStep number={3} title="Delivery Settings" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="mb-3 text-sm font-medium text-[#344054]">Delivery Method</p>
-              {[
-                ["in_app", "In-App Notification"],
-                ["email", "Email"],
-                ["push", "Push Notification"],
-              ].map(([value, label]) => (
-                <label key={value} className="mb-3 flex items-center gap-2 text-sm text-[#344054]">
-                  <input
-                    type="checkbox"
-                    checked={form.deliveryMethods.includes(value)}
-                    onChange={() => toggleDelivery(value)}
-                    className="h-4 w-4 accent-[#0B63CE]"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            <div className="rounded-xl border border-[#E8EDF5] bg-[#FBFCFE] p-4">
-              <p className="text-sm font-semibold text-[#101828]">Preview Difference</p>
-              <p className="mt-2 text-sm text-[#667085]">
-                Talim/System notifications appear as platform alerts. School announcements appear as school-originated messages.
-              </p>
-              <span className={cn("mt-3 inline-flex rounded-full px-2 py-1 text-xs font-semibold ring-1", sourceMeta[form.source].badge)}>
-                {sourceMeta[form.source].label}
-              </span>
-            </div>
+            {form.status === "SCHEDULED" ? (
+              <label className="text-sm font-medium text-[#344054]">
+                Scheduled For
+                <input
+                  type="datetime-local"
+                  value={form.scheduledFor || ""}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, scheduledFor: event.target.value }))
+                  }
+                  className="mt-2 h-11 w-full rounded-lg border border-[#DCE5F2] px-3 text-sm outline-none"
+                />
+              </label>
+            ) : null}
           </div>
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[#E8EDF5] p-5">
-          <button onClick={onClose} className="h-10 rounded-lg border border-[#DCE5F2] px-4 text-sm font-semibold text-[#344054]">
+          <button
+            onClick={onClose}
+            className="h-10 rounded-lg border border-[#DCE5F2] px-4 text-sm font-semibold text-[#344054]"
+          >
             Cancel
           </button>
           <button
@@ -872,22 +634,15 @@ function CreateNotificationModal({
             disabled={submitting}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#003366] px-4 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Send Notification
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {form.status === "DRAFT" ? "Save Draft" : "Publish"}
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function FormStep({ number, title }: { number: number; title: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0B63CE] text-xs font-semibold text-white">
-        {number}
-      </span>
-      <h3 className="font-semibold text-[#101828]">{title}</h3>
     </div>
   );
 }
