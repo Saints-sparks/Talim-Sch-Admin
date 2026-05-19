@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiSettings,
@@ -26,6 +26,7 @@ import {
   getFeeAssignments,
   getReceiptSettings,
   updateReceiptSettings,
+  uploadReceiptSignature,
   archiveFeeCategory,
   archiveFeeItem,
   archiveFeeAssignment,
@@ -203,8 +204,10 @@ function SignatureCard({
   onUpdate: () => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [name, setName] = useState(settings?.signatureName || "");
   const [title, setTitle] = useState(settings?.signatureTitle || "");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setName(settings?.signatureName || "");
@@ -234,6 +237,37 @@ function SignatureCard({
       toast.error("Failed to remove signature");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSignatureFile = async (file: File | undefined) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a PNG, JPG, or other image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Signature image must be 5MB or smaller");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { url } = await uploadReceiptSignature(file);
+      await updateReceiptSettings({
+        signatureUrl: url,
+        signatureName: name,
+        signatureTitle: title,
+      });
+      toast.success("Signature uploaded");
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to upload signature");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -269,18 +303,32 @@ function SignatureCard({
         />
       </div>
       <p className="text-[10px] text-gray-400">Recommended size: 300x100px (PNG, JPG)</p>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleSignatureFile(e.target.files?.[0])}
+      />
       <div className="flex gap-2">
         <button
-          onClick={handleSave}
-          disabled={saving}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={saving || uploading}
           className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
         >
-          <FiUpload size={12} /> Change Signature
+          <FiUpload size={12} /> {uploading ? "Uploading..." : "Change Signature"}
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving || uploading}
+          className="flex items-center gap-1 text-xs py-1.5 px-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+        >
+          {saving ? "Saving..." : "Save"}
         </button>
         {settings?.signatureUrl && (
           <button
             onClick={handleRemove}
-            disabled={saving}
+            disabled={saving || uploading}
             className="flex items-center gap-1 text-xs py-1.5 px-3 border border-red-200 rounded-lg text-red-500 hover:bg-red-50"
           >
             Remove

@@ -287,8 +287,8 @@ export async function updateReceiptSettings(
 
 export async function uploadReceiptSignature(file: File): Promise<{ url: string }> {
   const formData = new FormData();
-  formData.append("signature", file);
-  const res = await apiClient.request(`${BASE}/receipt-settings/signature`, {
+  formData.append("file", file);
+  const res = await apiClient.request("/upload/image", {
     method: "POST",
     body: formData,
   });
