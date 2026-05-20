@@ -49,8 +49,8 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const PKR = (n: number) =>
-  `PKR ${n.toLocaleString("en-PK", { minimumFractionDigits: 0 })}`;
+const NGN = (n: number) =>
+  `NGN ${n.toLocaleString("en-NG", { minimumFractionDigits: 0 })}`;
 
 const STATUS_BADGE: Record<string, string> = {
   active: "bg-green-100 text-green-700",
@@ -147,7 +147,7 @@ function FeeItemDetailsModal({
           </div>
           <div>
             <p className="text-xs text-gray-400">Amount</p>
-            <p className="font-medium text-[#003366]">{PKR(item.defaultAmount)}</p>
+            <p className="font-medium text-[#003366]">{NGN(item.defaultAmount)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400">Due Date</p>
@@ -155,7 +155,7 @@ function FeeItemDetailsModal({
           </div>
           <div>
             <p className="text-xs text-gray-400">Late Fee</p>
-            <p className="font-medium text-gray-800">{PKR(item.lateFeeAmount || 0)}</p>
+            <p className="font-medium text-gray-800">{NGN(item.lateFeeAmount || 0)}</p>
           </div>
         </div>
 
@@ -473,7 +473,7 @@ function OverviewTab({
         <StatCard label="Active Fee Items" value={summary?.activeFeeItems ?? "—"} sub="Currently active" />
         <StatCard
           label="Total Expected Amount"
-          value={summary ? PKR(summary.totalExpectedAmount) : "—"}
+          value={summary ? NGN(summary.totalExpectedAmount) : "—"}
           sub="This academic year"
           color="text-[#003366]"
         />
@@ -482,13 +482,13 @@ function OverviewTab({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           label="Paid Amount"
-          value={summary ? PKR(summary.paidAmount) : "—"}
+          value={summary ? NGN(summary.paidAmount) : "—"}
           sub="Total collected"
           color="text-green-600"
         />
         <StatCard
           label="Outstanding Amount"
-          value={summary ? PKR(summary.outstandingAmount) : "—"}
+          value={summary ? NGN(summary.outstandingAmount) : "—"}
           sub="Pending collection"
           color="text-red-500"
         />
@@ -512,7 +512,7 @@ function OverviewTab({
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Fee Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Category</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Fee Type</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (PKR)</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (NGN)</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Actions</th>
               </tr>
@@ -867,7 +867,7 @@ function FeeStructuresTab({
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Fee Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Category</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (PKR)</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (NGN)</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Actions</th>
               </tr>
@@ -1022,7 +1022,7 @@ function FeeAssignmentsTab({
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Fee Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Assigned Class</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Due Date</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (PKR)</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (NGN)</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Actions</th>
               </tr>

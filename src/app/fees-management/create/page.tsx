@@ -106,7 +106,7 @@ function SummaryPanel({
           <span className="font-medium text-gray-800 capitalize">{form.feeType.replace("_", " ") || "—"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Amount (PKR)</span>
+          <span className="text-gray-500">Amount (NGN)</span>
           <span className="font-medium text-[#003366]">
             {form.defaultAmount ? Number(form.defaultAmount).toLocaleString() : "—"}
           </span>
@@ -560,7 +560,7 @@ function CreateFeeContent() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Amount (PKR) <span className="text-red-500">*</span>
+                      Amount (NGN) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -587,7 +587,7 @@ function CreateFeeContent() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Late Fee (PKR) (Optional)
+                      Late Fee (NGN) (Optional)
                     </label>
                     <input
                       type="number"

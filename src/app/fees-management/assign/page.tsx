@@ -100,7 +100,7 @@ function SelectFeeStep({
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Category</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Academic Year</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (PKR)</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (NGN)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -182,7 +182,7 @@ function SelectFeeStep({
               <div className="flex justify-between">
                 <span className="text-gray-500">Default Amount</span>
                 <span className="font-medium text-[#003366]">
-                  PKR {selectedFee.defaultAmount.toLocaleString()}
+                  NGN {selectedFee.defaultAmount.toLocaleString("en-NG")}
                 </span>
               </div>
               {selectedFee.description && (
@@ -367,7 +367,7 @@ function SetAmountStep({
           <tr>
             <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Class</th>
             <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Students</th>
-            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (PKR)</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Amount (NGN)</th>
             <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Due Date</th>
           </tr>
         </thead>
@@ -466,7 +466,7 @@ function ReviewStep({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Total Expected</span>
-            <span className="font-bold text-[#003366]">PKR {totalAmount.toLocaleString()}</span>
+            <span className="font-bold text-[#003366]">NGN {totalAmount.toLocaleString("en-NG")}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Total Students</span>
@@ -503,7 +503,7 @@ function ReviewStep({
                     <td className="px-3 py-2 font-medium text-gray-700">{cls.name}</td>
                     <td className="px-3 py-2 text-gray-500">{cls.classCapacity}</td>
                     <td className="px-3 py-2 text-[#003366] font-medium">
-                      PKR {amount.toLocaleString()}
+                      NGN {amount.toLocaleString("en-NG")}
                     </td>
                     <td className="px-3 py-2 text-gray-500">{dueDate}</td>
                   </tr>
@@ -556,7 +556,7 @@ function SuccessStep({
         </div>
         <div>
           <p className="text-xs text-gray-400">Total Amount</p>
-          <p className="text-lg font-bold text-[#003366]">PKR {totalAmount.toLocaleString()}</p>
+          <p className="text-lg font-bold text-[#003366]">NGN {totalAmount.toLocaleString("en-NG")}</p>
         </div>
       </div>
       <div className="flex gap-3">
