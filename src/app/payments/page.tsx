@@ -548,55 +548,57 @@ export default function PaymentsPage() {
   useEffect(() => { loadSummary(); }, [loadSummary]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-screen-xl mx-auto px-6 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Payments</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Payment transactions, receipts, and provider settings</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={loadSummary} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <RefreshCw size={16} className={summaryLoading ? "animate-spin text-[#003366]" : "text-gray-500"} />
+            </button>
+            <button
+              onClick={() => setShowManual(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
+            >
+              <Plus size={16} /> Record Payment
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                activeTab === tab ? "bg-white text-[#003366] shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payments</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Payment transactions, receipts, and provider settings</p>
+          {activeTab === "Overview" && <OverviewTab summary={summary} loading={summaryLoading} />}
+          {activeTab === "Transactions" && <TransactionsTab />}
+          {activeTab === "Receipts" && <ReceiptsTab />}
+          {activeTab === "Payment Providers" && <ProvidersTab />}
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={loadSummary} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
-            <RefreshCw size={16} className={summaryLoading ? "animate-spin text-[#003366]" : "text-gray-500"} />
-          </button>
-          <button
-            onClick={() => setShowManual(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
-          >
-            <Plus size={16} /> Record Payment
-          </button>
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === tab ? "bg-white text-[#003366] shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {showManual && (
+          <ManualPaymentModal
+            onClose={() => setShowManual(false)}
+            onSuccess={loadSummary}
+          />
+        )}
       </div>
-
-      {/* Tab Content */}
-      <div>
-        {activeTab === "Overview" && <OverviewTab summary={summary} loading={summaryLoading} />}
-        {activeTab === "Transactions" && <TransactionsTab />}
-        {activeTab === "Receipts" && <ReceiptsTab />}
-        {activeTab === "Payment Providers" && <ProvidersTab />}
-      </div>
-
-      {showManual && (
-        <ManualPaymentModal
-          onClose={() => setShowManual(false)}
-          onSuccess={loadSummary}
-        />
-      )}
     </div>
   );
 }

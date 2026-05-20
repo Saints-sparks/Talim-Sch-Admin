@@ -1413,61 +1413,63 @@ export default function FinancePage() {
   useEffect(() => { loadSummary(); }, [loadSummary]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-screen-xl mx-auto px-6 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Finance</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Manage your school wallet, transactions and withdrawals.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={loadSummary} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <RefreshCw size={16} className={summaryLoading ? "animate-spin text-[#003366]" : "text-gray-500"} />
+            </button>
+            <button
+              onClick={() => setShowWithdraw(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
+            >
+              <ArrowUpCircle size={16} /> Withdraw Funds
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                activeTab === tab
+                  ? "border-[#003366] text-[#003366]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Finance</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage your school wallet, transactions and withdrawals.</p>
+          {activeTab === "Overview" && <OverviewTab summary={summary} onWithdraw={() => setShowWithdraw(true)} />}
+          {activeTab === "Transactions" && <TransactionsTab />}
+          {activeTab === "Withdrawals" && <WithdrawalsTab onNewWithdrawal={() => setShowWithdraw(true)} />}
+          {activeTab === "Payout Accounts" && <PayoutAccountsTab />}
+          {activeTab === "Security & 2FA" && <SecurityTab />}
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={loadSummary} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
-            <RefreshCw size={16} className={summaryLoading ? "animate-spin text-[#003366]" : "text-gray-500"} />
-          </button>
-          <button
-            onClick={() => setShowWithdraw(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
-          >
-            <ArrowUpCircle size={16} /> Withdraw Funds
-          </button>
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-              activeTab === tab
-                ? "border-[#003366] text-[#003366]"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {/* Withdrawal flow (multi-step) */}
+        {showWithdraw && (
+          <WithdrawalFlow
+            accounts={accounts}
+            summary={summary}
+            onClose={() => setShowWithdraw(false)}
+            onSuccess={loadSummary}
+          />
+        )}
       </div>
-
-      {/* Tab Content */}
-      <div>
-        {activeTab === "Overview" && <OverviewTab summary={summary} onWithdraw={() => setShowWithdraw(true)} />}
-        {activeTab === "Transactions" && <TransactionsTab />}
-        {activeTab === "Withdrawals" && <WithdrawalsTab onNewWithdrawal={() => setShowWithdraw(true)} />}
-        {activeTab === "Payout Accounts" && <PayoutAccountsTab />}
-        {activeTab === "Security & 2FA" && <SecurityTab />}
-      </div>
-
-      {/* Withdrawal flow (multi-step) */}
-      {showWithdraw && (
-        <WithdrawalFlow
-          accounts={accounts}
-          summary={summary}
-          onClose={() => setShowWithdraw(false)}
-          onSuccess={loadSummary}
-        />
-      )}
     </div>
   );
 }
