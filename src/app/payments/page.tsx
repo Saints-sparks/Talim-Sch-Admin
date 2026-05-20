@@ -113,7 +113,7 @@ function TransactionsTab() {
         providerName: providerFilter || undefined,
       });
       setTransactions(data.data || []);
-      setTotal(data.pagination?.total || 0);
+      setTotal(data.pagination?.total || data.total || 0);
     } catch {
       toast.error("Failed to load transactions");
     } finally {
@@ -208,7 +208,7 @@ function ReceiptsTab() {
     try {
       const data = await getAdminReceipts({ page, limit: 20 });
       setReceipts(data.data || []);
-      setTotal(data.pagination?.total || 0);
+      setTotal(data.pagination?.total || data.total || 0);
     } catch {
       toast.error("Failed to load receipts");
     } finally {

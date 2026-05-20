@@ -67,7 +67,8 @@ export interface AdminSummary {
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
-  pagination: { page: number; limit: number; total: number; pages: number };
+  total?: number;
+  pagination?: { page: number; limit: number; total: number; pages: number };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -122,7 +123,7 @@ export const getAdminReceipts = async (params: {
   const qs = new URLSearchParams(
     Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
   ).toString();
-  const res = await apiClient.get(`${BASE}/parent/receipts?${qs}`);
+  const res = await apiClient.get(`${BASE}/admin/receipts?${qs}`);
   return handleResponse<PaginatedResponse<Receipt>>(res);
 };
 
