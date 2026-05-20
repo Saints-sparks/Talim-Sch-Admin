@@ -31,6 +31,7 @@ interface FormData {
   isVisibleToParents: boolean;
   includeInCollection: boolean;
   applyLateFeeAfterDue: boolean;
+  status: FeeItem["status"];
 }
 
 const INITIAL: FormData = {
@@ -47,6 +48,7 @@ const INITIAL: FormData = {
   isVisibleToParents: true,
   includeInCollection: true,
   applyLateFeeAfterDue: true,
+  status: "draft",
 };
 
 const FEE_TYPES = [
@@ -54,6 +56,12 @@ const FEE_TYPES = [
   { value: "recurring", label: "Recurring" },
   { value: "termly", label: "Termly" },
   { value: "annual", label: "Annual" },
+];
+
+const FEE_STATUSES: Array<{ value: FeeItem["status"]; label: string }> = [
+  { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
 ];
 
 // ─── Summary Panel ────────────────────────────────────────────────────────────
@@ -120,6 +128,10 @@ function SummaryPanel({
           <span className="font-medium text-gray-800">
             {form.lateFeeAmount ? Number(form.lateFeeAmount).toLocaleString() : "—"}
           </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Status</span>
+          <span className="font-medium text-gray-800 capitalize">{form.status}</span>
         </div>
       </div>
 
@@ -318,6 +330,7 @@ function CreateFeeContent() {
             isVisibleToParents: item.isVisibleToParents,
             includeInCollection: item.includeInCollection,
             applyLateFeeAfterDue: true,
+            status: item.status,
           });
         }
       }
@@ -356,6 +369,7 @@ function CreateFeeContent() {
         allowPartialPayment: form.allowPartialPayment,
         isVisibleToParents: form.isVisibleToParents,
         includeInCollection: form.includeInCollection,
+        status: form.status,
       };
 
       let feeId = editId;
@@ -484,6 +498,25 @@ function CreateFeeContent() {
                       placeholder="Brief description..."
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => set("status", e.target.value as FeeItem["status"])}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#003366]/30 bg-white"
+                    >
+                      {FEE_STATUSES.map((status) => (
+                        <option key={status.value} value={status.value}>
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Active fees count on the dashboard and can be used for collection.
+                    </p>
                   </div>
                 </div>
 

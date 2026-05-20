@@ -97,6 +97,8 @@ export interface DashboardSummary {
   activeAssignments: number;
 }
 
+export type FeeItemStatus = FeeItem["status"];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -157,6 +159,7 @@ export async function createFeeItem(payload: {
   allowPartialPayment?: boolean;
   isVisibleToParents?: boolean;
   includeInCollection?: boolean;
+  status?: FeeItemStatus;
 }): Promise<FeeItem> {
   const res = await apiClient.post(`${BASE}/items`, payload);
   return handleResponse<FeeItem>(res);
@@ -189,6 +192,13 @@ export async function updateFeeItem(
 ): Promise<FeeItem> {
   const res = await apiClient.patch(`${BASE}/items/${id}`, payload);
   return handleResponse<FeeItem>(res);
+}
+
+export async function updateFeeItemStatus(
+  id: string,
+  status: FeeItemStatus
+): Promise<FeeItem> {
+  return updateFeeItem(id, { status });
 }
 
 export async function duplicateFeeItem(id: string): Promise<FeeItem> {

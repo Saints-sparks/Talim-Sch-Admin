@@ -33,6 +33,7 @@ import {
   publishFeeAssignment,
   unpublishFeeAssignment,
   duplicateFeeItem,
+  updateFeeItemStatus,
   restoreFeeCategory,
   restoreFeeItem,
   restoreFeeAssignment,
@@ -40,6 +41,7 @@ import {
   updateFeeCategory,
   type FeeCategory,
   type FeeItem,
+  type FeeItemStatus,
   type FeeAssignment,
   type DashboardSummary,
   type ReceiptSettings,
@@ -95,6 +97,74 @@ function TableSkeleton({ rows = 5 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="h-10 bg-gray-100 rounded" />
       ))}
+    </div>
+  );
+}
+
+function FeeItemDetailsModal({
+  item,
+  onClose,
+}: {
+  item: FeeItem | null;
+  onClose: () => void;
+}) {
+  if (!item) return null;
+
+  const cat = item.categoryId as any;
+  const dueDate = item.defaultDueDate
+    ? new Date(item.defaultDueDate).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Not set";
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+            <p className="text-sm text-gray-500 mt-1">{item.description || "No description"}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <FiX size={20} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-xs text-gray-400">Category</p>
+            <p className="font-medium text-gray-800">{cat?.name || "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Status</p>
+            <div className="mt-1"><StatusBadge status={item.status} /></div>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Fee Type</p>
+            <p className="font-medium text-gray-800 capitalize">{item.feeType.replace("_", " ")}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Amount</p>
+            <p className="font-medium text-[#003366]">{PKR(item.defaultAmount)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Due Date</p>
+            <p className="font-medium text-gray-800">{dueDate}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">Late Fee</p>
+            <p className="font-medium text-gray-800">{PKR(item.lateFeeAmount || 0)}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 border-t border-gray-100 pt-4 grid grid-cols-1 gap-2 text-sm text-gray-600">
+          <p>Visible to parents: <span className="font-medium">{item.isVisibleToParents ? "Yes" : "No"}</span></p>
+          <p>Included in collection: <span className="font-medium">{item.includeInCollection ? "Yes" : "No"}</span></p>
+          <p>Partial payment: <span className="font-medium">{item.allowPartialPayment ? "Allowed" : "Not allowed"}</span></p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -353,7 +423,15 @@ function OverviewTab({
   onRefresh: () => void;
 }) {
   const router = useRouter();
-  const [actionMenu, setActionMenu] = useState<string | null>(null);
+  const [actionMenu, setActionMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [viewing, setViewing] = useState<FeeItem | null>(null);
+
+  const openActionMenu = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActionMenu((current) =>
+      current?.id === id ? null : { id, x: rect.right - 176, y: rect.bottom + 6 }
+    );
+  };
 
   const handleArchive = async (id: string) => {
     try {
@@ -362,6 +440,17 @@ function OverviewTab({
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || "Failed to archive");
+    }
+    setActionMenu(null);
+  };
+
+  const handleStatus = async (id: string, status: FeeItemStatus) => {
+    try {
+      await updateFeeItemStatus(id, status);
+      toast.success(`Fee item marked ${status}`);
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update status");
     }
     setActionMenu(null);
   };
@@ -466,34 +555,12 @@ function OverviewTab({
                           </button>
                           <div className="relative">
                             <button
-                              onClick={() => setActionMenu(actionMenu === item._id ? null : item._id)}
+                              onClick={(e) => openActionMenu(e, item._id)}
                               className="p-1.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                              title="Actions"
                             >
                               <FiMoreVertical size={14} />
                             </button>
-                            {actionMenu === item._id && (
-                              <div className="absolute right-0 top-8 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-10 w-44">
-                                <button
-                                  onClick={() => handleDuplicate(item._id)}
-                                  className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <FiCopy size={12} /> Duplicate
-                                </button>
-                                <button
-                                  onClick={() => router.push(`/fees-management/assign?feeId=${item._id}`)}
-                                  className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <FiPlus size={12} /> Assign to Classes
-                                </button>
-                                <hr className="my-1 border-gray-100" />
-                                <button
-                                  onClick={() => handleArchive(item._id)}
-                                  className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <FiArchive size={12} /> Archive
-                                </button>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </td>
@@ -505,6 +572,82 @@ function OverviewTab({
           </table>
         </div>
       </div>
+      {actionMenu && (() => {
+        const item = items.find((fee) => fee._id === actionMenu.id);
+        if (!item) return null;
+
+        return (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-40 cursor-default"
+              aria-label="Close fee item actions"
+              onClick={() => setActionMenu(null)}
+            />
+            <div
+              className="fixed bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 w-44"
+              style={{ left: Math.max(8, actionMenu.x), top: actionMenu.y }}
+            >
+              <button
+                onClick={() => {
+                  setViewing(item);
+                  setActionMenu(null);
+                }}
+                className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <FiEye size={12} /> View Details
+              </button>
+              {item.status !== "active" && (
+                <button
+                  onClick={() => handleStatus(item._id, "active")}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FiUpload size={12} /> Publish
+                </button>
+              )}
+              {item.status !== "draft" && (
+                <button
+                  onClick={() => handleStatus(item._id, "draft")}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FiDownload size={12} /> Mark Draft
+                </button>
+              )}
+              {item.status !== "inactive" && (
+                <button
+                  onClick={() => handleStatus(item._id, "inactive")}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FiArchive size={12} /> Deactivate
+                </button>
+              )}
+              <button
+                onClick={() => handleDuplicate(item._id)}
+                className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <FiCopy size={12} /> Duplicate
+              </button>
+              <button
+                onClick={() => {
+                  setActionMenu(null);
+                  router.push(`/fees-management/assign?feeId=${item._id}`);
+                }}
+                className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <FiPlus size={12} /> Assign to Classes
+              </button>
+              <hr className="my-1 border-gray-100" />
+              <button
+                onClick={() => handleArchive(item._id)}
+                className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50 flex items-center gap-2"
+              >
+                <FiArchive size={12} /> Archive
+              </button>
+            </div>
+          </>
+        );
+      })()}
+      <FeeItemDetailsModal item={viewing} onClose={() => setViewing(null)} />
     </div>
   );
 }
@@ -659,6 +802,7 @@ function FeeStructuresTab({
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [viewing, setViewing] = useState<FeeItem | null>(null);
 
   const filtered = items.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase())
@@ -681,6 +825,16 @@ function FeeStructuresTab({
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || "Failed to archive");
+    }
+  };
+
+  const handleStatus = async (id: string, status: FeeItemStatus) => {
+    try {
+      await updateFeeItemStatus(id, status);
+      toast.success(`Fee marked ${status}`);
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update status");
     }
   };
 
@@ -731,12 +885,37 @@ function FeeStructuresTab({
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
+                          onClick={() => setViewing(item)}
+                          className="p-1.5 rounded text-gray-400 hover:text-[#003366] hover:bg-blue-50"
+                          title="View details"
+                        >
+                          <FiEye size={14} />
+                        </button>
+                        <button
                           onClick={() => router.push(`/fees-management/create?edit=${item._id}`)}
                           className="p-1.5 rounded text-gray-400 hover:text-[#003366] hover:bg-blue-50"
                           title="Edit"
                         >
                           <FiEdit2 size={14} />
                         </button>
+                        {item.status !== "active" && (
+                          <button
+                            onClick={() => handleStatus(item._id, "active")}
+                            className="p-1.5 rounded text-gray-400 hover:text-green-600 hover:bg-green-50"
+                            title="Publish"
+                          >
+                            <FiUpload size={14} />
+                          </button>
+                        )}
+                        {item.status === "active" && (
+                          <button
+                            onClick={() => handleStatus(item._id, "inactive")}
+                            className="p-1.5 rounded text-gray-400 hover:text-yellow-600 hover:bg-yellow-50"
+                            title="Deactivate"
+                          >
+                            <FiDownload size={14} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDuplicate(item._id)}
                           className="p-1.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-50"
@@ -760,6 +939,7 @@ function FeeStructuresTab({
           </table>
         )}
       </div>
+      <FeeItemDetailsModal item={viewing} onClose={() => setViewing(null)} />
     </div>
   );
 }
