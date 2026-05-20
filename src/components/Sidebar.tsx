@@ -13,6 +13,8 @@ import {
   Bell,
   X,
   CreditCard,
+  Wallet,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
@@ -163,6 +165,36 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Fees Management",
       tooltip: "Fees Management",
+    },
+    {
+      path: "/payments",
+      icon: (
+        <Receipt
+          className={cn(
+            "h-5 w-5",
+            pathname.startsWith("/payments")
+              ? "text-[#003366]"
+              : "text-[#929292]"
+          )}
+        />
+      ),
+      label: "Payments",
+      tooltip: "Payments",
+    },
+    {
+      path: "/finance",
+      icon: (
+        <Wallet
+          className={cn(
+            "h-5 w-5",
+            pathname.startsWith("/finance")
+              ? "text-[#003366]"
+              : "text-[#929292]"
+          )}
+        />
+      ),
+      label: "Finance",
+      tooltip: "Wallet & Withdrawals",
     },
     {
       path: "/users",
