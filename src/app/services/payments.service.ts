@@ -111,7 +111,7 @@ export const createManualPayment = async (data: {
   return handleResponse<{ success: boolean; transaction: PaymentTransaction; receipt: Receipt }>(res);
 };
 
-// ─── Receipts (admin view via parent receipts endpoint) ───────────────────────
+// ─── Receipts ─────────────────────────────────────────────────────────────────
 
 export const getAdminReceipts = async (params: {
   studentId?: string;
@@ -143,6 +143,6 @@ export interface PaymentProvider {
 }
 
 export const getEnabledProviders = async (): Promise<{ success: boolean; providers: PaymentProvider[] }> => {
-  const res = await apiClient.get(`${BASE}/parent/providers`);
+  const res = await apiClient.get(`${BASE}/admin/providers`);
   return handleResponse<{ success: boolean; providers: PaymentProvider[] }>(res);
 };

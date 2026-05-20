@@ -54,7 +54,7 @@ function amountInWords(n: number): string {
   return conv(Math.round(n)) + " Naira Only";
 }
 
-const TABS = ["Overview", "Transactions", "Withdrawals", "Payout Accounts", "Security & 2FA"] as const;
+const TABS = ["Overview", "Transactions", "Withdrawals", "Payout Accounts", "Settings"] as const;
 type Tab = typeof TABS[number];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -174,8 +174,46 @@ function StatCard({
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
-function OverviewTab({ summary, onWithdraw }: { summary: WalletSummary | null; onWithdraw: () => void }) {
+function OverviewTab({
+  summary,
+  onWithdraw,
+  onGoToTab,
+}: {
+  summary: WalletSummary | null;
+  onWithdraw: () => void;
+  onGoToTab: (tab: Tab) => void;
+}) {
+  const [entries, setEntries] = useState<LedgerEntry[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    Promise.all([
+      getWalletTransactions({ limit: 5 }).catch(() => ({ data: [] as LedgerEntry[] })),
+      getWithdrawals({ limit: 5 }).catch(() => ({ data: [] as WithdrawalRequest[] })),
+    ])
+      .then(([tx, wd]) => {
+        if (!mounted) return;
+        setEntries(tx.data || []);
+        setWithdrawals(wd.data || []);
+      })
+      .finally(() => mounted && setLoading(false));
+    return () => { mounted = false; };
+  }, []);
+
   if (!summary) return <div className="text-gray-400 text-sm py-8 text-center">Loading wallet…</div>;
+
+  const trend = [...entries]
+    .reverse()
+    .map((entry) => ({ label: fmtDate(entry.createdAt), value: entry.balanceAfter || 0 }))
+    .slice(-7);
+  const maxTrend = Math.max(...trend.map((point) => point.value), summary.availableBalance, 1);
+  const pendingCount = withdrawals.filter((w) => w.status === "pending").length;
+  const successfulWithdrawals = withdrawals.filter((w) => ["completed", "successful"].includes(w.status));
+  const failedWithdrawals = withdrawals.filter((w) => ["failed", "cancelled", "rejected"].includes(w.status));
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -195,18 +233,114 @@ function OverviewTab({ summary, onWithdraw }: { summary: WalletSummary | null; o
         </div>
         <StatCard label="Total Received" value={NGN(summary.ledgerBalance)} sub="This academic year" icon={ArrowDownCircle} />
         <StatCard label="Total Withdrawn" value={NGN(summary.withdrawnBalance)} sub="This academic year" icon={ArrowUpCircle} color="text-orange-600" />
-        <StatCard label="Pending" value={NGN(summary.pendingBalance)} sub={summary.pendingBalance > 0 ? "On hold" : "No pending"} icon={Clock} color="text-yellow-600" />
+        <StatCard label="Pending Withdrawals" value={NGN(summary.pendingBalance)} sub={`${pendingCount} pending requests`} icon={Clock} color="text-yellow-600" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard label="This Month Revenue" value={NGN(summary.thisMonthRevenue)} icon={TrendingUp} color="text-green-600" />
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_0.95fr] gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 className="font-bold text-gray-800">Recent Transactions</h3>
+            <button onClick={() => onGoToTab("Transactions")} className="text-sm font-semibold text-[#003366]">View All</button>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {loading ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">Loading transactions…</p>
+            ) : entries.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">No transactions yet</p>
+            ) : entries.map((entry) => (
+              <div key={entry._id} className="px-5 py-3 flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${entry.direction === "credit" ? "bg-green-50" : "bg-red-50"}`}>
+                  {entry.direction === "credit" ? <ArrowDownCircle size={17} className="text-green-600" /> : <ArrowUpCircle size={17} className="text-red-500" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{entry.description || entry.reference}</p>
+                  <p className="text-xs text-gray-400">{fmtDate(entry.createdAt)}</p>
+                </div>
+                <p className={`text-sm font-bold ${entry.direction === "credit" ? "text-green-600" : "text-red-500"}`}>
+                  {entry.direction === "credit" ? "+" : "-"}{NGN(entry.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-bold text-gray-800">Wallet Balance Trend</h3>
+            <span className="text-xs text-gray-400">Latest activity</span>
+          </div>
+          {trend.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-sm text-gray-400">No trend data yet</div>
+          ) : (
+            <div className="h-48 flex items-end gap-2 border-b border-l border-gray-100 px-2 pt-4">
+              {trend.map((point, index) => (
+                <div key={`${point.label}-${index}`} className="flex-1 flex flex-col items-center gap-2 min-w-0">
+                  <div className="w-full bg-blue-50 rounded-t-lg overflow-hidden flex items-end h-36">
+                    <div
+                      className="w-full bg-[#0066FF] rounded-t-lg"
+                      style={{ height: `${Math.max(12, (point.value / maxTrend) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-400 truncate w-full text-center">{point.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_0.95fr] gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 className="font-bold text-gray-800">Recent Withdrawals</h3>
+            <button onClick={() => onGoToTab("Withdrawals")} className="text-sm font-semibold text-[#003366]">View All</button>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {loading ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">Loading withdrawals…</p>
+            ) : withdrawals.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">No withdrawals yet</p>
+            ) : withdrawals.map((w) => {
+              const acct = typeof w.bankAccountId === "object" ? w.bankAccountId : null;
+              return (
+                <div key={w._id} className="px-5 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#E8EDF3] flex items-center justify-center">
+                    <Building2 size={17} className="text-[#003366]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-800">{NGN(w.amountToReceive || w.amount)}</p>
+                    <p className="text-xs text-gray-400 truncate">{acct ? `${acct.bankName} · ****${acct.accountNumber.slice(-4)}` : w.reference}</p>
+                  </div>
+                  <WithdrawalStatusBadge status={w.status} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="font-bold text-gray-800 mb-4">Withdrawals Summary</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              ["Total Withdrawn", NGN(summary.withdrawnBalance), "text-[#003366]"],
+              ["Successful", NGN(successfulWithdrawals.reduce((sum, w) => sum + (w.amountToReceive || w.amount), 0)), "text-green-600"],
+              ["Pending", NGN(summary.pendingBalance), "text-orange-600"],
+              ["Failed/Cancelled", NGN(failedWithdrawals.reduce((sum, w) => sum + (w.amountToReceive || w.amount), 0)), "text-red-500"],
+            ].map(([label, value, color]) => (
+              <div key={label} className="rounded-xl border border-gray-100 p-4">
+                <p className="text-xs text-gray-500">{label}</p>
+                <p className={`mt-2 text-lg font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Wallet Status</p>
             <p className="font-bold text-gray-800 capitalize mt-1">{summary.status}</p>
           </div>
           <LedgerStatusBadge status={summary.status} />
         </div>
+      </div>
       </div>
     </div>
   );
@@ -343,29 +477,38 @@ function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => void }) {
 
   return (
     <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-gray-800">Withdrawals</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Track all withdrawal requests and their status.</p>
+      </div>
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+        <div className="flex items-center gap-6 overflow-x-auto border-b border-gray-100">
           {STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => { setStatusFilter(s === "All" ? "" : s.toLowerCase()); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              className={`py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2 ${
                 (statusFilter === "" && s === "All") || statusFilter === s.toLowerCase()
-                  ? "bg-white text-[#003366] shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "border-[#003366] text-[#003366]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {s}
             </button>
           ))}
         </div>
-        <button
-          onClick={onNewWithdrawal}
-          className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
-        >
-          <ArrowUpCircle size={15} /> Withdraw Funds
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+            <MoreHorizontal size={15} /> Filter
+          </button>
+          <button
+            onClick={onNewWithdrawal}
+            className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
+          >
+            <ArrowUpCircle size={15} /> Withdraw Funds
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -373,17 +516,17 @@ function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => void }) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {["Reference", "Amount", "Bank Account", "Status", "Requested Date", "Processed", "Actions"].map((h) => (
+              {["Reference", "Amount", "Bank Account", "Status", "Requested Date", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">Loading…</td></tr>
             ) : withdrawals.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-16 text-center">
+                <td colSpan={6} className="px-4 py-16 text-center">
                   <Banknote size={36} className="text-gray-200 mx-auto mb-3" />
                   <p className="text-gray-500 font-medium">No withdrawals found</p>
                   <p className="text-gray-400 text-xs mt-1">Your withdrawal history will appear here</p>
@@ -400,15 +543,18 @@ function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => void }) {
                   </td>
                   <td className="px-4 py-3"><WithdrawalStatusBadge status={w.status} /></td>
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">{fmtDateTime(w.createdAt)}</td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">{fmtDateTime(w.processedAt)}</td>
                   <td className="px-4 py-3">
-                    {w.status === "pending" && (
+                    {w.status === "pending" ? (
                       <button
                         onClick={() => handleCancel(w._id)}
                         disabled={cancelling === w._id}
-                        className="text-xs text-red-500 hover:underline disabled:opacity-40 font-medium"
+                        className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-100 disabled:opacity-40"
                       >
-                        {cancelling === w._id ? "Cancelling…" : "Cancel"}
+                        {cancelling === w._id ? <RefreshCw size={14} className="animate-spin" /> : <MoreHorizontal size={14} />}
+                      </button>
+                    ) : (
+                      <button className="p-2 rounded-lg border border-gray-200 text-gray-400">
+                        <MoreHorizontal size={14} />
                       </button>
                     )}
                   </td>
@@ -851,7 +997,7 @@ function SecurityTab() {
 
 type WithdrawStep =
   | { type: "initiate" }
-  | { type: "otp"; draftId: string; maskedEmail: string }
+  | { type: "otp"; draftId: string; maskedEmail: string; resendCooldown?: number }
   | { type: "confirm"; summary: WithdrawalSummary }
   | { type: "success"; withdrawal: any };
 
@@ -860,11 +1006,13 @@ function WithdrawalFlow({
   summary,
   onClose,
   onSuccess,
+  onViewWithdrawals,
 }: {
   accounts: BankAccount[];
   summary: WalletSummary | null;
   onClose: () => void;
   onSuccess: () => void;
+  onViewWithdrawals: () => void;
 }) {
   const [step, setStep] = useState<WithdrawStep>({ type: "initiate" });
 
@@ -874,7 +1022,7 @@ function WithdrawalFlow({
         accounts={accounts}
         summary={summary}
         onClose={onClose}
-        onNext={(draftId, maskedEmail) => setStep({ type: "otp", draftId, maskedEmail })}
+        onNext={(draftId, maskedEmail, resendCooldown) => setStep({ type: "otp", draftId, maskedEmail, resendCooldown })}
       />
     );
 
@@ -883,6 +1031,7 @@ function WithdrawalFlow({
       <EmailOtpModal
         draftId={step.draftId}
         maskedEmail={step.maskedEmail}
+        initialCooldown={step.resendCooldown || 60}
         onBack={() => setStep({ type: "initiate" })}
         onClose={onClose}
         onVerified={(s) => setStep({ type: "confirm", summary: s })}
@@ -900,7 +1049,7 @@ function WithdrawalFlow({
     );
 
   if (step.type === "success")
-    return <WithdrawalSuccessModal withdrawal={step.withdrawal} onClose={onClose} />;
+    return <WithdrawalSuccessModal withdrawal={step.withdrawal} onClose={onClose} onViewWithdrawals={onViewWithdrawals} />;
 
   return null;
 }
@@ -916,7 +1065,7 @@ function WithdrawFundsModal({
   accounts: BankAccount[];
   summary: WalletSummary | null;
   onClose: () => void;
-  onNext: (draftId: string, maskedEmail: string) => void;
+  onNext: (draftId: string, maskedEmail: string, resendCooldown?: number) => void;
 }) {
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -942,7 +1091,7 @@ function WithdrawFundsModal({
     setLoading(true);
     try {
       const res = await initiateWithdrawal({ bankAccountId: accountId, amount: amountNum, note });
-      onNext(res.withdrawalDraftId, res.maskedEmail);
+      onNext(res.withdrawalDraftId, res.maskedEmail, Math.min(60, res.expiresIn || 60));
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to initiate withdrawal");
     } finally {
@@ -1096,12 +1245,14 @@ function WithdrawFundsModal({
 function EmailOtpModal({
   draftId,
   maskedEmail,
+  initialCooldown,
   onBack,
   onClose,
   onVerified,
 }: {
   draftId: string;
   maskedEmail: string;
+  initialCooldown?: number;
   onBack: () => void;
   onClose: () => void;
   onVerified: (summary: WithdrawalSummary) => void;
@@ -1109,7 +1260,7 @@ function EmailOtpModal({
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(initialCooldown || 0);
 
   // Resend countdown
   useEffect(() => {
@@ -1326,17 +1477,12 @@ function ConfirmWithdrawalModal({
 function WithdrawalSuccessModal({
   withdrawal,
   onClose,
+  onViewWithdrawals,
 }: {
   withdrawal: any;
   onClose: () => void;
+  onViewWithdrawals: () => void;
 }) {
-  const [goToWithdrawals, setGoToWithdrawals] = useState(false);
-
-  if (goToWithdrawals) {
-    onClose();
-    return null;
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
@@ -1371,7 +1517,7 @@ function WithdrawalSuccessModal({
 
         <div className="flex gap-3">
           <button
-            onClick={() => setGoToWithdrawals(true)}
+            onClick={() => { onViewWithdrawals(); onClose(); }}
             className="flex-1 py-3 bg-[#003366] text-white rounded-xl text-sm font-bold hover:bg-[#003366]/90"
           >
             View Withdrawals
@@ -1422,6 +1568,12 @@ export default function FinancePage() {
             <p className="text-sm text-gray-400 mt-0.5">Manage your school wallet, transactions and withdrawals.</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActiveTab("Settings")}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50"
+            >
+              <Shield size={16} /> Finance Settings
+            </button>
             <button onClick={loadSummary} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
               <RefreshCw size={16} className={summaryLoading ? "animate-spin text-[#003366]" : "text-gray-500"} />
             </button>
@@ -1453,11 +1605,11 @@ export default function FinancePage() {
 
         {/* Tab Content */}
         <div>
-          {activeTab === "Overview" && <OverviewTab summary={summary} onWithdraw={() => setShowWithdraw(true)} />}
+          {activeTab === "Overview" && <OverviewTab summary={summary} onWithdraw={() => setShowWithdraw(true)} onGoToTab={setActiveTab} />}
           {activeTab === "Transactions" && <TransactionsTab />}
           {activeTab === "Withdrawals" && <WithdrawalsTab onNewWithdrawal={() => setShowWithdraw(true)} />}
           {activeTab === "Payout Accounts" && <PayoutAccountsTab />}
-          {activeTab === "Security & 2FA" && <SecurityTab />}
+          {activeTab === "Settings" && <SecurityTab />}
         </div>
 
         {/* Withdrawal flow (multi-step) */}
@@ -1467,6 +1619,7 @@ export default function FinancePage() {
             summary={summary}
             onClose={() => setShowWithdraw(false)}
             onSuccess={loadSummary}
+            onViewWithdrawals={() => setActiveTab("Withdrawals")}
           />
         )}
       </div>
