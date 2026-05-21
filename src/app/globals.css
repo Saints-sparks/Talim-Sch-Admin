@@ -76,25 +76,25 @@ a[href] {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --background: 222 47% 5%;
+    --foreground: 213 31% 91%;
+    --card: 217 33% 10%;
+    --card-foreground: 213 31% 91%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 222 47% 5%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 213 94% 68%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -164,3 +164,158 @@ a[href] {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ============================================================
+   DARK MODE — Global hex-color overrides
+   Tailwind's dark: variants handle components that already use them.
+   These rules cover legacy/inline hex colors that don't.
+   Specificity (0,2,1) beats Tailwind utilities (0,1,0).
+   ============================================================ */
+
+/* --- Backgrounds: white / near-white / light gray → slate-900 --- */
+html.dark .bg-white { background-color: #0f172a; }
+
+html.dark [class*="bg-[#FDFDFD]"],
+html.dark [class*="bg-[#FBFCFE]"],
+html.dark [class*="bg-[#FAFBFB]"],
+html.dark [class*="bg-[#F9FAFB]"],
+html.dark [class*="bg-[#F8F8F8]"],
+html.dark [class*="bg-[#F7F7F7]"],
+html.dark [class*="bg-[#F3F3F3]"],
+html.dark [class*="bg-[#F2F2F2]"] { background-color: #0f172a; }
+
+html.dark [class*="bg-[#F8FBFF]"],
+html.dark [class*="bg-[#F7F9FC]"],
+html.dark [class*="bg-[#F4F8FF]"],
+html.dark [class*="bg-[#EFF5FF]"],
+html.dark [class*="bg-[#EBF0F7]"],
+html.dark [class*="bg-[#EAF2FB]"],
+html.dark [class*="bg-[#E8EDF3]"],
+html.dark [class*="bg-[#E6F2FB]"] { background-color: #1a2740; }
+
+html.dark [class*="bg-[#D6EDE1]"] { background-color: #0d2e20; }
+html.dark [class*="bg-[#FAEBEB]"] { background-color: #2a0f0f; }
+html.dark [class*="bg-[#FFF7E5]"],
+html.dark [class*="bg-[#FFF8E8]"] { background-color: #2a1f00; }
+
+/* Mid-gray / muted UI surfaces → slate-800 */
+html.dark [class*="bg-[#ADBECE]"],
+html.dark [class*="bg-[#B0B0B0]"],
+html.dark [class*="bg-[#C7C7C7]"],
+html.dark [class*="bg-[#D6D6D6]"],
+html.dark [class*="bg-[#D8D8D8]"] { background-color: #1e293b; }
+
+/* --- Borders: light gray → slate-800 --- */
+html.dark .border-white { border-color: #1e293b; }
+
+html.dark [class*="border-[#F9F9F9]"],
+html.dark [class*="border-[#F4F4F4]"],
+html.dark [class*="border-[#F3F3F3]"],
+html.dark [class*="border-[#F2F2F2]"],
+html.dark [class*="border-[#F1F1F1]"],
+html.dark [class*="border-[#F0F0F0]"],
+html.dark [class*="border-[#EEEEEE]"],
+html.dark [class*="border-[#EBEBEB]"],
+html.dark [class*="border-[#E8EDF5]"],
+html.dark [class*="border-[#E5EAF2]"],
+html.dark [class*="border-[#E5E7EB]"],
+html.dark [class*="border-[#E4E4E4]"],
+html.dark [class*="border-[#E0E0E0]"],
+html.dark [class*="border-[#DCE5F2]"],
+html.dark [class*="border-[#D8D8D8]"],
+html.dark [class*="border-[#D6D6D6]"] { border-color: #1e293b; }
+
+/* Brand blue borders — visible in dark mode */
+html.dark [class*="border-[#003366]"],
+html.dark [class*="border-[#0B63CE]"],
+html.dark [class*="border-[#154473]"] { border-color: #3b82f6; }
+
+html.dark [class*="border-[#2E8B57]"] { border-color: #16a34a; }
+html.dark [class*="border-[#6A5ACD]"] { border-color: #8b5cf6; }
+html.dark [class*="border-[#CC3333]"] { border-color: #ef4444; }
+
+/* --- Text: dark hex colors → light equivalents --- */
+
+/* Near-black → slate-100 */
+html.dark [class*="text-[#030E18]"],
+html.dark [class*="text-[#0B1220]"],
+html.dark [class*="text-[#101828]"],
+html.dark [class*="text-[#131616]"],
+html.dark [class*="text-[#1A1A1A]"] { color: #f1f5f9; }
+
+/* Dark gray → slate-200 */
+html.dark [class*="text-[#2F2F2F]"],
+html.dark [class*="text-[#344054]"],
+html.dark [class*="text-[#393939]"],
+html.dark [class*="text-[#434343]"] { color: #e2e8f0; }
+
+/* Mid dark gray → slate-300 */
+html.dark [class*="text-[#4A5568]"],
+html.dark [class*="text-[#4D4D4D]"],
+html.dark [class*="text-[#525252]"],
+html.dark [class*="text-[#545454]"],
+html.dark [class*="text-[#595959]"],
+html.dark [class*="text-[#5D5D5D]"] { color: #cbd5e1; }
+
+/* Medium gray → slate-400 */
+html.dark [class*="text-[#667085]"],
+html.dark [class*="text-[#6F6F6F]"],
+html.dark [class*="text-[#707070]"],
+html.dark [class*="text-[#7B7B7B]"],
+html.dark [class*="text-[#808080]"],
+html.dark [class*="text-[#878787]"],
+html.dark [class*="text-[#898989]"] { color: #94a3b8; }
+
+/* Light gray → slate-500 */
+html.dark [class*="text-[#929292]"],
+html.dark [class*="text-[#979797]"],
+html.dark [class*="text-[#98A2B3]"],
+html.dark [class*="text-[#999999]"],
+html.dark [class*="text-[#A5A5A5]"],
+html.dark [class*="text-[#B3B3B3]"] { color: #64748b; }
+
+/* Navy brand text → blue-300 */
+html.dark [class*="text-[#002244]"],
+html.dark [class*="text-[#003366]"],
+html.dark [class*="text-[#123961]"],
+html.dark [class*="text-[#154473]"] { color: #93c5fd; }
+
+/* Blue links / interactive → blue-400 */
+html.dark [class*="text-[#0B63CE]"],
+html.dark [class*="text-[#0B79D0]"] { color: #60a5fa; }
+
+/* Amber/gold text */
+html.dark [class*="text-[#7A5600]"],
+html.dark [class*="text-[#B88916]"] { color: #fbbf24; }
+
+/* Green text */
+html.dark [class*="text-[#2E8B57]"] { color: #4ade80; }
+
+/* --- Inputs, selects, textareas --- */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark select,
+html.dark textarea {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* --- Tables --- */
+html.dark table { border-color: #1e293b; }
+html.dark thead { background-color: #1e293b; }
+html.dark thead th { color: #94a3b8; border-color: #334155; }
+html.dark tbody tr { border-color: #1e293b; }
+html.dark tbody tr:hover { background-color: #1a2740; }
+html.dark td { border-color: #1e293b; color: #cbd5e1; }
+
+/* --- Modals / dialogs --- */
+html.dark [role="dialog"],
+html.dark [data-radix-dialog-content] { background-color: #0f172a; }
+
+/* --- Dividers --- */
+html.dark hr { border-color: #1e293b; }

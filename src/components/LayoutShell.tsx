@@ -35,7 +35,7 @@ export default function LayoutShell({
         {showSidebar && <Header />}
 
         {/* <SchoolAdminNavbar user="Jessica" title="School Admin" /> */}
-        <main className="flex-1 overflow-y-auto bg-[#F2F2F2]">
+        <main className="flex-1 overflow-y-auto bg-[#F2F2F2] dark:bg-slate-950">
           <PageTransition key={pathname}>{children}</PageTransition>
         </main>
       </motion.div>

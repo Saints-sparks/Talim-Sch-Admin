@@ -15,6 +15,10 @@ import {
   Bell,
   Shield,
   Database,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
   ChevronRight,
   Plus,
   X,
@@ -39,6 +43,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
+import { useTheme, Theme } from "@/providers/theme-provider";
 import {
   AcademicYearResponse,
   TermResponse,
@@ -80,7 +85,8 @@ type Section =
   | "communication"
   | "notifications"
   | "security"
-  | "data-system";
+  | "data-system"
+  | "appearance";
 
 const SECTIONS: {
   id: Section;
@@ -99,6 +105,7 @@ const SECTIONS: {
   { id: "notifications", label: "Notifications", desc: "Notification preferences and alerts", icon: Bell },
   { id: "security", label: "Security", desc: "Password, OTP and access security", icon: Shield },
   { id: "data-system", label: "Data & System", desc: "Backups, exports and system info", icon: Database },
+  { id: "appearance", label: "Appearance", desc: "Theme and display preferences", icon: Palette },
 ];
 
 // ─── Shared UI atoms ──────────────────────────────────────────────────────────
@@ -106,15 +113,15 @@ const SECTIONS: {
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-      <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">{title}</h2>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{desc}</p>
     </div>
   );
 }
 
 function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 ${className}`} onClick={onClick}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 ${className}`} onClick={onClick}>
       {children}
     </div>
   );
@@ -122,8 +129,8 @@ function Card({ children, className = "", onClick }: { children: React.ReactNode
 
 function CardHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{title}</h3>
       {action}
     </div>
   );
@@ -143,10 +150,10 @@ function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-slate-700 last:border-0">
       <div>
-        <p className="text-sm font-medium text-gray-800">{label}</p>
-        {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
+        <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{label}</p>
+        {desc && <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{desc}</p>}
       </div>
       <button
         type="button"
@@ -1753,6 +1760,70 @@ function DataSystemSection() {
   );
 }
 
+// ─── Appearance Section ───────────────────────────────────────────────────────
+
+const THEME_OPTIONS: { value: Theme; label: string; desc: string; icon: React.ElementType }[] = [
+  { value: "light", label: "Light", desc: "Clean white interface", icon: Sun },
+  { value: "dark",  label: "Dark",  desc: "Easy on the eyes at night", icon: Moon },
+  { value: "system", label: "System", desc: "Follows your device preference", icon: Monitor },
+];
+
+function AppearanceSection() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader title="Appearance" desc="Choose how Talim School Admin looks on this device." />
+
+      <Card>
+        <CardHeader title="Theme" />
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {THEME_OPTIONS.map(({ value, label, desc, icon: Icon }) => {
+            const selected = theme === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${
+                  selected
+                    ? "border-[#003366] dark:border-blue-500 bg-[#EBF0F7] dark:bg-slate-700"
+                    : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  selected ? "bg-[#003366] dark:bg-blue-600 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
+                }`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <p className={`text-sm font-semibold ${selected ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-200"}`}>
+                    {label}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{desc}</p>
+                </div>
+                {selected && (
+                  <div className="w-5 h-5 rounded-full bg-[#003366] dark:bg-blue-600 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="px-5 py-4">
+          <p className="text-xs text-gray-400 dark:text-slate-500">
+            Theme preference is stored locally on this device and does not sync across browsers or devices.
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 const SECTION_MAP: Record<Section, React.ComponentType> = {
@@ -1767,6 +1838,7 @@ const SECTION_MAP: Record<Section, React.ComponentType> = {
   "notifications": NotificationsSection,
   "security": SecuritySection,
   "data-system": DataSystemSection,
+  "appearance": AppearanceSection,
 };
 
 export default function SettingsPage() {
@@ -1774,12 +1846,12 @@ export default function SettingsPage() {
   const ActiveSection = SECTION_MAP[active];
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
+    <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 overflow-hidden">
       {/* Left Sidebar */}
-      <aside className="w-60 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
-        <div className="px-5 py-5 border-b border-gray-100">
-          <h1 className="text-base font-bold text-gray-900">Settings</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Manage your school&apos;s preferences and configurations</p>
+      <aside className="w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col overflow-hidden">
+        <div className="px-5 py-5 border-b border-gray-100 dark:border-slate-800">
+          <h1 className="text-base font-bold text-gray-900 dark:text-slate-100">Settings</h1>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Manage your school&apos;s preferences and configurations</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {SECTIONS.map((s) => {
@@ -1790,22 +1862,24 @@ export default function SettingsPage() {
                 key={s.id}
                 onClick={() => setActive(s.id)}
                 className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-left transition-colors ${
-                  isActive ? "bg-[#EBF0F7] text-[#003366]" : "text-gray-600 hover:bg-gray-50"
+                  isActive
+                    ? "bg-[#EBF0F7] dark:bg-slate-700 text-[#003366] dark:text-blue-400"
+                    : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800"
                 }`}
               >
-                <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isActive ? "text-[#003366]" : "text-gray-400"}`} />
+                <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
                 <div className="min-w-0">
-                  <p className={`text-xs font-semibold truncate ${isActive ? "text-[#003366]" : "text-gray-700"}`}>
+                  <p className={`text-xs font-semibold truncate ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-300"}`}>
                     {s.label}
                   </p>
-                  <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">{s.desc}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate leading-tight mt-0.5">{s.desc}</p>
                 </div>
               </button>
             );
           })}
         </nav>
-        <div className="px-5 py-3 border-t border-gray-100">
-          <p className="text-[10px] text-gray-400">Talim School Admin v2.0</p>
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-slate-800">
+          <p className="text-[10px] text-gray-400 dark:text-slate-600">Talim School Admin v2.0</p>
         </div>
       </aside>
 

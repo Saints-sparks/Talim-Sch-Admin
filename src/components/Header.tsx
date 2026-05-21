@@ -6,6 +6,7 @@ import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar } from "./Icons";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
@@ -22,7 +23,7 @@ export function Header() {
   };
 
   return (
-    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] py-2 bg-white">
+    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] dark:border-b-slate-800 py-2 bg-white dark:bg-slate-900">
       {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
       <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
         {/* Left Side: School Name */}
@@ -53,7 +54,7 @@ export function Header() {
             />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100 tracking-tight">
               {user?.schoolName || "School Name"}
             </h1>
           </div>
@@ -70,7 +71,7 @@ export function Header() {
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="flex gap-2 items-center text-[#6F6F6F] p-2 rounded-lg border border-[#F0F0F0] bg-white cursor-pointer hover:bg-gray-100">
+            <div className="flex gap-2 items-center text-[#6F6F6F] dark:text-slate-400 p-2 rounded-lg border border-[#F0F0F0] dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700">
               <p className="font-medium leading-[24px]">
                 {format(new Date(), "dd MMM, yyyy")}
               </p>
@@ -80,6 +81,7 @@ export function Header() {
             <div className="flex items-center">
               <WebSocketStatus />
             </div>
+            <ThemeToggle />
             {/* <Link href="/notifications">
               <Button className="bg-white shadow-none border border-[#F0F0F0] hover:bg-gray-200 h-full rounded-lg p-3">
                 <Bell className="h-5 w-5 text-gray-600" />

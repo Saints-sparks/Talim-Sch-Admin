@@ -3,6 +3,7 @@ import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 import { TransitionProvider } from "@/context/TransitionContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { usePathname } from "next/navigation";
 
@@ -90,8 +91,10 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      <AppShell>{children}</AppShell>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppShell>{children}</AppShell>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
