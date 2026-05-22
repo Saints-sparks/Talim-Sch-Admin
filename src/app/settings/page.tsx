@@ -41,6 +41,12 @@ import {
   Building2,
   Users,
   FileText,
+  Camera,
+  MapPin,
+  Phone,
+  Globe,
+  LogIn,
+  User,
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { useTheme, Theme } from "@/providers/theme-provider";
@@ -68,9 +74,16 @@ import {
   getFinanceSettings,
   updateFinanceSettings,
   changeSettingsPassword,
+  getSchoolProfile,
+  updateSchoolProfile,
+  fetchExportData,
+  downloadAsCsv,
   ReceiptSettings,
   FinanceSettings,
+  SchoolProfile,
+  PrimaryContact,
 } from "@/app/services/school-settings.service";
+import { API_BASE_URL } from "@/app/lib/api/config";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +108,7 @@ const SECTIONS: {
   icon: React.ElementType;
 }[] = [
   { id: "school-profile", label: "School Profile", desc: "School information and branding", icon: School },
-  { id: "admin-account", label: "Admin Account", desc: "Personal information & preferences", icon: UserCog },
+  { id: "admin-account", label: "Admin Profile", desc: "Personal information & preferences", icon: UserCog },
   { id: "academic-setup", label: "Academic Setup", desc: "Academic year, terms and grading periods", icon: Calendar },
   { id: "classes-curriculum", label: "Classes & Curriculum", desc: "Class levels, subjects and curriculum", icon: BookOpen },
   { id: "assessment-settings", label: "Assessment Settings", desc: "Grading rules and assessment preferences", icon: BarChart2 },
@@ -177,8 +190,8 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-        <span className="text-sm text-gray-700 flex-1">{value || "—"}</span>
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg">
+        <span className="text-sm text-gray-700 dark:text-slate-300 flex-1">{value || "—"}</span>
         <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
       </div>
     </div>
@@ -202,7 +215,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-700 mb-1">
+      <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
@@ -211,7 +224,7 @@ function InputField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none transition"
+        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none transition"
       />
     </div>
   );
@@ -261,7 +274,7 @@ function OutlineBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -305,11 +318,11 @@ function ModalShell({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
             <X className="w-5 h-5" />
           </button>
@@ -323,18 +336,45 @@ function ModalShell({
 // ─── School Profile Section ───────────────────────────────────────────────────
 
 function SchoolProfileSection() {
-  const [user, setUser] = useState<any>(null);
+  const [school, setSchool] = useState<SchoolProfile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ physicalAddress: "", contactName: "", contactPhone: "", contactRole: "" });
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (raw) setUser(JSON.parse(raw));
-    } catch {}
+    loadSchool();
   }, []);
 
-  const school = user?.schoolId || {};
+  const loadSchool = async () => {
+    setLoading(true);
+    try {
+      const res = await getSchoolProfile();
+      setSchool(res.school);
+      const contact = res.school.primaryContacts?.[0];
+      setForm({
+        physicalAddress: res.school.physicalAddress || "",
+        contactName: contact?.name || "",
+        contactPhone: contact?.phone || "",
+        contactRole: contact?.role || "",
+      });
+    } catch {
+      // Fall back to localStorage
+      try {
+        const raw = localStorage.getItem("user");
+        if (raw) {
+          const data = JSON.parse(raw);
+          const s = data.schoolId || {};
+          setSchool(s);
+          setForm({ physicalAddress: s.physicalAddress || "", contactName: "", contactPhone: "", contactRole: "" });
+        }
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -358,7 +398,18 @@ function SchoolProfileSection() {
       });
       const data = await res.json();
       if (data.secure_url) {
-        toast.success("Logo uploaded. Contact Talim support to apply the change.");
+        await updateSchoolProfile({ logo: data.secure_url });
+        setSchool((prev) => prev ? { ...prev, logo: data.secure_url } : prev);
+        // Update localStorage too
+        try {
+          const raw = localStorage.getItem("user");
+          if (raw) {
+            const user = JSON.parse(raw);
+            if (user.schoolId) user.schoolId.logo = data.secure_url;
+            localStorage.setItem("user", JSON.stringify(user));
+          }
+        } catch {}
+        toast.success("School logo updated successfully");
       }
     } catch {
       toast.error("Upload failed. Please try again.");
@@ -366,6 +417,39 @@ function SchoolProfileSection() {
       setUploading(false);
     }
   };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const contacts: PrimaryContact[] = form.contactName
+        ? [{ name: form.contactName, phone: form.contactPhone, email: school?.email || "", role: form.contactRole || "Principal" }]
+        : school?.primaryContacts || [];
+
+      const res = await updateSchoolProfile({
+        physicalAddress: form.physicalAddress,
+        primaryContacts: contacts,
+      });
+      setSchool(res.school);
+      setEditing(false);
+      toast.success("School profile updated");
+    } catch {
+      toast.error("Failed to update school profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <SectionHeader title="School Profile" desc="School information and branding" />
+        <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />
+      </div>
+    );
+  }
+
+  const contact = school?.primaryContacts?.[0];
 
   return (
     <div className="space-y-5">
@@ -376,7 +460,7 @@ function SchoolProfileSection() {
         <CardHeader title="School Logo" />
         <div className="p-5 flex items-center gap-5">
           <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
-            {school.logo ? (
+            {school?.logo ? (
               <img src={school.logo} alt="School logo" className="w-full h-full object-contain" />
             ) : (
               <School className="w-8 h-8 text-gray-300" />
@@ -395,22 +479,85 @@ function SchoolProfileSection() {
 
       {/* School Information */}
       <Card>
-        <CardHeader title="School Information" />
+        <CardHeader
+          title="School Information"
+          action={
+            editing ? (
+              <div className="flex gap-2">
+                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>Cancel</OutlineBtn>
+                <PrimaryBtn onClick={handleSave} loading={saving}>Save Changes</PrimaryBtn>
+              </div>
+            ) : (
+              <OutlineBtn onClick={() => setEditing(true)}>
+                <Pencil className="w-3.5 h-3.5" /> Edit
+              </OutlineBtn>
+            )
+          }
+        />
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ReadOnlyField label="School Name" value={school.name} />
-            <ReadOnlyField label="School Email" value={school.email} />
-            <ReadOnlyField label="School Code" value={school.schoolPrefix} />
-            <ReadOnlyField label="Status" value={school.active ? "Active" : "Inactive"} />
+            <ReadOnlyField label="School Name" value={school?.name || ""} />
+            <ReadOnlyField label="School Email" value={school?.email || ""} />
+            <ReadOnlyField label="School Code" value={school?.schoolPrefix || ""} />
+            <ReadOnlyField label="Status" value={school?.active ? "Active" : "Inactive"} />
           </div>
-          <ReadOnlyField label="Address" value={school.physicalAddress} />
+
+          {editing ? (
+            <div className="space-y-4 pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editable Fields</p>
+              <InputField
+                label="Physical Address"
+                value={form.physicalAddress}
+                onChange={(v) => setForm({ ...form, physicalAddress: v })}
+                placeholder="e.g. 123 Education Lane, Lagos"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <InputField
+                  label="Primary Contact Name"
+                  value={form.contactName}
+                  onChange={(v) => setForm({ ...form, contactName: v })}
+                  placeholder="e.g. Mrs. Amaka Obi"
+                />
+                <InputField
+                  label="Contact Phone"
+                  value={form.contactPhone}
+                  onChange={(v) => setForm({ ...form, contactPhone: v })}
+                  placeholder="e.g. +234 800 000 0000"
+                />
+                <InputField
+                  label="Contact Role"
+                  value={form.contactRole}
+                  onChange={(v) => setForm({ ...form, contactRole: v })}
+                  placeholder="e.g. Principal"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 pt-2">
+                <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700 dark:text-slate-300">{school?.physicalAddress || "—"}</span>
+              </div>
+              {contact && (
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-gray-400" />
+                    {contact.name} ({contact.role})
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                    {contact.phone}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
           <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700">
-              School name and email are managed by Talim support. Contact{" "}
-              <a href="mailto:support@mytalim.com" className="underline font-medium">
-                support@mytalim.com
-              </a>{" "}
+              School name, email and code are managed by Talim support. Contact{" "}
+              <a href="mailto:support@mytalim.com" className="underline font-medium">support@mytalim.com</a>{" "}
               to request changes.
             </p>
           </div>
@@ -428,6 +575,8 @@ function AdminAccountSection() {
   const [form, setForm] = useState({ firstName: "", lastName: "", phoneNumber: "" });
   const [saving, setSaving] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
@@ -460,10 +609,86 @@ function AdminAccountSection() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
+      toast.error("Only PNG or JPG files are allowed");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be under 2MB");
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      // Upload to Cloudinary
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", "presetOne");
+      const res = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Upload failed");
+
+      // Save to backend
+      const token = localStorage.getItem("accessToken");
+      const backendRes = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatarUrl: data.secure_url }),
+      });
+      if (!backendRes.ok) throw new Error("Failed to save avatar");
+
+      const updated = { ...profile, userAvatar: data.secure_url };
+      localStorage.setItem("user", JSON.stringify(updated));
+      setProfile(updated);
+      toast.success("Profile picture updated");
+    } catch {
+      toast.error("Failed to update profile picture");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const initials = `${profile?.firstName?.[0] || ""}${profile?.lastName?.[0] || ""}`.toUpperCase();
+
   return (
     <div className="space-y-5">
-      <SectionHeader title="Admin Account" desc="Manage your personal profile and preferences" />
+      <SectionHeader title="Admin Profile" desc="Manage your personal profile and preferences" />
 
+      {/* Avatar */}
+      <Card>
+        <CardHeader title="Profile Picture" />
+        <div className="p-5 flex items-center gap-5">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full border-2 border-gray-200 flex items-center justify-center bg-[#EBF0F7] overflow-hidden">
+              {profile?.userAvatar ? (
+                <img src={profile.userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xl font-bold text-[#003366]">{initials || "A"}</span>
+              )}
+            </div>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <div>
+            <input ref={avatarRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleAvatarUpload} />
+            <OutlineBtn onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}>
+              <Camera className="w-4 h-4" />
+              {uploadingAvatar ? "Uploading…" : "Change Picture"}
+            </OutlineBtn>
+            <p className="text-xs text-gray-500 mt-1.5">PNG, JPG — max 2MB</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Profile Information */}
       <Card>
         <CardHeader
           title="Profile Information"
@@ -494,7 +719,7 @@ function AdminAccountSection() {
                 <ReadOnlyField label="Full Name" value={`${profile?.firstName || ""} ${profile?.lastName || ""}`.trim()} />
                 <ReadOnlyField label="Email" value={profile?.email} />
                 <ReadOnlyField label="Phone Number" value={profile?.phoneNumber || "Not set"} />
-                <ReadOnlyField label="Role" value={profile?.role || "School Admin"} />
+                <ReadOnlyField label="Role" value={profile?.role?.replace(/_/g, " ") || "School Admin"} />
               </>
             )}
           </div>
@@ -506,12 +731,13 @@ function AdminAccountSection() {
         </div>
       </Card>
 
+      {/* Account Security */}
       <Card>
         <CardHeader title="Account Security" />
         <div className="p-5">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-800">Password</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Password</p>
               <p className="text-xs text-gray-500">Update your account password</p>
             </div>
             <OutlineBtn onClick={() => setShowPwModal(true)}>
@@ -572,14 +798,14 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           const fields = ["currentPassword", "newPassword", "confirmPassword"] as const;
           return (
             <div key={key}>
-              <label className="block text-xs font-medium text-gray-700 mb-1">{labels[i]}</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">{labels[i]}</label>
               <div className="relative">
                 <input
                   type={show[key] ? "text" : "password"}
                   value={form[fields[i]]}
                   onChange={(e) => setForm({ ...form, [fields[i]]: e.target.value })}
                   required
-                  className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-300 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none"
+                  className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none"
                 />
                 <button type="button" onClick={() => setShow({ ...show, [key]: !show[key] })}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -634,11 +860,6 @@ function AcademicSetupSection() {
 
   const currentYear = uniqueYears.find((y) => y.isCurrent);
   const currentTerm = terms.find((t) => t.isCurrent);
-
-  const getSchoolId = () => {
-    try { return JSON.parse(localStorage.getItem("user") || "{}").schoolId?._id || ""; }
-    catch { return ""; }
-  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -731,11 +952,10 @@ function AcademicSetupSection() {
     <div className="space-y-5">
       <SectionHeader title="Academic Setup" desc="Manage academic years, terms and grading periods" />
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
           <p className="text-xs text-gray-500 mb-1">Current Academic Year</p>
-          <p className="text-lg font-bold text-gray-900">{currentYear?.year || "Not set"}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{currentYear?.year || "Not set"}</p>
           {currentYear && (
             <>
               <StatusBadge status="Active" />
@@ -747,7 +967,7 @@ function AcademicSetupSection() {
         </Card>
         <Card className="p-4">
           <p className="text-xs text-gray-500 mb-1">Current Term</p>
-          <p className="text-lg font-bold text-gray-900">{currentTerm?.name || "Not set"}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{currentTerm?.name || "Not set"}</p>
           {currentTerm && (
             <>
               <StatusBadge status="Active" />
@@ -761,7 +981,7 @@ function AcademicSetupSection() {
           <p className="text-xs text-gray-500 mb-1">Academic Progress</p>
           {progress ? (
             <>
-              <p className="text-lg font-bold text-gray-900">{progress.pct}%</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{progress.pct}%</p>
               <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
                 <div className="bg-[#003366] h-1.5 rounded-full transition-all" style={{ width: `${progress.pct}%` }} />
               </div>
@@ -775,7 +995,6 @@ function AcademicSetupSection() {
         </Card>
       </div>
 
-      {/* Academic Years Table */}
       <Card>
         <CardHeader
           title="Academic Years"
@@ -789,8 +1008,6 @@ function AcademicSetupSection() {
           {showYearForm && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
               <form onSubmit={submitYear} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
-                <p className="text-sm font-medium text-gray-700">Add New Academic Year</p>
-                <p className="text-xs text-gray-500">Create a new academic year for your school</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <InputField label="Academic Year" value={yearForm.year} onChange={(v) => setYearForm({ ...yearForm, year: v })} placeholder="e.g. 2027/2028" required />
                   <InputField label="Start Date" value={yearForm.startDate} onChange={(v) => setYearForm({ ...yearForm, startDate: v })} type="date" required />
@@ -798,9 +1015,8 @@ function AcademicSetupSection() {
                 </div>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="yearCurrent" checked={yearForm.isCurrent} onChange={(e) => setYearForm({ ...yearForm, isCurrent: e.target.checked })} className="rounded border-gray-300" />
-                  <label htmlFor="yearCurrent" className="text-xs text-gray-700">Set as current academic year</label>
+                  <label htmlFor="yearCurrent" className="text-xs text-gray-700 dark:text-slate-300">Set as current academic year</label>
                 </div>
-                <p className="text-xs text-gray-500">Once created, you can add terms to this academic year.</p>
                 <div className="flex gap-3">
                   <OutlineBtn onClick={() => setShowYearForm(false)} disabled={submitting}>Cancel</OutlineBtn>
                   <PrimaryBtn type="submit" loading={submitting}>Save Academic Year</PrimaryBtn>
@@ -824,7 +1040,7 @@ function AcademicSetupSection() {
               ) : (
                 uniqueYears.map((y) => (
                   <tr key={y._id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
                       {y.year} {y.isCurrent && <span className="ml-1.5 text-xs text-blue-600 font-semibold">Current</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(y.startDate)}</td>
@@ -838,15 +1054,9 @@ function AcademicSetupSection() {
               )}
             </tbody>
           </table>
-          {uniqueYears.length > 0 && (
-            <p className="px-4 py-2 text-xs text-gray-500 border-t border-gray-50">
-              Showing 1 to {uniqueYears.length} of {uniqueYears.length} results
-            </p>
-          )}
         </div>
       </Card>
 
-      {/* Terms Table */}
       <Card>
         <CardHeader
           title="Terms"
@@ -860,14 +1070,12 @@ function AcademicSetupSection() {
           {showTermForm && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
               <form onSubmit={submitTerm} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
-                <p className="text-sm font-medium text-gray-700">Add New Term</p>
-                <p className="text-xs text-gray-500">Add a new term for the selected academic year</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputField label="Term Name" value={termForm.name} onChange={(v) => setTermForm({ ...termForm, name: v })} placeholder="e.g. First Term" required />
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Academic Year <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Academic Year <span className="text-red-500">*</span></label>
                     <select value={termForm.academicYearId} onChange={(e) => setTermForm({ ...termForm, academicYearId: e.target.value })}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg outline-none focus:border-[#003366]" required>
+                      className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]" required>
                       <option value="">Select academic year</option>
                       {uniqueYears.map((y) => (
                         <option key={y._id} value={y._id}>{y.year}</option>
@@ -877,15 +1085,12 @@ function AcademicSetupSection() {
                   <InputField label="Start Date" value={termForm.startDate} onChange={(v) => setTermForm({ ...termForm, startDate: v })} type="date" required />
                   <InputField label="End Date" value={termForm.endDate} onChange={(v) => setTermForm({ ...termForm, endDate: v })} type="date" required />
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setTermForm({ ...termForm, isCurrent: !termForm.isCurrent })}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${termForm.isCurrent ? "bg-[#003366]" : "bg-gray-200"}`}>
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${termForm.isCurrent ? "translate-x-4.5" : "translate-x-0.5"}`} />
-                    </button>
-                    <label className="text-xs text-gray-700">Set as current term</label>
-                  </div>
-                  <span className="text-xs text-gray-400">Only one term can be current at a time</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setTermForm({ ...termForm, isCurrent: !termForm.isCurrent })}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${termForm.isCurrent ? "bg-[#003366]" : "bg-gray-200"}`}>
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${termForm.isCurrent ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                  </button>
+                  <label className="text-xs text-gray-700 dark:text-slate-300">Set as current term</label>
                 </div>
                 <div className="flex gap-3">
                   <OutlineBtn onClick={() => setShowTermForm(false)} disabled={submitting}>Cancel</OutlineBtn>
@@ -910,7 +1115,7 @@ function AcademicSetupSection() {
               ) : (
                 terms.map((t) => (
                   <tr key={t._id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{t.name}</td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(t.startDate)}</td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(t.endDate)}</td>
                     <td className="px-4 py-3"><StatusBadge status={t.isCurrent ? "Active" : "Upcoming"} /></td>
@@ -926,7 +1131,7 @@ function AcademicSetupSection() {
                         <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
                         {!t.isCurrent && (
                           <button onClick={() => { setPendingTermId(t._id); setShowChangeTermModal(true); }}
-                            className="px-2 py-1 text-xs text-[#003366] border border-[#003366]/20 rounded hover:bg-[#003366]/5 transition" title="Set as current">
+                            className="px-2 py-1 text-xs text-[#003366] border border-[#003366]/20 rounded hover:bg-[#003366]/5 transition">
                             Set Current
                           </button>
                         )}
@@ -937,15 +1142,9 @@ function AcademicSetupSection() {
               )}
             </tbody>
           </table>
-          {terms.length > 0 && (
-            <p className="px-4 py-2 text-xs text-gray-500 border-t border-gray-50">
-              Showing 1 to {terms.length} of {terms.length} results
-            </p>
-          )}
         </div>
       </Card>
 
-      {/* Change Current Term Confirmation Modal */}
       <AnimatePresence>
         {showChangeTermModal && (
           <ModalShell title="Change Current Term?" onClose={() => setShowChangeTermModal(false)}>
@@ -998,7 +1197,7 @@ function ClassesCurriculumSection() {
                 <c.icon className="w-5 h-5 text-[#003366]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">{c.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
               </div>
               <button onClick={() => router.push(c.link)}
@@ -1008,10 +1207,6 @@ function ClassesCurriculumSection() {
             </div>
           </Card>
         ))}
-      </div>
-      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-blue-700">Class and curriculum settings are managed through their dedicated modules. Use the links above to navigate directly.</p>
       </div>
     </div>
   );
@@ -1040,61 +1235,42 @@ function AssessmentSettingsSection() {
   return (
     <div className="space-y-5">
       <SectionHeader title="Assessment Settings" desc="Grading rules and assessment preferences" />
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Grading Scale */}
         <Card>
           <CardHeader title="Grading Scale" />
           <div className="p-4">
-            <div className="overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="py-2 text-left text-xs font-semibold text-gray-500">Grade</th>
-                    <th className="py-2 text-left text-xs font-semibold text-gray-500">Min Score (%)</th>
-                    <th className="py-2 text-left text-xs font-semibold text-gray-500">Max Score (%)</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Grade</th>
+                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Min (%)</th>
+                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Max (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {GRADING_SCALE.map((g) => (
+                  <tr key={g.grade} className="border-b border-gray-50">
+                    <td className="py-2 font-semibold text-[#003366]">{g.grade}</td>
+                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.min}</td>
+                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.max}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {GRADING_SCALE.map((g) => (
-                    <tr key={g.grade} className="border-b border-gray-50">
-                      <td className="py-2 font-semibold text-[#003366]">{g.grade}</td>
-                      <td className="py-2 text-gray-700">{g.min}</td>
-                      <td className="py-2 text-gray-700">{g.max}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Card>
-
-        {/* Score Weighting + Other Settings */}
         <div className="space-y-4">
           <Card>
             <CardHeader title="Score Weighting" />
             <div className="p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Test Score (CA)</p>
+              {[{ label: "Test Score (CA)", value: 30 }, { label: "Exam Score", value: 70 }].map((s) => (
+                <div key={s.label} className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{s.label}</p>
+                  <span className="text-sm font-bold text-[#003366]">{s.value}%</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#003366]">30</span>
-                  <span className="text-xs text-gray-500">%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Exam Score</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#003366]">70</span>
-                  <span className="text-xs text-gray-500">%</span>
-                </div>
-              </div>
+              ))}
             </div>
           </Card>
-
           <Card>
             <CardHeader title="Other Settings" />
             <div className="p-5 space-y-1">
@@ -1105,7 +1281,6 @@ function AssessmentSettingsSection() {
           </Card>
         </div>
       </div>
-
       <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
         <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
         <p className="text-xs text-blue-700">
@@ -1140,12 +1315,12 @@ function FeesReceiptsSection() {
 
   const updateToggle = async (field: keyof ReceiptSettings, value: boolean) => {
     if (!settings) return;
-    const updated = { ...settings, [field]: value };
-    setSettings(updated);
+    const prev = { ...settings };
+    setSettings({ ...settings, [field]: value });
     try {
       await updateReceiptSettings({ [field]: value });
     } catch {
-      setSettings(settings);
+      setSettings(prev);
       toast.error("Failed to save");
     }
   };
@@ -1195,7 +1370,6 @@ function FeesReceiptsSection() {
     <div className="space-y-5">
       <SectionHeader title="Fees & Receipts" desc="Fee categories, invoices and receipt design" />
 
-      {/* Fee Categories link */}
       <Card className="p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1203,7 +1377,7 @@ function FeesReceiptsSection() {
               <Receipt className="w-5 h-5 text-[#003366]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Fee Categories</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Fee Categories</p>
               <p className="text-xs text-gray-500">Manage fee types, invoices and assignments</p>
             </div>
           </div>
@@ -1213,7 +1387,6 @@ function FeesReceiptsSection() {
         </div>
       </Card>
 
-      {/* Receipt Signature */}
       <Card>
         <CardHeader title="Receipt Signature" />
         <div className="p-5">
@@ -1221,12 +1394,8 @@ function FeesReceiptsSection() {
             <div className="flex items-start gap-5">
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-w-[160px] text-center">
                 <img src={settings.signatureUrl} alt="Signature" className="max-h-16 mx-auto object-contain" />
-                {settings.signatureName && (
-                  <p className="text-xs font-semibold text-gray-700 mt-2">{settings.signatureName}</p>
-                )}
-                {settings.signatureTitle && (
-                  <p className="text-xs text-gray-500">{settings.signatureTitle}</p>
-                )}
+                {settings.signatureName && <p className="text-xs font-semibold text-gray-700 mt-2">{settings.signatureName}</p>}
+                {settings.signatureTitle && <p className="text-xs text-gray-500">{settings.signatureTitle}</p>}
               </div>
               <div className="space-y-3 flex-1">
                 <InputField label="Signatory Name" value={settings.signatureName || ""} onChange={async (v) => { setSettings((s) => s ? { ...s, signatureName: v } : s); await updateReceiptSettings({ signatureName: v }); }} placeholder="e.g. A. Okafor" />
@@ -1255,7 +1424,6 @@ function FeesReceiptsSection() {
         </div>
       </Card>
 
-      {/* Receipt Preferences */}
       <Card>
         <CardHeader title="Receipt Preferences" />
         <div className="px-5 pb-2 pt-1">
@@ -1266,13 +1434,12 @@ function FeesReceiptsSection() {
         </div>
       </Card>
 
-      {/* Receipt Footer Note */}
       <Card>
         <CardHeader title="Receipt Footer Note" />
         <div className="p-5 space-y-3">
           <textarea value={footerNote} onChange={(e) => setFooterNote(e.target.value)} maxLength={250}
             rows={3} placeholder="e.g. Thank you for your payment. Every child. Every classroom. Every future."
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg outline-none focus:border-[#003366] resize-none" />
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] resize-none" />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{footerNote.length}/250 characters</span>
             <PrimaryBtn onClick={saveFooterNote} loading={saving}>Save Preferences</PrimaryBtn>
@@ -1310,9 +1477,10 @@ function PaymentsFinanceSection() {
 
   const toggleOtp = async (v: boolean) => {
     if (!finSettings) return;
+    const prev = { ...finSettings };
     setFinSettings({ ...finSettings, requireEmailOtpForWithdrawals: v });
     try { await updateFinanceSettings({ requireEmailOtpForWithdrawals: v }); }
-    catch { setFinSettings({ ...finSettings }); toast.error("Failed to save"); }
+    catch { setFinSettings(prev); toast.error("Failed to save"); }
   };
 
   const saveMinAmount = async () => {
@@ -1354,7 +1522,6 @@ function PaymentsFinanceSection() {
     <div className="space-y-5">
       <SectionHeader title="Payments & Finance" desc="Wallet, withdrawals and payout settings" />
 
-      {/* Provider Status */}
       <Card>
         <CardHeader title="Payment Providers" />
         <div className="p-5 space-y-3">
@@ -1371,14 +1538,9 @@ function PaymentsFinanceSection() {
               <span className="text-xs text-gray-500 font-medium">Enabled by Talim</span>
             </div>
           ))}
-          <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <Shield className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-500">Payment providers are securely managed by Talim. Schools receive funds through their school wallet.</p>
-          </div>
         </div>
       </Card>
 
-      {/* Wallet Summary */}
       {wallet && (
         <Card>
           <CardHeader title="School Wallet" action={
@@ -1402,21 +1564,20 @@ function PaymentsFinanceSection() {
         </Card>
       )}
 
-      {/* Withdrawal Settings */}
       <Card>
         <CardHeader title="Withdrawal Settings" />
         <div className="px-5 pb-3 pt-1">
           <ToggleRow label="Require email OTP for withdrawals" desc="Send a 6-digit OTP to your email before each withdrawal" checked={finSettings?.requireEmailOtpForWithdrawals ?? true} onChange={toggleOtp} />
           <div className="py-3 border-b border-gray-50">
-            <p className="text-sm font-medium text-gray-800 mb-2">Minimum Withdrawal Amount (₦)</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-2">Minimum Withdrawal Amount (₦)</p>
             <div className="flex items-center gap-3">
               <input type="number" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} min={0}
-                className="w-40 px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:border-[#003366]" />
+                className="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]" />
               <PrimaryBtn onClick={saveMinAmount} loading={savingFin}>Save</PrimaryBtn>
             </div>
           </div>
           <div className="py-3">
-            <p className="text-sm font-medium text-gray-800 mb-1">Default Payout Account</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-1">Default Payout Account</p>
             <p className="text-xs text-gray-500">
               {accounts.find((a) => a.isDefault)
                 ? `${accounts.find((a) => a.isDefault)!.bankName} – ${accounts.find((a) => a.isDefault)!.accountNumber}`
@@ -1426,7 +1587,6 @@ function PaymentsFinanceSection() {
         </div>
       </Card>
 
-      {/* Bank Accounts */}
       <Card>
         <CardHeader title="Bank Accounts" action={
           <OutlineBtn onClick={() => setShowAddAccount(!showAddAccount)}>
@@ -1437,8 +1597,6 @@ function PaymentsFinanceSection() {
           {showAddAccount && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
               <form onSubmit={handleAddAccount} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
-                <p className="text-sm font-medium text-gray-700">Add Bank Account</p>
-                <p className="text-xs text-gray-500">Ensure the account details are correct. Wrong details may cause withdrawal delays.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Bank Name <span className="text-red-500">*</span></label>
@@ -1483,7 +1641,7 @@ function PaymentsFinanceSection() {
                     <Building2 className="w-4 h-4 text-[#003366]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{a.bankName} – {a.accountNumber}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{a.bankName} – {a.accountNumber}</p>
                     <p className="text-xs text-gray-500">{a.accountName}</p>
                   </div>
                 </div>
@@ -1525,7 +1683,7 @@ function CommunicationSection() {
                 <c.icon className="w-4 h-4 text-[#003366]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">{c.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
               </div>
             </div>
@@ -1547,15 +1705,10 @@ function CommunicationSection() {
 
 function NotificationsSection() {
   const [prefs, setPrefs] = useState({
-    announcements: true,
-    feePayments: true,
-    withdrawals: true,
-    leaveRequests: true,
-    resultPublishing: false,
-    newMessages: true,
+    announcements: true, feePayments: true, withdrawals: true,
+    leaveRequests: true, resultPublishing: false, newMessages: true,
   });
 
-  const keys: (keyof typeof prefs)[] = ["announcements", "feePayments", "withdrawals", "leaveRequests", "resultPublishing", "newMessages"];
   const labels: Record<keyof typeof prefs, { label: string; desc: string }> = {
     announcements: { label: "Announcement notifications", desc: "Get notified when announcements are published" },
     feePayments: { label: "Fee payment alerts", desc: "Notify when parents make payments" },
@@ -1571,7 +1724,7 @@ function NotificationsSection() {
       <Card>
         <CardHeader title="Notification Preferences" />
         <div className="px-5 pb-2 pt-1">
-          {keys.map((k) => (
+          {(Object.keys(prefs) as (keyof typeof prefs)[]).map((k) => (
             <ToggleRow key={k} label={labels[k].label} desc={labels[k].desc} checked={prefs[k]} onChange={(v) => setPrefs({ ...prefs, [k]: v })} />
           ))}
         </div>
@@ -1588,10 +1741,17 @@ function NotificationsSection() {
 
 function SecuritySection() {
   const [profile, setProfile] = useState<any>(null);
+  const [finSettings, setFinSettings] = useState<FinanceSettings | null>(null);
   const [showPwModal, setShowPwModal] = useState(false);
+  const [loadingFin, setLoadingFin] = useState(true);
 
   useEffect(() => {
     try { setProfile(JSON.parse(localStorage.getItem("user") || "{}")); } catch {}
+
+    getFinanceSettings()
+      .then((r) => setFinSettings(r.settings))
+      .catch(() => {})
+      .finally(() => setLoadingFin(false));
   }, []);
 
   const masked = profile?.email
@@ -1601,17 +1761,20 @@ function SecuritySection() {
       })()
     : "—";
 
+  const otpEnabled = finSettings?.requireEmailOtpForWithdrawals ?? true;
+
   return (
     <div className="space-y-5">
       <SectionHeader title="Security" desc="Password, OTP and access security" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Password */}
         <Card>
           <CardHeader title="Password" />
           <div className="p-5">
             <div className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm font-medium text-gray-800">Account Password</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Account Password</p>
                 <p className="text-xs text-gray-500 mt-0.5">Update your password regularly for security</p>
               </div>
               <OutlineBtn onClick={() => setShowPwModal(true)}>
@@ -1621,50 +1784,65 @@ function SecuritySection() {
           </div>
         </Card>
 
+        {/* Email OTP */}
         <Card>
           <CardHeader title="Email OTP" />
           <div className="p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800">Email OTP (Withdrawals)</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Email OTP (Withdrawals)</p>
                 <p className="text-xs text-gray-500">OTP sent to: {masked}</p>
               </div>
-              <span className="text-xs text-green-600 font-medium border border-green-200 bg-green-50 px-2 py-0.5 rounded-full">Enabled</span>
+              {loadingFin ? (
+                <div className="w-16 h-5 bg-gray-100 rounded-full animate-pulse" />
+              ) : (
+                <span className={`text-xs font-medium border px-2 py-0.5 rounded-full ${
+                  otpEnabled
+                    ? "text-green-600 border-green-200 bg-green-50"
+                    : "text-gray-500 border-gray-200 bg-gray-50"
+                }`}>
+                  {otpEnabled ? "Enabled" : "Disabled"}
+                </span>
+              )}
             </div>
+            <p className="text-xs text-gray-500">
+              Manage OTP settings in{" "}
+              <button onClick={() => {}} className="text-[#003366] underline font-medium">Payments & Finance</button>
+            </p>
           </div>
         </Card>
 
+        {/* Session Security */}
         <Card>
           <CardHeader title="Session Security" />
           <div className="p-5 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Last Login</span>
-              <span className="text-gray-800 font-medium">
-                {profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Email Verified</span>
-              <span className={profile?.isEmailVerified ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                {profile?.isEmailVerified ? "Yes" : "No"}
-              </span>
-            </div>
+            {[
+              { label: "Last Login", value: profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : "—" },
+              { label: "Email Verified", value: profile?.isEmailVerified ? "✓ Yes" : "✗ No", highlight: profile?.isEmailVerified ? "text-green-600" : "text-red-600" },
+              { label: "Account Status", value: profile?.isActive ? "Active" : "Inactive", highlight: profile?.isActive ? "text-green-600" : "text-red-600" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
+                <span className="text-gray-500">{s.label}</span>
+                <span className={`font-medium ${s.highlight || "text-gray-800 dark:text-slate-200"}`}>{s.value}</span>
+              </div>
+            ))}
           </div>
         </Card>
 
+        {/* Access Control */}
         <Card>
           <CardHeader title="Access Control" />
           <div className="p-5 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Role</span>
-              <span className="text-gray-800 font-medium capitalize">{profile?.role?.replace("_", " ") || "School Admin"}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Account Status</span>
-              <span className={profile?.isActive ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                {profile?.isActive ? "Active" : "Inactive"}
-              </span>
-            </div>
+            {[
+              { label: "Role", value: profile?.role?.replace(/_/g, " ") || "School Admin" },
+              { label: "School", value: profile?.schoolId?.name || "—" },
+              { label: "User ID", value: profile?.userId || profile?._id || "—" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
+                <span className="text-gray-500">{s.label}</span>
+                <span className="text-gray-800 dark:text-slate-200 font-medium capitalize truncate max-w-[180px]">{s.value}</span>
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -1680,30 +1858,84 @@ function SecuritySection() {
 
 function DataSystemSection() {
   const router = useRouter();
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  const handleExport = async (type: "students" | "staff" | "fees", label: string) => {
+    setExporting(type);
+    try {
+      const result = await fetchExportData(type);
+      if (!result.data.length) {
+        toast.error(result.message || `No ${label} data to export`);
+        return;
+      }
+      downloadAsCsv(result.data, `${type}-export-${new Date().toISOString().slice(0, 10)}.csv`);
+      toast.success(`${label} exported (${result.count} records)`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const exportCards = [
+    {
+      title: "Export Students",
+      desc: "Download all student records in CSV format",
+      icon: Users,
+      action: () => handleExport("students", "Students"),
+      type: "students",
+    },
+    {
+      title: "Export Staff",
+      desc: "Download all staff and teacher records in CSV format",
+      icon: UserCog,
+      action: () => handleExport("staff", "Staff"),
+      type: "staff",
+    },
+    {
+      title: "Academic Reports",
+      desc: "Download term-based academic performance reports",
+      icon: FileText,
+      action: () => router.push("/assessments"),
+      type: null,
+    },
+    {
+      title: "Finance Statement",
+      desc: "Download detailed income and withdrawal statements",
+      icon: Receipt,
+      action: () => router.push("/finance"),
+      type: null,
+    },
+  ];
 
   return (
     <div className="space-y-5">
       <SectionHeader title="Data & System" desc="Backups, exports and system information" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          { title: "Export School Data", desc: "Download student, staff, class and finance data in Excel or CSV", icon: Download, action: () => router.push("/finance") },
-          { title: "Academic Reports", desc: "Download term-based academic performance reports", icon: FileText, action: () => router.push("/assessments") },
-          { title: "Finance Statement", desc: "Download detailed income and withdrawal statements", icon: Receipt, action: () => router.push("/finance") },
-          { title: "Audit Logs", desc: "View a history of administrative actions and changes", icon: Database, action: () => router.push("/finance") },
-        ].map((c) => (
+        {exportCards.map((c) => (
           <Card key={c.title} className="p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={c.action}>
             <div className="flex items-start gap-3 mb-3">
               <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] flex items-center justify-center shrink-0">
                 <c.icon className="w-4 h-4 text-[#003366]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">{c.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
               </div>
             </div>
-            <button onClick={c.action} className="inline-flex items-center gap-1 text-xs text-[#003366] font-medium hover:underline">
-              Open <ExternalLink className="w-3 h-3" />
+            <button
+              onClick={(e) => { e.stopPropagation(); c.action(); }}
+              disabled={exporting === c.type}
+              className="inline-flex items-center gap-1.5 text-xs text-[#003366] font-medium hover:underline disabled:opacity-50"
+            >
+              {exporting === c.type ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Exporting…</>
+              ) : c.type ? (
+                <><Download className="w-3 h-3" /> Download CSV</>
+              ) : (
+                <><ExternalLink className="w-3 h-3" /> Open</>
+              )}
             </button>
           </Card>
         ))}
@@ -1726,16 +1958,16 @@ function DataSystemSection() {
               { label: "Next Backup", value: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleString() },
               { label: "Backup Frequency", value: "Weekly (Every Sunday)" },
             ].map((s) => (
-              <div key={s.label} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div key={s.label} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
                 <p className="text-xs text-gray-500">{s.label}</p>
-                <p className="text-sm font-medium text-gray-800 mt-0.5">{s.value}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mt-0.5">{s.value}</p>
               </div>
             ))}
           </div>
         </div>
       </Card>
 
-      {/* System Version */}
+      {/* System Info */}
       <Card>
         <CardHeader title="System Information" />
         <div className="p-5 space-y-2 text-sm">
@@ -1745,9 +1977,9 @@ function DataSystemSection() {
             { label: "Environment", value: "Production" },
             { label: "Support", value: "support@mytalim.com" },
           ].map((s) => (
-            <div key={s.label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+            <div key={s.label} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
               <span className="text-gray-500">{s.label}</span>
-              <span className="text-gray-800 font-medium">
+              <span className="text-gray-800 dark:text-slate-200 font-medium">
                 {s.label === "Support" ? (
                   <a href={`mailto:${s.value}`} className="text-[#003366] hover:underline">{s.value}</a>
                 ) : s.value}
@@ -1774,7 +2006,6 @@ function AppearanceSection() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Appearance" desc="Choose how Talim School Admin looks on this device." />
-
       <Card>
         <CardHeader title="Theme" />
         <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1812,7 +2043,6 @@ function AppearanceSection() {
           })}
         </div>
       </Card>
-
       <Card>
         <div className="px-5 py-4">
           <p className="text-xs text-gray-400 dark:text-slate-500">
@@ -1851,7 +2081,7 @@ export default function SettingsPage() {
       <aside className="w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col overflow-hidden">
         <div className="px-5 py-5 border-b border-gray-100 dark:border-slate-800">
           <h1 className="text-base font-bold text-gray-900 dark:text-slate-100">Settings</h1>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Manage your school&apos;s preferences and configurations</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Manage your school&apos;s preferences</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {SECTIONS.map((s) => {

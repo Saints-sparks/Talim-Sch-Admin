@@ -18,6 +18,7 @@ export const API_URLS = {
     CHANGE_PASSWORD: "/auth/change-password",
     GET_PROFILE: "/auth/profile/:userId",
     UPDATE_PROFILE: "/auth/profile/update",
+    UPDATE_AVATAR: "/auth/profile/avatar",
     COMPLETE_ONBOARDING: "/auth/onboarding/complete",
   },
   SCHOOL: {
