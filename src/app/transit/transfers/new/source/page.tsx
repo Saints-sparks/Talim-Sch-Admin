@@ -14,12 +14,28 @@ import {
 } from "@/app/services/transit.service";
 import { apiClient } from "@/lib/apiClient";
 
-interface Student {
+interface RawStudent {
   _id: string;
+  userId?: { firstName?: string; lastName?: string; _id?: string };
   firstName?: string;
   lastName?: string;
-  studentId?: string;
   gradeLevel?: string;
+}
+
+interface Student {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  gradeLevel?: string;
+}
+
+function flattenStudent(s: RawStudent): Student {
+  return {
+    _id: s._id,
+    firstName: s.userId?.firstName ?? s.firstName ?? "",
+    lastName: s.userId?.lastName ?? s.lastName ?? "",
+    gradeLevel: s.gradeLevel,
+  };
 }
 
 interface ClassItem {
@@ -76,7 +92,7 @@ export default function SourceTransferWizard() {
 
   // Step 0 — student
   const [studentSearch, setStudentSearch] = useState("");
-  const [students, setStudents] = useState<Student[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [snapshot, setSnapshot] = useState<StudentSnapshot | null>(null);
@@ -94,26 +110,19 @@ export default function SourceTransferWizard() {
   const [selectedYear, setSelectedYear] = useState<AcademicYear | null>(null);
   const [reason, setReason] = useState("");
 
-  // Search students
+  // Load all school students once on mount
   useEffect(() => {
-    if (!studentSearch || studentSearch.length < 2) {
-      setStudents([]);
-      return;
-    }
-    const t = setTimeout(async () => {
-      setLoadingStudents(true);
-      try {
-        const res = await apiClient.get(`/users/students?search=${encodeURIComponent(studentSearch)}`);
-        const data = await handleRes<{ data: Student[] } | Student[]>(res);
-        setStudents(Array.isArray(data) ? data : data.data ?? []);
-      } catch {
-        setStudents([]);
-      } finally {
-        setLoadingStudents(false);
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [studentSearch]);
+    setLoadingStudents(true);
+    apiClient
+      .get("/users/students?page=1&limit=500")
+      .then((r) => handleRes<{ data: RawStudent[] } | RawStudent[]>(r))
+      .then((data) => {
+        const raw = Array.isArray(data) ? data : (data as { data: RawStudent[] }).data ?? [];
+        setAllStudents(raw.map(flattenStudent));
+      })
+      .catch(() => setAllStudents([]))
+      .finally(() => setLoadingStudents(false));
+  }, []);
 
   // Fetch snapshot when student selected
   useEffect(() => {
@@ -228,35 +237,46 @@ export default function SourceTransferWizard() {
               </div>
             )}
 
-            {!loadingStudents && students.length > 0 && (
-              <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                {students.map((s) => (
-                  <button
-                    key={s._id}
-                    onClick={() => setSelectedStudent(s)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors",
-                      selectedStudent?._id === s._id && "bg-[#003366]/5"
-                    )}
-                  >
-                    <div className="w-8 h-8 bg-[#003366]/10 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-[#003366]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#030E18]">
-                        {s.firstName} {s.lastName}
-                      </p>
-                      <p className="text-xs text-[#929292]">
-                        {s.studentId ?? s._id} {s.gradeLevel ? `· ${s.gradeLevel}` : ""}
-                      </p>
-                    </div>
-                    {selectedStudent?._id === s._id && (
-                      <Check className="w-4 h-4 text-[#003366] ml-auto" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+            {!loadingStudents && (() => {
+              const q = studentSearch.toLowerCase();
+              const filtered = allStudents.filter(
+                (s) =>
+                  !q ||
+                  `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+                  s.gradeLevel?.toLowerCase().includes(q)
+              );
+              return filtered.length > 0 ? (
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                  {filtered.map((s) => (
+                    <button
+                      key={s._id}
+                      onClick={() => setSelectedStudent(s)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors",
+                        selectedStudent?._id === s._id && "bg-[#003366]/5"
+                      )}
+                    >
+                      <div className="w-8 h-8 bg-[#003366]/10 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-[#003366]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#030E18]">
+                          {s.firstName} {s.lastName}
+                        </p>
+                        <p className="text-xs text-[#929292]">
+                          {s.gradeLevel ?? ""}
+                        </p>
+                      </div>
+                      {selectedStudent?._id === s._id && (
+                        <Check className="w-4 h-4 text-[#003366] ml-auto" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : !loadingStudents && studentSearch ? (
+                <p className="text-sm text-[#929292] text-center py-4">No students match your search</p>
+              ) : null;
+            })()}
 
             {/* Snapshot preview */}
             {selectedStudent && snapshot && (
