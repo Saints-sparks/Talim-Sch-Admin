@@ -13,6 +13,10 @@ import {
   StudentSnapshot,
 } from "@/app/services/transit.service";
 import { apiClient } from "@/lib/apiClient";
+import {
+  dedupeAcademicYearsByName,
+  getAcademicYearLabel,
+} from "@/app/services/academic.service";
 
 interface RawStudent {
   _id: string;
@@ -46,7 +50,9 @@ interface ClassItem {
 
 interface AcademicYear {
   _id: string;
-  name: string;
+  name?: string;
+  year?: string;
+  isCurrent?: boolean;
 }
 
 const STEPS = ["Select Student", "Select Target School", "Select Class & Year", "Review", "Confirm"];
@@ -83,6 +89,11 @@ async function handleRes<T>(res: Response): Promise<T> {
   const data = await res.json();
   if (!res.ok) throw new Error(data?.message || "Request failed");
   return data as T;
+}
+
+function academicYearArray(data: AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }): AcademicYear[] {
+  if (Array.isArray(data)) return data;
+  return data.academicYears ?? data.data ?? [];
 }
 
 export default function SourceTransferWizard() {
@@ -157,11 +168,11 @@ export default function SourceTransferWizard() {
       apiClient.get(`/classes?schoolId=${selectedSchool._id}`).then((r) => handleRes<ClassItem[]>(r)),
       apiClient
         .get(`/academic-year-term/academic-year/school?schoolId=${selectedSchool._id}`)
-        .then((r) => handleRes<AcademicYear[]>(r)),
+        .then((r) => handleRes<AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }>(r)),
     ])
       .then(([cls, yrs]) => {
         setClasses(Array.isArray(cls) ? cls : []);
-        setAcademicYears(Array.isArray(yrs) ? yrs : []);
+        setAcademicYears(dedupeAcademicYearsByName(academicYearArray(yrs)));
       })
       .catch(() => {
         setClasses([]);
@@ -396,7 +407,7 @@ export default function SourceTransferWizard() {
                           : "border-gray-200 text-[#4A5568] hover:border-[#003366]/30"
                       )}
                     >
-                      {y.name}
+                      {getAcademicYearLabel(y)}
                     </button>
                   ))
                 )}
@@ -440,7 +451,7 @@ export default function SourceTransferWizard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-[#929292]">Academic Year</span>
-                <span className="text-sm font-medium text-[#030E18]">{selectedYear.name}</span>
+                <span className="text-sm font-medium text-[#030E18]">{getAcademicYearLabel(selectedYear)}</span>
               </div>
               {reason && (
                 <div className="flex justify-between">

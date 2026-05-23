@@ -31,6 +31,40 @@ export interface AcademicYearResponse {
   updatedAt: string;
 }
 
+type AcademicYearLike = {
+  _id: string;
+  year?: string;
+  name?: string;
+  isCurrent?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export function getAcademicYearLabel(year: AcademicYearLike): string {
+  return year.year ?? year.name ?? year._id;
+}
+
+export function dedupeAcademicYearsByName<T extends AcademicYearLike>(years: T[]): T[] {
+  const byName = new Map<string, T>();
+
+  years.forEach((year) => {
+    const key = getAcademicYearLabel(year).trim().toLowerCase();
+    if (!key) return;
+
+    const existing = byName.get(key);
+    if (!existing) {
+      byName.set(key, year);
+      return;
+    }
+
+    if (!existing.isCurrent && year.isCurrent) {
+      byName.set(key, year);
+    }
+  });
+
+  return Array.from(byName.values());
+}
+
 export interface TermResponse {
   _id: string;
   name: string;
@@ -122,7 +156,7 @@ export const getAcademicYears = async (): Promise<AcademicYearResponse[]> => {
     const raw = await response.json();
     // Backend returns { message: '...', academicYears: [...] }
     const data = raw?.academicYears ?? raw?.data ?? raw;
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? dedupeAcademicYearsByName(data) : [];
   } catch (error) {
     console.error("Error fetching academic years:", error);
     throw error;

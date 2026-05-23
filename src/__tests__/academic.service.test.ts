@@ -1,6 +1,8 @@
 import {
   createAcademicYear,
   createTerm,
+  dedupeAcademicYearsByName,
+  getAcademicYearLabel,
   getAcademicYears,
   getTerms,
   setCurrentTerm,
@@ -70,6 +72,16 @@ describe("getAcademicYears", () => {
     await expect(getAcademicYears()).resolves.toEqual(years);
   });
 
+  it("dedupes academic years with the same display name", async () => {
+    const years = [
+      { _id: "y1", year: "2024/2025", isCurrent: false },
+      { _id: "y2", year: "2024/2025", isCurrent: true },
+      { _id: "y3", year: "2026/2026", isCurrent: false },
+    ];
+    mockGet.mockResolvedValueOnce(ok({ academicYears: years }));
+    await expect(getAcademicYears()).resolves.toEqual([years[1], years[2]]);
+  });
+
   it("returns empty array when response is not an array", async () => {
     mockGet.mockResolvedValueOnce(ok(null));
     await expect(getAcademicYears()).resolves.toEqual([]);
@@ -78,6 +90,27 @@ describe("getAcademicYears", () => {
   it("throws on network failure", async () => {
     mockGet.mockResolvedValueOnce(err("Internal error", 500));
     await expect(getAcademicYears()).rejects.toThrow();
+  });
+});
+
+describe("academic year helpers", () => {
+  it("uses year, name, then id as the academic year label", () => {
+    expect(getAcademicYearLabel({ _id: "y1", year: "2024/2025", name: "Old label" })).toBe("2024/2025");
+    expect(getAcademicYearLabel({ _id: "y2", name: "2025/2026" })).toBe("2025/2026");
+    expect(getAcademicYearLabel({ _id: "y3" })).toBe("y3");
+  });
+
+  it("keeps one item for repeated academic year names", () => {
+    expect(
+      dedupeAcademicYearsByName([
+        { _id: "y1", name: "2024/2025" },
+        { _id: "y2", year: "2024/2025", isCurrent: true },
+        { _id: "y3", name: "2026/2026" },
+      ])
+    ).toEqual([
+      { _id: "y2", year: "2024/2025", isCurrent: true },
+      { _id: "y3", name: "2026/2026" },
+    ]);
   });
 });
 
