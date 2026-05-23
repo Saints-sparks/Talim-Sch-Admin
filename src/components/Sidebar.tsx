@@ -15,6 +15,7 @@ import {
   CreditCard,
   Wallet,
   Receipt,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
@@ -54,21 +55,21 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [expandedUsers, setExpandedUsers] = useState(false);
+  const [expandedTransit, setExpandedTransit] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const { user, logout } = useAuth();
   const { onUnreadMessagesUpdate } = useWebSocketContext();
   const { isMobile, isMobileOpen, setMobileOpen } = useSidebar();
 
-  // Auto-collapse Users submenu when navigating away from users pages
   useEffect(() => {
-    if (!pathname.startsWith("/users") && expandedUsers) {
-      setExpandedUsers(false);
-    }
-    // Auto-expand Users submenu when navigating to users pages
-    if (pathname.startsWith("/users") && !expandedUsers) {
-      setExpandedUsers(true);
-    }
+    if (!pathname.startsWith("/users") && expandedUsers) setExpandedUsers(false);
+    if (pathname.startsWith("/users") && !expandedUsers) setExpandedUsers(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!pathname.startsWith("/transit") && expandedTransit) setExpandedTransit(false);
+    if (pathname.startsWith("/transit") && !expandedTransit) setExpandedTransit(true);
   }, [pathname]);
 
   useEffect(() => {
@@ -242,6 +243,30 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       label: "Leave Requests",
       tooltip: "Leave Requests",
     },
+    {
+      path: "/transit",
+      icon: (
+        <ArrowLeftRight
+          className={cn(
+            "h-5 w-5",
+            pathname.startsWith("/transit") ? "text-[#003366]" : "text-[#929292]"
+          )}
+        />
+      ),
+      label: "Transit",
+      tooltip: "Student Transfers & Promotions",
+      hasDropdown: true,
+      expanded: expandedTransit,
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        setExpandedTransit(!expandedTransit);
+      },
+      subItems: [
+        { path: "/transit", label: "Dashboard", tooltip: "Transit Overview" },
+        { path: "/transit/transfers", label: "Transfers", tooltip: "Student Transfers" },
+        { path: "/transit/promotions", label: "Promotions", tooltip: "Class Promotions" },
+      ],
+    },
     // {
     //   path: "/complaints",
     //   icon: <AlertCircle className="w-5 h-5 text-rose-600" />,
@@ -353,8 +378,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
               <motion.div
                 className={cn(
                   "group flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all duration-200 relative",
-                  pathname.startsWith("/users") ||
-                    (item.hasDropdown && item.expanded)
+                  pathname.startsWith(item.path) || (item.hasDropdown && item.expanded)
                     ? "bg-[#003366]/20 text-[#003366]"
                     : "text-[#4A5568] hover:bg-gray-100 hover:text-[#030E18]"
                 )}

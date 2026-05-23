@@ -238,4 +238,26 @@ export const API_ENDPOINTS = {
   GET_LEAVE_REQUESTS: `${API_BASE_URL}${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
   UPDATE_SCHOOL: (schoolId: string) =>
     `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
+
+  // Transit
+  TRANSIT_DASHBOARD: `${API_BASE_URL}/transit/dashboard`,
+  TRANSIT_LIST_TRANSFERS: `${API_BASE_URL}/transit/transfers`,
+  TRANSIT_GET_TRANSFER: (id: string) => `${API_BASE_URL}/transit/transfers/${id}`,
+  TRANSIT_CREATE_TRANSFER: `${API_BASE_URL}/transit/transfers`,
+  TRANSIT_SOURCE_APPROVE: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/source-approve`,
+  TRANSIT_TARGET_APPROVE: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/target-approve`,
+  TRANSIT_ACCEPT: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/accept`,
+  TRANSIT_REJECT: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/reject`,
+  TRANSIT_CANCEL_TRANSFER: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/cancel`,
+  TRANSIT_STUDENT_SNAPSHOT: (studentId: string) => `${API_BASE_URL}/transit/students/${studentId}/snapshot`,
+  TRANSIT_LIST_PROMOTIONS: `${API_BASE_URL}/transit/promotions`,
+  TRANSIT_GET_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}`,
+  TRANSIT_CREATE_PROMOTION: `${API_BASE_URL}/transit/promotions`,
+  TRANSIT_VALIDATE_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/validate`,
+  TRANSIT_COMMIT_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/commit`,
+  TRANSIT_CANCEL_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/cancel`,
+  TRANSIT_PRE_CLOSE_SUMMARY: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/pre-close-summary`,
+  TRANSIT_CLOSE_YEAR: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/close`,
+  TRANSIT_CLOSURE_SNAPSHOT: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/snapshot`,
+  SCHOOLS_SEARCH: `${API_BASE_URL}/schools/search`,
 } as const;
