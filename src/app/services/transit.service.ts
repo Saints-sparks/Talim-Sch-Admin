@@ -65,19 +65,38 @@ export interface PromotionDecision {
   repeatClass?: boolean;
 }
 
-export interface PromotionRun {
-  _id: string;
-  schoolId: string;
+export interface CreatePromotionRunPayload {
   fromAcademicYearId: string;
   toAcademicYearId: string;
   targetTermId?: string;
+  decisions: PromotionDecision[];
+}
+
+export interface PromotionValidationIssue {
+  studentId?: string;
+  message?: string;
+  reason?: string;
+  field?: string;
+}
+
+export interface PromotionRun {
+  _id: string;
+  schoolId: string;
+  fromAcademicYearId: string | { _id: string; year?: string; name?: string };
+  toAcademicYearId: string | { _id: string; year?: string; name?: string };
+  targetTermId?: string | { _id: string; name?: string };
   status: "draft" | "validated" | "committed" | "cancelled";
   decisions: PromotionDecision[];
+  validationErrors?: PromotionValidationIssue[];
+  validationWarnings?: (PromotionValidationIssue | string)[];
   validationResult?: {
     eligible: { studentId: string; toClassId: string }[];
     ineligible: { studentId: string; reason: string }[];
     warnings: string[];
   };
+  validatedAt?: string;
+  committedAt?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -214,12 +233,7 @@ export async function getPromotionRun(id: string): Promise<PromotionRun> {
   return handle<PromotionRun>(res);
 }
 
-export async function createPromotionRun(payload: {
-  fromAcademicYearId: string;
-  toAcademicYearId: string;
-  targetTermId?: string;
-  decisions: PromotionDecision[];
-}): Promise<PromotionRun> {
+export async function createPromotionRun(payload: CreatePromotionRunPayload): Promise<PromotionRun> {
   const res = await apiClient.post("/transit/promotions", payload);
   return handle<PromotionRun>(res);
 }
@@ -317,6 +331,51 @@ export async function listEnrollments(params?: {
   const q = qs.toString();
   const res = await apiClient.get(`/transit/enrollments${q ? `?${q}` : ""}`);
   return handle<StudentEnrollment[]>(res);
+}
+
+export function buildBulkDecisions(
+  sourceClassStudents: Array<{ _id: string } | { studentId: string | { _id: string } }>,
+  sourceClassId: string,
+  targetClassId: string
+): PromotionDecision[] {
+  return sourceClassStudents.map((student) => {
+    const studentId =
+      "studentId" in student
+        ? typeof student.studentId === "string"
+          ? student.studentId
+          : student.studentId._id
+        : student._id;
+
+    return {
+      studentId,
+      fromClassId: sourceClassId,
+      toClassId: targetClassId,
+      repeatClass: false,
+    };
+  });
+}
+
+export function getValidationSummary(run?: PromotionRun | null) {
+  const legacyErrors = run?.validationResult?.ineligible ?? [];
+  const legacyWarnings = run?.validationResult?.warnings ?? [];
+  const errors = run?.validationErrors?.length ? run.validationErrors : legacyErrors;
+  const warnings = run?.validationWarnings?.length ? run.validationWarnings : legacyWarnings;
+  const total = run?.decisions?.length || 0;
+
+  return {
+    total,
+    errorsCount: errors.length,
+    warningsCount: warnings.length,
+    eligibleCount: Math.max(total - errors.length, 0),
+  };
+}
+
+export function canCommit(run?: PromotionRun | null) {
+  return (
+    run?.status === "validated" &&
+    (!run?.validationErrors || run.validationErrors.length === 0) &&
+    (!run?.validationResult?.ineligible || run.validationResult.ineligible.length === 0)
+  );
 }
 
 // ─── School Search ────────────────────────────────────────────────────────────

@@ -15,7 +15,11 @@ import {
   validatePromotionRun,
   commitPromotionRun,
   cancelPromotionRun,
+  buildBulkDecisions,
+  getValidationSummary,
+  canCommit,
   createEnrollment,
+  listEnrollments,
   getStudentEnrollmentHistory,
   searchSchools,
   getPreCloseSummary,
@@ -203,7 +207,68 @@ describe("cancelPromotionRun", () => {
   });
 });
 
+describe("promotion helpers", () => {
+  it("builds bulk decisions from enrollment rows", () => {
+    expect(
+      buildBulkDecisions([{ studentId: { _id: "s1" } }, { studentId: "s2" }], "c1", "c2")
+    ).toEqual([
+      { studentId: "s1", fromClassId: "c1", toClassId: "c2", repeatClass: false },
+      { studentId: "s2", fromClassId: "c1", toClassId: "c2", repeatClass: false },
+    ]);
+  });
+
+  it("summarizes validation errors and warnings", () => {
+    const run = {
+      _id: "p1",
+      schoolId: "sch1",
+      fromAcademicYearId: "y1",
+      toAcademicYearId: "y2",
+      status: "validated" as const,
+      decisions: [
+        { studentId: "s1", fromClassId: "c1", toClassId: "c2" },
+        { studentId: "s2", fromClassId: "c1", toClassId: "c2" },
+      ],
+      validationErrors: [{ studentId: "s2", message: "Already in open run" }],
+      validationWarnings: ["Target class almost full"],
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    };
+
+    expect(getValidationSummary(run)).toEqual({
+      total: 2,
+      errorsCount: 1,
+      warningsCount: 1,
+      eligibleCount: 1,
+    });
+    expect(canCommit(run)).toBe(false);
+  });
+
+  it("allows commit only when validated without errors", () => {
+    expect(
+      canCommit({
+        _id: "p1",
+        schoolId: "sch1",
+        fromAcademicYearId: "y1",
+        toAcademicYearId: "y2",
+        status: "validated",
+        decisions: [{ studentId: "s1", fromClassId: "c1", toClassId: "c2" }],
+        validationErrors: [],
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      })
+    ).toBe(true);
+  });
+});
+
 // ─── Enrollments ──────────────────────────────────────────────────────────────
+
+describe("listEnrollments", () => {
+  it("passes supported filters to the backend", async () => {
+    mockGet.mockResolvedValueOnce(okResponse([]));
+    await listEnrollments({ classId: "c1", academicYearId: "y1", status: "active" });
+    expect(mockGet).toHaveBeenCalledWith("/transit/enrollments?classId=c1&academicYearId=y1&status=active");
+  });
+});
 
 describe("createEnrollment", () => {
   it("posts payload and returns enrollment", async () => {
