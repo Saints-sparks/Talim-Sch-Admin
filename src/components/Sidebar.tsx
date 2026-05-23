@@ -264,6 +264,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       subItems: [
         { path: "/transit", label: "Dashboard", tooltip: "Transit Overview" },
         { path: "/transit/transfers", label: "Transfers", tooltip: "Student Transfers" },
+        { path: "/transit/enrollments", label: "Enrollments", tooltip: "Student Enrollments" },
         { path: "/transit/promotions", label: "Promotions", tooltip: "Class Promotions" },
       ],
     },

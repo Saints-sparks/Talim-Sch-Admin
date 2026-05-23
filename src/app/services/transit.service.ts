@@ -264,6 +264,39 @@ export async function getClosureSnapshot(academicYearId: string) {
   return handle<Record<string, unknown>>(res);
 }
 
+// ─── Enrollments ──────────────────────────────────────────────────────────────
+
+export interface StudentEnrollment {
+  _id: string;
+  studentId: string | { _id: string; userId?: { firstName?: string; lastName?: string } };
+  schoolId: string | { _id: string; name: string };
+  classId: string | { _id: string; name: string; gradeLevel: string };
+  academicYearId: string | { _id: string; name: string };
+  termId?: string | { _id: string; name: string };
+  status: "active" | "inactive" | "transferred_out" | "graduated" | "year_ended";
+  source: "manual" | "promotion" | "transfer";
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function createEnrollment(payload: {
+  studentId: string;
+  classId: string;
+  academicYearId: string;
+  termId?: string;
+  source?: string;
+}): Promise<StudentEnrollment> {
+  const res = await apiClient.post("/transit/enrollments", payload);
+  return handle<StudentEnrollment>(res);
+}
+
+export async function getStudentEnrollmentHistory(studentId: string): Promise<StudentEnrollment[]> {
+  const res = await apiClient.get(`/transit/students/${studentId}/enrollments`);
+  return handle<StudentEnrollment[]>(res);
+}
+
 // ─── School Search ────────────────────────────────────────────────────────────
 
 export async function searchSchools(query: string): Promise<SearchSchoolResult[]> {
