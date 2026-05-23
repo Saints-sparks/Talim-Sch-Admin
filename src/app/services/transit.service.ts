@@ -273,8 +273,16 @@ export interface StudentEnrollment {
   classId: string | { _id: string; name: string; gradeLevel: string };
   academicYearId: string | { _id: string; name: string };
   termId?: string | { _id: string; name: string };
-  status: "active" | "inactive" | "transferred_out" | "graduated" | "year_ended";
-  source: "manual" | "promotion" | "transfer";
+  status:
+    | "active"
+    | "year_ended"
+    | "promoted"
+    | "repeated"
+    | "transferred_out"
+    | "transferred_in"
+    | "withdrawn"
+    | "graduated";
+  source: "manual" | "promotion" | "transfer" | "onboarding";
   startDate?: string;
   endDate?: string;
   createdAt: string;
@@ -294,6 +302,20 @@ export async function createEnrollment(payload: {
 
 export async function getStudentEnrollmentHistory(studentId: string): Promise<StudentEnrollment[]> {
   const res = await apiClient.get(`/transit/students/${studentId}/enrollments`);
+  return handle<StudentEnrollment[]>(res);
+}
+
+export async function listEnrollments(params?: {
+  classId?: string;
+  academicYearId?: string;
+  status?: string;
+}): Promise<StudentEnrollment[]> {
+  const qs = new URLSearchParams();
+  if (params?.classId) qs.set("classId", params.classId);
+  if (params?.academicYearId) qs.set("academicYearId", params.academicYearId);
+  if (params?.status) qs.set("status", params.status);
+  const q = qs.toString();
+  const res = await apiClient.get(`/transit/enrollments${q ? `?${q}` : ""}`);
   return handle<StudentEnrollment[]>(res);
 }
 

@@ -5,31 +5,14 @@ import { useRouter } from "next/navigation";
 import { Users, Plus, Search, X, Check, AlertCircle } from "lucide-react";
 import {
   createEnrollment,
+  listEnrollments,
   StudentEnrollment,
 } from "@/app/services/transit.service";
 import { getAcademicYears, getTerms, AcademicYearResponse, TermResponse } from "@/app/services/academic.service";
 import { getClasses, studentService, Class, Student } from "@/app/services/student.service";
 import { toast } from "@/components/CustomToast";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/apiClient";
-
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-async function handle<T>(res: Response): Promise<T> {
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || "Request failed");
-  return data as T;
-}
-
-async function listEnrollments(params?: { classId?: string; academicYearId?: string; status?: string }): Promise<StudentEnrollment[]> {
-  const qs = new URLSearchParams();
-  if (params?.classId) qs.set("classId", params.classId);
-  if (params?.academicYearId) qs.set("academicYearId", params.academicYearId);
-  if (params?.status) qs.set("status", params.status);
-  const q = qs.toString();
-  const res = await apiClient.get(`/transit/enrollments${q ? `?${q}` : ""}`);
-  return handle<StudentEnrollment[]>(res);
-}
 
 function fmtDate(d?: string) {
   if (!d) return "—";
@@ -70,8 +53,11 @@ const SOURCE_COLORS: Record<string, string> = {
 const STATUS_TABS = [
   { label: "Active", value: "active" },
   { label: "All", value: "" },
-  { label: "Inactive", value: "inactive" },
+  { label: "Promoted", value: "promoted" },
+  { label: "Repeated", value: "repeated" },
   { label: "Transferred Out", value: "transferred_out" },
+  { label: "Transferred In", value: "transferred_in" },
+  { label: "Withdrawn", value: "withdrawn" },
   { label: "Year Ended", value: "year_ended" },
   { label: "Graduated", value: "graduated" },
 ];
