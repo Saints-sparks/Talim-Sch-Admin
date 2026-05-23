@@ -337,9 +337,19 @@ html.dark body {
   color: #f1f5f9;
 }
 
-html.dark .min-h-screen,
-html.dark .bg-gray-50 {
+html.dark .min-h-screen {
   background-color: #0f1629;
+}
+
+/* bg-gray-50 is the info-field / input surface — must be visually distinct from
+   the card bg (bg-white → #0f172a) so fields don't vanish into the card */
+html.dark .bg-gray-50 {
+  background-color: #1e293b;
+}
+
+/* opacity variant used on TabsList — keep it subtly visible without being jarring */
+html.dark .bg-gray-50\/50 {
+  background-color: rgba(30, 41, 59, 0.5);
 }
 
 html.dark .from-blue-50 {
@@ -378,24 +388,24 @@ html.dark .bg-green-50,
 html.dark .bg-green-100,
 html.dark .bg-emerald-50,
 html.dark .bg-emerald-100 {
-  background-color: #042516;
+  background-color: #0a3320;
 }
 
 html.dark .bg-red-50,
 html.dark .bg-red-100 {
-  background-color: #2a0a0a;
+  background-color: #3b0e0e;
 }
 
 html.dark .bg-yellow-50,
 html.dark .bg-yellow-100,
 html.dark .bg-amber-50,
 html.dark .bg-amber-100 {
-  background-color: #1f1600;
+  background-color: #2a1f00;
 }
 
 html.dark .bg-orange-50,
 html.dark .bg-orange-100 {
-  background-color: #2a1000;
+  background-color: #2e1500;
 }
 
 html.dark .bg-indigo-50,
@@ -404,7 +414,7 @@ html.dark .bg-purple-50,
 html.dark .bg-purple-100,
 html.dark .bg-violet-50,
 html.dark .bg-violet-100 {
-  background-color: #1c1040;
+  background-color: #241560;
 }
 
 html.dark .border-gray-50,
@@ -438,6 +448,80 @@ html.dark .text-gray-400 {
 html.dark .text-gray-300,
 html.dark .text-gray-200 {
   color: #64748b;
+}
+
+/* Slate scale — used by parents page and other components */
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #1e293b;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #334155;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f1f5f9;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8;
+}
+
+html.dark .border-slate-50,
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #334155;
+}
+
+/* Badge dark text variants — e.g. text-green-800 inside bg-green-100 badge */
+html.dark .text-green-800,
+html.dark .text-green-900 {
+  color: #4ade80;
+}
+
+html.dark .text-blue-800,
+html.dark .text-blue-900 {
+  color: #60a5fa;
+}
+
+html.dark .text-purple-800,
+html.dark .text-purple-900,
+html.dark .text-indigo-800,
+html.dark .text-indigo-900,
+html.dark .text-violet-800,
+html.dark .text-violet-900 {
+  color: #a78bfa;
+}
+
+html.dark .text-orange-800,
+html.dark .text-orange-900 {
+  color: #fb923c;
+}
+
+html.dark .text-red-800,
+html.dark .text-red-900 {
+  color: #f87171;
+}
+
+html.dark .text-yellow-800,
+html.dark .text-yellow-900,
+html.dark .text-amber-800,
+html.dark .text-amber-900 {
+  color: #fbbf24;
+}
+
+html.dark .text-emerald-800,
+html.dark .text-emerald-900 {
+  color: #34d399;
 }
 
 html.dark .text-blue-700,
@@ -480,7 +564,9 @@ html.dark .text-violet-600 {
 
 html.dark .hover\:bg-gray-50:hover,
 html.dark .hover\:bg-gray-50\/50:hover,
-html.dark .hover\:bg-gray-100:hover {
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
   background-color: #1e3050;
 }
 
