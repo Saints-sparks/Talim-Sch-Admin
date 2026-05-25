@@ -205,12 +205,14 @@ const normalizeAnnouncement = (item: any): AdminNotification => {
   };
 };
 
-export const getAdminNotifications = async (senderId?: string) => {
+export const getAdminNotifications = async (userId?: string) => {
   const [notificationsResponse, announcementsResponse] = await Promise.allSettled([
-    apiClient.get("/notifications?page=1&limit=100"),
-    senderId
-      ? apiClient.get(`${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId)}?page=1&limit=100`)
-      : Promise.reject(new Error("Missing sender id")),
+    userId
+      ? apiClient.get(`/notifications?page=1&limit=100&recipientId=${userId}`)
+      : apiClient.get("/notifications?page=1&limit=100"),
+    userId
+      ? apiClient.get(`${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(userId)}?page=1&limit=100`)
+      : Promise.reject(new Error("Missing user id")),
   ]);
 
   const notifications =
@@ -226,6 +228,17 @@ export const getAdminNotifications = async (senderId?: string) => {
   return [...notifications, ...announcements].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
+};
+
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+  try {
+    const res = await apiClient.get(`/notifications/unread/${userId}`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return Array.isArray(data) ? data.length : (data?.count ?? data?.total ?? 0);
+  } catch {
+    return 0;
+  }
 };
 
 export const createAdminNotification = async (

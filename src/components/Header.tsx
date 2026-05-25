@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Menu, GraduationCap } from "lucide-react";
+import { Menu, GraduationCap, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { WebSocketStatus } from "./WebSocketStatus";
@@ -7,10 +7,25 @@ import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar } from "./Icons";
 import { ThemeToggle } from "./theme-toggle";
+import { useEffect, useState } from "react";
+import { getUnreadNotificationCount } from "@/app/services/notification.service";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const userId = user?.userId || (user as any)?._id;
+    if (!userId) return;
+
+    const fetchUnread = () =>
+      getUnreadNotificationCount(userId).then(setUnreadCount).catch(() => {});
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(interval);
+  }, [user?.userId]);
 
   // Generate user initials from first and last name
   const getUserInitials = () => {
@@ -82,11 +97,16 @@ export function Header() {
               <WebSocketStatus />
             </div>
             <ThemeToggle />
-            {/* <Link href="/notifications">
-              <Button className="bg-white shadow-none border border-[#F0F0F0] hover:bg-gray-200 h-full rounded-lg p-3">
-                <Bell className="h-5 w-5 text-gray-600" />
-              </Button>
-            </Link> */}
+            <Link href="/notifications" className="relative">
+              <button className="bg-white dark:bg-slate-800 shadow-none border border-[#F0F0F0] dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg p-2.5 transition-colors">
+                <Bell className="h-5 w-5 text-gray-600 dark:text-slate-300" />
+              </button>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Link>
             <Link href="/profile">
               <Avatar>
                 <AvatarImage
