@@ -1692,7 +1692,6 @@ function CommunicationSection() {
           { title: "Email Notifications", desc: "Configure automated email notifications sent to parents and staff", icon: Bell, link: "/notifications" },
           { title: "SMS Alerts", desc: "Manage SMS alerts for fee payments, results and attendance", icon: MessageSquare, link: "/notifications" },
           { title: "Parent Messages", desc: "Configure parent-teacher messaging preferences", icon: Users, link: "/messages" },
-          { title: "Announcements", desc: "Manage how school-wide announcements are distributed", icon: FileText, link: "/announcements" },
         ].map((c) => (
           <Card key={c.title} className="p-5">
             <div className="flex items-start gap-3 mb-3">

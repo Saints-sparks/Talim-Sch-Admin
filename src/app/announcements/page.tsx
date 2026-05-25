@@ -68,10 +68,10 @@ type NewAnnouncement = {
 const tabs: ActiveTab[] = ["Published", "Scheduled", "Drafts", "Archived"];
 
 const statConfig = [
-  { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366]" },
-  { label: "Published", icon: Send, tone: "bg-blue-50 text-[#003366]" },
-  { label: "Scheduled", icon: Clock3, tone: "bg-slate-100 text-slate-700" },
-  { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700" },
+  { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400" },
+  { label: "Published", icon: Send, tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400" },
+  { label: "Scheduled", icon: Clock3, tone: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
+  { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
 ];
 
 const defaultAnnouncementStats: AnnouncementStats = {
@@ -93,17 +93,17 @@ const defaultAnnouncementStats: AnnouncementStats = {
 };
 
 const audienceStyles: Record<Audience, string> = {
-  "All Parents": "bg-blue-50 text-[#003366] border-blue-100",
-  "All Students": "bg-blue-50 text-[#003366] border-blue-100",
-  "All Teachers": "bg-slate-100 text-slate-700 border-slate-200",
-  Custom: "bg-slate-100 text-slate-700 border-slate-200",
+  "All Parents": "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+  "All Students": "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+  "All Teachers": "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
+  Custom: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
 };
 
 const statusStyles: Record<AnnouncementStatus, string> = {
-  Published: "bg-blue-50 text-[#003366] border-blue-100",
-  Scheduled: "bg-blue-50 text-[#003366] border-blue-100",
-  Draft: "bg-slate-100 text-slate-700 border-slate-200",
-  Archived: "bg-slate-100 text-slate-600 border-slate-200",
+  Published: "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+  Scheduled: "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+  Draft: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
+  Archived: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600",
 };
 
 const formatDateTime = (dateString: string | null) => {
@@ -408,22 +408,22 @@ const AnnouncementDashboard = () => {
 
   return (
     <>
-      <div className="min-h-full max-w-full overflow-x-hidden bg-white">
+      <div className="min-h-full max-w-full overflow-x-hidden bg-white dark:bg-slate-900">
         <section
-          className="border-b border-slate-200 bg-white px-4 py-6 sm:px-6 lg:px-8"
+          className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-6 sm:px-6 lg:px-8"
           data-guide="announcements-header"
         >
           <div className="mx-auto w-full max-w-[1480px]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#003366]">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-semibold text-[#003366] dark:text-blue-400">
                   <Megaphone className="h-3.5 w-3.5" />
                   School-wide communications
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
                   Announcements
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
                   Create, schedule, analyze, and manage every school announcement
                   from one calm command center.
                 </p>
@@ -436,10 +436,10 @@ const AnnouncementDashboard = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search announcements..."
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-700 shadow-sm transition focus:border-[#003366] focus:ring-2 focus:ring-blue-100 sm:w-72"
+                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 pl-10 pr-4 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 sm:w-72"
                   />
                 </div>
-                <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">
                   <Filter className="h-4 w-4" />
                   Filters
                 </button>
@@ -463,20 +463,20 @@ const AnnouncementDashboard = () => {
                 return (
                   <div
                     key={stat.label}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div className={cn("rounded-2xl p-3", stat.tone)}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="text-xs font-medium text-slate-600">
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                         {formatWeeklyChange(weeklyChanges[index])}
                       </span>
                     </div>
-                    <p className="mt-5 text-3xl font-bold text-slate-950">
+                    <p className="mt-5 text-3xl font-bold text-slate-950 dark:text-white">
                       {stats[index]}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
                       {stat.label}
                     </p>
                   </div>
@@ -490,10 +490,10 @@ const AnnouncementDashboard = () => {
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-6">
               <div
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
                 data-guide="announcements-list"
               >
-                <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-700 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-wrap gap-2">
                     {tabs.map((tab) => (
                       <button
@@ -503,15 +503,15 @@ const AnnouncementDashboard = () => {
                           "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
                           activeTab === tab
                             ? "bg-[#003366] text-white shadow-sm"
-                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
                         )}
                       >
                         {tab}
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-700">
-                    <CheckCircle2 className="h-4 w-4 text-[#003366]" />
+                  <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                    <CheckCircle2 className="h-4 w-4 text-[#003366] dark:text-blue-400" />
                     {visibleAnnouncements.length} records visible
                   </div>
                 </div>
@@ -526,7 +526,7 @@ const AnnouncementDashboard = () => {
                       <col className="w-[14%]" />
                       <col className="w-[12%]" />
                     </colgroup>
-                    <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-700/50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="px-4 py-4">Announcement</th>
                         <th className="px-4 py-4">Audience</th>
@@ -536,16 +536,16 @@ const AnnouncementDashboard = () => {
                         <th className="px-4 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                       {visibleAnnouncements.length ? (
                         visibleAnnouncements.map((announcement) => (
                         <tr
                           key={announcement.id}
-                          className="group transition hover:bg-slate-50/80"
+                          className="group transition hover:bg-slate-50/80 dark:hover:bg-slate-700/30"
                         >
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400">
                                 {announcement.pinned ? (
                                   <Pin className="h-5 w-5" />
                                 ) : announcement.hasAttachment ? (
@@ -556,19 +556,19 @@ const AnnouncementDashboard = () => {
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="truncate font-semibold text-slate-950">
+                                  <p className="truncate font-semibold text-slate-950 dark:text-white">
                                     {announcement.title}
                                   </p>
                                   {announcement.pinned && (
-                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-[#003366]">
+                                    <span className="rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-bold text-[#003366] dark:text-blue-400">
                                       Pinned
                                     </span>
                                   )}
                                   {announcement.hasAttachment && (
-                                    <Paperclip className="h-4 w-4 text-slate-400" />
+                                    <Paperclip className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                                   )}
                                 </div>
-                                <p className="mt-1 truncate text-sm text-slate-500">
+                                <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
                                   {announcement.content}
                                 </p>
                               </div>
@@ -600,21 +600,21 @@ const AnnouncementDashboard = () => {
                               {announcement.status}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-sm font-medium text-slate-600">
+                          <td className="px-4 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">
                             <span className="inline-flex min-w-0 items-center gap-2">
-                              <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                              <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
                               {formatDateTime(announcement.publishDate)}
                             </span>
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+                              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                                 <div
-                                  className="h-full rounded-full bg-[#003366]"
+                                  className="h-full rounded-full bg-[#003366] dark:bg-blue-500"
                                   style={{ width: `${clampPercent(announcement.readRate)}%` }}
                                 />
                               </div>
-                              <span className="shrink-0 text-sm font-semibold text-slate-700">
+                              <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 {announcement.readRate}%
                               </span>
                             </div>
@@ -624,7 +624,7 @@ const AnnouncementDashboard = () => {
                               {[Eye, Pencil, MoreVertical].map((Icon, index) => (
                                 <button
                                   key={index}
-                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-100 hover:bg-blue-50 hover:text-[#003366]"
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-sm hover:border-blue-100 dark:hover:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-[#003366] dark:hover:text-blue-400"
                                 >
                                   <Icon className="h-4 w-4" />
                                 </button>
@@ -637,7 +637,7 @@ const AnnouncementDashboard = () => {
                         <tr>
                           <td
                             colSpan={6}
-                            className="px-5 py-12 text-center text-sm text-slate-500"
+                            className="px-5 py-12 text-center text-sm text-slate-500 dark:text-slate-400"
                           >
                             No announcements found for this view.
                           </td>
@@ -647,7 +647,7 @@ const AnnouncementDashboard = () => {
                   </table>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-slate-700 px-5 py-4 text-sm text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                   <p>
                     {shouldShowPagination
                       ? `Showing ${
@@ -666,18 +666,18 @@ const AnnouncementDashboard = () => {
                         type="button"
                         disabled={pagination.page <= 1}
                         onClick={() => goToPage(pagination.page - 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-[#003366] px-3 text-sm font-bold text-[#003366]">
+                      <span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-[#003366] dark:border-blue-500 px-3 text-sm font-bold text-[#003366] dark:text-blue-400">
                         {pagination.page}
                       </span>
                       <button
                         type="button"
                         disabled={pagination.page >= pagination.lastPage}
                         onClick={() => goToPage(pagination.page + 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -688,23 +688,23 @@ const AnnouncementDashboard = () => {
             </div>
 
             <aside className="min-w-0 space-y-6" data-guide="announcements-analytics">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Read rate
                     </p>
-                    <p className="mt-1 text-3xl font-bold text-slate-950">
+                    <p className="mt-1 text-3xl font-bold text-slate-950 dark:text-white">
                       {averageReadRate}%
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-blue-50 p-3 text-[#003366]">
+                  <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/30 p-3 text-[#003366] dark:text-blue-400">
                     <BarChart3 className="h-6 w-6" />
                   </div>
                 </div>
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                   <div
-                    className="h-full rounded-full bg-[#003366]"
+                    className="h-full rounded-full bg-[#003366] dark:bg-blue-500"
                     style={{ width: `${clampPercent(averageReadRate)}%` }}
                   />
                 </div>
@@ -725,26 +725,26 @@ const AnnouncementDashboard = () => {
                 ].map(([label, value, caption]) => (
                   <div
                     key={label}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
                   >
-                    <p className="text-sm font-semibold text-slate-500">{label}</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
-                    <p className="mt-1 text-sm text-slate-500">{caption}</p>
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{value}</p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{caption}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold text-slate-950">
+                    <h2 className="font-bold text-slate-950 dark:text-white">
                       Daily announcement views
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                       Views over the last school week
                     </p>
                   </div>
-                  <Eye className="h-5 w-5 text-slate-400" />
+                  <Eye className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                 </div>
                 <div className="mt-6 flex h-44 items-end gap-3">
                   {dailyViews.map((item) => (
@@ -759,7 +759,7 @@ const AnnouncementDashboard = () => {
                         }}
                         title={`${item.views} views`}
                       />
-                      <span className="text-xs font-semibold text-slate-500">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                         {new Intl.DateTimeFormat("en-GB", {
                           weekday: "short",
                         })
@@ -777,24 +777,24 @@ const AnnouncementDashboard = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-5">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#003366]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400">
                   <Megaphone className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-950">
+                  <h2 className="text-2xl font-bold text-slate-950 dark:text-white">
                     Create Announcement
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Share important updates with your school community.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -808,7 +808,7 @@ const AnnouncementDashboard = () => {
               <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
                 <div className="space-y-5">
                   <div>
-                    <label className="text-sm font-bold text-slate-700">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Title
                     </label>
                     <input
@@ -821,32 +821,32 @@ const AnnouncementDashboard = () => {
                       }
                       maxLength={100}
                       placeholder="Enter announcement title..."
-                      className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm shadow-sm focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
+                      className="mt-2 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 text-sm shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
                     />
-                    <p className="mt-1 text-right text-xs text-slate-400">
+                    <p className="mt-1 text-right text-xs text-slate-400 dark:text-slate-500">
                       {newAnnouncement.title.length}/100
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-bold text-slate-700">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Content
                     </label>
-                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                      <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-2">
                         {["Paragraph", "B", "I", "U"].map((item) => (
                           <button
                             key={item}
                             type="button"
-                            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-white"
+                            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600"
                           >
                             {item}
                           </button>
                         ))}
-                        <button type="button" className="rounded-lg p-2 text-slate-500 hover:bg-white">
+                        <button type="button" className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-600">
                           <ImageIcon className="h-4 w-4" />
                         </button>
-                        <button type="button" className="rounded-lg p-2 text-slate-500 hover:bg-white">
+                        <button type="button" className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-600">
                           <Paperclip className="h-4 w-4" />
                         </button>
                       </div>
@@ -861,10 +861,10 @@ const AnnouncementDashboard = () => {
                         maxLength={2000}
                         rows={7}
                         placeholder="Write your announcement content..."
-                        className="w-full resize-none border-0 p-4 text-sm focus:ring-0"
+                        className="w-full resize-none border-0 bg-white dark:bg-slate-700 p-4 text-sm text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0"
                       />
                     </div>
-                    <p className="mt-1 text-right text-xs text-slate-400">
+                    <p className="mt-1 text-right text-xs text-slate-400 dark:text-slate-500">
                       {newAnnouncement.content.length}/2000
                     </p>
                   </div>
@@ -872,7 +872,7 @@ const AnnouncementDashboard = () => {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="text-sm font-bold text-slate-700">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Audience
                     </label>
                     <div className="mt-2 grid gap-2">
@@ -885,8 +885,8 @@ const AnnouncementDashboard = () => {
                             className={cn(
                               "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition",
                               newAnnouncement.audience.includes(audience)
-                                ? "border-[#003366] bg-blue-50 text-[#003366]"
-                                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400 dark:border-blue-700"
+                                : "border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                             )}
                           >
                             <Users className="h-4 w-4" />
@@ -898,7 +898,7 @@ const AnnouncementDashboard = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm font-bold text-slate-700">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Schedule
                     </label>
                     <div className="mt-2 grid gap-2">
@@ -920,12 +920,12 @@ const AnnouncementDashboard = () => {
                           className={cn(
                             "rounded-xl border p-3 text-left transition",
                             newAnnouncement.schedule === value
-                              ? "border-[#003366] bg-blue-50"
-                              : "border-slate-200 hover:bg-slate-50"
+                              ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 dark:border-blue-700"
+                              : "border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                           )}
                         >
-                          <p className="text-sm font-bold text-slate-800">{title}</p>
-                          <p className="mt-1 text-xs text-slate-500">{caption}</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{title}</p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
                         </button>
                       ))}
                     </div>
@@ -939,7 +939,7 @@ const AnnouncementDashboard = () => {
                             scheduledFor: event.target.value,
                           }))
                         }
-                        className="mt-3 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 shadow-sm focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
+                        className="mt-3 h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
                       />
                     )}
                   </div>
@@ -947,27 +947,27 @@ const AnnouncementDashboard = () => {
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700">
+                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   Attachment
                 </label>
-                <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-4 py-7 text-center hover:border-[#003366] hover:bg-blue-50/40">
+                <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-7 text-center hover:border-[#003366] dark:hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-blue-900/10">
                   <input
                     type="file"
                     className="hidden"
                     onChange={handleFileChange}
                     disabled={isUploadingAttachment || isSubmitting}
                   />
-                  <UploadCloud className="h-8 w-8 text-slate-400" />
-                  <p className="mt-2 text-sm font-bold text-slate-700">
+                  <UploadCloud className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                  <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">
                     {attachmentName || "Click to upload or drag and drop"}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Images, PDFs, and documents up to 10MB
                   </p>
                   {isUploadingAttachment && (
-                    <div className="mt-4 h-2 w-52 overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-4 h-2 w-52 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                       <div
-                        className="h-full bg-[#003366]"
+                        className="h-full bg-[#003366] dark:bg-blue-500"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
@@ -980,32 +980,32 @@ const AnnouncementDashboard = () => {
                 onClick={() =>
                   setNewAnnouncement((prev) => ({ ...prev, preview: !prev.preview }))
                 }
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 <Eye className="h-4 w-4" />
                 Preview {newAnnouncement.preview ? "on" : "off"}
               </button>
 
               {newAnnouncement.preview && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-5">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Recipient preview
                   </p>
-                  <h3 className="mt-3 text-lg font-bold text-slate-950">
+                  <h3 className="mt-3 text-lg font-bold text-slate-950 dark:text-white">
                     {newAnnouncement.title || "Announcement title"}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {newAnnouncement.content || "Your announcement content will appear here."}
                   </p>
                 </div>
               )}
             </form>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-6 py-5 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-white"
+                className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
