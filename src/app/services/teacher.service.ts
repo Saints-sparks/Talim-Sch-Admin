@@ -41,6 +41,7 @@ export interface Course {
 export interface Teacher {
   _id: string;
   userId?: User | string;
+  staffNumber?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -67,6 +68,7 @@ export interface Teacher {
 }
 export interface TeacherById {
   _id: string;
+  staffNumber?: string;
   userId: {
     _id: string;
     userId: string;

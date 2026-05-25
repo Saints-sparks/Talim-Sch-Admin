@@ -121,6 +121,8 @@ export interface Student {
   _id: string;
   userId: User;
   classId: Class;
+  admissionNumber?: string;
+  schoolId?: string;
   gradeLevel: string;
   parentId: string;
   parentContact: ParentContact;
@@ -140,6 +142,8 @@ export interface Student {
 
 export interface StudentById {
   _id: string;
+  admissionNumber?: string;
+  schoolId?: string;
   userId: {
     _id: string;
     email: string;
@@ -179,6 +183,8 @@ export interface StudentById {
 
 interface StudentResponse {
   _id: string;
+  admissionNumber?: string;
+  schoolId?: string;
   userId: {
     _id: string;
     email: string;

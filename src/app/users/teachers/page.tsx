@@ -39,6 +39,7 @@ const TeachersPage: React.FC = () => {
     getTeacherUser(teacher)?.email || teacher.email || "";
   const getTeacherPhone = (teacher: Teacher) =>
     getTeacherUser(teacher)?.phoneNumber || teacher.phoneNumber || "";
+  const getTeacherStaffNumber = (teacher: Teacher) => teacher.staffNumber || "";
   const getTeacherAvatar = (teacher: Teacher) =>
     teacher.userAvatar || getTeacherUser(teacher)?.userAvatar || "";
   const getAssignedClasses = (teacher: Teacher) =>
@@ -62,6 +63,7 @@ const TeachersPage: React.FC = () => {
                 profile.classTeacherClasses || profile.assignedClasses || [],
               assignedCourses: profile.assignedCourses || [],
               isFormTeacher: profile.isFormTeacher,
+              staffNumber: profile.staffNumber,
               hasTeacherProfile: true,
             };
           } catch (profileError) {
@@ -150,6 +152,7 @@ const TeachersPage: React.FC = () => {
       getTeacherLastName(teacher),
       getTeacherEmail(teacher),
       getTeacherPhone(teacher),
+      getTeacherStaffNumber(teacher),
     ]
       .join(" ")
       .toLowerCase();
@@ -216,7 +219,7 @@ const TeachersPage: React.FC = () => {
               </span>
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search name or ID"
                 className="w-full pl-10 placeholder-[#B3B3B3] placeholder:font-medium pr-4 py-2 bg-white border border-[#E0E0E0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => {
@@ -385,6 +388,9 @@ const TeachersPage: React.FC = () => {
                       <h3 className="font-semibold text-gray-900 text-base mb-1">
                         {getTeacherFirstName(teacher)} {getTeacherLastName(teacher)}
                       </h3>
+                      <p className="text-xs font-medium text-[#154473] mb-2">
+                        Staff No. {getTeacherStaffNumber(teacher) || "Not assigned"}
+                      </p>
                       <div className="flex gap-2 mb-3">
                         {getAssignedClasses(teacher).slice(0, 1).map((cls) => (
                           <Tooltip key={cls._id} content="Classes this teacher is currently assigned to. Manage assignments in the teacher's profile." side="top">

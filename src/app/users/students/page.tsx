@@ -88,9 +88,17 @@ const StudentPage: React.FC = () => {
 
   const studentsPerPage = 12;
   const filteredStudents = students.filter((student) => {
-    const nameMatch = `${student.userId.firstName} ${student.userId.lastName}`
+    const search = searchTerm.toLowerCase();
+    const nameMatch = [
+      student.userId.firstName,
+      student.userId.lastName,
+      student.userId.email,
+      student.userId.phoneNumber,
+      student.admissionNumber,
+    ]
+      .join(" ")
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(search);
 
     const statusMatch =
       statusFilter === "all" ||
@@ -145,7 +153,7 @@ const StudentPage: React.FC = () => {
               </span>
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search name or ID"
                 className="w-full pl-10 placeholder-[#B3B3B3] placeholder:font-medium pr-4 py-2 bg-white border border-[#E0E0E0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => {
@@ -257,6 +265,9 @@ const StudentPage: React.FC = () => {
                 <div className="mt-4 text-center leading-[120%]">
                   <div className="font-semibold text-[15px]">
                     {student.userId.firstName} {student.userId.lastName}
+                  </div>
+                  <div className="mt-2 text-[12px] font-medium text-[#003366]">
+                    ID {student.admissionNumber || "Not assigned"}
                   </div>
                   <div className="flex justify-center gap-1 mt-2">
                     <span className="bg-[#F2F2F2] border border-[#E0E0E0] text-[12px] px-3 py-1 rounded-xl">

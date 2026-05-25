@@ -381,6 +381,18 @@ const TeacherProfile = () => {
                       <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 order-2 lg:order-2">
                         <div className="space-y-3">
                           <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Badge className="w-4 h-4" />
+                            Staff Number
+                          </Label>
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+                            <span className="text-gray-900 font-mono">
+                              {teacher.staffNumber || "Not assigned"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                             <User className="w-4 h-4" />
                             First Name
                           </Label>

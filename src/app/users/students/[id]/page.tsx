@@ -20,6 +20,7 @@ interface ProfileData {
   parentEmail: string;
   relationship: string;
   parentAddress: string;
+  admissionNumber: string;
   studentId: string;
   className: string;
   enrollmentDate: string;
@@ -70,6 +71,7 @@ const StudentProfile = () => {
           parentAddress: "Not specified",
 
           // Academic Information
+          admissionNumber: student.admissionNumber || "",
           studentId: student._id || "",
           className: student.classId?.name || "",
           enrollmentDate:
@@ -358,6 +360,11 @@ const StudentProfile = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {[
+                {
+                  label: "Admission Number",
+                  name: "admissionNumber",
+                  type: "text",
+                },
                 { label: "Student ID", name: "studentId", type: "text" },
                 { label: "Class Name", name: "className", type: "text" },
                 {
