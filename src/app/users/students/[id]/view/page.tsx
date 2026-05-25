@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { studentService, StudentById } from "@/app/services/student.service";
 import { PerformanceMonitor } from "@/app/lib/performance";
+import { apiClient } from "@/lib/apiClient";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +41,14 @@ const StudentProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("personal-details");
+
+  const [attendanceData, setAttendanceData] = useState<{
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    attendancePercentage: string;
+  } | null>(null);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const params = useParams();
   const router = useRouter();
@@ -94,6 +103,17 @@ const StudentProfile = () => {
       fetchStudent();
     }
   }, [studentId]);
+
+  useEffect(() => {
+    if (activeTab !== "attendance" || !studentId || attendanceData) return;
+    setLoadingAttendance(true);
+    apiClient
+      .get(`/attendance/dashboard/${studentId}`)
+      .then((r) => r.json())
+      .then((data) => setAttendanceData(data))
+      .catch(() => setAttendanceData(null))
+      .finally(() => setLoadingAttendance(false));
+  }, [activeTab, studentId]);
 
   // Loading state
   if (isLoading) {
@@ -579,6 +599,16 @@ const StudentProfile = () => {
                           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 order-2 lg:order-none">
                             <div className="space-y-3">
                               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <Badge className="w-4 h-4" />
+                                Admission Number
+                              </label>
+                              <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base font-mono">
+                                {student.admissionNumber || "Not assigned"}
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                 <School className="w-4 h-4" />
                                 Class
                               </label>
@@ -686,7 +716,13 @@ const StudentProfile = () => {
                                 </label>
                                 </Tooltip>
                                 <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                  {student.attendance || "No attendance data"}
+                                  {loadingAttendance ? (
+                                    <span className="text-gray-400">Loading…</span>
+                                  ) : attendanceData ? (
+                                    `${attendanceData.attendancePercentage} attendance rate`
+                                  ) : (
+                                    "No attendance data"
+                                  )}
                                 </div>
                               </div>
 
@@ -714,32 +750,40 @@ const StudentProfile = () => {
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
                                   Quick Stats
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                                  <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
-                                    <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                                      --
+                                {loadingAttendance ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                    {[1, 2, 3].map((i) => (
+                                      <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                    <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                                      <div className="text-lg sm:text-2xl font-bold text-blue-600">
+                                        {attendanceData?.totalDays ?? "--"}
+                                      </div>
+                                      <div className="text-xs sm:text-sm text-blue-600">
+                                        Total Days
+                                      </div>
                                     </div>
-                                    <div className="text-xs sm:text-sm text-blue-600">
-                                      Total Days
+                                    <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                                      <div className="text-lg sm:text-2xl font-bold text-green-600">
+                                        {attendanceData?.presentDays ?? "--"}
+                                      </div>
+                                      <div className="text-xs sm:text-sm text-green-600">
+                                        Present Days
+                                      </div>
+                                    </div>
+                                    <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
+                                      <div className="text-lg sm:text-2xl font-bold text-red-600">
+                                        {attendanceData?.absentDays ?? "--"}
+                                      </div>
+                                      <div className="text-xs sm:text-sm text-red-600">
+                                        Absent Days
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
-                                    <div className="text-lg sm:text-2xl font-bold text-green-600">
-                                      --
-                                    </div>
-                                    <div className="text-xs sm:text-sm text-green-600">
-                                      Present Days
-                                    </div>
-                                  </div>
-                                  <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
-                                    <div className="text-lg sm:text-2xl font-bold text-red-600">
-                                      --
-                                    </div>
-                                    <div className="text-xs sm:text-sm text-red-600">
-                                      Absent Days
-                                    </div>
-                                  </div>
-                                </div>
+                                )}
                               </CardContent>
                             </Card>
                           </div>

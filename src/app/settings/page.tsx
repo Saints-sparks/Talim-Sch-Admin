@@ -591,6 +591,23 @@ function AdminAccountSection() {
         setForm({ firstName: data.firstName || "", lastName: data.lastName || "", phoneNumber: data.phoneNumber || "" });
       }
     } catch {}
+
+    // Always fetch fresh profile from the backend so the UI is never stale
+    try {
+      const token = localStorage.getItem("accessToken");
+      const cached = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = cached.userId || cached._id;
+      if (!token || !userId) return;
+      const res = await fetch(`${API_BASE_URL}/auth/profile/${userId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) return;
+      const fresh = await res.json();
+      const merged = { ...cached, ...fresh };
+      localStorage.setItem("user", JSON.stringify(merged));
+      setProfile(merged);
+      setForm({ firstName: merged.firstName || "", lastName: merged.lastName || "", phoneNumber: merged.phoneNumber || "" });
+    } catch {}
   };
 
   const handleSave = async () => {
