@@ -254,9 +254,9 @@ const CurriculumDashboardMain: React.FC = () => {
   // Helper function to get course display text
   const getCourseDisplay = (course: CurriculumContent['course']) => {
     if (!course) return "No course";
-    const code = course.courseCode || course.code || "N/A";
-    const name = course.title || course.name || "No course name";
-    return `${code} - ${name}`;
+    const code = course.courseCode || course.code;
+    const name = course.title || course.name || course.description || "No course name";
+    return code ? `${code} - ${name}` : name;
   };
 
   // Helper function to get term display text

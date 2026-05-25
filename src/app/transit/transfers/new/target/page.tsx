@@ -140,7 +140,7 @@ export default function TargetTransferWizard() {
     const t = setTimeout(async () => {
       setLoadingSchools(true);
       try {
-        const res = await apiClient.get(`/schools/search?q=${encodeURIComponent(schoolSearch)}`);
+        const res = await apiClient.get(`/schools/search?query=${encodeURIComponent(schoolSearch)}`);
         const data = await handleRes<SchoolResult[]>(res);
         setSchools(Array.isArray(data) ? data : []);
       } catch {
@@ -220,7 +220,7 @@ export default function TargetTransferWizard() {
   ][step];
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6">
       <button
         onClick={() => (step === 0 ? router.back() : setStep(step - 1))}
         className="flex items-center gap-2 text-sm text-[#929292] hover:text-[#030E18] mb-6 transition-colors"
@@ -229,6 +229,7 @@ export default function TargetTransferWizard() {
         {step === 0 ? "Back" : "Previous Step"}
       </button>
 
+      <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-[#030E18] mb-1">Pull Transfer</h1>
       <p className="text-sm text-[#929292] mb-6">
         Request a student from another Talim school to join your school
@@ -540,6 +541,7 @@ export default function TargetTransferWizard() {
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
+      </div>
       </div>
     </div>
   );

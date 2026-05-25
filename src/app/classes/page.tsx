@@ -334,21 +334,25 @@ export default function Classes() {
                                   {classItem.students?.length || 0}/{classItem.classCapacity || 50}
                                 </span>
                                 <div className="flex -space-x-2">
-                                  <img
-                                    src="/img/classdetail-student1.png"
-                                    alt="student"
-                                    className="w-5 h-5 rounded-full border-2 border-white"
-                                  />
-                                  <img
-                                    src="/img/classdetail-student2.png"
-                                    alt="student"
-                                    className="w-5 h-5 rounded-full border-2 border-white"
-                                  />
-                                  <img
-                                    src="/img/classdetail-student3.png"
-                                    alt="student"
-                                    className="w-5 h-5 rounded-full border-2 border-white"
-                                  />
+                                  {(classItem.students || []).slice(0, 3).map((student: any, i: number) => {
+                                    const avatar = student.userId?.userAvatar || student.userAvatar;
+                                    const first = student.userId?.firstName || student.firstName || "";
+                                    return avatar ? (
+                                      <img
+                                        key={student._id || i}
+                                        src={avatar}
+                                        alt={first}
+                                        className="w-5 h-5 rounded-full border-2 border-white object-cover"
+                                      />
+                                    ) : (
+                                      <div
+                                        key={student._id || i}
+                                        className="w-5 h-5 rounded-full border-2 border-white bg-[#003366] flex items-center justify-center text-[7px] font-bold text-white"
+                                      >
+                                        {first.charAt(0).toUpperCase() || "?"}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             </div>

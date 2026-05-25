@@ -469,7 +469,7 @@ const AnnouncementDashboard = () => {
                       <div className={cn("rounded-2xl p-3", stat.tone)}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="text-xs font-medium text-slate-400">
+                      <span className="text-xs font-medium text-slate-600">
                         {formatWeeklyChange(weeklyChanges[index])}
                       </span>
                     </div>
@@ -510,7 +510,7 @@ const AnnouncementDashboard = () => {
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
                     <CheckCircle2 className="h-4 w-4 text-[#003366]" />
                     {visibleAnnouncements.length} records visible
                   </div>
@@ -647,7 +647,7 @@ const AnnouncementDashboard = () => {
                   </table>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                   <p>
                     {shouldShowPagination
                       ? `Showing ${
@@ -759,7 +759,7 @@ const AnnouncementDashboard = () => {
                         }}
                         title={`${item.views} views`}
                       />
-                      <span className="text-xs font-semibold text-slate-400">
+                      <span className="text-xs font-semibold text-slate-500">
                         {new Intl.DateTimeFormat("en-GB", {
                           weekday: "short",
                         })

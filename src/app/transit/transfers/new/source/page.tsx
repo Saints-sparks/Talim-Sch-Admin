@@ -209,7 +209,7 @@ export default function SourceTransferWizard() {
   ][step];
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6">
       <button
         onClick={() => (step === 0 ? router.back() : setStep(step - 1))}
         className="flex items-center gap-2 text-sm text-[#929292] hover:text-[#030E18] mb-6 transition-colors"
@@ -218,6 +218,7 @@ export default function SourceTransferWizard() {
         {step === 0 ? "Back" : "Previous Step"}
       </button>
 
+      <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-[#030E18] mb-1">Push Transfer</h1>
       <p className="text-sm text-[#929292] mb-6">Transfer a student from your school to another Talim school</p>
 
@@ -515,6 +516,7 @@ export default function SourceTransferWizard() {
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
+      </div>
       </div>
     </div>
   );
