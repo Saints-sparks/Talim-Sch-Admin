@@ -65,8 +65,11 @@ import {
   getBankAccounts,
   addBankAccount,
   setDefaultBankAccount,
+  getBanks,
+  resolveBankAccount,
   BankAccount,
   WalletSummary,
+  PaystackBank,
 } from "@/app/services/finance.service";
 import {
   getReceiptSettings,
@@ -1472,6 +1475,237 @@ function FeesReceiptsSection() {
 const NGN = (n: number) =>
   `₦${Number(n || 0).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
 
+const COUNTRIES = [
+  { code: "nigeria", label: "Nigeria", flag: "🇳🇬" },
+  { code: "ghana", label: "Ghana", flag: "🇬🇭" },
+  { code: "kenya", label: "Kenya", flag: "🇰🇪" },
+  { code: "south africa", label: "South Africa", flag: "🇿🇦" },
+  { code: "other", label: "Other", flag: "🌍" },
+];
+
+function AddBankAccountForm({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess: (account: BankAccount) => void;
+  onCancel: () => void;
+}) {
+  const [country, setCountry] = useState("nigeria");
+  const [banks, setBanks] = useState<PaystackBank[]>([]);
+  const [loadingBanks, setLoadingBanks] = useState(false);
+  const [bankSearch, setBankSearch] = useState("");
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+  const [selectedBank, setSelectedBank] = useState<PaystackBank | null>(null);
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState(false);
+  const [resolveError, setResolveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const resolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isNigeria = country === "nigeria";
+  const usePaystack = ["nigeria", "ghana"].includes(country);
+
+  // Fetch bank list when country changes to a Paystack-supported country
+  useEffect(() => {
+    if (!usePaystack) return;
+    setLoadingBanks(true);
+    setSelectedBank(null);
+    setBankSearch("");
+    setAccountNumber("");
+    setAccountName("");
+    setResolved(false);
+    getBanks(country)
+      .then((r) => setBanks(r.banks))
+      .catch(() => toast.error("Could not load bank list"))
+      .finally(() => setLoadingBanks(false));
+  }, [country]);
+
+  // Auto-resolve account name when account number reaches 10 digits (Nigeria/Paystack)
+  useEffect(() => {
+    if (!usePaystack || !selectedBank || accountNumber.length !== 10) {
+      if (accountNumber.length < 10) { setAccountName(""); setResolved(false); setResolveError(""); }
+      return;
+    }
+    if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current);
+    setResolveError("");
+    resolveTimerRef.current = setTimeout(async () => {
+      setResolving(true);
+      setAccountName("");
+      setResolved(false);
+      try {
+        const r = await resolveBankAccount(accountNumber, selectedBank.code);
+        setAccountName(r.accountName);
+        setResolved(true);
+      } catch (err: any) {
+        setResolveError(err.message || "Could not verify account");
+      } finally {
+        setResolving(false);
+      }
+    }, 600);
+    return () => { if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current); };
+  }, [accountNumber, selectedBank]);
+
+  // Close bank dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowBankDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredBanks = banks.filter((b) =>
+    b.name.toLowerCase().includes(bankSearch.toLowerCase())
+  );
+
+  const canSubmit = usePaystack
+    ? selectedBank && accountNumber.length === 10 && resolved && accountName
+    : bankSearch.trim() && accountNumber.trim() && accountName.trim();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSaving(true);
+    try {
+      const payload = usePaystack
+        ? { bankName: selectedBank!.name, bankCode: selectedBank!.code, accountNumber, accountName, country }
+        : { bankName: bankSearch.trim(), bankCode: "INTL", accountNumber: accountNumber.trim(), accountName: accountName.trim(), country };
+      const r = await addBankAccount(payload);
+      onSuccess(r.account);
+      toast.success("Bank account added");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add account");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 space-y-4">
+      {/* Country */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Country <span className="text-red-500">*</span></label>
+        <select
+          value={country}
+          onChange={(e) => { setCountry(e.target.value); setSelectedBank(null); setBankSearch(""); setAccountNumber(""); setAccountName(""); setResolved(false); setResolveError(""); }}
+          className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]"
+        >
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {usePaystack ? (
+        <>
+          {/* Bank Search */}
+          <div ref={dropdownRef} className="relative">
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Bank <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={selectedBank ? selectedBank.name : bankSearch}
+              onChange={(e) => { setBankSearch(e.target.value); setSelectedBank(null); setShowBankDropdown(true); setAccountName(""); setResolved(false); }}
+              onFocus={() => setShowBankDropdown(true)}
+              placeholder={loadingBanks ? "Loading banks…" : "Search for your bank"}
+              disabled={loadingBanks}
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] disabled:opacity-60"
+            />
+            {showBankDropdown && !selectedBank && filteredBanks.length > 0 && (
+              <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredBanks.map((b) => (
+                  <button
+                    key={b.code}
+                    type="button"
+                    onClick={() => { setSelectedBank(b); setBankSearch(b.name); setShowBankDropdown(false); setAccountName(""); setResolved(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedBank && (
+              <button
+                type="button"
+                onClick={() => { setSelectedBank(null); setBankSearch(""); setAccountName(""); setResolved(false); }}
+                className="absolute right-3 top-8 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Account Number */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Account Number <span className="text-red-500">*</span></label>
+            <div className="relative">
+              <input
+                type="text"
+                value={accountNumber}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAccountNumber(v); }}
+                placeholder="10-digit account number"
+                maxLength={10}
+                className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] pr-10"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {resolving && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                {resolved && !resolving && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                {resolveError && !resolving && <AlertCircle className="w-4 h-4 text-red-400" />}
+              </div>
+            </div>
+            {resolveError && <p className="text-xs text-red-500 mt-1">{resolveError}</p>}
+          </div>
+
+          {/* Account Name (auto-populated) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Account Name</label>
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg min-h-[42px]">
+              {resolving ? (
+                <span className="text-xs text-gray-400 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying account…</span>
+              ) : accountName ? (
+                <span className="text-sm font-medium text-gray-800 dark:text-slate-200 flex-1">{accountName}</span>
+              ) : (
+                <span className="text-sm text-gray-400">Auto-populated after account number entry</span>
+              )}
+              {accountName && <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Manual entry for non-Paystack countries */}
+          <InputField label="Bank Name" value={bankSearch} onChange={setBankSearch} placeholder="e.g. Barclays, HSBC" required />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InputField label="Account / IBAN Number" value={accountNumber} onChange={setAccountNumber} placeholder="Account number or IBAN" required />
+            <InputField label="Account Name" value={accountName} onChange={setAccountName} placeholder="Name on account" required />
+          </div>
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700 dark:text-blue-400">International bank payouts are processed manually. Our team will verify the account details.</p>
+          </div>
+        </>
+      )}
+
+      <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-yellow-700 dark:text-yellow-400">Ensure the account details are correct. Wrong details may cause withdrawal delays.</p>
+      </div>
+
+      <div className="flex gap-3">
+        <OutlineBtn onClick={onCancel} disabled={saving}>Cancel</OutlineBtn>
+        <PrimaryBtn type="submit" loading={saving} disabled={!canSubmit}>
+          <CreditCard className="w-3.5 h-3.5" /> Add Account
+        </PrimaryBtn>
+      </div>
+    </form>
+  );
+}
+
 function PaymentsFinanceSection() {
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -1479,8 +1713,6 @@ function PaymentsFinanceSection() {
   const [loading, setLoading] = useState(true);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [savingFin, setSavingFin] = useState(false);
-  const [addingAccount, setAddingAccount] = useState(false);
-  const [bankForm, setBankForm] = useState({ bankName: "", bankCode: "", accountNumber: "", accountName: "" });
   const [minAmount, setMinAmount] = useState("");
   const router = useRouter();
 
@@ -1510,19 +1742,6 @@ function PaymentsFinanceSection() {
       toast.success("Minimum withdrawal amount saved");
     } catch { toast.error("Failed to save"); }
     finally { setSavingFin(false); }
-  };
-
-  const handleAddAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddingAccount(true);
-    try {
-      const r = await addBankAccount(bankForm);
-      setAccounts((prev) => [...prev, r.account]);
-      setBankForm({ bankName: "", bankCode: "", accountNumber: "", accountName: "" });
-      setShowAddAccount(false);
-      toast.success("Bank account added");
-    } catch (err: any) { toast.error(err.message || "Failed to add account"); }
-    finally { setAddingAccount(false); }
   };
 
   const makeDefault = async (id: string) => {
@@ -1585,7 +1804,7 @@ function PaymentsFinanceSection() {
         <CardHeader title="Withdrawal Settings" />
         <div className="px-5 pb-3 pt-1">
           <ToggleRow label="Require email OTP for withdrawals" desc="Send a 6-digit OTP to your email before each withdrawal" checked={finSettings?.requireEmailOtpForWithdrawals ?? true} onChange={toggleOtp} />
-          <div className="py-3 border-b border-gray-50">
+          <div className="py-3 border-b border-gray-50 dark:border-slate-700">
             <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-2">Minimum Withdrawal Amount (₦)</p>
             <div className="flex items-center gap-3">
               <input type="number" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} min={0}
@@ -1607,55 +1826,31 @@ function PaymentsFinanceSection() {
       <Card>
         <CardHeader title="Bank Accounts" action={
           <OutlineBtn onClick={() => setShowAddAccount(!showAddAccount)}>
-            <Plus className="w-3.5 h-3.5" /> Add Account
+            <Plus className="w-3.5 h-3.5" /> {showAddAccount ? "Cancel" : "Add Account"}
           </OutlineBtn>
         } />
         <AnimatePresence>
           {showAddAccount && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <form onSubmit={handleAddAccount} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Bank Name <span className="text-red-500">*</span></label>
-                    <select value={bankForm.bankName} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value, bankCode: e.target.selectedOptions[0]?.dataset.code || "" })}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg outline-none focus:border-[#003366]" required>
-                      <option value="">Select bank</option>
-                      {[
-                        { name: "GTBank", code: "058" }, { name: "Access Bank", code: "044" },
-                        { name: "First Bank", code: "011" }, { name: "Zenith Bank", code: "057" },
-                        { name: "UBA", code: "033" }, { name: "Sterling Bank", code: "232" },
-                        { name: "Fidelity Bank", code: "070" }, { name: "FCMB", code: "214" },
-                      ].map((b) => (
-                        <option key={b.code} value={b.name} data-code={b.code}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <InputField label="Account Number" value={bankForm.accountNumber} onChange={(v) => setBankForm({ ...bankForm, accountNumber: v })} placeholder="Enter account number" required />
-                  <InputField label="Account Name" value={bankForm.accountName} onChange={(v) => setBankForm({ ...bankForm, accountName: v })} placeholder="Enter account name" required />
-                </div>
-                <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-yellow-700">Ensure the account details are correct. Wrong details may cause withdrawal delays.</p>
-                </div>
-                <div className="flex gap-3">
-                  <OutlineBtn onClick={() => setShowAddAccount(false)} disabled={addingAccount}>Cancel</OutlineBtn>
-                  <PrimaryBtn type="submit" loading={addingAccount}>
-                    <CreditCard className="w-3.5 h-3.5" /> Add Account
-                  </PrimaryBtn>
-                </div>
-              </form>
+              <AddBankAccountForm
+                onSuccess={(account) => {
+                  setAccounts((prev) => [...prev, account]);
+                  setShowAddAccount(false);
+                }}
+                onCancel={() => setShowAddAccount(false)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-slate-700">
           {accounts.length === 0 ? (
             <div className="text-center py-10 text-gray-400 text-sm">No bank accounts added</div>
           ) : (
             accounts.map((a) => (
               <div key={a._id} className="flex items-center justify-between px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-[#003366]" />
+                  <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-[#003366] dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{a.bankName} – {a.accountNumber}</p>
@@ -1666,7 +1861,7 @@ function PaymentsFinanceSection() {
                   {a.isDefault ? (
                     <span className="text-xs text-green-600 font-medium border border-green-200 bg-green-50 px-2 py-0.5 rounded-full">Default</span>
                   ) : (
-                    <button onClick={() => makeDefault(a._id)} className="text-xs text-gray-500 hover:text-[#003366] border border-gray-200 px-2 py-0.5 rounded-full transition">
+                    <button onClick={() => makeDefault(a._id)} className="text-xs text-gray-500 hover:text-[#003366] border border-gray-200 dark:border-slate-600 px-2 py-0.5 rounded-full transition">
                       Set Default
                     </button>
                   )}
@@ -1760,9 +1955,34 @@ function SecuritySection() {
   const [finSettings, setFinSettings] = useState<FinanceSettings | null>(null);
   const [showPwModal, setShowPwModal] = useState(false);
   const [loadingFin, setLoadingFin] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
-    try { setProfile(JSON.parse(localStorage.getItem("user") || "{}")); } catch {}
+    // Seed from localStorage immediately so UI isn't blank
+    try {
+      const cached = JSON.parse(localStorage.getItem("user") || "{}");
+      setProfile(cached);
+    } catch {}
+
+    // Fetch fresh profile from backend
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const cached = JSON.parse(localStorage.getItem("user") || "{}");
+        const userId = cached.userId || cached._id;
+        if (!token || !userId) return;
+        const res = await fetch(`${API_BASE_URL}/auth/profile/${userId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        });
+        if (!res.ok) return;
+        const fresh = await res.json();
+        const merged = { ...cached, ...fresh };
+        localStorage.setItem("user", JSON.stringify(merged));
+        setProfile(merged);
+      } catch {}
+      finally { setLoadingProfile(false); }
+    };
+    fetchProfile();
 
     getFinanceSettings()
       .then((r) => setFinSettings(r.settings))
@@ -1830,16 +2050,37 @@ function SecuritySection() {
 
         {/* Session Security */}
         <Card>
-          <CardHeader title="Session Security" />
+          <CardHeader title="Session Security" action={
+            loadingProfile ? <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-[#003366] rounded-full animate-spin" /> : (
+              <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Live</span>
+            )
+          } />
           <div className="p-5 space-y-2">
             {[
-              { label: "Last Login", value: profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : "—" },
-              { label: "Email Verified", value: profile?.isEmailVerified ? "✓ Yes" : "✗ No", highlight: profile?.isEmailVerified ? "text-green-600" : "text-red-600" },
-              { label: "Account Status", value: profile?.isActive ? "Active" : "Inactive", highlight: profile?.isActive ? "text-green-600" : "text-red-600" },
+              {
+                label: "Last Login",
+                value: profile?.lastLogin ? new Date(profile.lastLogin).toLocaleString() : "—",
+              },
+              {
+                label: "Email Verified",
+                value: profile?.isEmailVerified === undefined ? "—" : profile.isEmailVerified ? "Yes" : "No",
+                highlight: profile?.isEmailVerified === undefined ? "" : profile.isEmailVerified ? "text-green-600" : "text-red-500",
+                icon: profile?.isEmailVerified ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : profile?.isEmailVerified === false ? <AlertCircle className="w-3.5 h-3.5 text-red-400" /> : null,
+              },
+              {
+                label: "Account Status",
+                value: profile?.isActive === undefined ? "—" : profile.isActive ? "Active" : "Inactive",
+                highlight: profile?.isActive === undefined ? "" : profile.isActive ? "text-green-600" : "text-red-500",
+              },
             ].map((s) => (
               <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
                 <span className="text-gray-500">{s.label}</span>
-                <span className={`font-medium ${s.highlight || "text-gray-800 dark:text-slate-200"}`}>{s.value}</span>
+                <span className={`font-medium flex items-center gap-1.5 ${s.highlight || "text-gray-800 dark:text-slate-200"}`}>
+                  {"icon" in s && s.icon}
+                  {loadingProfile && s.value === "—" ? (
+                    <span className="inline-block w-24 h-3.5 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
+                  ) : s.value}
+                </span>
               </div>
             ))}
           </div>
@@ -1851,12 +2092,16 @@ function SecuritySection() {
           <div className="p-5 space-y-2">
             {[
               { label: "Role", value: profile?.role?.replace(/_/g, " ") || "School Admin" },
-              { label: "School", value: profile?.schoolId?.name || "—" },
+              { label: "School", value: profile?.schoolName || profile?.schoolId?.name || "—" },
               { label: "User ID", value: profile?.userId || profile?._id || "—" },
             ].map((s) => (
               <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
                 <span className="text-gray-500">{s.label}</span>
-                <span className="text-gray-800 dark:text-slate-200 font-medium capitalize truncate max-w-[180px]">{s.value}</span>
+                {loadingProfile && s.value === "—" ? (
+                  <span className="inline-block w-28 h-3.5 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
+                ) : (
+                  <span className="text-gray-800 dark:text-slate-200 font-medium capitalize truncate max-w-[180px]">{s.value}</span>
+                )}
               </div>
             ))}
           </div>

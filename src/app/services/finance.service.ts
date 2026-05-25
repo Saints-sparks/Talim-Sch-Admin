@@ -119,6 +119,25 @@ export const getWalletTransactions = async (params: {
   return handleResponse<PaginatedResponse<LedgerEntry>>(res);
 };
 
+// ─── Paystack Proxy ──────────────────────────────────────────────────────────
+
+export interface PaystackBank {
+  id: number;
+  name: string;
+  code: string;
+  slug: string;
+}
+
+export const getBanks = async (country = "nigeria"): Promise<{ success: boolean; banks: PaystackBank[] }> => {
+  const res = await apiClient.get(`${BASE}/banks?country=${country}`);
+  return handleResponse<{ success: boolean; banks: PaystackBank[] }>(res);
+};
+
+export const resolveBankAccount = async (accountNumber: string, bankCode: string): Promise<{ success: boolean; accountName: string }> => {
+  const res = await apiClient.get(`${BASE}/bank-accounts/resolve?accountNumber=${accountNumber}&bankCode=${bankCode}`);
+  return handleResponse<{ success: boolean; accountName: string }>(res);
+};
+
 // ─── Bank Accounts ────────────────────────────────────────────────────────────
 
 export const getBankAccounts = async (): Promise<{ success: boolean; accounts: BankAccount[] }> => {
