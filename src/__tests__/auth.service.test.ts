@@ -4,11 +4,11 @@ import { authService } from "@/app/services/auth.service";
 global.fetch = jest.fn();
 const mockFetch = global.fetch as jest.Mock;
 
-// Mock nookies so logout can read/destroy cookies without a browser
-jest.mock("nookies", () => ({
-  get: jest.fn(() => ({ access_token: "tok123" })),
-  destroy: jest.fn(),
-}));
+// Stub document.cookie — authService.logout reads access_token from it
+Object.defineProperty(document, "cookie", {
+  get: () => "access_token=tok123",
+  configurable: true,
+});
 
 // Provide localStorage stub for the Node test environment
 Object.defineProperty(global, "localStorage", {

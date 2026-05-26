@@ -1,4 +1,3 @@
-import nookies from "nookies";
 import { API_BASE_URL, API_ENDPOINTS } from "../lib/api/config";
 import { getLocalStorageItem } from "../utils/localStorage";
 
@@ -200,8 +199,18 @@ export const authService = {
   },
 
   async logout() {
-    const cookies = nookies.get(null);
-    const accessToken = cookies.access_token;
+    const rawCookies =
+      typeof document !== "undefined" ? document.cookie : "";
+    const cookieMap = Object.fromEntries(
+      rawCookies
+        .split("; ")
+        .filter(Boolean)
+        .map((c) => {
+          const eq = c.indexOf("=");
+          return [c.slice(0, eq), c.slice(eq + 1)];
+        })
+    );
+    const accessToken = cookieMap.access_token;
 
     if (!accessToken) {
       throw new Error("No access token found");
@@ -219,9 +228,13 @@ export const authService = {
         throw new Error("Logout failed");
       }
 
-      // Clear cookies
-      nookies.destroy(null, "access_token");
-      nookies.destroy(null, "refresh_token");
+      // Expire auth cookies
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
 
       // Clear localStorage
       localStorage.removeItem("user");
