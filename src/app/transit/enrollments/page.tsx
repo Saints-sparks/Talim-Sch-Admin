@@ -50,10 +50,11 @@ function getTransitStudentId(student: Student): string {
     userId?: { _id?: string };
     _id?: string;
   };
+  if (raw.userId?._id) return raw.userId._id;
   if (typeof raw.studentId === "string" && raw.studentId) return raw.studentId;
   if (typeof raw.studentId === "object" && raw.studentId?._id) return raw.studentId._id;
   if (raw._id) return raw._id;
-  return raw.userId?._id ?? "";
+  return "";
 }
 
 const SOURCE_COLORS: Record<string, string> = {
