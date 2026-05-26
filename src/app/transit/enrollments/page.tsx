@@ -44,6 +44,18 @@ function resolveId(v: string | { _id: string }): string {
   return v._id;
 }
 
+function getTransitStudentId(student: Student): string {
+  const raw = student as unknown as {
+    studentId?: string | { _id?: string };
+    userId?: { _id?: string };
+    _id?: string;
+  };
+  if (typeof raw.studentId === "string" && raw.studentId) return raw.studentId;
+  if (typeof raw.studentId === "object" && raw.studentId?._id) return raw.studentId._id;
+  if (raw._id) return raw._id;
+  return raw.userId?._id ?? "";
+}
+
 const SOURCE_COLORS: Record<string, string> = {
   manual: "bg-gray-100 text-gray-600",
   promotion: "bg-purple-100 text-purple-700",
@@ -90,7 +102,7 @@ function SingleEnrollModal({ onClose, onSuccess, students, classes, academicYear
     return name.includes(q) || id.includes(q);
   });
 
-  const selectedStudent = students.find((s) => s._id === selectedStudentId);
+  const selectedStudent = students.find((s) => getTransitStudentId(s) === selectedStudentId);
 
   async function handleSubmit() {
     if (!selectedStudentId || !classId || !academicYearId) {
@@ -151,7 +163,7 @@ function SingleEnrollModal({ onClose, onSuccess, students, classes, academicYear
                   {filteredStudents.slice(0, 20).map((s) => (
                     <button
                       key={s._id}
-                      onClick={() => { setSelectedStudentId(s._id); setSearch(""); }}
+                      onClick={() => { setSelectedStudentId(getTransitStudentId(s)); setSearch(""); }}
                       className="w-full text-left px-3 py-2.5 hover:bg-gray-50 transition-colors"
                     >
                       <span className="text-sm font-medium text-[#030E18]">{s.userId?.firstName} {s.userId?.lastName}</span>
@@ -264,7 +276,7 @@ function BulkEnrollModal({ onClose, onSuccess, students, classes, academicYears,
     return name.includes(search.toLowerCase());
   });
 
-  const selectedStudents = students.filter((s) => selectedIds.has(s._id));
+  const selectedStudents = students.filter((s) => selectedIds.has(getTransitStudentId(s)));
   const selectedClass = classes.find((c) => c._id === classId);
   const selectedYear = academicYears.find((y) => y._id === academicYearId);
 
@@ -281,7 +293,7 @@ function BulkEnrollModal({ onClose, onSuccess, students, classes, academicYears,
     if (selectedIds.size === filtered.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filtered.map((s) => s._id)));
+      setSelectedIds(new Set(filtered.map((s) => getTransitStudentId(s))));
     }
   }
 
@@ -293,7 +305,7 @@ function BulkEnrollModal({ onClose, onSuccess, students, classes, academicYears,
     setSubmitting(true);
     const res: BulkResult = { success: 0, skipped: 0, errors: [] };
     for (const studentId of Array.from(selectedIds)) {
-      const student = students.find((s) => s._id === studentId);
+      const student = students.find((s) => getTransitStudentId(s) === studentId);
       const name = student ? `${student.userId?.firstName} ${student.userId?.lastName}` : studentId;
       try {
         await createEnrollment({ studentId, classId, academicYearId, termId: termId || undefined, source: "manual" });
@@ -375,8 +387,8 @@ function BulkEnrollModal({ onClose, onSuccess, students, classes, academicYears,
                     <label key={s._id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors">
                       <input
                         type="checkbox"
-                        checked={selectedIds.has(s._id)}
-                        onChange={() => toggleStudent(s._id)}
+                        checked={selectedIds.has(getTransitStudentId(s))}
+                        onChange={() => toggleStudent(getTransitStudentId(s))}
                         className="w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]"
                       />
                       <span className="text-sm text-[#030E18]">{s.userId?.firstName} {s.userId?.lastName}</span>
