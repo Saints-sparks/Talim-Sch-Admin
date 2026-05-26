@@ -16,6 +16,7 @@ import {
   type RecentAnnouncement,
 } from "../app/services/dashboard.service";
 import { getSchoolId } from "../app/services/school.service";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/CustomToast";
 
 // ==================== Original Hook (kept for backward compatibility) ====================
@@ -96,6 +97,9 @@ interface UseEnhancedDashboardReturn {
 }
 
 export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
+  const { user } = useAuth();
+  const userId = user?._id;
+
   const [data, setData] = useState<EnhancedDashboardState>({
     base: null,
     summary: null,
@@ -130,12 +134,12 @@ export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
         announcements,
       ] = await Promise.all([
         getSchoolDashboard(schoolId).catch(() => null),
-        getDashboardSummary(schoolId),
+        getDashboardSummary(schoolId, userId),
         getFinanceSummary(schoolId),
         getAcademicSummary(schoolId),
         getPendingActions(schoolId),
         getRecentPayments(schoolId),
-        getRecentAnnouncements(schoolId),
+        getRecentAnnouncements(schoolId, userId),
       ]);
 
       setData({
@@ -161,7 +165,7 @@ export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchAll();

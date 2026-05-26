@@ -1,5 +1,8 @@
 import { API_BASE_URL } from "../lib/api/config";
 import { apiClient } from "@/lib/apiClient";
+import { getTerms, getAcademicYears } from "./academic.service";
+import { assessmentService } from "./assessment.service";
+import { getUnreadNotificationCount } from "./notification.service";
 
 // ==================== Types ====================
 
@@ -140,6 +143,30 @@ async function safeGet<T>(url: string): Promise<T | null> {
   }
 }
 
+function buildMonthlyRevenue(
+  entries: Array<{ direction?: string; amount: number; createdAt: string }>
+): Array<{ month: string; amount: number }> {
+  const byMonth: Record<string, number> = {};
+  entries
+    .filter((e) => !e.direction || e.direction === "credit")
+    .forEach((e) => {
+      const d = new Date(e.createdAt);
+      const key = d.toLocaleDateString("en-NG", {
+        month: "short",
+        year: "numeric",
+      });
+      byMonth[key] = (byMonth[key] ?? 0) + (e.amount ?? 0);
+    });
+
+  return Object.entries(byMonth)
+    .map(([month, amount]) => ({ month, amount }))
+    .sort(
+      (a, b) =>
+        new Date("1 " + a.month).getTime() - new Date("1 " + b.month).getTime()
+    )
+    .slice(-6);
+}
+
 // ==================== Service Functions ====================
 
 export const getSchoolDashboard = async (
@@ -157,32 +184,224 @@ export const getSchoolDashboard = async (
   return response.json();
 };
 
-export const getDashboardSummary = (schoolId: string) =>
-  safeGet<DashboardSummary>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/summary`
+// Derives fee KPIs from /fees/dashboard/summary and wallet balance from /finance/wallet/summary.
+// userId is used to fetch unread notification count.
+export const getDashboardSummary = async (
+  schoolId: string,
+  userId?: string
+): Promise<DashboardSummary | null> => {
+  const [fees, wallet, unreadCount] = await Promise.all([
+    safeGet<{
+      totalExpectedAmount: number;
+      paidAmount: number;
+      outstandingAmount: number;
+    }>("/fees/dashboard/summary"),
+    safeGet<{
+      success: boolean;
+      summary: { availableBalance: number };
+    }>("/finance/wallet/summary"),
+    userId
+      ? getUnreadNotificationCount(userId).catch(() => 0)
+      : Promise.resolve(0),
+  ]);
+
+  if (!fees && !wallet) return null;
+
+  const totalExpected = fees?.totalExpectedAmount ?? 0;
+  const paid = fees?.paidAmount ?? 0;
+
+  return {
+    students: { total: 0, active: 0, inactive: 0, trendPercent: 0 },
+    teachers: { total: 0, formTeachers: 0, trendPercent: 0 },
+    classes: { total: 0, capacityUtilization: 0, trendPercent: 0 },
+    fees: {
+      collectionRate:
+        totalExpected > 0 ? (paid / totalExpected) * 100 : 0,
+      collectedAmount: paid,
+      expectedAmount: totalExpected,
+      trendPercent: 0,
+    },
+    wallet: { balance: wallet?.summary?.availableBalance ?? 0 },
+    notifications: {
+      unreadTotal: (unreadCount as number) ?? 0,
+      messages: 0,
+      alerts: 0,
+      trendPercent: 0,
+    },
+  };
+};
+
+// Derives revenue and fee status from /fees/dashboard/summary and /finance/wallet/transactions.
+export const getFinanceSummary = async (
+  schoolId: string
+): Promise<FinanceSummary | null> => {
+  const [fees, wallet, txnRes] = await Promise.all([
+    safeGet<{
+      totalExpectedAmount: number;
+      paidAmount: number;
+      outstandingAmount: number;
+    }>("/fees/dashboard/summary"),
+    safeGet<{
+      success: boolean;
+      summary: { availableBalance: number; thisMonthRevenue: number };
+    }>("/finance/wallet/summary"),
+    safeGet<{
+      success: boolean;
+      data: Array<{
+        direction: string;
+        amount: number;
+        createdAt: string;
+      }>;
+    }>("/finance/wallet/transactions?limit=200"),
+  ]);
+
+  if (!fees && !wallet) return null;
+
+  const paid = fees?.paidAmount ?? 0;
+  const outstanding = fees?.outstandingAmount ?? 0;
+  const totalExpected = fees?.totalExpectedAmount ?? 0;
+  const revenueThisMonth = wallet?.summary?.thisMonthRevenue ?? paid;
+
+  const monthlyRevenue = buildMonthlyRevenue(txnRes?.data ?? []);
+
+  return {
+    revenueThisMonth,
+    monthOverMonthPercent: 0,
+    monthlyRevenue,
+    feeStatus: {
+      totalExpected,
+      paid,
+      pending: outstanding,
+      overdue: 0,
+    },
+  };
+};
+
+// Derives term progress from /terms + /academic-years, and assessment counts from /assessments/school.
+export const getAcademicSummary = async (
+  schoolId: string
+): Promise<AcademicSummary | null> => {
+  const [terms, years, assessmentRes] = await Promise.all([
+    getTerms().catch(() => []),
+    getAcademicYears().catch(() => []),
+    assessmentService
+      .getAssessmentsBySchool(1, 200)
+      .catch(() => ({ assessments: [] })),
+  ]);
+
+  const currentTerm = terms.find((t) => t.isCurrent);
+  if (!currentTerm) return null;
+
+  const currentYear = years.find((y) => y.isCurrent) ?? years[0];
+
+  const now = Date.now();
+  const start = new Date(currentTerm.startDate).getTime();
+  const end = new Date(currentTerm.endDate).getTime();
+  const totalMs = Math.max(1, end - start);
+  const elapsedMs = Math.max(0, Math.min(now - start, totalMs));
+  const elapsedPercent = Math.round((elapsedMs / totalMs) * 100);
+  const daysRemaining = Math.max(
+    0,
+    Math.ceil((end - now) / 86400000)
   );
 
-export const getFinanceSummary = (schoolId: string) =>
-  safeGet<FinanceSummary>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/finance-summary?period=6months`
-  );
+  const assessments = assessmentRes?.assessments ?? [];
+  const counts = { active: 0, pending: 0, completed: 0, cancelled: 0 };
+  assessments.forEach((a) => {
+    const s = a.status as keyof typeof counts;
+    if (s in counts) counts[s]++;
+  });
 
-export const getAcademicSummary = (schoolId: string) =>
-  safeGet<AcademicSummary>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/academic-summary`
-  );
+  return {
+    currentTerm: {
+      name: currentTerm.name,
+      academicYear: currentYear?.year ?? "",
+      startDate: currentTerm.startDate,
+      endDate: currentTerm.endDate,
+      elapsedPercent,
+      daysRemaining,
+    },
+    assessments: counts,
+    studentDistribution: [],
+  };
+};
 
-export const getPendingActions = (schoolId: string) =>
-  safeGet<PendingActionsData>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/pending-actions`
-  );
+// Derives pending transfers and leave counts from /transit/dashboard and /leave-requests/school-admin/all.
+export const getPendingActions = async (
+  schoolId: string
+): Promise<PendingActionsData | null> => {
+  const [transit, leaveRes] = await Promise.all([
+    safeGet<{
+      pendingIncoming: number;
+      pendingOutgoing: number;
+      openPromotionRuns: number;
+    }>("/transit/dashboard"),
+    safeGet<{ data: Array<{ status: string }> }>(
+      "/leave-requests/school-admin/all"
+    ),
+  ]);
 
-export const getRecentPayments = (schoolId: string, limit = 5) =>
-  safeGet<RecentPayment[]>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/recent-payments?limit=${limit}`
-  );
+  const leaveData = leaveRes?.data ?? [];
+  const pendingLeave = leaveData.filter(
+    (r) => r.status?.toLowerCase() === "pending"
+  ).length;
 
-export const getRecentAnnouncements = (schoolId: string, limit = 5) =>
-  safeGet<RecentAnnouncement[]>(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard/recent-announcements?limit=${limit}`
+  return {
+    transfers: {
+      incoming: transit?.pendingIncoming ?? 0,
+      outgoing: transit?.pendingOutgoing ?? 0,
+    },
+    leaveRequests: { pending: pendingLeave },
+    promotionRuns: {
+      open: transit?.openPromotionRuns ?? 0,
+      pendingValidation: 0,
+    },
+    studentsWithoutEnrollment: { count: 0 },
+  };
+};
+
+export const getRecentPayments = async (
+  schoolId: string,
+  limit = 5
+): Promise<RecentPayment[] | null> => {
+  const res = await safeGet<{ success: boolean; data: any[] }>(
+    `/payments/admin/transactions?limit=${limit}`
   );
+  if (!res?.data?.length) return [];
+
+  return res.data.map((t) => ({
+    studentName: t.internalReference ?? "Payment",
+    amount: t.schoolAmount ?? t.amount ?? 0,
+    method: t.paymentChannel ?? t.providerName ?? "Online",
+    createdAt: t.paidAt ?? t.createdAt,
+    status: (
+      t.status === "successful"
+        ? "success"
+        : t.status === "pending"
+        ? "pending"
+        : "failed"
+    ) as "success" | "pending" | "failed",
+  }));
+};
+
+export const getRecentAnnouncements = async (
+  schoolId: string,
+  userId?: string,
+  limit = 5
+): Promise<RecentAnnouncement[] | null> => {
+  if (!userId) return [];
+
+  const res = await safeGet<{ data: any[]; meta: any }>(
+    `/notifications/announcements/sender/${userId}?page=1&limit=${limit}&status=PUBLISHED`
+  );
+  if (!res?.data?.length) return [];
+
+  return res.data.map((a) => ({
+    title: a.title,
+    audience: Array.isArray(a.targetAudience ?? a.audience)
+      ? (a.targetAudience ?? a.audience).join(", ")
+      : (a.targetAudience ?? a.audience ?? "All"),
+    publishedAt: a.publishedAt ?? a.createdAt,
+    readRate: typeof a.readRate === "number" ? a.readRate : 0,
+  }));
+};
