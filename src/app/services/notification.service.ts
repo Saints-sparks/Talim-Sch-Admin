@@ -241,6 +241,26 @@ export const getUnreadNotificationCount = async (userId: string): Promise<number
   }
 };
 
+export const getIncomingNotifications = async (userId: string): Promise<AdminNotification[]> => {
+  try {
+    const res = await apiClient.get(`/notifications?page=1&limit=100&recipientId=${userId}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = getItems(data);
+    return items.map(normalizeNotification);
+  } catch {
+    return [];
+  }
+};
+
+export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+  try {
+    await apiClient.patch(`/notifications/${notificationId}/read`, {});
+  } catch {
+    // Fail silently — UI state is already updated optimistically
+  }
+};
+
 export const createAdminNotification = async (
   payload: NotificationFormPayload,
   senderId: string,

@@ -10,7 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useWebSocketContext } from "@/context/WebSocketContext";
 import { chatService } from "@/services/chatServices";
 import {
-  Bell,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -216,21 +215,6 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       icon: <VolumeHigh isActive={pathname.startsWith("/announcements")} />,
       label: "Announcements",
       tooltip: "Announcements",
-    },
-    {
-      path: "/notifications",
-      icon: (
-        <Bell
-          className={cn(
-            "h-5 w-5",
-            pathname.startsWith("/notifications")
-              ? "text-[#003366]"
-              : "text-[#929292]"
-          )}
-        />
-      ),
-      label: "Notifications",
-      tooltip: "Talim & System Notifications",
     },
     {
       path: "/leave-requests",
