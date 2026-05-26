@@ -141,8 +141,8 @@ export default function TargetTransferWizard() {
       setLoadingSchools(true);
       try {
         const res = await apiClient.get(`/schools/search?query=${encodeURIComponent(schoolSearch)}`);
-        const data = await handleRes<SchoolResult[]>(res);
-        setSchools(Array.isArray(data) ? data : []);
+        const raw = await handleRes<{ data?: SchoolResult[] } | SchoolResult[]>(res);
+        setSchools(Array.isArray(raw) ? raw : ((raw as { data?: SchoolResult[] }).data ?? []));
       } catch {
         setSchools([]);
       } finally {

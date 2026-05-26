@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   getSchoolDashboard,
+  getDashboardSummary,
+  getFinanceSummary,
+  getAcademicSummary,
+  getPendingActions,
+  getRecentPayments,
+  getRecentAnnouncements,
   type SchoolDashboardData,
+  type DashboardSummary,
+  type FinanceSummary,
+  type AcademicSummary,
+  type PendingActionsData,
+  type RecentPayment,
+  type RecentAnnouncement,
 } from "../app/services/dashboard.service";
 import { getSchoolId } from "../app/services/school.service";
 import { toast } from "@/components/CustomToast";
+
+// ==================== Original Hook (kept for backward compatibility) ====================
 
 interface UseDashboardReturn {
   dashboardData: SchoolDashboardData | null;
@@ -60,4 +74,98 @@ export const useDashboard = (): UseDashboardReturn => {
     error,
     refreshDashboard,
   };
+};
+
+// ==================== Enhanced Hook ====================
+
+export interface EnhancedDashboardState {
+  base: SchoolDashboardData | null;
+  summary: DashboardSummary | null;
+  finance: FinanceSummary | null;
+  academic: AcademicSummary | null;
+  pendingActions: PendingActionsData | null;
+  recentPayments: RecentPayment[];
+  recentAnnouncements: RecentAnnouncement[];
+}
+
+interface UseEnhancedDashboardReturn {
+  data: EnhancedDashboardState;
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+}
+
+export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
+  const [data, setData] = useState<EnhancedDashboardState>({
+    base: null,
+    summary: null,
+    finance: null,
+    academic: null,
+    pendingActions: null,
+    recentPayments: [],
+    recentAnnouncements: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAll = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const schoolId = getSchoolId();
+    if (!schoolId) {
+      console.warn("No school ID, skipping dashboard fetch");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const [
+        base,
+        summary,
+        finance,
+        academic,
+        pendingActions,
+        payments,
+        announcements,
+      ] = await Promise.all([
+        getSchoolDashboard(schoolId).catch(() => null),
+        getDashboardSummary(schoolId),
+        getFinanceSummary(schoolId),
+        getAcademicSummary(schoolId),
+        getPendingActions(schoolId),
+        getRecentPayments(schoolId),
+        getRecentAnnouncements(schoolId),
+      ]);
+
+      setData({
+        base,
+        summary,
+        finance,
+        academic,
+        pendingActions,
+        recentPayments: payments ?? [],
+        recentAnnouncements: announcements ?? [],
+      });
+
+      if (!base) {
+        const msg = "Failed to load core dashboard data";
+        setError(msg);
+        toast.error(msg);
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to load dashboard";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  return { data, isLoading, error, refresh: fetchAll };
 };

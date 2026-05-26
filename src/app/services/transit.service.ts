@@ -382,5 +382,6 @@ export function canCommit(run?: PromotionRun | null) {
 
 export async function searchSchools(query: string): Promise<SearchSchoolResult[]> {
   const res = await apiClient.get(`/schools/search?query=${encodeURIComponent(query)}`);
-  return handle<SearchSchoolResult[]>(res);
+  const body = await handle<{ data?: SearchSchoolResult[] } | SearchSchoolResult[]>(res);
+  return Array.isArray(body) ? body : (body.data ?? []);
 }
