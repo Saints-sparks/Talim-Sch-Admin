@@ -1,23 +1,26 @@
-import { useState } from "react";
+"use client";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  Mic, 
-  SendHorizontal, 
-  FileText, 
-  Image, 
-  FileVideo, 
-  Plus,
+import {
+  Mic,
+  Square,
+  SendHorizontal,
   Paperclip,
-  Loader2
+  Loader2,
+  X,
+  FileText,
+  ImageIcon,
 } from "lucide-react";
 
 interface MessageInputProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSend?: () => void;
+  onSendFile?: (file: File) => void;
+  onSendVoice?: (blob: Blob, durationSeconds: number) => void;
   disabled?: boolean;
-  isSending?: boolean; // Add isSending prop
+  isSending?: boolean;
   placeholder?: string;
 }
 
@@ -25,145 +28,220 @@ export default function MessageInput({
   value,
   onChange,
   onSend,
+  onSendFile,
+  onSendVoice,
   disabled = false,
-  isSending = false, // Default to false
-  placeholder = "Type something here..."
+  isSending = false,
+  placeholder = "Type something here...",
 }: MessageInputProps) {
   const [message, setMessage] = useState(value || "");
-  const [showAttachments, setShowAttachments] = useState(false);
-  
-  // Handle internal state changes if not controlled
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (onChange) {
-      onChange(e);
-    } else {
-      setMessage(e.target.value);
-    }
-  };
-  
-  // Handle send button click
-  const handleSend = () => {
-    if (onSend) {
-      onSend();
-    } else {
-      console.log("Message sent:", message);
-      setMessage("");
-    }
+    if (onChange) onChange(e);
+    else setMessage(e.target.value);
   };
 
   const currentMessage = value !== undefined ? value : message;
-  const hasContent = currentMessage.trim().length > 0;
+  const hasText = currentMessage.trim().length > 0;
+  const canSend = (hasText || selectedFile !== null) && !isRecording;
+
+  const handleSend = () => {
+    if (selectedFile && onSendFile) {
+      onSendFile(selectedFile);
+      setSelectedFile(null);
+      return;
+    }
+    if (hasText && onSend) {
+      onSend();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && canSend && !disabled && !isSending) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setSelectedFile(file);
+    e.target.value = "";
+  };
+
+  const startRecording = async () => {
+    if (disabled || isSending) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+        stream.getTracks().forEach((t) => t.stop());
+        if (onSendVoice) onSendVoice(blob, duration);
+      };
+
+      startTimeRef.current = Date.now();
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+    } catch {
+      // microphone denied or unavailable
+    }
+  };
+
+  const stopRecording = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setRecordingSeconds(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="bg-white border-t border-gray-200 p-3 sm:p-4">
-      {/* Attachment options - Mobile */}
-      {showAttachments && (
-        <div className="flex sm:hidden gap-2 mb-3 overflow-x-auto pb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-shrink-0 h-8 px-3 text-xs"
-            disabled={isSending}
+      {/* Selected file preview */}
+      {selectedFile && (
+        <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+          {selectedFile.type.startsWith("image/") ? (
+            <ImageIcon size={14} className="text-blue-500 flex-shrink-0" />
+          ) : (
+            <FileText size={14} className="text-gray-500 flex-shrink-0" />
+          )}
+          <span className="text-xs text-gray-700 flex-1 truncate">{selectedFile.name}</span>
+          <button
+            onClick={() => setSelectedFile(null)}
+            className="p-0.5 hover:bg-gray-200 rounded"
           >
-            <FileText size={14} className="mr-1" />
-            Doc
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-shrink-0 h-8 px-3 text-xs"
-            disabled={isSending}
-          >
-            <Image size={14} className="mr-1" />
-            Photo
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-shrink-0 h-8 px-3 text-xs"
-            disabled={isSending}
-          >
-            <FileVideo size={14} className="mr-1" />
-            Video
-          </Button>
+            <X size={12} className="text-gray-500" />
+          </button>
         </div>
       )}
 
       <div className="flex items-end gap-2 sm:gap-3">
-        {/* Attachment button - Mobile */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex sm:hidden w-8 h-8 p-0 rounded-full"
-          onClick={() => setShowAttachments(!showAttachments)}
-          disabled={isSending}
-        >
-          <Plus size={18} className="text-gray-500" />
-        </Button>
+        {isRecording ? (
+          /* Recording bar */
+          <div className="flex-1 flex items-center gap-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+            <span className="text-sm text-red-600 font-medium">Recording</span>
+            <span className="text-sm text-red-500 ml-auto tabular-nums">
+              {formatTime(recordingSeconds)}
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx"
+              onChange={handleFileChange}
+            />
 
-        {/* Message Input */}
-        <div className="flex-1 relative">
-          <Input
-            placeholder={isSending ? "Sending..." : placeholder}
-            className="pr-12 border border-gray-300 rounded-full bg-gray-50 focus:bg-white focus:border-blue-500 transition-colors"
-            value={currentMessage}
-            onChange={handleChange}
-            disabled={disabled || isSending}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (hasContent && !disabled && !isSending) {
-                  handleSend();
-                }
-              }
-            }}
-          />
-          
-          {/* Voice note button - when no text */}
-          {!hasContent && !isSending && (
+            {/* Attachment button */}
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 p-0 rounded-full hover:bg-gray-200"
-              disabled={isSending}
+              className="w-8 h-8 p-0 rounded-full hover:bg-gray-100 flex-shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || isSending}
+              title="Attach file"
             >
-              <Mic size={16} className="text-gray-500" />
+              <Paperclip size={16} className="text-gray-500" />
             </Button>
-          )}
-        </div>
 
-        {/* Desktop attachment options */}
-        <div className="hidden sm:flex gap-1">
+            {/* Text input */}
+            <div className="flex-1">
+              <Input
+                placeholder={isSending ? "Sending..." : placeholder}
+                className="border border-gray-300 rounded-full bg-gray-50 focus:bg-white focus:border-blue-500 transition-colors"
+                value={currentMessage}
+                onChange={handleChange}
+                disabled={disabled || isSending}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Mic / Stop button — shown when no text and no file selected */}
+        {!hasText && !selectedFile && (
           <Button
             variant="ghost"
             size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-gray-100"
-            title="Attach file"
-            disabled={isSending}
+            className={`w-8 h-8 p-0 rounded-full flex-shrink-0 ${
+              isRecording ? "hover:bg-red-100" : "hover:bg-gray-100"
+            }`}
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={disabled || isSending}
+            title={isRecording ? "Stop recording" : "Record voice note"}
           >
-            <Paperclip size={16} className="text-gray-500" />
+            {isRecording ? (
+              <Square size={16} className="text-red-500" fill="currentColor" />
+            ) : (
+              <Mic size={16} className="text-gray-500" />
+            )}
           </Button>
-        </div>
+        )}
 
-        {/* Send button */}
-        <Button
-          className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full transition-all ${
-            hasContent && !isSending
-              ? "bg-blue-500 hover:bg-blue-600 shadow-md" 
-              : "bg-gray-300 cursor-not-allowed"
-          }`}
-          onClick={handleSend}
-          disabled={disabled || !hasContent || isSending}
-        >
-          {isSending ? (
-            <Loader2 size={16} className="text-white animate-spin" />
-          ) : (
-            <SendHorizontal 
-              size={16} 
-              className={hasContent ? "text-white" : "text-gray-500"} 
-            />
-          )}
-        </Button>
+        {/* Send button — shown when text or file is ready */}
+        {canSend && (
+          <Button
+            className={`w-8 h-8 sm:w-10 sm:h-10 p-0 rounded-full transition-all flex-shrink-0 ${
+              !isSending
+                ? "bg-blue-500 hover:bg-blue-600 shadow-md"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+            onClick={handleSend}
+            disabled={disabled || isSending}
+          >
+            {isSending ? (
+              <Loader2 size={16} className="text-white animate-spin" />
+            ) : (
+              <SendHorizontal size={16} className="text-white" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

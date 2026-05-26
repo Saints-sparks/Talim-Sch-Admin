@@ -1,8 +1,9 @@
 // services/chatServices.ts
 import { apiClient } from '@/lib/apiClient';
-import { 
-  ChatRoom, 
-  ChatMessage, 
+import {
+  ChatRoom,
+  ChatMessage,
+  ChatAttachment,
   CreateChatRoomDto,
   CreateGroupChatDto,
   SendMessageDto,
@@ -78,6 +79,7 @@ class ChatService {
       readBy: message?.readBy || [],
       type: message?.type || 'text',
       duration: message?.duration,
+      attachments: message?.attachments,
       createdAt: new Date(createdAt),
       updatedAt: new Date(updatedAt),
     };
@@ -651,23 +653,51 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
  */
 async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom> {
   try {
-    // Fix: Use the correct endpoint path
     const response = await apiClient.post(
-      `${this.baseUrl}/rooms/${roomId}/participants/batch`,  // ✅ Added /participants/batch
+      `${this.baseUrl}/rooms/${roomId}/participants/batch`,
       { participantIds: userIds }
     );
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to add participants');
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error in addParticipantsToRoom:', error);
     throw error;
   }
 }
+
+  /**
+   * Upload a file attachment for a chat message
+   * POST /upload/chat-attachment
+   */
+  async uploadChatAttachment(file: File): Promise<ChatAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Use request() directly — do NOT set Content-Type so browser adds multipart boundary
+    const response = await apiClient.request('/upload/chat-attachment', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await this.extractErrorMessage(response);
+      throw new Error(`Upload failed: ${err}`);
+    }
+
+    const data = await response.json();
+    return {
+      url: data.url,
+      name: data.name || file.name,
+      mimeType: data.mimeType || file.type,
+      size: data.size || file.size,
+      type: data.type || (file.type.startsWith('image/') ? 'image' : file.type.startsWith('audio/') ? 'audio' : 'file'),
+    };
+  }
 }
 
 export const chatService = new ChatService();

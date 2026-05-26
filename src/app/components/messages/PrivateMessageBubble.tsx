@@ -1,22 +1,31 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Download, FileText, ImageIcon } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
+interface Attachment {
+  url: string;
+  type: string;
+  name: string;
+  mimeType?: string;
+  duration?: number;
+}
+
 interface MessageBubbleProps {
   msg: {
-    senderType: string; // 'self' or 'me' for current user, 'other' for others
+    senderType: string;
     avatar: string;
     sender: string;
     color: string;
     type: string;
     text?: string;
     videoThumbnail?: string;
-    duration?: string;
+    duration?: string | number;
     time: string;
-    initials?: string; // Add initials field
+    initials?: string;
+    attachments?: Attachment[];
   };
   index: number;
   openSubMenu: { index: number; type: string } | null;
@@ -31,14 +40,61 @@ export default function MessageBubble({
   toggleSubMenu,
   setReplyingMessage,
 }: MessageBubbleProps) {
-  // Check if message is from current user (self/me)
   const isCurrentUser = msg.senderType === "self" || msg.senderType === "me";
-  
-  // Get initials - either from props or generate from sender name
   const initials = msg.initials || getUserInitials(msg.sender);
-  
-  // Generate or use provided color
   const bgColor = msg.color || generateColorFromString(msg.sender);
+  const attachment = msg.attachments?.[0];
+
+  const renderContent = () => {
+    if (msg.type === "audio" || msg.type === "voice") {
+      return (
+        <AudioMessage
+          sender={isCurrentUser ? "me" : msg.sender}
+          audioUrl={attachment?.url}
+          duration={typeof attachment?.duration === "number" ? attachment.duration : undefined}
+        />
+      );
+    }
+
+    if (msg.type === "image" && attachment?.url) {
+      return (
+        <div>
+          <img
+            src={attachment.url}
+            alt={attachment.name || "Image"}
+            className="rounded-lg max-w-[220px] max-h-[220px] object-cover"
+          />
+          {msg.text && (
+            <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (msg.type === "file" && attachment?.url) {
+      return (
+        <a
+          href={attachment.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          download={attachment.name}
+          className={`flex items-center gap-2 text-sm underline-offset-2 hover:underline ${
+            isCurrentUser ? "text-white" : "text-blue-600"
+          }`}
+        >
+          <FileText size={16} className="flex-shrink-0" />
+          <span className="truncate max-w-[160px]">{attachment.name || "File"}</span>
+          <Download size={14} className="flex-shrink-0 ml-auto" />
+        </a>
+      );
+    }
+
+    return (
+      <p className="text-sm sm:text-base leading-relaxed break-words">
+        {msg.text}
+      </p>
+    );
+  };
 
   return (
     <div
@@ -49,12 +105,11 @@ export default function MessageBubble({
       <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${
         isCurrentUser ? "flex-row-reverse" : "flex-row"
       }`}>
-        {/* Avatar - only show for other users, not self */}
         {!isCurrentUser && (
           <div className="relative w-8 h-8 flex-shrink-0 self-end mb-1">
             <Avatar className="w-8 h-8 rounded-full">
               <AvatarImage src={msg.avatar} />
-              <AvatarFallback 
+              <AvatarFallback
                 className="text-white font-medium text-xs"
                 style={{ backgroundColor: bgColor }}
               >
@@ -64,18 +119,13 @@ export default function MessageBubble({
           </div>
         )}
 
-        {/* Message Content */}
-        <div className={`flex flex-col ${
-          isCurrentUser ? "items-end" : "items-start"
-        }`}>
-          {/* Sender Name - only show for other users in group chats */}
+        <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
           {!isCurrentUser && (
             <span className="text-xs text-gray-600 mb-1 ml-1 font-medium">
               {msg.sender}
             </span>
           )}
-          
-          {/* Message Bubble */}
+
           <Card
             className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative ${
               isCurrentUser
@@ -90,28 +140,14 @@ export default function MessageBubble({
               toggleSubMenu={toggleSubMenu}
               setReplyingMessage={setReplyingMessage}
             />
-
-            {msg.type === "text" ? (
-              <p className="text-sm sm:text-base leading-relaxed break-words">
-                {msg.text}
-              </p>
-            ) : msg.type === "audio" ? (
-              <AudioMessage sender={msg.sender} />
-            ) : (
-              <p className="text-sm sm:text-base leading-relaxed break-words">
-                {msg.text}
-              </p>
-            )}
+            {renderContent()}
           </Card>
 
-          {/* Time and Status */}
           <div className={`flex items-center gap-1 text-xs text-gray-400 mt-1 px-1 ${
             isCurrentUser ? "flex-row-reverse" : "flex-row"
           }`}>
             <span>{msg.time}</span>
-            {isCurrentUser && (
-              <CheckCheck size={12} className="text-blue-400" />
-            )}
+            {isCurrentUser && <CheckCheck size={12} className="text-blue-400" />}
           </div>
         </div>
       </div>

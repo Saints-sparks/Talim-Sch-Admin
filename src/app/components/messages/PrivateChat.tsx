@@ -9,6 +9,15 @@ import MessageBubble from "./PrivateMessageBubble";
 import ReplyPreview from "./ReplyPreview";
 import { Loader2, MessageCircle } from "lucide-react";
 import { chatService } from '@/services/chatServices';
+import { toast } from "@/components/CustomToast";
+
+interface MsgAttachment {
+  url: string;
+  type: string;
+  name: string;
+  mimeType?: string;
+  duration?: number;
+}
 
 // Define the message structure for our UI
 interface Message {
@@ -28,6 +37,7 @@ interface Message {
   color?: string;
   roomId?: string;
   replyTo?: string;
+  attachments?: MsgAttachment[];
 }
 
 interface PrivateChatProps {
@@ -225,15 +235,16 @@ const messages = useMemo(() => {
         senderId: senderId,
         text: msg.text || msg.content || '',
         content: msg.content || msg.text || '',
-        time: new Date(msg.createdAt).toLocaleTimeString([], 
+        time: new Date(msg.createdAt).toLocaleTimeString([],
           { hour: '2-digit', minute: '2-digit' }
         ),
         createdAt: msg.createdAt,
         timestamp: msg.createdAt,
         type: msg.type || 'text',
-        senderType: isMyMessage ? 'self' : 'other',  // 'self' for right side, 'other' for left side
+        senderType: isMyMessage ? 'self' : 'other',
         color: isMyMessage ? 'bg-blue-500' : 'bg-gray-500',
         avatar: senderAvatar,
+        attachments: (msg as any).attachments,
       };
     })
     .sort((a, b) => 
@@ -298,25 +309,14 @@ const messages = useMemo(() => {
 
 // Handle sending a new message
 const handleSendMessage = useCallback(async () => {
-  if (!messageInput.trim() || !currentRoom || isSending) {
-    console.log('Cannot send:', { 
-      hasMessage: !!messageInput.trim(), 
-      hasCurrentRoom: !!currentRoom, 
-      isSending 
-    });
-    return;
-  }
+  if (!messageInput.trim() || !currentRoom || isSending) return;
 
   setIsSending(true);
-  
   try {
-    console.log('📤 Sending message:', messageInput.trim());
-    
     await sendMessage({
       chatRoomId: currentRoom._id,
-      text: messageInput.trim(),  // Backend expects 'text' field
+      text: messageInput.trim(),
     });
-    
     setMessageInput('');
   } catch (error) {
     console.error('Error sending message:', error);
@@ -324,6 +324,44 @@ const handleSendMessage = useCallback(async () => {
     setIsSending(false);
   }
 }, [messageInput, currentRoom, isSending, sendMessage]);
+
+const handleSendFile = useCallback(async (file: File) => {
+  if (!currentRoom || isSending) return;
+  setIsSending(true);
+  try {
+    const uploaded = await chatService.uploadChatAttachment(file);
+    const msgType = file.type.startsWith('image/') ? 'image' : 'file';
+    await sendMessage({
+      chatRoomId: currentRoom._id,
+      text: '',
+      attachments: [{ ...uploaded, type: msgType }],
+    });
+  } catch (err) {
+    console.error('File send failed', err);
+    toast.error('Failed to send file');
+  } finally {
+    setIsSending(false);
+  }
+}, [currentRoom, isSending, sendMessage]);
+
+const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => {
+  if (!currentRoom || isSending) return;
+  setIsSending(true);
+  try {
+    const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+    const uploaded = await chatService.uploadChatAttachment(file);
+    await sendMessage({
+      chatRoomId: currentRoom._id,
+      text: '',
+      attachments: [{ ...uploaded, type: 'audio', duration: durationSecs }],
+    });
+  } catch (err) {
+    console.error('Voice send failed', err);
+    toast.error('Failed to send voice note');
+  } finally {
+    setIsSending(false);
+  }
+}, [currentRoom, isSending, sendMessage]);
 
   // Handle load more messages (scroll to top)
   const handleLoadMore = useCallback(async () => {
@@ -550,13 +588,14 @@ const handleSendMessage = useCallback(async () => {
                   msg={{
                     sender: msg.sender,
                     text: msg.text || msg.content || '',
-                    time: msg.time || new Date(msg.createdAt || '').toLocaleTimeString([], 
+                    time: msg.time || new Date(msg.createdAt || '').toLocaleTimeString([],
                       { hour: '2-digit', minute: '2-digit' }
                     ),
                     type: msg.type,
                     senderType: msg.senderType,
                     avatar: msg.avatar || '',
                     color: msg.color || 'blue',
+                    attachments: msg.attachments,
                   }}
                   index={index}
                   openSubMenu={openSubMenu}
@@ -579,14 +618,17 @@ const handleSendMessage = useCallback(async () => {
         />
       )}
       
-      <MessageInput 
+      <MessageInput
         value={messageInput}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessageInput(e.target.value)}
         onSend={handleSendMessage}
-        disabled={!room || isSending || isLoading}
+        onSendFile={handleSendFile}
+        onSendVoice={handleSendVoice}
+        disabled={!room || isLoading}
+        isSending={isSending}
         placeholder={
-          !room 
-            ? "Select a chat to start messaging" 
+          !room
+            ? "Select a chat to start messaging"
             : isLoading
             ? "Loading messages..."
             : "Type a message..."

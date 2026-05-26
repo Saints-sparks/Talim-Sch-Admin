@@ -14,6 +14,14 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { toast } from "@/components/CustomToast";
 
+interface MsgAttachment {
+  url: string;
+  type: string;
+  name: string;
+  mimeType?: string;
+  duration?: number;
+}
+
 interface Message {
   _id?: string;
   sender: string;
@@ -31,6 +39,7 @@ interface Message {
   replyTo?: string;
   videoThumbnail?: string;
   duration?: string;
+  attachments?: MsgAttachment[];
 }
 
 interface GroupChatProps {
@@ -521,6 +530,7 @@ export default function GroupChat({
         color: generateColorFromString(senderName || senderId),
         avatar: senderAvatar,
         initials: getUserAvatarInitials(senderId, senderName),
+        attachments: (msg as any).attachments,
       };
     }).sort((a, b) => 
       new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
@@ -541,19 +551,10 @@ export default function GroupChat({
   // Handle sending a new message
   const handleSendMessage = useCallback(async () => {
     const trimmedMessage = messageInput.trim();
-    if (!trimmedMessage || !roomId || isSending) {
-      console.log('Cannot send:', { 
-        hasMessage: !!trimmedMessage, 
-        hasRoomId: !!roomId, 
-        isSending 
-      });
-      return;
-    }
+    if (!trimmedMessage || !roomId || isSending) return;
 
-    // Check if user is a participant
     if (isParticipant === false) {
       toast.error('You are not a participant in this group');
-      console.error('Cannot send message: User is not a participant');
       return;
     }
 
@@ -574,29 +575,13 @@ export default function GroupChat({
       updatedAt: new Date(),
     };
 
-    // Show outgoing message instantly in this chat view
     addMessage(optimisticMessage as any);
     setMessageInput("");
-    
+
     try {
-      console.log("📤 Sending group message:", {
-        roomId,
-        text: trimmedMessage,
-        userId: currentUserInfo.id
-      });
-      
-      const result = await sendMessage({
-        chatRoomId: roomId,
-        text: trimmedMessage,
-      });
-      
+      const result = await sendMessage({ chatRoomId: roomId, text: trimmedMessage });
       if (result) {
-        console.log("✅ Message sent successfully:", result);
-        // Reconcile optimistic message with backend-confirmed message
-        updateMessage(optimisticId, {
-          ...result,
-          _id: result._id,
-        } as any);
+        updateMessage(optimisticId, { ...result, _id: result._id } as any);
       } else {
         throw new Error('Failed to send message');
       }
@@ -620,6 +605,92 @@ export default function GroupChat({
     updateMessage,
     removeMessage,
   ]);
+
+  const handleSendFile = useCallback(async (file: File) => {
+    if (!roomId || isSending || isParticipant === false) return;
+    setIsSending(true);
+
+    const msgType = file.type.startsWith('image/') ? 'image' : 'file';
+    const optimisticId = `temp-${Date.now()}`;
+    const localUrl = URL.createObjectURL(file);
+    addMessage({
+      _id: optimisticId,
+      senderId: currentUserInfo.id,
+      senderName: currentUserInfo.name || 'You',
+      senderAvatar: user?.userAvatar,
+      content: '',
+      roomId,
+      isRead: false,
+      readBy: [],
+      type: msgType,
+      attachments: [{ url: localUrl, type: msgType, name: file.name }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+
+    try {
+      const uploaded = await chatService.uploadChatAttachment(file);
+      const result = await sendMessage({
+        chatRoomId: roomId,
+        text: '',
+        attachments: [{ ...uploaded, type: msgType }],
+      });
+      if (result) {
+        updateMessage(optimisticId, { ...result, _id: result._id } as any);
+      } else {
+        throw new Error('Failed to send');
+      }
+    } catch (err) {
+      removeMessage(optimisticId);
+      console.error('File send failed', err);
+      toast.error('Failed to send file');
+    } finally {
+      setIsSending(false);
+      URL.revokeObjectURL(localUrl);
+    }
+  }, [roomId, isSending, isParticipant, sendMessage, currentUserInfo, addMessage, updateMessage, removeMessage]);
+
+  const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => {
+    if (!roomId || isSending || isParticipant === false) return;
+    setIsSending(true);
+
+    const optimisticId = `temp-${Date.now()}`;
+    addMessage({
+      _id: optimisticId,
+      senderId: currentUserInfo.id,
+      senderName: currentUserInfo.name || 'You',
+      senderAvatar: user?.userAvatar,
+      content: '',
+      roomId,
+      isRead: false,
+      readBy: [],
+      type: 'audio',
+      attachments: [{ url: '', type: 'audio', name: 'Voice note', duration: durationSecs }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+
+    try {
+      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+      const uploaded = await chatService.uploadChatAttachment(file);
+      const result = await sendMessage({
+        chatRoomId: roomId,
+        text: '',
+        attachments: [{ ...uploaded, type: 'audio', duration: durationSecs }],
+      });
+      if (result) {
+        updateMessage(optimisticId, { ...result, _id: result._id } as any);
+      } else {
+        throw new Error('Failed to send');
+      }
+    } catch (err) {
+      removeMessage(optimisticId);
+      console.error('Voice send failed', err);
+      toast.error('Failed to send voice note');
+    } finally {
+      setIsSending(false);
+    }
+  }, [roomId, isSending, isParticipant, sendMessage, currentUserInfo, addMessage, updateMessage, removeMessage]);
 
   // Handle scroll for pagination
   const handleScroll = useCallback(() => {
@@ -778,6 +849,7 @@ export default function GroupChat({
                     ...msg,
                     senderType: msg.senderType,
                     initials: msg.initials,
+                    attachments: msg.attachments,
                   }}
                   index={idx}
                   openSubMenu={openSubMenu}
@@ -803,15 +875,15 @@ export default function GroupChat({
         value={messageInput}
         onChange={(e) => setMessageInput(e.target.value)}
         onSend={handleSendMessage}
-        disabled={!roomId || isSending || isParticipant === false || isParticipant === null}
+        onSendFile={handleSendFile}
+        onSendVoice={handleSendVoice}
+        disabled={!roomId || isParticipant === false || isParticipant === null}
         isSending={isSending}
         placeholder={
-          !roomId 
+          !roomId
             ? "Select a chat to start messaging"
             : isParticipant === false
             ? "You are not a participant in this group"
-            : isSending 
-            ? "Sending..." 
             : "Type a message..."
         }
       />

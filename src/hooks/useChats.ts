@@ -410,8 +410,10 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
 
   console.log('📤 Sending message with data:', JSON.stringify(messageData, null, 2));
 
-  // Don't send empty messages
-  if (!messageData.text?.trim()) {
+  // Require either text or attachments
+  const hasText = !!messageData.text?.trim();
+  const hasAttachments = (messageData.attachments?.length ?? 0) > 0;
+  if (!hasText && !hasAttachments) {
     console.warn('⚠️ Attempted to send empty message');
     toast.error('Cannot send empty message');
     return null;
@@ -419,9 +421,13 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
 
   // Get current user info
   const currentUserId = user?.userId || user?._id || '';
-  const currentUserName = user?.firstName && user?.lastName 
+  const currentUserName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`.trim()
     : user?.email || 'You';
+
+  const msgType = hasAttachments
+    ? (messageData.attachments![0].type || 'file')
+    : 'text';
 
   // Create optimistic message that matches the backend response format
   const optimisticMessage: ChatMessage = {
@@ -433,7 +439,8 @@ const sendMessage = useCallback(async (data: SendMessageDto): Promise<ChatMessag
     roomId: targetRoomId,
     isRead: false,
     readBy: [],
-    type: 'text',
+    type: msgType,
+    attachments: messageData.attachments,
     createdAt: new Date(),
     updatedAt: new Date()
   };

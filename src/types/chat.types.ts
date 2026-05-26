@@ -67,23 +67,29 @@ export interface ChatMessage {
   content: string;
   roomId: string;
   isRead: boolean;
-  readBy: string[];  // If backend returns array of user IDs (strings)
+  readBy: string[];
   type: string;
   duration?: number;
+  attachments?: ChatAttachment[];
   createdAt: Date;
   updatedAt: Date;
 }
 
+export interface ChatAttachment {
+  url: string;
+  type: string; // 'image' | 'audio' | 'file' | 'video'
+  name: string;
+  mimeType?: string;
+  size?: number;
+  duration?: number;
+}
+
 // DTO for sending messages - MUST match backend's CreateMessageDto
 export interface SendMessageDto {
-  chatRoomId: string;  // Must match backend expectation
-  text: string;        // Must match backend expectation
-  attachments?: Array<{
-    url: string;
-    type: string;
-    name: string;
-    size?: number;
-  }>;
+  chatRoomId: string;
+  text: string;
+  type?: string;
+  attachments?: ChatAttachment[];
 }
 
 export interface CreateChatRoomDto {
