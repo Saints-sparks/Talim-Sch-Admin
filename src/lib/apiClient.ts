@@ -18,6 +18,15 @@ class ApiClient {
     this.accessToken = token;
   }
 
+  private getStoredAccessToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return (
+      this.accessToken ||
+      localStorage.getItem("accessToken") ||
+      sessionStorage.getItem("accessToken")
+    );
+  }
+
   setRefreshCallback(callback: () => Promise<boolean>) {
     this.refreshCallback = callback;
   }
@@ -91,10 +100,12 @@ class ApiClient {
     const fullUrl = this.buildUrl(url);
     
     // Add Authorization header if token exists
-    if (this.accessToken) {
+    const token = this.getStoredAccessToken();
+    if (token) {
+      if (!this.accessToken) this.accessToken = token;
       config.headers = {
         ...config.headers,
-        Authorization: `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${token}`,
       };
     }
 
@@ -112,10 +123,12 @@ class ApiClient {
 
         // Retry the original request with new token
         config._retry = true;
-        if (this.accessToken) {
+        const refreshedToken = this.getStoredAccessToken();
+        if (refreshedToken) {
+          if (!this.accessToken) this.accessToken = refreshedToken;
           config.headers = {
             ...config.headers,
-            Authorization: `Bearer ${this.accessToken}`,
+            Authorization: `Bearer ${refreshedToken}`,
           };
         }
 
