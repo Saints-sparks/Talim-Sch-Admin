@@ -59,9 +59,10 @@ const srcConfig: Record<string, { label: string; icon: React.ReactNode; pill: st
 
 const isPaymentNotification = (n: AdminNotification) => {
   const lower = `${n.title} ${n.message}`.toLowerCase();
+  const cat = n.category as string;
   return (
-    n.category === "fees" ||
-    n.category === "payments" ||
+    cat === "fees" ||
+    cat === "payments" ||
     /payment|₦|\$|credited|wallet|fee paid|receipt/.test(lower)
   );
 };
