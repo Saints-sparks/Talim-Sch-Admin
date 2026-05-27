@@ -126,7 +126,6 @@ export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
     try {
       const [
         base,
-        summary,
         finance,
         academic,
         pendingActions,
@@ -134,13 +133,24 @@ export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
         announcements,
       ] = await Promise.all([
         getSchoolDashboard(schoolId).catch(() => null),
-        getDashboardSummary(schoolId, userId),
         getFinanceSummary(schoolId),
         getAcademicSummary(schoolId),
         getPendingActions(schoolId),
         getRecentPayments(schoolId),
         getRecentAnnouncements(schoolId, userId),
       ]);
+
+      const summary = await getDashboardSummary(
+        schoolId,
+        userId,
+        base
+          ? {
+              totalStudents: base.totalStudents,
+              totalTeachers: base.totalTeachers,
+              totalClasses: base.totalClasses,
+            }
+          : undefined
+      );
 
       setData({
         base,

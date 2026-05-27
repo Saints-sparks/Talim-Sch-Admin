@@ -188,7 +188,8 @@ export const getSchoolDashboard = async (
 // userId is used to fetch unread notification count.
 export const getDashboardSummary = async (
   schoolId: string,
-  userId?: string
+  userId?: string,
+  baseStats?: Pick<SchoolDashboardData, "totalStudents" | "totalTeachers" | "totalClasses">
 ): Promise<DashboardSummary | null> => {
   const [fees, wallet, unreadCount] = await Promise.all([
     safeGet<{
@@ -211,9 +212,22 @@ export const getDashboardSummary = async (
   const paid = fees?.paidAmount ?? 0;
 
   return {
-    students: { total: 0, active: 0, inactive: 0, trendPercent: 0 },
-    teachers: { total: 0, formTeachers: 0, trendPercent: 0 },
-    classes: { total: 0, capacityUtilization: 0, trendPercent: 0 },
+    students: {
+      total: baseStats?.totalStudents ?? 0,
+      active: baseStats?.totalStudents ?? 0,
+      inactive: 0,
+      trendPercent: 0,
+    },
+    teachers: {
+      total: baseStats?.totalTeachers ?? 0,
+      formTeachers: 0,
+      trendPercent: 0,
+    },
+    classes: {
+      total: baseStats?.totalClasses ?? 0,
+      capacityUtilization: 0,
+      trendPercent: 0,
+    },
     fees: {
       collectionRate:
         totalExpected > 0 ? (paid / totalExpected) * 100 : 0,
@@ -389,11 +403,16 @@ export const getRecentAnnouncements = async (
   userId?: string,
   limit = 5
 ): Promise<RecentAnnouncement[] | null> => {
-  if (!userId) return [];
-
-  const res = await safeGet<{ data: any[]; meta: any }>(
-    `/notifications/announcements/sender/${userId}?page=1&limit=${limit}&status=PUBLISHED`
+  const bySchool = await safeGet<{ data: any[]; meta: any }>(
+    `/notifications/announcements/school/${schoolId}?page=1&limit=${limit}&status=PUBLISHED`
   );
+  const bySender =
+    !bySchool?.data?.length && userId
+      ? await safeGet<{ data: any[]; meta: any }>(
+          `/notifications/announcements/sender/${userId}?page=1&limit=${limit}&status=PUBLISHED`
+        )
+      : null;
+  const res = bySchool?.data?.length ? bySchool : bySender;
   if (!res?.data?.length) return [];
 
   return res.data.map((a) => ({
