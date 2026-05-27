@@ -97,6 +97,8 @@ export const useWebSocket = (): WebSocketContextType => {
   const lastRetryTimeRef = useRef<number>(0);
   const isInCooldownRef = useRef<boolean>(false);
   const cooldownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastDisconnectToastAtRef = useRef<number>(0);
+  const disconnectToastCooldownMs = 10000;
 
   const MAX_RETRY_ATTEMPTS = 3;
   const COOLDOWN_DURATION = 60000; // 1 minute in milliseconds
@@ -239,7 +241,6 @@ export const useWebSocket = (): WebSocketContextType => {
             );
             setIsConnected(true);
             setConnectionStatus("connected");
-            toast.success("Connected to real-time services");
 
             // Reset retry logic on successful connection
             resetRetryLogic();
@@ -281,7 +282,11 @@ export const useWebSocket = (): WebSocketContextType => {
 
             // Don't show toast for intentional disconnections
             if (reason !== "io client disconnect") {
-              toast.error("Connection lost");
+              const now = Date.now();
+              if (now - lastDisconnectToastAtRef.current > disconnectToastCooldownMs) {
+                toast.error("Connection lost");
+                lastDisconnectToastAtRef.current = now;
+              }
 
               // Attempt to reconnect after a delay only if we haven't exceeded max attempts
               if (

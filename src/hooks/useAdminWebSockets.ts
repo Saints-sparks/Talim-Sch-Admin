@@ -200,6 +200,8 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
   const lastFetchTimeRef = useRef<number>(0);
   const fetchCooldownMs = 2000; // 2 seconds cooldown between fetches
   const isFetchingRef = useRef<boolean>(false);
+  const lastDisconnectToastAtRef = useRef<number>(0);
+  const disconnectToastCooldownMs = 10000;
 
   // Connect to WebSocket
   const connect = useCallback((userId: string, schoolId?: string) => {
@@ -235,7 +237,6 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
       socket.on("connect", () => {
         setIsConnected(true);
         setConnectionStatus("connected");
-        toast.success("Connected to admin real-time services");
 
         // Clear any pending reconnection attempts
         if (reconnectTimeoutRef.current) {
@@ -265,7 +266,11 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
 
         // Don't show toast for intentional disconnections
         if (reason !== "io client disconnect") {
-          toast.error("Connection lost");
+          const now = Date.now();
+          if (now - lastDisconnectToastAtRef.current > disconnectToastCooldownMs) {
+            toast.error("Connection lost");
+            lastDisconnectToastAtRef.current = now;
+          }
 
           // Attempt to reconnect after a delay
           if (userIdRef.current && reason !== "io server disconnect") {
@@ -284,8 +289,8 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
 
       // Reconnection events
       socket.on("reconnect", (attemptNumber) => {
-        toast.success("Reconnected to real-time services");
-        
+        // Silent success: avoid noisy "connected" toasts
+
         // Re-join admin room after reconnection
         if (userIdRef.current) {
           socket.emit("join-admin-room", { 
