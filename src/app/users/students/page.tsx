@@ -251,7 +251,7 @@ const StudentPage: React.FC = () => {
             {currentStudents.map((student, index) => (
               <motion.div
                 key={student._id}
-                className="bg-white rounded-2xl w-[266px] h-[250px] border border-[#F0F0F0] p-6 flex flex-col items-center"
+                className="bg-white rounded-2xl w-[266px] border border-[#F0F0F0] p-6 flex flex-col items-center"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03, duration: 0.2 }}
@@ -260,9 +260,10 @@ const StudentPage: React.FC = () => {
                   src={student.userId.userAvatar}
                   firstName={student.userId.firstName}
                   lastName={student.userId.lastName}
-                  className="w-[80px] h-[80px]"
+                  className="w-[80px] h-[80px] flex-shrink-0"
                 />
-                <div className="mt-4 text-center leading-[120%]">
+                {/* flex-1 + flex-col so the button always sits at the bottom */}
+                <div className="mt-4 text-center leading-[120%] flex flex-col items-center flex-1 w-full">
                   <div className="font-semibold text-[15px]">
                     {student.userId.firstName} {student.userId.lastName}
                   </div>
@@ -279,7 +280,7 @@ const StudentPage: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleViewProfile(student._id)}
-                    className="mt-4 w-full bg-[#F2F2F2] border border-[#E0E0E0] hover:border-blue-400 font-semibold py-2 rounded-xl transition-colors text-sm"
+                    className="mt-auto pt-4 w-full bg-[#F2F2F2] border border-[#E0E0E0] hover:border-blue-400 font-semibold py-2 rounded-xl transition-colors text-sm"
                   >
                     View Profile
                   </button>

@@ -29,6 +29,7 @@ import {
   BookMarked,
   BarChart3,
   AlertCircle,
+  ShieldAlert,
   HandCoins,
   WalletCards,
   BellRing,
@@ -47,6 +48,8 @@ import {
 } from "recharts";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/lib/permissions";
 import { useEnhancedDashboard } from "@/hooks/useDashboard";
 import { useTheme } from "@/providers/theme-provider";
 import { cn } from "@/lib/utils";
@@ -154,12 +157,68 @@ function PanelSkeleton({ minH = 280 }: { minH?: number }) {
   );
 }
 
+// ==================== Sub-admin Access Banner ====================
+
+function SubAdminBanner({ permissions }: { permissions: string[] }) {
+  const LABEL_MAP: Record<string, string> = {
+    "manage:classes":        "Classes",
+    "manage:curriculum":     "Curriculum",
+    "manage:assessments":    "Assessments",
+    "manage:timetable":      "Timetable",
+    "manage:fees":           "Fees",
+    "manage:payments":       "Payments",
+    "manage:finance":        "Finance",
+    "manage:students":       "Students",
+    "manage:teachers":       "Teachers",
+    "manage:parents":        "Parents",
+    "manage:announcements":  "Announcements",
+    "manage:leave_requests": "Leave Requests",
+    "manage:transit":        "Transit",
+    "manage:messages":       "Messages",
+    "manage:settings":       "Settings",
+  };
+
+  if (permissions.length === 0) {
+    return (
+      <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800/40 px-4 py-3 flex items-center gap-3">
+        <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          Your account has no permissions assigned yet. Contact your school administrator to grant you access.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/10 px-4 py-3">
+      <div className="flex items-center gap-2 mb-2">
+        <ShieldAlert className="w-4 h-4 text-[#003366] dark:text-blue-400" />
+        <p className="text-xs font-semibold text-[#003366] dark:text-blue-400 uppercase tracking-wide">
+          Sub-Administrator · Your Access
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {permissions.map((p) => (
+          <span
+            key={p}
+            className="text-xs bg-[#003366]/10 dark:bg-blue-900/30 text-[#003366] dark:text-blue-300 px-2 py-0.5 rounded-full font-medium"
+          >
+            {LABEL_MAP[p] ?? p}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ==================== Section 1: KPI Cards ====================
 
 interface KpiCardsProps {
   base: SchoolDashboardData | null;
   summary: DashboardSummary | null;
   isLoading: boolean;
+  hasPermission: (p: string) => boolean;
+  isFullAdmin: boolean;
 }
 
 interface KpiCardDef {
@@ -171,9 +230,10 @@ interface KpiCardDef {
   icon: React.ReactNode;
   iconCls: string;
   href: string;
+  permission?: string; // undefined = always show
 }
 
-function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
+function KpiCards({ base, summary, isLoading, hasPermission, isFullAdmin }: KpiCardsProps) {
   const router = useRouter();
 
   if (isLoading) {
@@ -186,7 +246,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
     );
   }
 
-  const cards: KpiCardDef[] = [
+  const allCards: KpiCardDef[] = [
     {
       label: "Total Students",
       value: (summary?.students.total ?? base?.totalStudents ?? 0).toLocaleString(),
@@ -196,6 +256,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <UserRound className="w-4 h-4" />,
       iconCls: "bg-blue-50 text-[#003366] dark:bg-blue-900/20 dark:text-blue-400",
       href: "/users/students",
+      permission: Permission.MANAGE_STUDENTS,
     },
     {
       label: "Total Teachers",
@@ -205,6 +266,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <UserCog className="w-4 h-4" />,
       iconCls: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
       href: "/users/teachers",
+      permission: Permission.MANAGE_TEACHERS,
     },
     {
       label: "Total Classes",
@@ -214,6 +276,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <School className="w-4 h-4" />,
       iconCls: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
       href: "/classes",
+      permission: Permission.MANAGE_CLASSES,
     },
     {
       label: "Fee Collection Rate",
@@ -224,6 +287,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <HandCoins className="w-4 h-4" />,
       iconCls: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
       href: "/fees-management",
+      permission: Permission.MANAGE_FEES,
     },
     {
       label: "Wallet Balance",
@@ -231,6 +295,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <WalletCards className="w-4 h-4" />,
       iconCls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
       href: "/finance",
+      permission: Permission.MANAGE_FINANCE,
     },
     {
       label: "Notifications",
@@ -241,8 +306,24 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       icon: <BellRing className="w-4 h-4" />,
       iconCls: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400",
       href: "/messages",
+      // Notifications are always visible
     },
   ];
+
+  // Full admins see all cards; sub-admins only see cards they have permission for
+  const cards = allCards.filter(
+    (c) => !c.permission || isFullAdmin || hasPermission(c.permission)
+  );
+
+  if (cards.length === 0) {
+    return (
+      <div className="mb-6 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-center">
+        <p className="text-sm text-gray-400 dark:text-slate-500">
+          No metrics available for your current permissions.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
@@ -283,9 +364,17 @@ interface FinancialSnapshotProps {
   finance: FinanceSummary | null;
   isLoading: boolean;
   isDark: boolean;
+  hasPermission: (p: string) => boolean;
+  isFullAdmin: boolean;
 }
 
-function FinancialSnapshot({ finance, isLoading, isDark }: FinancialSnapshotProps) {
+function FinancialSnapshot({ finance, isLoading, isDark, hasPermission, isFullAdmin }: FinancialSnapshotProps) {
+  const canViewFinance = isFullAdmin ||
+    hasPermission(Permission.MANAGE_FEES) ||
+    hasPermission(Permission.MANAGE_FINANCE) ||
+    hasPermission(Permission.MANAGE_PAYMENTS);
+
+  if (!canViewFinance) return null;
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
@@ -464,9 +553,18 @@ interface AcademicActivityProps {
   academic: AcademicSummary | null;
   base: SchoolDashboardData | null;
   isLoading: boolean;
+  hasPermission: (p: string) => boolean;
+  isFullAdmin: boolean;
 }
 
-function AcademicActivity({ academic, base, isLoading }: AcademicActivityProps) {
+function AcademicActivity({ academic, base, isLoading, hasPermission, isFullAdmin }: AcademicActivityProps) {
+  const canViewAcademics = isFullAdmin ||
+    hasPermission(Permission.MANAGE_CLASSES) ||
+    hasPermission(Permission.MANAGE_CURRICULUM) ||
+    hasPermission(Permission.MANAGE_ASSESSMENTS) ||
+    hasPermission(Permission.MANAGE_TIMETABLE);
+
+  if (!canViewAcademics) return null;
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -546,7 +644,8 @@ function AcademicActivity({ academic, base, isLoading }: AcademicActivityProps) 
         )}
       </div>
 
-      {/* Assessments Overview */}
+      {/* Assessments Overview — only if user can manage assessments */}
+      {(isFullAdmin || hasPermission(Permission.MANAGE_ASSESSMENTS)) && (
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
@@ -594,8 +693,10 @@ function AcademicActivity({ academic, base, isLoading }: AcademicActivityProps) 
           <EmptyState message="No assessment data" compact />
         )}
       </div>
+      )}
 
-      {/* Top Classes by Enrollment */}
+      {/* Top Classes by Enrollment — only if user can manage classes */}
+      {(isFullAdmin || hasPermission(Permission.MANAGE_CLASSES)) && (
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
@@ -632,6 +733,7 @@ function AcademicActivity({ academic, base, isLoading }: AcademicActivityProps) 
           <EmptyState message="No enrollment data" compact />
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -641,9 +743,11 @@ function AcademicActivity({ academic, base, isLoading }: AcademicActivityProps) 
 interface PendingActionsProps {
   pendingActions: PendingActionsData | null;
   isLoading: boolean;
+  hasPermission: (p: string) => boolean;
+  isFullAdmin: boolean;
 }
 
-function PendingActionsSection({ pendingActions, isLoading }: PendingActionsProps) {
+function PendingActionsSection({ pendingActions, isLoading, hasPermission, isFullAdmin }: PendingActionsProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -675,6 +779,7 @@ function PendingActionsSection({ pendingActions, isLoading }: PendingActionsProp
       iconCls: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
       borderCls: "border-red-100 dark:border-red-900/30",
       linkCls: "text-red-600 dark:text-red-400",
+      permission: Permission.MANAGE_TRANSIT,
     },
     {
       key: "leave",
@@ -686,6 +791,7 @@ function PendingActionsSection({ pendingActions, isLoading }: PendingActionsProp
       iconCls: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
       borderCls: "border-amber-100 dark:border-amber-900/30",
       linkCls: "text-amber-600 dark:text-amber-400",
+      permission: Permission.MANAGE_LEAVE_REQUESTS,
     },
     {
       key: "promotions",
@@ -697,6 +803,7 @@ function PendingActionsSection({ pendingActions, isLoading }: PendingActionsProp
       iconCls: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
       borderCls: "border-orange-100 dark:border-orange-900/30",
       linkCls: "text-orange-600 dark:text-orange-400",
+      permission: Permission.MANAGE_TRANSIT,
     },
     {
       key: "unenrolled",
@@ -708,8 +815,9 @@ function PendingActionsSection({ pendingActions, isLoading }: PendingActionsProp
       iconCls: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
       borderCls: "border-slate-200 dark:border-slate-700",
       linkCls: "text-slate-600 dark:text-slate-400",
+      permission: Permission.MANAGE_STUDENTS,
     },
-  ].filter((a) => a.count > 0);
+  ].filter((a) => a.count > 0 && (isFullAdmin || hasPermission(a.permission)));
 
   if (actions.length === 0) return null;
 
@@ -898,14 +1006,20 @@ function RecentActivity({ payments, announcements, isLoading }: RecentActivityPr
 
 // ==================== Section 6: Quick Links ====================
 
-function QuickLinks() {
-  const links = [
+interface QuickLinksProps {
+  hasPermission: (p: string) => boolean;
+  isFullAdmin: boolean;
+}
+
+function QuickLinks({ hasPermission, isFullAdmin }: QuickLinksProps) {
+  const allLinks = [
     {
       label: "Students",
       sub: "Manage students",
       icon: <Users className="w-5 h-5" />,
       href: "/users/students",
       cls: "bg-blue-50 text-[#003366] dark:bg-blue-900/20 dark:text-blue-400",
+      permission: Permission.MANAGE_STUDENTS,
     },
     {
       label: "Classes",
@@ -913,6 +1027,7 @@ function QuickLinks() {
       icon: <School className="w-5 h-5" />,
       href: "/classes",
       cls: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+      permission: Permission.MANAGE_CLASSES,
     },
     {
       label: "Teachers",
@@ -920,6 +1035,7 @@ function QuickLinks() {
       icon: <GraduationCap className="w-5 h-5" />,
       href: "/users/teachers",
       cls: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+      permission: Permission.MANAGE_TEACHERS,
     },
     {
       label: "Fees",
@@ -927,6 +1043,7 @@ function QuickLinks() {
       icon: <Receipt className="w-5 h-5" />,
       href: "/fees-management",
       cls: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
+      permission: Permission.MANAGE_FEES,
     },
     {
       label: "Assessments",
@@ -934,6 +1051,7 @@ function QuickLinks() {
       icon: <ClipboardCheck className="w-5 h-5" />,
       href: "/assessments",
       cls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
+      permission: Permission.MANAGE_ASSESSMENTS,
     },
     {
       label: "Timetable",
@@ -941,6 +1059,7 @@ function QuickLinks() {
       icon: <CalendarDays className="w-5 h-5" />,
       href: "/timetable",
       cls: "bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400",
+      permission: Permission.MANAGE_TIMETABLE,
     },
     {
       label: "Finance",
@@ -948,6 +1067,7 @@ function QuickLinks() {
       icon: <Banknote className="w-5 h-5" />,
       href: "/finance",
       cls: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      permission: Permission.MANAGE_FINANCE,
     },
     {
       label: "Leave",
@@ -955,8 +1075,15 @@ function QuickLinks() {
       icon: <CalendarOff className="w-5 h-5" />,
       href: "/leave-requests",
       cls: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400",
+      permission: Permission.MANAGE_LEAVE_REQUESTS,
     },
   ];
+
+  const links = allLinks.filter(
+    (l) => isFullAdmin || hasPermission(l.permission)
+  );
+
+  if (links.length === 0) return null;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 mb-6">
@@ -1003,6 +1130,7 @@ function QuickLinks() {
 export default function Dashboard() {
   const router = useRouter();
   const { user } = useAuth();
+  const { hasPermission, isFullAdmin, isSubAdmin, permissions } = usePermissions();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const { data, isLoading, error, refresh } = useEnhancedDashboard();
@@ -1032,6 +1160,9 @@ export default function Dashboard() {
     );
   }
 
+  // Shorthand for passing RBAC props to every section
+  const rbac = { hasPermission, isFullAdmin };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1059,52 +1190,60 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions — only shown if the user has the relevant permission */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <button
-                onClick={() => router.push("/users/students")}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
-              >
-                <UserRoundPlus className="w-4 h-4" />
-                Add Student
-              </button>
-              <button
-                onClick={() => router.push("/fees-management/create")}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
-              >
-                <HandCoins className="w-4 h-4" />
-                Record Payment
-              </button>
-              <button
-                onClick={() => router.push("/announcements")}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[#003366] rounded-lg hover:bg-[#002244] transition-colors shadow-sm"
-              >
-                <Megaphone className="w-4 h-4" />
-                New Announcement
-              </button>
+              {(isFullAdmin || hasPermission(Permission.MANAGE_STUDENTS)) && (
+                <button
+                  onClick={() => router.push("/users/students")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                >
+                  <UserRoundPlus className="w-4 h-4" />
+                  Add Student
+                </button>
+              )}
+              {(isFullAdmin || hasPermission(Permission.MANAGE_FEES) || hasPermission(Permission.MANAGE_PAYMENTS)) && (
+                <button
+                  onClick={() => router.push("/fees-management/create")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                >
+                  <HandCoins className="w-4 h-4" />
+                  Record Payment
+                </button>
+              )}
+              {(isFullAdmin || hasPermission(Permission.MANAGE_ANNOUNCEMENTS)) && (
+                <button
+                  onClick={() => router.push("/announcements")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[#003366] rounded-lg hover:bg-[#002244] transition-colors shadow-sm"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  New Announcement
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── Onboarding Progress ────────────────────── */}
-        <div className="mb-6">
-          <SetupProgressWidget />
-        </div>
+        {/* ── Sub-admin access banner ────────────────── */}
+        {isSubAdmin && <SubAdminBanner permissions={permissions} />}
+
+        {/* ── Onboarding Progress (full admin only) ─── */}
+        {isFullAdmin && (
+          <div className="mb-6">
+            <SetupProgressWidget />
+          </div>
+        )}
 
         {/* ── KPI Cards ─────────────────────────────── */}
-        <KpiCards base={data.base} summary={data.summary} isLoading={isLoading} />
+        <KpiCards base={data.base} summary={data.summary} isLoading={isLoading} {...rbac} />
 
         {/* ── Financial Snapshot ────────────────────── */}
-        <FinancialSnapshot finance={data.finance} isLoading={isLoading} isDark={isDark} />
+        <FinancialSnapshot finance={data.finance} isLoading={isLoading} isDark={isDark} {...rbac} />
 
         {/* ── Academic Activity ─────────────────────── */}
-        <AcademicActivity academic={data.academic} base={data.base} isLoading={isLoading} />
+        <AcademicActivity academic={data.academic} base={data.base} isLoading={isLoading} {...rbac} />
 
         {/* ── Pending Actions ───────────────────────── */}
-        <PendingActionsSection
-          pendingActions={data.pendingActions}
-          isLoading={isLoading}
-        />
+        <PendingActionsSection pendingActions={data.pendingActions} isLoading={isLoading} {...rbac} />
 
         {/* ── Recent Activity ───────────────────────── */}
         <RecentActivity
@@ -1114,7 +1253,7 @@ export default function Dashboard() {
         />
 
         {/* ── Quick Links ───────────────────────────── */}
-        <QuickLinks />
+        <QuickLinks {...rbac} />
       </div>
     </div>
   );
