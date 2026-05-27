@@ -7,6 +7,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useWebSocketContext } from "@/context/WebSocketContext";
 import { chatService } from "@/services/chatServices";
 import {
@@ -45,7 +46,9 @@ interface MenuItem {
   hasDropdown?: boolean;
   expanded?: boolean;
   onClick?: (e: React.MouseEvent) => void;
-  subItems?: { path: string; label: string; tooltip: string }[];
+  subItems?: { path: string; label: string; tooltip: string; permission?: string }[];
+  /** Permission required to see this item. Full admins always see everything. */
+  permission?: string;
 }
 
 type SidebarProps = React.ComponentProps<"nav"> & {
@@ -60,6 +63,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const { user, logout } = useAuth();
+  const { hasPermission, isFullAdmin } = usePermissions();
   const { onUnreadMessagesUpdate } = useWebSocketContext();
   const { isMobile, isMobileOpen, setMobileOpen, isCollapsed, toggleCollapse } = useSidebar();
 
@@ -117,36 +121,41 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     };
   }, [user, onUnreadMessagesUpdate]);
 
-  const menuItems: MenuItem[] = [
+  const allMenuItems: MenuItem[] = [
     {
       path: "/dashboard",
       icon: <Dashboard isActive={pathname.startsWith("/dashboard")} />,
       label: "Dashboard",
       tooltip: "Dashboard",
+      // Dashboard is visible to all authenticated users
     },
     {
       path: "/classes",
       icon: <BookOpen isActive={pathname.startsWith("/classes")} />,
       label: "Classes",
       tooltip: "Classes",
+      permission: "MANAGE_CLASSES",
     },
     {
       path: "/curriculum",
       icon: <Note isActive={pathname.startsWith("/curriculum")} />,
       label: "Curriculum",
       tooltip: "Curriculum (Subjects & Courses)",
+      permission: "MANAGE_CURRICULUM",
     },
     {
       path: "/assessments",
       icon: <Chart2 isActive={pathname.startsWith("/assessments")} />,
       label: "Assessments",
       tooltip: "Assessments",
+      permission: "MANAGE_ASSESSMENTS",
     },
     {
       path: "/timetable",
       icon: <Calendar2 isActive={pathname.startsWith("/timetable")} />,
       label: "Timetable",
       tooltip: "Timetable",
+      permission: "MANAGE_TIMETABLE",
     },
     {
       path: "/fees-management",
@@ -162,6 +171,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Fees Management",
       tooltip: "Fees Management",
+      permission: "MANAGE_FEES",
     },
     {
       path: "/payments",
@@ -177,6 +187,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Payments",
       tooltip: "Payments",
+      permission: "MANAGE_PAYMENTS",
     },
     {
       path: "/finance",
@@ -192,6 +203,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Finance",
       tooltip: "Wallet & Withdrawals",
+      permission: "MANAGE_FINANCE",
     },
     {
       path: "/users",
@@ -208,19 +220,28 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         { path: "/users/students", label: "Students", tooltip: "Student Directory" },
         { path: "/users/teachers", label: "Teachers", tooltip: "Teacher Directory" },
         { path: "/users/parents", label: "Parents", tooltip: "Parent Directory" },
+        {
+          path: "/users/sub-admins",
+          label: "Sub-Admins",
+          tooltip: "Sub-Admin Management",
+          permission: "MANAGE_SUB_ADMINS",
+        },
       ],
+      permission: "MANAGE_STUDENTS",
     },
     {
       path: "/announcements",
       icon: <VolumeHigh isActive={pathname.startsWith("/announcements")} />,
       label: "Announcements",
       tooltip: "Announcements",
+      permission: "MANAGE_ANNOUNCEMENTS",
     },
     {
       path: "/leave-requests",
       icon: <ClipboardClose isActive={pathname.startsWith("/leave-requests")} />,
       label: "Leave Requests",
       tooltip: "Leave Requests",
+      permission: "MANAGE_LEAVE_REQUESTS",
     },
     {
       path: "/transit",
@@ -246,6 +267,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         { path: "/transit/enrollments", label: "Enrollments", tooltip: "Student Enrollments" },
         { path: "/transit/promotions", label: "Promotions", tooltip: "Class Promotions" },
       ],
+      permission: "MANAGE_TRANSIT",
     },
     {
       path: "/messages",
@@ -253,14 +275,22 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       label: "Messages",
       tooltip: "Messages",
       badge: unreadMessageCount,
+      permission: "MANAGE_MESSAGES",
     },
     {
       path: "/settings",
       icon: <Settings isActive={pathname.startsWith("/settings")} />,
       label: "Settings",
       tooltip: "Academic Year & Term Settings",
+      permission: "MANAGE_SETTINGS",
     },
   ];
+
+  // Filter items based on the current user's permissions.
+  // Full school_admin always sees everything (hasPermission always returns true).
+  const menuItems = allMenuItems.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  );
 
   const handleLinkClick = (itemPath?: string) => {
     if (itemPath && !itemPath.startsWith("/users") && expandedUsers) {
@@ -498,7 +528,9 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25, ease: "easeInOut" }}
                 >
-                  {item.subItems.map((subItem, subIndex) => (
+                  {item.subItems.filter(
+                    (sub) => !sub.permission || hasPermission(sub.permission)
+                  ).map((subItem, subIndex) => (
                     <motion.div
                       key={subItem.path}
                       initial={{ opacity: 0, x: -10 }}

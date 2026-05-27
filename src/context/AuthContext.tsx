@@ -12,6 +12,10 @@ import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 
+/** All roles allowed to access the school admin portal */
+const ADMIN_PORTAL_ROLES = ["school_admin", "school_sub_admin"] as const;
+type AdminPortalRole = (typeof ADMIN_PORTAL_ROLES)[number];
+
 interface User {
   _id?: string;
   userId: string;
@@ -31,6 +35,10 @@ interface User {
   className?: string | null;
   termId?: string;
   onboardingCompleted?: boolean;
+  /** Granular permissions — empty = full access (primary school_admin) */
+  permissions?: string[];
+  /** Convenience flag set by introspect */
+  isSubAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -38,6 +46,12 @@ interface AuthContextType {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** True when user is a primary school_admin (full access, no restrictions) */
+  isFullAdmin: boolean;
+  /** True when user is a sub-admin with a restricted permission set */
+  isSubAdmin: boolean;
+  /** Returns true if the current user is allowed to perform `permission` */
+  hasPermission: (permission: string) => boolean;
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -154,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.user?.role !== "school_admin") {
+        if (!ADMIN_PORTAL_ROLES.includes(data.user?.role as AdminPortalRole)) {
           throw new Error("Access denied for this portal");
         }
 
@@ -238,8 +252,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const introData = await introResponse.json();
       const userData = introData.user;
 
-      // Step 3: RBAC check — only school_admin may access this portal
-      if (userData.role !== "school_admin") {
+      // Step 3: RBAC check — only school_admin and school_sub_admin may access this portal
+      if (!ADMIN_PORTAL_ROLES.includes(userData.role as AdminPortalRole)) {
         const friendlyRole = userData.role.replace(/_/g, " ");
         throw new Error(
           `Access denied. This portal is for school administrators only. ` +
@@ -394,6 +408,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(refreshInterval);
   }, [accessToken]);
 
+  /** Returns true if the current user has the specified permission.
+   *  Primary school_admin always returns true (empty permissions = full access). */
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (!user) return false;
+      if (user.role === "school_admin") return true;
+      return user.permissions?.includes(permission) ?? false;
+    },
+    [user]
+  );
+
   const updateUser = (partial: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
@@ -408,6 +433,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     accessToken,
     isAuthenticated: !!accessToken && !!user,
     isLoading,
+    isFullAdmin: user?.role === "school_admin",
+    isSubAdmin: user?.role === "school_sub_admin",
+    hasPermission,
     login,
     logout,
     refreshToken,

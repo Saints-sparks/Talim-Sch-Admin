@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { useTheme, Theme } from "@/providers/theme-provider";
+import { useAuth } from "@/context/AuthContext";
+import { SubAdminsSection } from "@/components/sub-admin/SubAdminsSection";
 import {
   AcademicYearResponse,
   TermResponse,
@@ -102,7 +104,8 @@ type Section =
   | "notifications"
   | "security"
   | "data-system"
-  | "appearance";
+  | "appearance"
+  | "sub-admins";
 
 const SECTIONS: {
   id: Section;
@@ -122,6 +125,7 @@ const SECTIONS: {
   { id: "security", label: "Security", desc: "Password, OTP and access security", icon: Shield },
   { id: "data-system", label: "Data & System", desc: "Backups, exports and system info", icon: Database },
   { id: "appearance", label: "Appearance", desc: "Theme and display preferences", icon: Palette },
+  { id: "sub-admins", label: "Sub-Admins", desc: "Delegate admin responsibilities", icon: Users },
 ];
 
 // ─── Shared UI atoms ──────────────────────────────────────────────────────────
@@ -2317,6 +2321,10 @@ function AppearanceSection() {
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
+function SubAdminSettingsSection() {
+  return <SubAdminsSection />;
+}
+
 const SECTION_MAP: Record<Section, React.ComponentType> = {
   "school-profile": SchoolProfileSection,
   "admin-account": AdminAccountSection,
@@ -2330,11 +2338,18 @@ const SECTION_MAP: Record<Section, React.ComponentType> = {
   "security": SecuritySection,
   "data-system": DataSystemSection,
   "appearance": AppearanceSection,
+  "sub-admins": SubAdminSettingsSection,
 };
 
 export default function SettingsPage() {
   const [active, setActive] = useState<Section>("school-profile");
+  const { isFullAdmin } = useAuth();
   const ActiveSection = SECTION_MAP[active];
+
+  // Sub-Admins section is only accessible to full school_admin
+  const visibleSections = SECTIONS.filter(
+    (s) => s.id !== "sub-admins" || isFullAdmin
+  );
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 overflow-hidden">
@@ -2345,7 +2360,7 @@ export default function SettingsPage() {
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Manage your school&apos;s preferences</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
-          {SECTIONS.map((s) => {
+          {visibleSections.map((s) => {
             const Icon = s.icon;
             const isActive = active === s.id;
             return (
