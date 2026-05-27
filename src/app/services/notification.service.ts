@@ -253,9 +253,13 @@ export const getIncomingNotifications = async (userId: string): Promise<AdminNot
   }
 };
 
-export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+export const markNotificationAsRead = async (
+  notificationId: string,
+  userId: string,
+): Promise<void> => {
   try {
-    await apiClient.patch(`/notifications/${notificationId}/read`, {});
+    // Backend uses PUT (not PATCH) and requires userId in the body
+    await apiClient.put(`/notifications/${notificationId}/read`, { userId });
   } catch {
     // Fail silently — UI state is already updated optimistically
   }

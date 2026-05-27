@@ -114,14 +114,14 @@ export default function NotificationsPage() {
 
   const handleMarkRead = useCallback(async (n: AdminNotification) => {
     setReadIds((prev) => new Set([...prev, n.id]));
-    await markNotificationAsRead(n.rawId);
-  }, []);
+    await markNotificationAsRead(n.rawId, userId);
+  }, [userId]);
 
   const handleMarkAllRead = useCallback(async () => {
     setReadIds(new Set(notifications.map((n) => n.id)));
-    notifications.forEach((n) => markNotificationAsRead(n.rawId).catch(() => {}));
+    notifications.forEach((n) => markNotificationAsRead(n.rawId, userId).catch(() => {}));
     toast.success("All notifications marked as read");
-  }, [notifications]);
+  }, [notifications, userId]);
 
   const handleSelect = (n: AdminNotification) => {
     setSelected(n);
