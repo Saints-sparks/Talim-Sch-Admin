@@ -83,18 +83,25 @@ export const subAdminService = {
 
   /**
    * Create a brand-new user as a sub-admin.
+   * BE returns { message, subAdmin, temporaryPassword } — we unwrap subAdmin
+   * and attach temporaryPassword so callers can surface it to the admin.
    */
-  async createSubAdmin(dto: CreateSubAdminDto): Promise<SubAdmin> {
+  async createSubAdmin(
+    dto: CreateSubAdminDto
+  ): Promise<SubAdmin & { temporaryPassword?: string }> {
     const res = await apiClient.post(API_ENDPOINTS.SUB_ADMIN_CREATE, dto);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || "Failed to create sub-admin");
     }
-    return res.json();
+    const body = await res.json();
+    // BE wraps: { message, subAdmin, temporaryPassword }
+    return { ...(body.subAdmin ?? body), temporaryPassword: body.temporaryPassword };
   },
 
   /**
    * Promote an existing teacher to sub-admin.
+   * BE returns { message, subAdmin } — we unwrap subAdmin.
    */
   async promoteTeacher(dto: PromoteTeacherDto): Promise<SubAdmin> {
     const res = await apiClient.post(
@@ -105,11 +112,13 @@ export const subAdminService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || "Failed to promote teacher");
     }
-    return res.json();
+    const body = await res.json();
+    return body.subAdmin ?? body;
   },
 
   /**
    * Replace the full permissions set of a sub-admin.
+   * BE returns { message, subAdmin } — we unwrap subAdmin.
    */
   async updatePermissions(
     id: string,
@@ -123,11 +132,13 @@ export const subAdminService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || "Failed to update permissions");
     }
-    return res.json();
+    const body = await res.json();
+    return body.subAdmin ?? body;
   },
 
   /**
    * Toggle a sub-admin's active status.
+   * BE returns { message, subAdmin } — we unwrap subAdmin.
    */
   async toggleStatus(id: string): Promise<SubAdmin> {
     const res = await apiClient.patch(
@@ -138,7 +149,8 @@ export const subAdminService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || "Failed to toggle status");
     }
-    return res.json();
+    const body = await res.json();
+    return body.subAdmin ?? body;
   },
 
   /**

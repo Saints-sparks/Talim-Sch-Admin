@@ -70,7 +70,14 @@ export function CreateSubAdminModal({
         ...(form.phoneNumber.trim() && { phoneNumber: form.phoneNumber.trim() }),
       };
       const created = await subAdminService.createSubAdmin(dto);
-      toast.success(`Sub-admin account created for ${created.firstName} ${created.lastName}`);
+      const name = `${created.firstName} ${created.lastName}`;
+      if (created.temporaryPassword) {
+        toast.success(
+          `Sub-admin created for ${name}. Temporary password: ${created.temporaryPassword}`
+        );
+      } else {
+        toast.success(`Sub-admin account created for ${name}`);
+      }
       onSuccess(created);
       handleClose();
     } catch (error: any) {
