@@ -5,20 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Users,
+  UserRound,
+  UserRoundPlus,
+  UserCog,
   GraduationCap,
   School,
-  BookOpen,
   Receipt,
-  Bell,
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  UserPlus,
   CreditCard,
   Megaphone,
   ChevronRight,
   RefreshCw,
-  Wallet,
   Banknote,
   Activity,
   ArrowLeftRight,
@@ -30,7 +29,9 @@ import {
   BookMarked,
   BarChart3,
   AlertCircle,
-  DollarSign,
+  HandCoins,
+  WalletCards,
+  BellRing,
 } from "lucide-react";
 import {
   BarChart,
@@ -192,7 +193,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       sub1: summary ? `${summary.students.active.toLocaleString()} Active` : undefined,
       sub2: summary ? `${summary.students.inactive} Inactive` : undefined,
       trend: summary?.students.trendPercent,
-      icon: <Users className="w-4 h-4" />,
+      icon: <UserRound className="w-4 h-4" />,
       iconCls: "bg-blue-50 text-[#003366] dark:bg-blue-900/20 dark:text-blue-400",
       href: "/users/students",
     },
@@ -201,7 +202,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       value: (summary?.teachers.total ?? base?.totalTeachers ?? 0).toLocaleString(),
       sub1: summary ? `${summary.teachers.formTeachers} Form Teachers` : undefined,
       trend: summary?.teachers.trendPercent,
-      icon: <GraduationCap className="w-4 h-4" />,
+      icon: <UserCog className="w-4 h-4" />,
       iconCls: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
       href: "/users/teachers",
     },
@@ -210,7 +211,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       value: (summary?.classes.total ?? base?.totalClasses ?? 0).toLocaleString(),
       sub1: summary ? `${summary.classes.capacityUtilization}% Capacity` : undefined,
       trend: summary?.classes.trendPercent,
-      icon: <BookOpen className="w-4 h-4" />,
+      icon: <School className="w-4 h-4" />,
       iconCls: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
       href: "/classes",
     },
@@ -220,14 +221,14 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       sub1: summary ? `${formatNairaShort(summary.fees.collectedAmount)} collected` : undefined,
       sub2: summary ? `of ${formatNairaShort(summary.fees.expectedAmount)}` : undefined,
       trend: summary?.fees.trendPercent,
-      icon: <DollarSign className="w-4 h-4" />,
+      icon: <HandCoins className="w-4 h-4" />,
       iconCls: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
       href: "/fees-management",
     },
     {
       label: "Wallet Balance",
       value: summary ? formatNairaShort(summary.wallet.balance) : "—",
-      icon: <Wallet className="w-4 h-4" />,
+      icon: <WalletCards className="w-4 h-4" />,
       iconCls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
       href: "/finance",
     },
@@ -237,7 +238,7 @@ function KpiCards({ base, summary, isLoading }: KpiCardsProps) {
       sub1: summary ? `${summary.notifications.messages} Messages` : undefined,
       sub2: summary ? `${summary.notifications.alerts} Alerts` : undefined,
       trend: summary?.notifications.trendPercent,
-      icon: <Bell className="w-4 h-4" />,
+      icon: <BellRing className="w-4 h-4" />,
       iconCls: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400",
       href: "/messages",
     },
@@ -1064,14 +1065,14 @@ export default function Dashboard() {
                 onClick={() => router.push("/users/students")}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
               >
-                <UserPlus className="w-4 h-4" />
+                <UserRoundPlus className="w-4 h-4" />
                 Add Student
               </button>
               <button
                 onClick={() => router.push("/fees-management/create")}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
               >
-                <CreditCard className="w-4 h-4" />
+                <HandCoins className="w-4 h-4" />
                 Record Payment
               </button>
               <button
