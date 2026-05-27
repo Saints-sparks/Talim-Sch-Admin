@@ -10,6 +10,7 @@ import {
   PERMISSION_GROUPS,
   ALL_PERMISSIONS,
 } from "@/components/sub-admin/PermissionSelector";
+import { Permission } from "@/lib/permissions";
 
 // ─── PERMISSION_GROUPS shape ──────────────────────────────────────────────────
 
@@ -25,7 +26,8 @@ describe("PERMISSION_GROUPS", () => {
       for (const perm of group.permissions) {
         expect(typeof perm.value).toBe("string");
         expect(typeof perm.label).toBe("string");
-        expect(perm.value.startsWith("MANAGE_")).toBe(true);
+        // Values use manage:resource format matching the backend enum
+        expect(perm.value.startsWith("manage:")).toBe(true);
       }
     }
   });
@@ -53,23 +55,26 @@ describe("ALL_PERMISSIONS", () => {
     expect(ALL_PERMISSIONS.length).toBe(15);
   });
 
-  it("includes key finance permissions", () => {
-    expect(ALL_PERMISSIONS).toContain("MANAGE_FEES");
-    expect(ALL_PERMISSIONS).toContain("MANAGE_PAYMENTS");
-    expect(ALL_PERMISSIONS).toContain("MANAGE_FINANCE");
+  it("uses manage:resource format matching the backend enum", () => {
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_FEES);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_PAYMENTS);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_FINANCE);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_STUDENTS);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_TEACHERS);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_PARENTS);
   });
 
-  it("includes key people permissions", () => {
-    expect(ALL_PERMISSIONS).toContain("MANAGE_STUDENTS");
-    expect(ALL_PERMISSIONS).toContain("MANAGE_TEACHERS");
-    expect(ALL_PERMISSIONS).toContain("MANAGE_PARENTS");
+  it("Permission constants have the correct manage:resource values", () => {
+    expect(Permission.MANAGE_CLASSES).toBe("manage:classes");
+    expect(Permission.MANAGE_FEES).toBe("manage:fees");
+    expect(Permission.MANAGE_STUDENTS).toBe("manage:students");
+    expect(Permission.MANAGE_SUB_ADMINS).toBe("manage:sub_admins");
+    expect(Permission.MANAGE_LEAVE_REQUESTS).toBe("manage:leave_requests");
   });
 });
 
 // ─── Permission helper logic ──────────────────────────────────────────────────
-// These mirror what usePermissions / PermissionGate do internally.
 
-/** Mirrors hasPermission for school_admin (full access) and sub-admins */
 function hasPermission(
   role: string,
   userPerms: string[],
@@ -98,43 +103,43 @@ function hasAnyPermission(
 describe("hasPermission", () => {
   describe("school_admin (full access)", () => {
     it("returns true for any permission regardless of userPerms", () => {
-      expect(hasPermission("school_admin", [], "MANAGE_FEES")).toBe(true);
-      expect(hasPermission("school_admin", [], "MANAGE_SUB_ADMINS")).toBe(true);
-      expect(hasPermission("school_admin", [], "ANYTHING")).toBe(true);
+      expect(hasPermission("school_admin", [], Permission.MANAGE_FEES)).toBe(true);
+      expect(hasPermission("school_admin", [], Permission.MANAGE_SUB_ADMINS)).toBe(true);
+      expect(hasPermission("school_admin", [], "anything")).toBe(true);
     });
   });
 
   describe("school_sub_admin (restricted)", () => {
-    const perms = ["MANAGE_FEES", "MANAGE_STUDENTS"];
+    const perms = [Permission.MANAGE_FEES, Permission.MANAGE_STUDENTS];
 
     it("returns true when user has the required permission", () => {
-      expect(hasPermission("school_sub_admin", perms, "MANAGE_FEES")).toBe(true);
+      expect(hasPermission("school_sub_admin", perms, Permission.MANAGE_FEES)).toBe(true);
     });
 
     it("returns false when user does not have the required permission", () => {
       expect(
-        hasPermission("school_sub_admin", perms, "MANAGE_FINANCE")
+        hasPermission("school_sub_admin", perms, Permission.MANAGE_FINANCE)
       ).toBe(false);
     });
 
     it("returns false for empty permissions array", () => {
-      expect(hasPermission("school_sub_admin", [], "MANAGE_FEES")).toBe(false);
+      expect(hasPermission("school_sub_admin", [], Permission.MANAGE_FEES)).toBe(false);
     });
   });
 
   describe("other roles", () => {
     it("denies access for unrecognised roles", () => {
-      expect(hasPermission("teacher", [], "MANAGE_FEES")).toBe(false);
+      expect(hasPermission("teacher", [], Permission.MANAGE_FEES)).toBe(false);
     });
   });
 });
 
 describe("hasAllPermissions", () => {
-  const perms = ["MANAGE_FEES", "MANAGE_STUDENTS"];
+  const perms = [Permission.MANAGE_FEES, Permission.MANAGE_STUDENTS];
 
   it("returns true when user has ALL required permissions", () => {
     expect(
-      hasAllPermissions("school_sub_admin", perms, "MANAGE_FEES", "MANAGE_STUDENTS")
+      hasAllPermissions("school_sub_admin", perms, Permission.MANAGE_FEES, Permission.MANAGE_STUDENTS)
     ).toBe(true);
   });
 
@@ -143,33 +148,33 @@ describe("hasAllPermissions", () => {
       hasAllPermissions(
         "school_sub_admin",
         perms,
-        "MANAGE_FEES",
-        "MANAGE_FINANCE"
+        Permission.MANAGE_FEES,
+        Permission.MANAGE_FINANCE
       )
     ).toBe(false);
   });
 
   it("school_admin always returns true", () => {
     expect(
-      hasAllPermissions("school_admin", [], "MANAGE_FEES", "MANAGE_FINANCE")
+      hasAllPermissions("school_admin", [], Permission.MANAGE_FEES, Permission.MANAGE_FINANCE)
     ).toBe(true);
   });
 
   it("returns true for no required permissions (vacuous truth)", () => {
-    expect(hasAllPermissions("school_sub_admin", [], )).toBe(true);
+    expect(hasAllPermissions("school_sub_admin", [])).toBe(true);
   });
 });
 
 describe("hasAnyPermission", () => {
-  const perms = ["MANAGE_FEES"];
+  const perms = [Permission.MANAGE_FEES];
 
   it("returns true when user has at least one required permission", () => {
     expect(
       hasAnyPermission(
         "school_sub_admin",
         perms,
-        "MANAGE_FEES",
-        "MANAGE_FINANCE"
+        Permission.MANAGE_FEES,
+        Permission.MANAGE_FINANCE
       )
     ).toBe(true);
   });
@@ -179,15 +184,15 @@ describe("hasAnyPermission", () => {
       hasAnyPermission(
         "school_sub_admin",
         perms,
-        "MANAGE_FINANCE",
-        "MANAGE_TRANSIT"
+        Permission.MANAGE_FINANCE,
+        Permission.MANAGE_TRANSIT
       )
     ).toBe(false);
   });
 
   it("school_admin always returns true", () => {
     expect(
-      hasAnyPermission("school_admin", [], "MANAGE_FINANCE", "MANAGE_TRANSIT")
+      hasAnyPermission("school_admin", [], Permission.MANAGE_FINANCE, Permission.MANAGE_TRANSIT)
     ).toBe(true);
   });
 });
@@ -195,7 +200,6 @@ describe("hasAnyPermission", () => {
 // ─── Sidebar permission filtering ────────────────────────────────────────────
 
 describe("sidebar permission filtering", () => {
-  /** Simulates the menuItems.filter logic from Sidebar.tsx */
   function filterMenuItems(
     items: { label: string; permission?: string }[],
     role: string,
@@ -208,24 +212,21 @@ describe("sidebar permission filtering", () => {
 
   const ALL_ITEMS = [
     { label: "Dashboard" },
-    { label: "Classes", permission: "MANAGE_CLASSES" },
-    { label: "Finance", permission: "MANAGE_FINANCE" },
-    { label: "Fees Management", permission: "MANAGE_FEES" },
+    { label: "Classes",          permission: Permission.MANAGE_CLASSES },
+    { label: "Finance",          permission: Permission.MANAGE_FINANCE },
+    { label: "Fees Management",  permission: Permission.MANAGE_FEES },
   ];
 
   it("full admin sees all items", () => {
     const visible = filterMenuItems(ALL_ITEMS, "school_admin", []);
     expect(visible.map((i) => i.label)).toEqual([
-      "Dashboard",
-      "Classes",
-      "Finance",
-      "Fees Management",
+      "Dashboard", "Classes", "Finance", "Fees Management",
     ]);
   });
 
   it("sub-admin only sees items matching their permissions", () => {
     const visible = filterMenuItems(ALL_ITEMS, "school_sub_admin", [
-      "MANAGE_FEES",
+      Permission.MANAGE_FEES,
     ]);
     expect(visible.map((i) => i.label)).toEqual(["Dashboard", "Fees Management"]);
   });

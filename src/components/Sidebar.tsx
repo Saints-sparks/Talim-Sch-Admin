@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/lib/permissions";
 import { useWebSocketContext } from "@/context/WebSocketContext";
 import { chatService } from "@/services/chatServices";
 import {
@@ -134,28 +135,28 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       icon: <BookOpen isActive={pathname.startsWith("/classes")} />,
       label: "Classes",
       tooltip: "Classes",
-      permission: "MANAGE_CLASSES",
+      permission: Permission.MANAGE_CLASSES,
     },
     {
       path: "/curriculum",
       icon: <Note isActive={pathname.startsWith("/curriculum")} />,
       label: "Curriculum",
       tooltip: "Curriculum (Subjects & Courses)",
-      permission: "MANAGE_CURRICULUM",
+      permission: Permission.MANAGE_CURRICULUM,
     },
     {
       path: "/assessments",
       icon: <Chart2 isActive={pathname.startsWith("/assessments")} />,
       label: "Assessments",
       tooltip: "Assessments",
-      permission: "MANAGE_ASSESSMENTS",
+      permission: Permission.MANAGE_ASSESSMENTS,
     },
     {
       path: "/timetable",
       icon: <Calendar2 isActive={pathname.startsWith("/timetable")} />,
       label: "Timetable",
       tooltip: "Timetable",
-      permission: "MANAGE_TIMETABLE",
+      permission: Permission.MANAGE_TIMETABLE,
     },
     {
       path: "/fees-management",
@@ -171,7 +172,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Fees Management",
       tooltip: "Fees Management",
-      permission: "MANAGE_FEES",
+      permission: Permission.MANAGE_FEES,
     },
     {
       path: "/payments",
@@ -187,7 +188,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Payments",
       tooltip: "Payments",
-      permission: "MANAGE_PAYMENTS",
+      permission: Permission.MANAGE_PAYMENTS,
     },
     {
       path: "/finance",
@@ -203,7 +204,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       ),
       label: "Finance",
       tooltip: "Wallet & Withdrawals",
-      permission: "MANAGE_FINANCE",
+      permission: Permission.MANAGE_FINANCE,
     },
     {
       path: "/users",
@@ -224,24 +225,24 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
           path: "/users/sub-admins",
           label: "Sub-Admins",
           tooltip: "Sub-Admin Management",
-          permission: "MANAGE_SUB_ADMINS",
+          permission: Permission.MANAGE_SUB_ADMINS,
         },
       ],
-      permission: "MANAGE_STUDENTS",
+      permission: Permission.MANAGE_STUDENTS,
     },
     {
       path: "/announcements",
       icon: <VolumeHigh isActive={pathname.startsWith("/announcements")} />,
       label: "Announcements",
       tooltip: "Announcements",
-      permission: "MANAGE_ANNOUNCEMENTS",
+      permission: Permission.MANAGE_ANNOUNCEMENTS,
     },
     {
       path: "/leave-requests",
       icon: <ClipboardClose isActive={pathname.startsWith("/leave-requests")} />,
       label: "Leave Requests",
       tooltip: "Leave Requests",
-      permission: "MANAGE_LEAVE_REQUESTS",
+      permission: Permission.MANAGE_LEAVE_REQUESTS,
     },
     {
       path: "/transit",
@@ -267,7 +268,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         { path: "/transit/enrollments", label: "Enrollments", tooltip: "Student Enrollments" },
         { path: "/transit/promotions", label: "Promotions", tooltip: "Class Promotions" },
       ],
-      permission: "MANAGE_TRANSIT",
+      permission: Permission.MANAGE_TRANSIT,
     },
     {
       path: "/messages",
@@ -275,14 +276,14 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       label: "Messages",
       tooltip: "Messages",
       badge: unreadMessageCount,
-      permission: "MANAGE_MESSAGES",
+      permission: Permission.MANAGE_MESSAGES,
     },
     {
       path: "/settings",
       icon: <Settings isActive={pathname.startsWith("/settings")} />,
       label: "Settings",
       tooltip: "Academic Year & Term Settings",
-      permission: "MANAGE_SETTINGS",
+      permission: Permission.MANAGE_SETTINGS,
     },
   ];
 

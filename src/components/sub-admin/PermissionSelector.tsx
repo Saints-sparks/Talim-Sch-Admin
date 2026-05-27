@@ -2,8 +2,10 @@
 
 import React from "react";
 import { Check } from "lucide-react";
+import { Permission } from "@/lib/permissions";
 
 // ─── Permission Definitions ───────────────────────────────────────────────────
+// Values MUST match the backend Permission enum (manage:resource format).
 
 export const PERMISSION_GROUPS = [
   {
@@ -11,10 +13,10 @@ export const PERMISSION_GROUPS = [
     label: "Academics",
     description: "Class, curriculum, assessment and timetable management",
     permissions: [
-      { value: "MANAGE_CLASSES", label: "Manage Classes" },
-      { value: "MANAGE_CURRICULUM", label: "Manage Curriculum" },
-      { value: "MANAGE_ASSESSMENTS", label: "Manage Assessments" },
-      { value: "MANAGE_TIMETABLE", label: "Manage Timetable" },
+      { value: Permission.MANAGE_CLASSES,    label: "Manage Classes" },
+      { value: Permission.MANAGE_CURRICULUM, label: "Manage Curriculum" },
+      { value: Permission.MANAGE_ASSESSMENTS,label: "Manage Assessments" },
+      { value: Permission.MANAGE_TIMETABLE,  label: "Manage Timetable" },
     ],
   },
   {
@@ -22,9 +24,9 @@ export const PERMISSION_GROUPS = [
     label: "Finance",
     description: "Fees, payments and financial reporting",
     permissions: [
-      { value: "MANAGE_FEES", label: "Manage Fees" },
-      { value: "MANAGE_PAYMENTS", label: "Manage Payments" },
-      { value: "MANAGE_FINANCE", label: "Manage Finance & Wallet" },
+      { value: Permission.MANAGE_FEES,     label: "Manage Fees" },
+      { value: Permission.MANAGE_PAYMENTS, label: "Manage Payments" },
+      { value: Permission.MANAGE_FINANCE,  label: "Manage Finance & Wallet" },
     ],
   },
   {
@@ -32,9 +34,9 @@ export const PERMISSION_GROUPS = [
     label: "People",
     description: "Student, teacher and parent management",
     permissions: [
-      { value: "MANAGE_STUDENTS", label: "Manage Students" },
-      { value: "MANAGE_TEACHERS", label: "Manage Teachers" },
-      { value: "MANAGE_PARENTS", label: "Manage Parents" },
+      { value: Permission.MANAGE_STUDENTS, label: "Manage Students" },
+      { value: Permission.MANAGE_TEACHERS, label: "Manage Teachers" },
+      { value: Permission.MANAGE_PARENTS,  label: "Manage Parents" },
     ],
   },
   {
@@ -42,11 +44,11 @@ export const PERMISSION_GROUPS = [
     label: "Administration",
     description: "Announcements, leave requests, transit, messages and settings",
     permissions: [
-      { value: "MANAGE_ANNOUNCEMENTS", label: "Manage Announcements" },
-      { value: "MANAGE_LEAVE_REQUESTS", label: "Manage Leave Requests" },
-      { value: "MANAGE_TRANSIT", label: "Manage Transit" },
-      { value: "MANAGE_MESSAGES", label: "Manage Messages" },
-      { value: "MANAGE_SETTINGS", label: "Manage Settings" },
+      { value: Permission.MANAGE_ANNOUNCEMENTS,  label: "Manage Announcements" },
+      { value: Permission.MANAGE_LEAVE_REQUESTS, label: "Manage Leave Requests" },
+      { value: Permission.MANAGE_TRANSIT,        label: "Manage Transit" },
+      { value: Permission.MANAGE_MESSAGES,       label: "Manage Messages" },
+      { value: Permission.MANAGE_SETTINGS,       label: "Manage Settings" },
     ],
   },
 ];

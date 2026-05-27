@@ -3,6 +3,7 @@
 import React from "react";
 import { SubAdminsSection } from "@/components/sub-admin/SubAdminsSection";
 import { RequirePermission } from "@/components/auth/PermissionGate";
+import { Permission } from "@/lib/permissions";
 
 /**
  * /users/sub-admins
@@ -12,7 +13,7 @@ import { RequirePermission } from "@/components/auth/PermissionGate";
  */
 export default function SubAdminsPage() {
   return (
-    <RequirePermission permission="MANAGE_SUB_ADMINS">
+    <RequirePermission permission={Permission.MANAGE_SUB_ADMINS}>
       <div className="p-6 max-w-5xl mx-auto">
         <SubAdminsSection />
       </div>
