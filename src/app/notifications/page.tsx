@@ -27,6 +27,10 @@ import {
   getIncomingNotifications,
   markNotificationAsRead,
 } from "../services/notification.service";
+import {
+  getReceiptSettings,
+  type ReceiptSettings,
+} from "../services/fees.service";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -72,12 +76,6 @@ const parseAmount = (text: string): string | null => {
   return match ? match[0] : null;
 };
 
-const NGN = (n: number) =>
-  `₦${Number(n || 0).toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
@@ -89,6 +87,7 @@ export default function NotificationsPage() {
   const [tab, setTab]           = useState<Tab>("all");
   const [selected, setSelected] = useState<AdminNotification | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptSettings, setReceiptSettings] = useState<ReceiptSettings | null>(null);
 
   const userId = user?.userId || (user as any)?._id || "";
 
@@ -97,8 +96,12 @@ export default function NotificationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const items = await getIncomingNotifications(userId);
+      const [items, settings] = await Promise.all([
+        getIncomingNotifications(userId),
+        getReceiptSettings().catch(() => null),
+      ]);
       setNotifications(items);
+      if (settings) setReceiptSettings(settings);
       if (items.length && !selected) setSelected(items[0]);
     } catch (err: any) {
       setError(err.message || "Failed to load notifications");
@@ -143,13 +146,20 @@ export default function NotificationsPage() {
     { key: "talim",  label: "Talim"  },
   ];
 
+  useEffect(() => {
+    if (!selected) return;
+    if (!readIds.has(selected.id)) {
+      handleMarkRead(selected);
+    }
+  }, [selected, readIds, handleMarkRead]);
+
   return (
-    <div className="min-h-screen bg-[#F8F8F8] p-4 sm:p-6 flex flex-col gap-4">
+    <div className="min-h-screen bg-[#F8F8F8] dark:bg-slate-900 p-4 sm:p-6 flex flex-col gap-4">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-[19px] font-semibold text-[#030E18]">Notifications</h1>
-          <span className="bg-white border border-[#E4E4E4] text-[15px] font-medium px-3 py-1 rounded-full">
+          <h1 className="text-[19px] font-semibold text-[#030E18] dark:text-slate-100">Notifications</h1>
+          <span className="bg-white dark:bg-slate-800 border border-[#E4E4E4] dark:border-slate-700 text-[15px] text-[#030E18] dark:text-slate-100 font-medium px-3 py-1 rounded-full">
             {notifications.length}
           </span>
           {unreadCount > 0 && (
@@ -162,7 +172,7 @@ export default function NotificationsPage() {
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#E0E0E0] bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#E0E0E0] dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 transition"
             title="Refresh"
           >
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
@@ -180,7 +190,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E4E4E4] px-4 py-3 flex items-center gap-2 flex-wrap">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-[#E4E4E4] dark:border-slate-700 px-4 py-3 flex items-center gap-2 flex-wrap">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
@@ -189,7 +199,7 @@ export default function NotificationsPage() {
               "px-4 py-1.5 rounded-full text-sm font-medium transition",
               tab === key
                 ? "bg-[#154473] text-white"
-                : "text-gray-500 hover:bg-gray-100"
+                : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
             )}
           >
             {label}
@@ -218,14 +228,14 @@ export default function NotificationsPage() {
           </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center min-h-[300px] bg-white rounded-2xl border border-[#E4E4E4]">
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center min-h-[300px] bg-white dark:bg-slate-800 rounded-2xl border border-[#E4E4E4] dark:border-slate-700">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
             <Bell className="h-8 w-8 text-gray-300" />
           </div>
-          <p className="font-semibold text-gray-900">
+          <p className="font-semibold text-gray-900 dark:text-slate-100">
             {tab === "unread" ? "You're all caught up!" : "No notifications"}
           </p>
-          <p className="text-sm text-gray-500 max-w-xs">
+          <p className="text-sm text-gray-500 dark:text-slate-300 max-w-xs">
             {tab === "unread"
               ? "No unread notifications right now."
               : "Alerts from Talim and system events will appear here."}
@@ -234,8 +244,8 @@ export default function NotificationsPage() {
       ) : (
         <div className="flex gap-4 flex-1 min-h-0">
           {/* List */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col gap-0 bg-white rounded-2xl border border-[#E4E4E4] overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col gap-0 bg-white dark:bg-slate-800 rounded-2xl border border-[#E4E4E4] dark:border-slate-700 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wide">
               {filtered.length} notification{filtered.length !== 1 ? "s" : ""}
             </div>
             <div className="overflow-y-auto flex-1">
@@ -249,8 +259,9 @@ export default function NotificationsPage() {
                     onClick={() => handleSelect(n)}
                     className={cn(
                       "w-full text-left flex gap-3 px-4 py-3.5 border-b border-gray-50 transition hover:bg-[#F4F8FF]",
-                      isSelected && "bg-[#EBF2FF] border-l-2 border-l-[#154473]",
-                      unread && !isSelected && "bg-[#FAFCFF]"
+                      "dark:border-slate-700 dark:hover:bg-slate-700/60",
+                      isSelected && "bg-[#EBF2FF] border-l-2 border-l-[#154473] dark:bg-slate-700/70",
+                      unread && !isSelected && "bg-[#FAFCFF] dark:bg-slate-800/70"
                     )}
                   >
                     <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl mt-0.5", cat.bg, cat.text)}>
@@ -258,13 +269,13 @@ export default function NotificationsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={cn("text-sm leading-snug truncate", unread ? "font-semibold text-[#030E18]" : "font-medium text-gray-700")}>
+                        <p className={cn("text-sm leading-snug truncate", unread ? "font-semibold text-[#030E18] dark:text-slate-100" : "font-medium text-gray-700 dark:text-slate-200")}>
                           {n.title}
                         </p>
                         {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#154473]" />}
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{n.message}</p>
-                      <p className="text-[11px] text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 dark:text-slate-300 mt-0.5 line-clamp-1">{n.message}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
                         {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                       </p>
                     </div>
@@ -282,6 +293,8 @@ export default function NotificationsPage() {
                 isRead={isRead(selected)}
                 onMarkRead={() => handleMarkRead(selected)}
                 onOpenReceipt={() => setReceiptOpen(true)}
+                receiptSettings={receiptSettings}
+                schoolLogo={user?.schoolLogo || (user as any)?.schoolId?.logo || ""}
               />
             ) : (
               <div className="flex-1 bg-white rounded-2xl border border-[#E4E4E4] flex items-center justify-center text-gray-400 text-sm">
@@ -297,6 +310,8 @@ export default function NotificationsPage() {
         <ReceiptModal
           notification={selected}
           schoolName={user?.schoolName || "School"}
+          schoolLogo={user?.schoolLogo || (user as any)?.schoolId?.logo || ""}
+          receiptSettings={receiptSettings}
           onClose={() => setReceiptOpen(false)}
         />
       )}
@@ -311,11 +326,15 @@ function DetailPanel({
   isRead,
   onMarkRead,
   onOpenReceipt,
+  receiptSettings,
+  schoolLogo,
 }: {
   notification: AdminNotification;
   isRead: boolean;
   onMarkRead: () => void;
   onOpenReceipt: () => void;
+  receiptSettings: ReceiptSettings | null;
+  schoolLogo: string;
 }) {
   const cat = catConfig[n.category] ?? catConfig.other;
   const src = srcConfig[n.source] ?? srcConfig.system;
@@ -323,20 +342,20 @@ function DetailPanel({
   const hasAttachments = n.attachments.length > 0;
 
   return (
-    <div className="flex-1 bg-white rounded-2xl border border-[#E4E4E4] flex flex-col overflow-hidden">
+    <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-[#E4E4E4] dark:border-slate-700 flex flex-col overflow-hidden">
       {/* Detail header */}
-      <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+      <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", cat.bg, cat.text)}>
             {cat.icon}
           </div>
           <div>
-            <p className="font-semibold text-[#030E18] text-base leading-snug">{n.title}</p>
+            <p className="font-semibold text-[#030E18] dark:text-slate-100 text-base leading-snug">{n.title}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", src.pill)}>
                 {src.icon}{src.label}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500 dark:text-slate-300">
                 {format(new Date(n.createdAt), "dd MMM yyyy, h:mm a")}
               </span>
               <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -359,7 +378,7 @@ function DetailPanel({
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
         {/* Message */}
-        <p className="text-sm text-gray-700 leading-relaxed">{n.message}</p>
+        <p className="text-sm text-gray-700 dark:text-slate-200 leading-relaxed">{n.message}</p>
 
         {/* Payment receipt card */}
         {isPayment && (
@@ -408,7 +427,7 @@ function DetailPanel({
         )}
 
         {/* Meta grid */}
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
           <MetaPill label="Source" value={n.sourceLabel} />
           <MetaPill label="Category" value={n.category.replace(/_/g, " ")} />
           <MetaPill label="Priority" value={n.priority} />
@@ -416,6 +435,16 @@ function DetailPanel({
           <MetaPill label="Sent by" value={n.sentBy} />
           <MetaPill label="Ref" value={n.rawId.slice(-8).toUpperCase()} />
         </div>
+        {(receiptSettings?.signatureUrl || (receiptSettings?.showSchoolLogo && schoolLogo)) && (
+          <div className="pt-2">
+            <p className="text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wide mb-2">
+              Receipt Metadata
+            </p>
+            <p className="text-xs text-gray-600 dark:text-slate-300">
+              Receipt preview uses your configured school branding and signature.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -423,9 +452,9 @@ function DetailPanel({
 
 function MetaPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-[#FAFAFA] px-3 py-2.5">
-      <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-semibold text-[#030E18] mt-0.5 capitalize truncate">{value}</p>
+    <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-[#FAFAFA] dark:bg-slate-700/60 px-3 py-2.5">
+      <p className="text-[11px] text-gray-500 dark:text-slate-300 font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-semibold text-[#030E18] dark:text-slate-100 mt-0.5 capitalize truncate">{value}</p>
     </div>
   );
 }
@@ -435,10 +464,14 @@ function MetaPill({ label, value }: { label: string; value: string }) {
 function ReceiptModal({
   notification: n,
   schoolName,
+  schoolLogo,
+  receiptSettings,
   onClose,
 }: {
   notification: AdminNotification;
   schoolName: string;
+  schoolLogo: string;
+  receiptSettings: ReceiptSettings | null;
   onClose: () => void;
 }) {
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -446,6 +479,10 @@ function ReceiptModal({
   const refNo = n.rawId.slice(-10).toUpperCase();
   const dateStr = format(new Date(n.createdAt), "dd MMM yyyy, h:mm a");
   const hasAttachments = n.attachments.length > 0;
+  const showSchoolLogo = receiptSettings?.showSchoolLogo ?? true;
+  const signatureUrl = receiptSettings?.signatureUrl || "";
+  const signatureName = receiptSettings?.signatureName || "";
+  const signatureTitle = receiptSettings?.signatureTitle || "";
 
   const handlePrint = () => {
     if (!receiptRef.current) return;
@@ -457,6 +494,7 @@ function ReceiptModal({
         body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
         .header { text-align: center; border-bottom: 2px solid #154473; padding-bottom: 16px; margin-bottom: 24px; }
         .logo { font-size: 22px; font-weight: 700; color: #154473; }
+        .logo-img { max-height: 44px; max-width: 140px; object-fit: contain; margin: 0 auto 8px auto; display:block; }
         .school { font-size: 14px; color: #555; }
         .amount { font-size: 36px; font-weight: 700; color: #154473; text-align: center; margin: 20px 0; }
         .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
@@ -464,8 +502,13 @@ function ReceiptModal({
         .value { font-weight: 600; }
         .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #888; }
         .status { display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .signature { margin-top: 28px; text-align: right; }
+        .signature img { max-height: 50px; object-fit: contain; margin-bottom: 6px; }
+        .signature-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+        .signature-title { font-size: 11px; color: #64748b; }
       </style></head><body>
       <div class="header">
+        ${showSchoolLogo && schoolLogo ? `<img class="logo-img" src="${schoolLogo}" alt="School logo" />` : ""}
         <div class="logo">Talim School Manager</div>
         <div class="school">${schoolName}</div>
       </div>
@@ -476,6 +519,15 @@ function ReceiptModal({
       <div class="row"><span class="label">Source</span><span class="value">${n.sourceLabel}</span></div>
       <div class="row"><span class="label">Description</span><span class="value">${n.message}</span></div>
       <div class="row"><span class="label">Status</span><span class="value"><span class="status">Completed</span></span></div>
+      ${
+        signatureUrl
+          ? `<div class="signature">
+              <img src="${signatureUrl}" alt="Authorized signature" />
+              ${signatureName ? `<div class="signature-name">${signatureName}</div>` : ""}
+              ${signatureTitle ? `<div class="signature-title">${signatureTitle}</div>` : ""}
+             </div>`
+          : ""
+      }
       <div class="footer">This is an auto-generated receipt from Talim School Manager.</div>
       </body></html>
     `);
@@ -486,11 +538,18 @@ function ReceiptModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Receipt top stripe */}
         <div className="bg-[#154473] px-6 py-5 text-white text-center">
+          {showSchoolLogo && schoolLogo && (
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} logo`}
+              className="mx-auto mb-2 h-10 max-w-[120px] object-contain"
+            />
+          )}
           <p className="text-xs font-semibold uppercase tracking-widest opacity-70 mb-1">
             {schoolName}
           </p>
@@ -546,6 +605,26 @@ function ReceiptModal({
               ))}
             </div>
           )}
+
+          {signatureUrl && (
+            <div className="pt-4 text-right">
+              <img
+                src={signatureUrl}
+                alt="Authorized signature"
+                className="h-10 ml-auto object-contain"
+              />
+              {signatureName && (
+                <p className="text-xs font-semibold text-gray-800 dark:text-slate-100 mt-1">
+                  {signatureName}
+                </p>
+              )}
+              {signatureTitle && (
+                <p className="text-[11px] text-gray-500 dark:text-slate-300">
+                  {signatureTitle}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer serration */}
@@ -570,7 +649,7 @@ function ReceiptModal({
           </button>
           <button
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 text-gray-700 font-medium rounded-lg py-2.5 text-sm hover:bg-gray-50 transition"
+            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-100 font-medium rounded-lg py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition"
           >
             Close
           </button>
@@ -590,9 +669,9 @@ function ReceiptRow({
   wrap?: boolean;
 }) {
   return (
-    <div className={cn("flex gap-4 py-2.5 border-b border-dashed border-gray-100 last:border-0", wrap ? "flex-col" : "justify-between items-start")}>
-      <span className="text-xs text-gray-400 font-medium shrink-0">{label}</span>
-      <span className={cn("text-sm font-semibold text-[#030E18]", wrap ? "" : "text-right max-w-[55%]")}>
+    <div className={cn("flex gap-4 py-2.5 border-b border-dashed border-gray-100 dark:border-slate-700 last:border-0", wrap ? "flex-col" : "justify-between items-start")}>
+      <span className="text-xs text-gray-500 dark:text-slate-300 font-medium shrink-0">{label}</span>
+      <span className={cn("text-sm font-semibold text-[#030E18] dark:text-slate-100", wrap ? "" : "text-right max-w-[55%]")}>
         {value}
       </span>
     </div>
