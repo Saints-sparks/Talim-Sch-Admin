@@ -43,10 +43,15 @@ const StudentProfile = () => {
   const [activeTab, setActiveTab] = useState("personal-details");
 
   const [attendanceData, setAttendanceData] = useState<{
+    attendanceRate: number;
     totalDays: number;
     presentDays: number;
     absentDays: number;
-    attendancePercentage: string;
+    lateDays: number;
+    excusedDays: number;
+    dateRange: { startDate: string; endDate: string };
+    classInfo: { id: string; name: string };
+    termInfo?: { id: string; name: string };
   } | null>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
 
@@ -108,7 +113,7 @@ const StudentProfile = () => {
     if (activeTab !== "attendance" || !studentId || attendanceData) return;
     setLoadingAttendance(true);
     apiClient
-      .get(`/attendance/dashboard/${studentId}`)
+      .get(`/attendance/student/${studentId}/kpis`)
       .then((r) => r.json())
       .then((data) => setAttendanceData(data))
       .catch(() => setAttendanceData(null))
@@ -660,80 +665,126 @@ const StudentProfile = () => {
 
                     <TabsContent value="attendance" className="mt-0">
                       <div className="space-y-6 sm:space-y-8">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-orange-100 rounded-lg">
-                            <UserCheck className="w-5 h-5 text-orange-600" />
-                          </div>
-                          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                            Attendance Information
-                          </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-                          {/* Profile Picture Section */}
-                          <div className="flex flex-col items-center space-y-4 order-1 lg:order-none">
-                            <div className="text-center">
-                              <div className="relative">
-                                <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-gray-100">
-                                  <AvatarImage
-                                    src={
-                                      student.userId.userAvatar ||
-                                      "/placeholder.svg"
-                                    }
-                                    alt={`${student.userId.firstName} ${student.userId.lastName}`}
-                                  />
-                                  <AvatarFallback className="bg-orange-500 text-white text-lg sm:text-2xl font-semibold">
-                                    {student.userId.firstName?.[0]}
-                                    {student.userId.lastName?.[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full border-2 border-white"></div>
-                              </div>
-
-                              <div className="text-center mt-4 space-y-2">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                                  {student.userId.firstName}{" "}
-                                  {student.userId.lastName}
-                                </h3>
-                                <p className="text-sm sm:text-base text-gray-600">
-                                  Student
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                              <UserCheck className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <div>
+                              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                                Attendance Overview
+                              </h2>
+                              {attendanceData?.termInfo && (
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {attendanceData.termInfo.name}
                                 </p>
-                                <div className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs sm:text-sm font-medium inline-block">
-                                  Attendance Tracking
-                                </div>
-                              </div>
+                              )}
                             </div>
                           </div>
+                          {attendanceData?.dateRange && (
+                            <p className="text-xs text-gray-400">
+                              {new Date(attendanceData.dateRange.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {" – "}
+                              {new Date(attendanceData.dateRange.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
 
-                          {/* Information Display */}
-                          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-none">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                              <div className="space-y-3">
-                                <Tooltip content="Percentage of sessions attended this term. Updated by class teachers." side="right">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                  <UserCheck className="w-4 h-4" />
-                                  Current Status
-                                </label>
-                                </Tooltip>
-                                <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                  {loadingAttendance ? (
-                                    <span className="text-gray-400">Loading…</span>
-                                  ) : attendanceData ? (
-                                    `${attendanceData.attendancePercentage} attendance rate`
-                                  ) : (
-                                    "No attendance data"
-                                  )}
+                        {loadingAttendance ? (
+                          <div className="space-y-4">
+                            <div className="h-36 bg-gray-100 rounded-xl animate-pulse" />
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+                              ))}
+                            </div>
+                          </div>
+                        ) : attendanceData ? (
+                          <div className="space-y-6">
+                            {/* Attendance rate hero */}
+                            <div className="flex flex-col items-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                Attendance Rate
+                              </p>
+                              <div
+                                className={`text-5xl sm:text-6xl font-bold ${
+                                  attendanceData.attendanceRate >= 80
+                                    ? "text-green-600"
+                                    : attendanceData.attendanceRate >= 60
+                                    ? "text-orange-500"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {attendanceData.attendanceRate}%
+                              </div>
+                              <div className="mt-4 w-48 sm:w-64 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    attendanceData.attendanceRate >= 80
+                                      ? "bg-green-500"
+                                      : attendanceData.attendanceRate >= 60
+                                      ? "bg-orange-500"
+                                      : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${Math.min(attendanceData.attendanceRate, 100)}%` }}
+                                />
+                              </div>
+                              <p className="text-xs text-gray-400 mt-2">
+                                {attendanceData.presentDays} present out of {attendanceData.totalDays} recorded days
+                              </p>
+                            </div>
+
+                            {/* Stat cards */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                              <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                <div className="text-2xl font-bold text-blue-700">
+                                  {attendanceData.totalDays}
+                                </div>
+                                <div className="text-xs text-blue-600 mt-1 font-medium">Total Days</div>
+                              </div>
+                              <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+                                <div className="text-2xl font-bold text-green-700">
+                                  {attendanceData.presentDays}
+                                </div>
+                                <div className="text-xs text-green-600 mt-1 font-medium">Present</div>
+                              </div>
+                              <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+                                <div className="text-2xl font-bold text-red-700">
+                                  {attendanceData.absentDays}
+                                </div>
+                                <div className="text-xs text-red-600 mt-1 font-medium">Absent</div>
+                              </div>
+                              <div className="text-center p-4 bg-orange-50 rounded-xl border border-orange-100">
+                                <div className="text-2xl font-bold text-orange-700">
+                                  {attendanceData.lateDays}
+                                </div>
+                                <div className="text-xs text-orange-600 mt-1 font-medium">Late</div>
+                              </div>
+                              <div className="col-span-2 sm:col-span-1 text-center p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-2xl font-bold text-slate-600">
+                                  {attendanceData.excusedDays}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1 font-medium">Excused</div>
+                              </div>
+                            </div>
+
+                            {/* Class + account status row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <School className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <div>
+                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Class</p>
+                                  <p className="text-sm font-semibold text-gray-800 mt-0.5">
+                                    {attendanceData.classInfo.name}
+                                  </p>
                                 </div>
                               </div>
-
-                              <div className="space-y-3">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                  <Clock className="w-4 h-4" />
-                                  Account Status
-                                </label>
-                                <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg">
+                              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <Clock className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <div>
+                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Account Status</p>
                                   <span
-                                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                       student.isActive
                                         ? "bg-green-100 text-green-800"
                                         : "bg-red-100 text-red-800"
@@ -744,50 +795,18 @@ const StudentProfile = () => {
                                 </div>
                               </div>
                             </div>
-
-                            <Card>
-                              <CardContent className="p-4 sm:p-6">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                                  Quick Stats
-                                </h3>
-                                {loadingAttendance ? (
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                                    {[1, 2, 3].map((i) => (
-                                      <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                                    <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
-                                      <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                                        {attendanceData?.totalDays ?? "--"}
-                                      </div>
-                                      <div className="text-xs sm:text-sm text-blue-600">
-                                        Total Days
-                                      </div>
-                                    </div>
-                                    <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
-                                      <div className="text-lg sm:text-2xl font-bold text-green-600">
-                                        {attendanceData?.presentDays ?? "--"}
-                                      </div>
-                                      <div className="text-xs sm:text-sm text-green-600">
-                                        Present Days
-                                      </div>
-                                    </div>
-                                    <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
-                                      <div className="text-lg sm:text-2xl font-bold text-red-600">
-                                        {attendanceData?.absentDays ?? "--"}
-                                      </div>
-                                      <div className="text-xs sm:text-sm text-red-600">
-                                        Absent Days
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="p-4 bg-gray-100 rounded-full mb-4">
+                              <UserCheck className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-sm font-medium text-gray-700">No attendance data yet</p>
+                            <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                              Attendance records will appear here once a teacher begins marking attendance for this student.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                   </motion.div>
