@@ -15,13 +15,14 @@ import {
   FiSettings,
   FiTrendingUp,
   FiGrid,
-  FiAlertCircle,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getClasses, createClass, Class } from "../services/student.service";
 import { getSchoolId } from "../services/school.service";
 import { toast } from "@/components/CustomToast";
 import ClassesSkeleton from "@/components/ClassesSkeleton";
+import { ErrorState, EmptyState } from "@/components/StateComponents";
+import { InlineSpinner } from "@/components/ui/loading";
 
 const GRADE_OPTIONS = Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`);
 
@@ -207,48 +208,21 @@ export default function Classes() {
 
                 {/* Error State */}
                 {error ? (
-                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-8 shadow-sm">
-                    <div className="flex items-start">
-                      <div className="p-2 bg-red-100 rounded-xl">
-                        <FiAlertCircle className="h-6 w-6 text-red-600" />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <h3 className="text-lg font-semibold text-red-800 mb-2">
-                          Error Loading Classes
-                        </h3>
-                        <p className="text-red-700 mb-4">{error}</p>
-                        <button
-                          onClick={() => window.location.reload()}
-                          className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 shadow-lg"
-                        >
-                          Try Again
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <ErrorState
+                    title="Error Loading Classes"
+                    message={error}
+                    onRetry={() => window.location.reload()}
+                  />
                 ) : classes.length === 0 ? (
                   /* Empty State */
-                  <div
-                    data-guide="classes-list"
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
-                  >
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8" style={{ background: 'linear-gradient(135deg, #e6f0ff, #cce0ff)' }}>
-                      <FiGrid className="h-12 w-12" style={{ color: '#003366' }} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                      No Classes Found
-                    </h3>
-                    <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
-                      Get started by creating your first class to organize your students.
-                    </p>
-                    <button
-                      onClick={toggleModal}
-                      className="inline-flex items-center px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:opacity-90"
-                      style={{ background: 'linear-gradient(to right, #003366, #004488)' }}
-                    >
-                      <FiPlus className="h-5 w-5 mr-3" />
-                      Create Your First Class
-                    </button>
+                  <div data-guide="classes-list">
+                    <EmptyState
+                      icon="🏫"
+                      title="No Classes Found"
+                      message="Get started by creating your first class to organize your students."
+                      actionText="Create Your First Class"
+                      onAction={toggleModal}
+                    />
                   </div>
                 ) : (
                   /* Classes Grid */
@@ -557,29 +531,7 @@ export default function Classes() {
                   disabled={isCreating}
                 >
                   {isCreating ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Creating Class...
-                    </>
+                    <InlineSpinner label="Creating Class..." className="text-white" />
                   ) : (
                     <>
                       <FiPlus className="mr-2 h-5 w-5" />

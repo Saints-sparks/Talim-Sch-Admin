@@ -13,8 +13,7 @@ import { toast } from "@/components/CustomToast";
 import AddStudentModal from "@/components/AddStudentModal";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
 import Avatar from "@/components/Avatar";
-import Image from "next/image";
-import { ErrorState } from "@/components/StateComponents";
+import { ErrorState, EmptyState } from "@/components/StateComponents";
 import { ChevronDown, Search } from "@/components/Icons";
 import { Tooltip } from "@/components/ui/Tooltip";
 
@@ -229,23 +228,13 @@ const StudentPage: React.FC = () => {
             onRetry={fetchStudents}
           />
         ) : filteredStudents.length === 0 ? (
-          <div className="flex flex-col justify-center items-center">
-            <Image
-              src="/empty-state.svg"
-              alt="No classes found"
-              width={300}
-              height={300}
-            />
-            <p className="mb-4 text-[#525252] leading-[24px]">
-              There are no students yet.
-            </p>
-            <button
-              onClick={toggleModal}
-              className="mt-4 sm:mt-0 bg-[#D6D6D6] border border-[#D8D8D8]/22  hover:bg-blue-800  px-6 py-2 rounded-lg font-medium leading-[30px] flex items-center gap-2 "
-            >
-              <span className="text-lg font-bold">+</span> Add Student
-            </button>
-          </div>
+          <EmptyState
+            icon="👩‍🎓"
+            title="No Students Yet"
+            message="There are no students yet."
+            actionText="Add Student"
+            onAction={toggleModal}
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {currentStudents.map((student, index) => (

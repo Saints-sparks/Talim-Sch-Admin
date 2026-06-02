@@ -19,6 +19,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { toast } from "@/components/CustomToast";
+import { SectionSkeleton } from "@/components/ui/loading";
 import {
   getFeesDashboardSummary,
   getFeeCategories,
@@ -92,13 +93,7 @@ function StatCard({
 }
 
 function TableSkeleton({ rows = 5 }: { rows?: number }) {
-  return (
-    <div className="animate-pulse space-y-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-10 bg-gray-100 rounded" />
-      ))}
-    </div>
-  );
+  return <SectionSkeleton rows={rows} rowClassName="h-10" />;
 }
 
 function FeeItemDetailsModal({
