@@ -23,7 +23,11 @@ import {
   AssessmentForm,
   Term,
 } from "@/components/assessment/AssessmentForm.types";
-import { assessmentService } from "@/app/services/assessment.service";
+import {
+  assessmentService,
+  AssessmentHasGradesError,
+  GradedCourseInfo,
+} from "@/app/services/assessment.service";
 import AssessmentList from "@/components/assessment/AssessmentList";
 import AssessmentCreateModal from "@/components/assessment/AssessmentCreateModal";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -62,6 +66,16 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
     isOpen: false,
     assessment: null,
     loading: false,
+  });
+
+  const [gradesConflict, setGradesConflict] = useState<{
+    isOpen: boolean;
+    assessmentName: string;
+    courses: GradedCourseInfo[];
+  }>({
+    isOpen: false,
+    assessmentName: "",
+    courses: [],
   });
 
   // Filter assessments based on search and status
@@ -240,37 +254,38 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
   const handleDeleteAssessment = async () => {
     if (!deleteConfirm.assessment) return;
 
+    const assessmentName = deleteConfirm.assessment.name;
+
     try {
       setDeleteConfirm((prev) => ({ ...prev, loading: true }));
       await assessmentService.deleteAssessment(deleteConfirm.assessment._id);
 
-      // Refresh the assessments list
       await loadAssessments(pagination.currentPage, false);
       setDeleteConfirm({ isOpen: false, assessment: null, loading: false });
-
-      // Clear any existing errors
       setError(null);
     } catch (err) {
-      console.error("Error deleting assessment:", err);
-      setDeleteConfirm((prev) => ({ ...prev, loading: false }));
+      setDeleteConfirm({ isOpen: false, assessment: null, loading: false });
 
-      let errorMessage = "Failed to delete assessment.";
+      if (err instanceof AssessmentHasGradesError) {
+        setGradesConflict({
+          isOpen: true,
+          assessmentName,
+          courses: err.coursesWithGrades,
+        });
+        return;
+      }
+
+      console.error("Error deleting assessment:", err);
+      let errorMessage = "Failed to deactivate assessment.";
       if (err instanceof Error) {
         if (err.message.includes("not found")) {
           errorMessage =
-            "Assessment not found. It may have already been deleted.";
+            "Assessment not found. It may have already been deactivated.";
         } else if (err.message.includes("permission")) {
           errorMessage =
-            "You do not have permission to delete this assessment.";
-        } else if (
-          err.message.includes("has grades") ||
-          err.message.includes("in use")
-        ) {
-          errorMessage =
-            "Cannot delete assessment that has grades associated with it.";
+            "You do not have permission to deactivate this assessment.";
         }
       }
-
       setError(errorMessage);
     }
   };
@@ -547,6 +562,91 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
         loading={loading}
       />
 
+      {/* Grades Conflict Modal — shown when an assessment with recorded grades is deactivated */}
+      {gradesConflict.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100">
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center mr-4 flex-shrink-0">
+                  <FiAlertTriangle className="h-7 w-7 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Cannot Deactivate Assessment
+                  </h3>
+                  <p className="text-gray-500 mt-1 text-sm">
+                    Grades have already been recorded
+                  </p>
+                </div>
+              </div>
+
+              {/* Explanation */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <p className="text-amber-800 text-sm">
+                  <span className="font-semibold">
+                    "{gradesConflict.assessmentName}"
+                  </span>{" "}
+                  cannot be deactivated because the following courses already
+                  have grades recorded against it. Deactivating would cause
+                  those grades to disappear from reports.
+                </p>
+              </div>
+
+              {/* Course + Teacher list */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  Courses with recorded grades:
+                </p>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {gradesConflict.courses.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-[#003366] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <FiUsers className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {item.courseName}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {item.teacherName}
+                          {item.teacherEmail && (
+                            <span className="text-gray-400">
+                              {" "}
+                              &middot; {item.teacherEmail}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() =>
+                    setGradesConflict({
+                      isOpen: false,
+                      assessmentName: "",
+                      courses: [],
+                    })
+                  }
+                  className="px-8 py-3 bg-[#003366] text-white font-semibold rounded-xl hover:bg-[#154473] transition-all duration-300 shadow-lg"
+                >
+                  Understood
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Delete Confirmation Modal with Talim Styling */}
       {deleteConfirm.isOpen && deleteConfirm.assessment && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -558,21 +658,21 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
-                    Delete Assessment
+                    Deactivate Assessment
                   </h3>
                   <p className="text-gray-500 mt-1">
-                    This action cannot be undone
+                    The assessment will be hidden from teachers
                   </p>
                 </div>
               </div>
 
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 mb-8">
                 <p className="text-gray-700">
-                  Are you sure you want to delete{" "}
+                  Are you sure you want to deactivate{" "}
                   <span className="font-bold text-gray-900">
                     "{deleteConfirm.assessment?.name}"
                   </span>
-                  ? All associated data will be permanently removed.
+                  ? It will be hidden from teachers and no longer available for grading.
                 </p>
               </div>
 
@@ -598,10 +698,10 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                   {deleteConfirm.loading ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Deleting...
+                      Deactivating...
                     </div>
                   ) : (
-                    "Delete Assessment"
+                    "Deactivate Assessment"
                   )}
                 </button>
               </div>

@@ -52,6 +52,21 @@ export interface AssessmentsResponse {
   };
 }
 
+export interface GradedCourseInfo {
+  courseName: string;
+  teacherName: string;
+  teacherEmail: string;
+}
+
+export class AssessmentHasGradesError extends Error {
+  coursesWithGrades: GradedCourseInfo[];
+  constructor(message: string, courses: GradedCourseInfo[]) {
+    super(message);
+    this.name = 'AssessmentHasGradesError';
+    this.coursesWithGrades = courses;
+  }
+}
+
 class AssessmentService {
   // Note: Authorization headers are now handled automatically by apiClient
 
@@ -175,7 +190,8 @@ class AssessmentService {
   }
 
   /**
-   * Delete an assessment
+   * Deactivate an assessment (soft-delete).
+   * Throws AssessmentHasGradesError (with course/teacher details) when grades exist.
    */
   async deleteAssessment(id: string): Promise<void> {
     try {
@@ -185,6 +201,13 @@ class AssessmentService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 409) {
+          throw new AssessmentHasGradesError(
+            errorData.message ||
+              "Cannot deactivate assessment with existing grades",
+            errorData.coursesWithGrades ?? []
+          );
+        }
         throw new Error(errorData.message || "Failed to delete assessment");
       }
     } catch (error) {
