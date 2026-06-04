@@ -89,6 +89,7 @@ import {
   PrimaryContact,
 } from "@/app/services/school-settings.service";
 import { API_BASE_URL } from "@/app/lib/api/config";
+import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1942,6 +1943,12 @@ function NotificationsSection() {
           {(Object.keys(prefs) as (keyof typeof prefs)[]).map((k) => (
             <ToggleRow key={k} label={labels[k].label} desc={labels[k].desc} checked={prefs[k]} onChange={(v) => setPrefs({ ...prefs, [k]: v })} />
           ))}
+        </div>
+      </Card>
+      <Card>
+        <CardHeader title="Browser Notifications" />
+        <div className="px-5 pb-2 pt-1">
+          <PushNotificationToggle />
         </div>
       </Card>
       <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
