@@ -20,54 +20,26 @@ export interface SchoolSettings {
   };
 }
 
-export interface UserSettings {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-  };
-  timezone: string;
-  language: string;
-  theme: {
-    darkMode: boolean;
-  };
-  layout: {
-    sidebar: boolean;
-    header: boolean;
-  };
-}
-
-export interface SettingsResponse {
-  school: SchoolSettings;
-  user: UserSettings;
-}
-
-export const getSettings = async (): Promise<SettingsResponse> => {
+export const getSettings = async (): Promise<SchoolSettings> => {
   const token = localStorage.getItem('accessToken');
 
   if (!token) {
     throw new Error('User not authenticated');
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/settings`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch settings');
+  const response = await fetch(`${API_BASE_URL}/settings/school-profile`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
     }
+  });
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error('Failed to fetch settings');
   }
+
+  return response.json();
 };
 
 export const updateSchoolSettings = async (settings: Partial<SchoolSettings>): Promise<SchoolSettings> => {
@@ -77,55 +49,20 @@ export const updateSchoolSettings = async (settings: Partial<SchoolSettings>): P
     throw new Error('User not authenticated');
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/settings/school`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(settings)
-    });
+  const response = await fetch(`${API_BASE_URL}/settings/school-profile`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(settings)
+  });
 
-    if (!response.ok) {
-      throw new Error('Failed to update school settings');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error updating school settings:', error);
-    throw error;
-  }
-};
-
-export const updateUserSettings = async (settings: Partial<UserSettings>): Promise<UserSettings> => {
-  const token = localStorage.getItem('accessToken');
-
-  if (!token) {
-    throw new Error('User not authenticated');
+  if (!response.ok) {
+    throw new Error('Failed to update school settings');
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/settings/user`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(settings)
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to update user settings');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error updating user settings:', error);
-    throw error;
-  }
+  return response.json();
 };
 
 export const uploadSchoolLogo = async (file: File): Promise<string> => {
@@ -138,23 +75,16 @@ export const uploadSchoolLogo = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/settings/logo`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      body: formData
-    });
+  const response = await fetch(`${API_BASE_URL}/settings/logo`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData
+  });
 
-    if (!response.ok) {
-      throw new Error('Failed to upload logo');
-    }
-
-    const data = await response.json();
-    return data.url;
-  } catch (error) {
-    console.error('Error uploading logo:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error('Failed to upload logo');
   }
+
+  const data = await response.json();
+  return data.url;
 };
