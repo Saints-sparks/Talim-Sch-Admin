@@ -25,11 +25,7 @@ export const mockSubAdmin = {
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 function AllProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      {children}
-    </ThemeProvider>
-  );
+  return <ThemeProvider>{children}</ThemeProvider>;
 }
 
 // ─── Custom render ────────────────────────────────────────────────────────────

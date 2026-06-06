@@ -35,7 +35,7 @@ const preview: Preview = {
   },
   decorators: [
     (Story) => (
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <ThemeProvider>
         <div className="font-sans antialiased p-4">
           <Story />
         </div>
