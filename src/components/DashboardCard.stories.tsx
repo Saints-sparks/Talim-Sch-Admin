@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { vi } from "vitest";
+import { fn } from "storybook/test";
 import DashboardCard from "./DashboardCard";
 
 // Use inline SVG elements as icons — avoids importing from Icons.tsx which may
@@ -44,7 +44,7 @@ const meta: Meta<typeof DashboardCard> = {
   title: "Dashboard/DashboardCard",
   component: DashboardCard,
   tags: ["autodocs"],
-  args: { onNavigate: vi.fn() },
+  args: { onNavigate: fn() },
   decorators: [
     (Story) => (
       <div className="grid grid-cols-2 gap-4 max-w-xl">

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { vi } from "vitest";
+import { fn } from "storybook/test";
 import { Button } from "./button";
 
 const meta: Meta<typeof Button> = {
@@ -17,7 +17,7 @@ const meta: Meta<typeof Button> = {
     },
     disabled: { control: "boolean" },
   },
-  args: { onClick: vi.fn() },
+  args: { onClick: fn() },
 };
 
 export default meta;

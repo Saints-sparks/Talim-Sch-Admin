@@ -1,7 +1,6 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect } from "vitest";
-import { within } from "@testing-library/react";
+import { expect, within } from "storybook/test";
 import { PermissionGate } from "./PermissionGate";
 
 // ─── Mock usePermissions per story via a module-level mock ───────────────────

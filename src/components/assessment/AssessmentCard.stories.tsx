@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, vi } from "vitest";
-import { within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { expect, fn, userEvent, within } from "storybook/test";
 import AssessmentCard from "./AssessmentCard";
 import type { Assessment } from "./AssessmentForm.types";
 
@@ -31,9 +29,9 @@ const meta: Meta<typeof AssessmentCard> = {
   component: AssessmentCard,
   tags: ["autodocs"],
   args: {
-    onEdit: vi.fn(),
-    onDelete: vi.fn(),
-    onView: vi.fn(),
+    onEdit: fn(),
+    onDelete: fn(),
+    onView: fn(),
   },
   decorators: [
     (Story) => (

@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect } from "vitest";
-import { within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { expect, userEvent, within } from "storybook/test";
 import {
   DropdownMenu,
   DropdownMenuContent,
