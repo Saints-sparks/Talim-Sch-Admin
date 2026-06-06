@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
@@ -59,7 +52,7 @@ interface AuthContextType {
   updateUser: (partial: Partial<User>) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -82,11 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const getStoredAccessToken = () =>
     localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
 
-  const persistSession = (
-    token: string,
-    userData: User,
-    keepSignedIn = true
-  ) => {
+  const persistSession = (token: string, userData: User, keepSignedIn = true) => {
     setAccessTokenState(token);
     apiClient.setAccessToken(token);
     setUser(userData);
@@ -117,11 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("user");
 
-    if (
-      redirectToLogin &&
-      typeof window !== "undefined" &&
-      window.location.pathname !== "/"
-    ) {
+    if (redirectToLogin && typeof window !== "undefined" && window.location.pathname !== "/") {
       window.location.assign("/");
     }
   }, []);
@@ -154,17 +139,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Introspect token to get user info using access token
   const introspectToken = async (token: string, redirectOnFailure = true) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -202,11 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Login function — includes RBAC: only school_admin role is permitted
-  const login = async (
-    email: string,
-    password: string,
-    keepSignedIn = true
-  ): Promise<boolean> => {
+  const login = async (email: string, password: string, keepSignedIn = true): Promise<boolean> => {
     try {
       // Step 1: Authenticate
       const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGIN}`, {
@@ -227,7 +205,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const msg = errorData.message || "Login failed";
         // Make credential errors descriptive
         if (response.status === 401) {
-          throw new Error("Incorrect email or password. Please check your credentials and try again.");
+          throw new Error(
+            "Incorrect email or password. Please check your credentials and try again."
+          );
         }
         throw new Error(msg);
       }
@@ -257,8 +237,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const friendlyRole = userData.role.replace(/_/g, " ");
         throw new Error(
           `Access denied. This portal is for school administrators only. ` +
-          `Your account is registered as "${friendlyRole}". ` +
-          `Please use the correct Talim app for your role.`
+            `Your account is registered as "${friendlyRole}". ` +
+            `Please use the correct Talim app for your role.`
         );
       }
 
@@ -269,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       throw error;
     }
@@ -283,13 +263,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     refreshPromiseRef.current = (async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}${API_URLS.AUTH.REFRESH}`,
-          {
-            method: "POST",
-            credentials: "include",
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.REFRESH}`, {
+          method: "POST",
+          credentials: "include",
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -359,14 +336,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Check for stored token first
         const storedToken = getStoredAccessToken();
-        
+
         if (storedToken) {
           // We have a stored token, try to use it
           setAccessTokenState(storedToken);
           apiClient.setAccessToken(storedToken);
           try {
             await introspectToken(storedToken, false);
-          } catch (error) {
+          } catch {
             const refreshed = await refreshToken();
             if (!refreshed) {
               clearSession(true);
@@ -376,12 +353,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // No stored token, try to refresh
           const success = await refreshToken();
           if (!success) {
-            const storedUser =
-              localStorage.getItem("user") || sessionStorage.getItem("user");
+            const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
             if (storedUser) {
               try {
                 setUser(JSON.parse(storedUser));
-              } catch (error) {
+              } catch {
                 localStorage.removeItem("user");
               }
             }
@@ -401,9 +377,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!accessToken) return;
 
-    const refreshInterval = setInterval(() => {
-      refreshToken();
-    }, 10 * 60 * 1000);
+    const refreshInterval = setInterval(
+      () => {
+        refreshToken();
+      },
+      10 * 60 * 1000
+    );
 
     return () => clearInterval(refreshInterval);
   }, [accessToken]);

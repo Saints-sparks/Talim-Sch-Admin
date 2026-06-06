@@ -1,9 +1,38 @@
 import React from "react";
 import type { Preview } from "@storybook/nextjs-vite";
 import { ThemeProvider } from "../src/providers/theme-provider";
+import { AuthContext } from "../src/context/AuthContext";
 
 // Import global CSS so Tailwind classes and CSS variables resolve inside stories
 import "../src/app/globals.css";
+
+// ─── Mock auth value used by every story ─────────────────────────────────────
+// Represents a logged-in school_admin with full access.
+// Override per-story via parameters.mockAuth if a story needs a sub-admin role.
+const mockAuthValue = {
+  user: {
+    userId: "storybook-user",
+    email: "admin@talim.test",
+    firstName: "Story",
+    lastName: "Admin",
+    role: "school_admin",
+    schoolId: "school-1",
+    schoolName: "Talim Demo School",
+    permissions: [] as string[],
+    isSubAdmin: false,
+  },
+  accessToken: "mock-token",
+  isAuthenticated: true,
+  isLoading: false,
+  isFullAdmin: true,
+  isSubAdmin: false,
+  hasPermission: () => true,
+  login: async () => true,
+  logout: async () => {},
+  refreshToken: async () => true,
+  setAccessToken: () => {},
+  updateUser: () => {},
+};
 
 const preview: Preview = {
   parameters: {
@@ -35,11 +64,13 @@ const preview: Preview = {
   },
   decorators: [
     (Story) => (
-      <ThemeProvider>
-        <div className="font-sans antialiased p-4">
-          <Story />
-        </div>
-      </ThemeProvider>
+      <AuthContext.Provider value={mockAuthValue}>
+        <ThemeProvider>
+          <div className="font-sans antialiased p-4">
+            <Story />
+          </div>
+        </ThemeProvider>
+      </AuthContext.Provider>
     ),
   ],
 };
