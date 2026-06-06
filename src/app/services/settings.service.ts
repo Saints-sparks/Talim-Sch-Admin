@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../lib/api/config';
-import { getLocalStorageItem } from '../lib/localStorage';
-import { toast } from "@/components/CustomToast";
+import { API_BASE_URL } from "../lib/api/config";
 
 export interface SchoolSettings {
   name: string;
@@ -21,68 +19,70 @@ export interface SchoolSettings {
 }
 
 export const getSettings = async (): Promise<SchoolSettings> => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
 
   if (!token) {
-    throw new Error('User not authenticated');
+    throw new Error("User not authenticated");
   }
 
   const response = await fetch(`${API_BASE_URL}/settings/school-profile`, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    }
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch settings');
+    throw new Error("Failed to fetch settings");
   }
 
   return response.json();
 };
 
-export const updateSchoolSettings = async (settings: Partial<SchoolSettings>): Promise<SchoolSettings> => {
-  const token = localStorage.getItem('accessToken');
+export const updateSchoolSettings = async (
+  settings: Partial<SchoolSettings>
+): Promise<SchoolSettings> => {
+  const token = localStorage.getItem("accessToken");
 
   if (!token) {
-    throw new Error('User not authenticated');
+    throw new Error("User not authenticated");
   }
 
   const response = await fetch(`${API_BASE_URL}/settings/school-profile`, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(settings)
+    body: JSON.stringify(settings),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to update school settings');
+    throw new Error("Failed to update school settings");
   }
 
   return response.json();
 };
 
 export const uploadSchoolLogo = async (file: File): Promise<string> => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
 
   if (!token) {
-    throw new Error('User not authenticated');
+    throw new Error("User not authenticated");
   }
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
 
   const response = await fetch(`${API_BASE_URL}/settings/logo`, {
-    method: 'POST',
+    method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: formData
+    body: formData,
   });
 
   if (!response.ok) {
-    throw new Error('Failed to upload logo');
+    throw new Error("Failed to upload logo");
   }
 
   const data = await response.json();

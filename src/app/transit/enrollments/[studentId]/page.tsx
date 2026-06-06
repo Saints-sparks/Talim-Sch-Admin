@@ -2,23 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Download, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import {
   getStudentEnrollmentHistory,
   createEnrollment,
   StudentEnrollment,
 } from "@/app/services/transit.service";
-import { getAcademicYears, getTerms, AcademicYearResponse, TermResponse } from "@/app/services/academic.service";
-import { getClasses, studentService, Class, Student } from "@/app/services/student.service";
+import {
+  getAcademicYears,
+  getTerms,
+  AcademicYearResponse,
+  TermResponse,
+} from "@/app/services/academic.service";
+import { getClasses, studentService, Class } from "@/app/services/student.service";
 import { toast } from "@/components/CustomToast";
 import { cn } from "@/lib/utils";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(d?: string) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function resolveStr(v: string | { _id: string; name?: string } | undefined): string {
@@ -75,7 +84,14 @@ interface EnrollModalProps {
   terms: TermResponse[];
 }
 
-function EnrollModal({ studentId, onClose, onSuccess, classes, academicYears, terms }: EnrollModalProps) {
+function EnrollModal({
+  studentId,
+  onClose,
+  onSuccess,
+  classes,
+  academicYears,
+  terms,
+}: EnrollModalProps) {
   const [classId, setClassId] = useState("");
   const [academicYearId, setAcademicYearId] = useState("");
   const [termId, setTermId] = useState("");
@@ -88,7 +104,13 @@ function EnrollModal({ studentId, onClose, onSuccess, classes, academicYears, te
     }
     setSubmitting(true);
     try {
-      await createEnrollment({ studentId, classId, academicYearId, termId: termId || undefined, source: "manual" });
+      await createEnrollment({
+        studentId,
+        classId,
+        academicYearId,
+        termId: termId || undefined,
+        source: "manual",
+      });
       toast.success("Student enrolled successfully");
       onSuccess();
     } catch (err: unknown) {
@@ -108,35 +130,73 @@ function EnrollModal({ studentId, onClose, onSuccess, classes, academicYears, te
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-[#030E18]">Enroll in New Class</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
             <X className="w-4 h-4 text-[#929292]" />
           </button>
         </div>
         <div className="px-6 py-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#030E18] mb-1.5">Class <span className="text-red-500">*</span></label>
-            <select value={classId} onChange={(e) => setClassId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white">
+            <label className="block text-sm font-medium text-[#030E18] mb-1.5">
+              Class <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white"
+            >
               <option value="">Select class...</option>
-              {classes.map((c) => <option key={c._id} value={c._id}>{c.name} {c.gradeLevel ? `(${c.gradeLevel})` : ""}</option>)}
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} {c.gradeLevel ? `(${c.gradeLevel})` : ""}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#030E18] mb-1.5">Academic Year <span className="text-red-500">*</span></label>
-            <select value={academicYearId} onChange={(e) => setAcademicYearId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white">
+            <label className="block text-sm font-medium text-[#030E18] mb-1.5">
+              Academic Year <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={academicYearId}
+              onChange={(e) => setAcademicYearId(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white"
+            >
               <option value="">Select academic year...</option>
-              {academicYears.map((y) => <option key={y._id} value={y._id}>{y.year}</option>)}
+              {academicYears.map((y) => (
+                <option key={y._id} value={y._id}>
+                  {y.year}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#030E18] mb-1.5">Term <span className="text-[#929292] font-normal">(optional)</span></label>
-            <select value={termId} onChange={(e) => setTermId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white">
+            <label className="block text-sm font-medium text-[#030E18] mb-1.5">
+              Term <span className="text-[#929292] font-normal">(optional)</span>
+            </label>
+            <select
+              value={termId}
+              onChange={(e) => setTermId(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] bg-white"
+            >
               <option value="">Select term...</option>
-              {terms.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+              {terms.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-[#4A5568] border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-[#4A5568] border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || !classId || !academicYearId}
@@ -196,7 +256,8 @@ export default function StudentEnrollmentHistoryPage() {
   // Try to get student name from directory if not yet set
   useEffect(() => {
     if (studentName) return;
-    studentService.getStudentById(studentId)
+    studentService
+      .getStudentById(studentId)
       .then((s) => {
         if (s?.userId) {
           setStudentName(`${s.userId.firstName ?? ""} ${s.userId.lastName ?? ""}`.trim());
@@ -222,7 +283,9 @@ export default function StudentEnrollmentHistoryPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-[#030E18]">{studentName || "Student"}</h1>
               {activeEnrollment && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  Active
+                </span>
               )}
             </div>
             <p className="text-sm text-[#929292]">Enrollment history</p>
@@ -260,37 +323,60 @@ export default function StudentEnrollmentHistoryPage() {
             {history.map((e, idx) => (
               <div key={e._id} className="flex gap-4 relative">
                 {/* dot */}
-                <div className={cn(
-                  "relative z-10 flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center",
-                  e.status === "active" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"
-                )}>
-                  <div className={cn(
-                    "w-3 h-3 rounded-full",
-                    e.status === "active" ? "bg-green-500" : "bg-gray-300"
-                  )} />
+                <div
+                  className={cn(
+                    "relative z-10 flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center",
+                    e.status === "active"
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 bg-white"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-3 h-3 rounded-full",
+                      e.status === "active" ? "bg-green-500" : "bg-gray-300"
+                    )}
+                  />
                 </div>
 
                 {/* card */}
-                <div className={cn(
-                  "flex-1 bg-white border border-gray-100 rounded-xl p-4 shadow-sm",
-                  STATUS_BORDER[e.status] ?? "border-l-4 border-gray-100"
-                )}>
+                <div
+                  className={cn(
+                    "flex-1 bg-white border border-gray-100 rounded-xl p-4 shadow-sm",
+                    STATUS_BORDER[e.status] ?? "border-l-4 border-gray-100"
+                  )}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-[#030E18]">{resolveClassName(e.classId)}</span>
-                        <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", STATUS_BADGE[e.status] ?? "bg-gray-100 text-gray-600")}>
+                        <span className="font-semibold text-[#030E18]">
+                          {resolveClassName(e.classId)}
+                        </span>
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-medium",
+                            STATUS_BADGE[e.status] ?? "bg-gray-100 text-gray-600"
+                          )}
+                        >
                           {STATUS_LABEL[e.status] ?? e.status}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{e.source}</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          {e.source}
+                        </span>
                       </div>
-                      <p className="text-sm text-[#4A5568] mt-1">{resolveStr(e.academicYearId as string | { _id: string; name?: string })}</p>
+                      <p className="text-sm text-[#4A5568] mt-1">
+                        {resolveStr(e.academicYearId as string | { _id: string; name?: string })}
+                      </p>
                       {e.termId && (
-                        <p className="text-xs text-[#929292]">{resolveStr(e.termId as string | { _id: string; name?: string })}</p>
+                        <p className="text-xs text-[#929292]">
+                          {resolveStr(e.termId as string | { _id: string; name?: string })}
+                        </p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-[#929292]">{fmtDate(e.startDate ?? e.createdAt)}</p>
+                      <p className="text-xs text-[#929292]">
+                        {fmtDate(e.startDate ?? e.createdAt)}
+                      </p>
                       {e.endDate && (
                         <p className="text-xs text-[#929292]">— {fmtDate(e.endDate)}</p>
                       )}
@@ -310,7 +396,10 @@ export default function StudentEnrollmentHistoryPage() {
         <EnrollModal
           studentId={studentId}
           onClose={() => setShowEnrollModal(false)}
-          onSuccess={() => { setShowEnrollModal(false); loadHistory(); }}
+          onSuccess={() => {
+            setShowEnrollModal(false);
+            loadHistory();
+          }}
           classes={classes}
           academicYears={academicYears}
           terms={terms}

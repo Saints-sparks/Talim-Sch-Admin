@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HiUserCircle, HiHome, HiPencil, HiTrash } from "react-icons/hi";
+import { HiPencil, HiTrash } from "react-icons/hi";
 
 export default function AddStudent() {
   const [formData, setFormData] = useState({
@@ -22,9 +22,7 @@ export default function AddStudent() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -67,9 +65,7 @@ export default function AddStudent() {
                 />
                 <div className="absolute top-0 right-0 flex gap-2">
                   <button
-                    onClick={() =>
-                      document.getElementById("photoInput")?.click()
-                    }
+                    onClick={() => document.getElementById("photoInput")?.click()}
                     className="bg-gray-100 p-2 rounded-full hover:bg-gray-200"
                   >
                     <HiPencil className="text-gray-600" />
@@ -205,10 +201,7 @@ export default function AddStudent() {
               className="border border-gray-300 p-2 rounded-md"
             />
             <div className="col-span-2 flex justify-center gap-4 mt-6">
-              <button
-                type="submit"
-                className="bg-[#154473] text-white px-6 py-2 rounded-md"
-              >
+              <button type="submit" className="bg-[#154473] text-white px-6 py-2 rounded-md">
                 Submit
               </button>
               <button

@@ -1,8 +1,7 @@
 // FloatingHeader.tsx
-'use client';
-import { Class } from '@/app/services/student.service';
-import React, { useState, useEffect } from 'react';
-import { toast } from "@/components/CustomToast";
+"use client";
+import { Class } from "@/app/services/student.service";
+import React from "react";
 
 interface FloatingHeaderProps {
   selectedClass: string;
@@ -15,7 +14,6 @@ const FloatingHeader: React.FC<FloatingHeaderProps> = ({
   onSelectClass,
   classList,
 }) => {
-
   return (
     <div className="sticky top-0 z-10 bg-white px-6 py-4 border-b flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
       <div className="text-2xl font-medium text-gray-700">Curriculum</div>

@@ -1,5 +1,4 @@
 import { API_ENDPOINTS } from "../lib/api/config";
-import { getLocalStorageItem } from "../lib/localStorage";
 import { apiClient } from "@/lib/apiClient";
 
 export interface CreateAssessmentRequest {
@@ -62,7 +61,7 @@ export class AssessmentHasGradesError extends Error {
   coursesWithGrades: GradedCourseInfo[];
   constructor(message: string, courses: GradedCourseInfo[]) {
     super(message);
-    this.name = 'AssessmentHasGradesError';
+    this.name = "AssessmentHasGradesError";
     this.coursesWithGrades = courses;
   }
 }
@@ -73,14 +72,9 @@ class AssessmentService {
   /**
    * Create a new assessment
    */
-  async createAssessment(
-    data: CreateAssessmentRequest
-  ): Promise<AssessmentResponse> {
+  async createAssessment(data: CreateAssessmentRequest): Promise<AssessmentResponse> {
     try {
-      const response = await apiClient.post(
-        `${API_ENDPOINTS.BASE_URL}/assessments`,
-        data
-      );
+      const response = await apiClient.post(`${API_ENDPOINTS.BASE_URL}/assessments`, data);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -98,10 +92,7 @@ class AssessmentService {
   /**
    * Get assessments by school with pagination
    */
-  async getAssessmentsBySchool(
-    page: number = 1,
-    limit: number = 10
-  ): Promise<AssessmentsResponse> {
+  async getAssessmentsBySchool(page: number = 1, limit: number = 10): Promise<AssessmentsResponse> {
     try {
       const response = await apiClient.get(
         `${API_ENDPOINTS.BASE_URL}/assessments/school/?page=${page}&limit=${limit}`
@@ -124,15 +115,11 @@ class AssessmentService {
    */
   async getAssessmentsByTerm(termId: string): Promise<AssessmentResponse[]> {
     try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.BASE_URL}/assessments/term/${termId}`
-      );
+      const response = await apiClient.get(`${API_ENDPOINTS.BASE_URL}/assessments/term/${termId}`);
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to fetch assessments for term"
-        );
+        throw new Error(errorData.message || "Failed to fetch assessments for term");
       }
 
       return await response.json();
@@ -147,9 +134,7 @@ class AssessmentService {
    */
   async getAssessmentById(id: string): Promise<AssessmentResponse> {
     try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`
-      );
+      const response = await apiClient.get(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -166,15 +151,9 @@ class AssessmentService {
   /**
    * Update an assessment
    */
-  async updateAssessment(
-    id: string,
-    data: UpdateAssessmentRequest
-  ): Promise<AssessmentResponse> {
+  async updateAssessment(id: string, data: UpdateAssessmentRequest): Promise<AssessmentResponse> {
     try {
-      const response = await apiClient.put(
-        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`,
-        data
-      );
+      const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`, data);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -195,16 +174,13 @@ class AssessmentService {
    */
   async deleteAssessment(id: string): Promise<void> {
     try {
-      const response = await apiClient.delete(
-        `${API_ENDPOINTS.BASE_URL}/assessments/${id}`
-      );
+      const response = await apiClient.delete(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`);
 
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 409) {
           throw new AssessmentHasGradesError(
-            errorData.message ||
-              "Cannot deactivate assessment with existing grades",
+            errorData.message || "Cannot deactivate assessment with existing grades",
             errorData.coursesWithGrades ?? []
           );
         }

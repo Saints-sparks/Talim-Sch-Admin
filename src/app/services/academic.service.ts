@@ -1,7 +1,4 @@
 import { API_ENDPOINTS } from "../lib/api/config";
-import { getLocalStorageItem } from "../lib/localStorage";
-import { toast } from "@/components/CustomToast";
-import { User } from "@/app/types/user";
 import { apiClient } from "@/lib/apiClient";
 
 export interface AcademicYear {
@@ -92,10 +89,7 @@ export const createAcademicYear = async (
       // endDate: formatDate(academicYear.endDate)
     };
 
-    const response = await apiClient.post(
-      `${API_ENDPOINTS.CREATE_ACADEMIC_YEAR}`,
-      formattedData
-    );
+    const response = await apiClient.post(`${API_ENDPOINTS.CREATE_ACADEMIC_YEAR}`, formattedData);
 
     if (!response.ok) {
       throw new Error("Failed to create academic year");
@@ -110,9 +104,7 @@ export const createAcademicYear = async (
   }
 };
 
-export const createTerm = async (
-  data: Omit<Term, "schoolId">
-): Promise<TermResponse> => {
+export const createTerm = async (data: Omit<Term, "schoolId">): Promise<TermResponse> => {
   try {
     const response = await apiClient.post(`${API_ENDPOINTS.CREATE_TERM}`, {
       ...data,

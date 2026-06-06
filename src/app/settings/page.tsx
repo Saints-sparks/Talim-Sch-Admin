@@ -31,8 +31,6 @@ import {
   Download,
   ExternalLink,
   Lock,
-  RefreshCw,
-  ChevronDown,
   AlertCircle,
   CheckCircle2,
   Info,
@@ -44,8 +42,6 @@ import {
   Camera,
   MapPin,
   Phone,
-  Globe,
-  LogIn,
   User,
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
@@ -114,17 +110,67 @@ const SECTIONS: {
   desc: string;
   icon: React.ElementType;
 }[] = [
-  { id: "school-profile", label: "School Profile", desc: "School information and branding", icon: School },
-  { id: "admin-account", label: "Admin Profile", desc: "Personal information & preferences", icon: UserCog },
-  { id: "academic-setup", label: "Academic Setup", desc: "Academic year, terms and grading periods", icon: Calendar },
-  { id: "classes-curriculum", label: "Classes & Curriculum", desc: "Class levels, subjects and curriculum", icon: BookOpen },
-  { id: "assessment-settings", label: "Assessment Settings", desc: "Grading rules and assessment preferences", icon: BarChart2 },
-  { id: "fees-receipts", label: "Fees & Receipts", desc: "Fee categories, invoices and receipt design", icon: Receipt },
-  { id: "payments-finance", label: "Payments & Finance", desc: "Wallet, withdrawals and payout settings", icon: Wallet },
-  { id: "communication", label: "Communication", desc: "Email, SMS and messaging preferences", icon: MessageSquare },
-  { id: "notifications", label: "Notifications", desc: "Notification preferences and alerts", icon: Bell },
+  {
+    id: "school-profile",
+    label: "School Profile",
+    desc: "School information and branding",
+    icon: School,
+  },
+  {
+    id: "admin-account",
+    label: "Admin Profile",
+    desc: "Personal information & preferences",
+    icon: UserCog,
+  },
+  {
+    id: "academic-setup",
+    label: "Academic Setup",
+    desc: "Academic year, terms and grading periods",
+    icon: Calendar,
+  },
+  {
+    id: "classes-curriculum",
+    label: "Classes & Curriculum",
+    desc: "Class levels, subjects and curriculum",
+    icon: BookOpen,
+  },
+  {
+    id: "assessment-settings",
+    label: "Assessment Settings",
+    desc: "Grading rules and assessment preferences",
+    icon: BarChart2,
+  },
+  {
+    id: "fees-receipts",
+    label: "Fees & Receipts",
+    desc: "Fee categories, invoices and receipt design",
+    icon: Receipt,
+  },
+  {
+    id: "payments-finance",
+    label: "Payments & Finance",
+    desc: "Wallet, withdrawals and payout settings",
+    icon: Wallet,
+  },
+  {
+    id: "communication",
+    label: "Communication",
+    desc: "Email, SMS and messaging preferences",
+    icon: MessageSquare,
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    desc: "Notification preferences and alerts",
+    icon: Bell,
+  },
   { id: "security", label: "Security", desc: "Password, OTP and access security", icon: Shield },
-  { id: "data-system", label: "Data & System", desc: "Backups, exports and system info", icon: Database },
+  {
+    id: "data-system",
+    label: "Data & System",
+    desc: "Backups, exports and system info",
+    icon: Database,
+  },
   { id: "appearance", label: "Appearance", desc: "Theme and display preferences", icon: Palette },
   { id: "sub-admins", label: "Sub-Admins", desc: "Delegate admin responsibilities", icon: Users },
 ];
@@ -140,9 +186,20 @@ function SectionHeader({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+function Card({
+  children,
+  className = "",
+  onClick,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 ${className}`} onClick={onClick}>
+    <div
+      className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 ${className}`}
+      onClick={onClick}
+    >
       {children}
     </div>
   );
@@ -298,7 +355,9 @@ function StatusBadge({ status }: { status: string }) {
   };
   const key = status.toLowerCase();
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${map[key] || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${map[key] || "bg-gray-100 text-gray-600 border-gray-200"}`}
+    >
       {status}
     </span>
   );
@@ -349,7 +408,12 @@ function SchoolProfileSection() {
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ physicalAddress: "", contactName: "", contactPhone: "", contactRole: "" });
+  const [form, setForm] = useState({
+    physicalAddress: "",
+    contactName: "",
+    contactPhone: "",
+    contactRole: "",
+  });
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -376,7 +440,12 @@ function SchoolProfileSection() {
           const data = JSON.parse(raw);
           const s = data.schoolId || {};
           setSchool(s);
-          setForm({ physicalAddress: s.physicalAddress || "", contactName: "", contactPhone: "", contactRole: "" });
+          setForm({
+            physicalAddress: s.physicalAddress || "",
+            contactName: "",
+            contactPhone: "",
+            contactRole: "",
+          });
         }
       } catch {}
     } finally {
@@ -407,7 +476,7 @@ function SchoolProfileSection() {
       const data = await res.json();
       if (data.secure_url) {
         await updateSchoolProfile({ logo: data.secure_url });
-        setSchool((prev) => prev ? { ...prev, logo: data.secure_url } : prev);
+        setSchool((prev) => (prev ? { ...prev, logo: data.secure_url } : prev));
         // Update localStorage too
         try {
           const raw = localStorage.getItem("user");
@@ -430,7 +499,14 @@ function SchoolProfileSection() {
     setSaving(true);
     try {
       const contacts: PrimaryContact[] = form.contactName
-        ? [{ name: form.contactName, phone: form.contactPhone, email: school?.email || "", role: form.contactRole || "Principal" }]
+        ? [
+            {
+              name: form.contactName,
+              phone: form.contactPhone,
+              email: school?.email || "",
+              role: form.contactRole || "Principal",
+            },
+          ]
         : school?.primaryContacts || [];
 
       const res = await updateSchoolProfile({
@@ -475,7 +551,13 @@ function SchoolProfileSection() {
             )}
           </div>
           <div>
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoUpload} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
             <OutlineBtn onClick={() => fileRef.current?.click()} disabled={uploading}>
               <Upload className="w-4 h-4" />
               {uploading ? "Uploading…" : "Change Logo"}
@@ -492,8 +574,12 @@ function SchoolProfileSection() {
           action={
             editing ? (
               <div className="flex gap-2">
-                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>Cancel</OutlineBtn>
-                <PrimaryBtn onClick={handleSave} loading={saving}>Save Changes</PrimaryBtn>
+                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>
+                  Cancel
+                </OutlineBtn>
+                <PrimaryBtn onClick={handleSave} loading={saving}>
+                  Save Changes
+                </PrimaryBtn>
               </div>
             ) : (
               <OutlineBtn onClick={() => setEditing(true)}>
@@ -512,7 +598,9 @@ function SchoolProfileSection() {
 
           {editing ? (
             <div className="space-y-4 pt-2 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editable Fields</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Editable Fields
+              </p>
               <InputField
                 label="Physical Address"
                 value={form.physicalAddress}
@@ -544,7 +632,9 @@ function SchoolProfileSection() {
             <>
               <div className="flex items-start gap-2 pt-2">
                 <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700 dark:text-slate-300">{school?.physicalAddress || "—"}</span>
+                <span className="text-sm text-gray-700 dark:text-slate-300">
+                  {school?.physicalAddress || "—"}
+                </span>
               </div>
               {contact && (
                 <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -565,7 +655,9 @@ function SchoolProfileSection() {
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700">
               School name, email and code are managed by Talim support. Contact{" "}
-              <a href="mailto:support@mytalim.com" className="underline font-medium">support@mytalim.com</a>{" "}
+              <a href="mailto:support@mytalim.com" className="underline font-medium">
+                support@mytalim.com
+              </a>{" "}
               to request changes.
             </p>
           </div>
@@ -596,7 +688,11 @@ function AdminAccountSection() {
       if (user) {
         const data = JSON.parse(user);
         setProfile(data);
-        setForm({ firstName: data.firstName || "", lastName: data.lastName || "", phoneNumber: data.phoneNumber || "" });
+        setForm({
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          phoneNumber: data.phoneNumber || "",
+        });
       }
     } catch {}
 
@@ -614,7 +710,11 @@ function AdminAccountSection() {
       const merged = { ...cached, ...fresh };
       localStorage.setItem("user", JSON.stringify(merged));
       setProfile(merged);
-      setForm({ firstName: merged.firstName || "", lastName: merged.lastName || "", phoneNumber: merged.phoneNumber || "" });
+      setForm({
+        firstName: merged.firstName || "",
+        lastName: merged.lastName || "",
+        phoneNumber: merged.phoneNumber || "",
+      });
     } catch {}
   };
 
@@ -703,7 +803,13 @@ function AdminAccountSection() {
             )}
           </div>
           <div>
-            <input ref={avatarRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleAvatarUpload} />
+            <input
+              ref={avatarRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
             <OutlineBtn onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}>
               <Camera className="w-4 h-4" />
               {uploadingAvatar ? "Uploading…" : "Change Picture"}
@@ -720,8 +826,12 @@ function AdminAccountSection() {
           action={
             editing ? (
               <div className="flex gap-2">
-                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>Cancel</OutlineBtn>
-                <PrimaryBtn onClick={handleSave} loading={saving}>Save Changes</PrimaryBtn>
+                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>
+                  Cancel
+                </OutlineBtn>
+                <PrimaryBtn onClick={handleSave} loading={saving}>
+                  Save Changes
+                </PrimaryBtn>
               </div>
             ) : (
               <OutlineBtn onClick={() => setEditing(true)}>
@@ -734,17 +844,37 @@ function AdminAccountSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {editing ? (
               <>
-                <InputField label="First Name" value={form.firstName} onChange={(v) => setForm({ ...form, firstName: v })} required />
-                <InputField label="Last Name" value={form.lastName} onChange={(v) => setForm({ ...form, lastName: v })} required />
-                <InputField label="Phone Number" value={form.phoneNumber} onChange={(v) => setForm({ ...form, phoneNumber: v })} />
+                <InputField
+                  label="First Name"
+                  value={form.firstName}
+                  onChange={(v) => setForm({ ...form, firstName: v })}
+                  required
+                />
+                <InputField
+                  label="Last Name"
+                  value={form.lastName}
+                  onChange={(v) => setForm({ ...form, lastName: v })}
+                  required
+                />
+                <InputField
+                  label="Phone Number"
+                  value={form.phoneNumber}
+                  onChange={(v) => setForm({ ...form, phoneNumber: v })}
+                />
                 <ReadOnlyField label="Email" value={profile?.email} />
               </>
             ) : (
               <>
-                <ReadOnlyField label="Full Name" value={`${profile?.firstName || ""} ${profile?.lastName || ""}`.trim()} />
+                <ReadOnlyField
+                  label="Full Name"
+                  value={`${profile?.firstName || ""} ${profile?.lastName || ""}`.trim()}
+                />
                 <ReadOnlyField label="Email" value={profile?.email} />
                 <ReadOnlyField label="Phone Number" value={profile?.phoneNumber || "Not set"} />
-                <ReadOnlyField label="Role" value={profile?.role?.replace(/_/g, " ") || "School Admin"} />
+                <ReadOnlyField
+                  label="Role"
+                  value={profile?.role?.replace(/_/g, " ") || "School Admin"}
+                />
               </>
             )}
           </div>
@@ -773,9 +903,7 @@ function AdminAccountSection() {
       </Card>
 
       <AnimatePresence>
-        {showPwModal && (
-          <ChangePasswordModal onClose={() => setShowPwModal(false)} />
-        )}
+        {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}
       </AnimatePresence>
     </div>
   );
@@ -823,7 +951,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           const fields = ["currentPassword", "newPassword", "confirmPassword"] as const;
           return (
             <div key={key}>
-              <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">{labels[i]}</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+                {labels[i]}
+              </label>
               <div className="relative">
                 <input
                   type={show[key] ? "text" : "password"}
@@ -832,8 +962,11 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                   required
                   className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none"
                 />
-                <button type="button" onClick={() => setShow({ ...show, [key]: !show[key] })}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <button
+                  type="button"
+                  onClick={() => setShow({ ...show, [key]: !show[key] })}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
                   {show[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -844,7 +977,10 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         {form.newPassword && (
           <ul className="space-y-1">
             {rules.map((r) => (
-              <li key={r.text} className={`flex items-center gap-1.5 text-xs ${r.ok ? "text-green-600" : "text-gray-400"}`}>
+              <li
+                key={r.text}
+                className={`flex items-center gap-1.5 text-xs ${r.ok ? "text-green-600" : "text-gray-400"}`}
+              >
                 <Check className={`w-3 h-3 ${r.ok ? "" : "opacity-0"}`} />
                 {r.text}
               </li>
@@ -853,8 +989,12 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="flex gap-3 pt-2">
-          <OutlineBtn onClick={onClose} disabled={saving} className="flex-1 justify-center">Cancel</OutlineBtn>
-          <PrimaryBtn type="submit" loading={saving} className="flex-1 justify-center">Update Password</PrimaryBtn>
+          <OutlineBtn onClick={onClose} disabled={saving} className="flex-1 justify-center">
+            Cancel
+          </OutlineBtn>
+          <PrimaryBtn type="submit" loading={saving} className="flex-1 justify-center">
+            Update Password
+          </PrimaryBtn>
         </div>
       </form>
     </ModalShell>
@@ -873,8 +1013,19 @@ function AcademicSetupSection() {
   const [showChangeTermModal, setShowChangeTermModal] = useState(false);
   const [pendingTermId, setPendingTermId] = useState("");
 
-  const [yearForm, setYearForm] = useState({ year: "", startDate: "", endDate: "", isCurrent: false });
-  const [termForm, setTermForm] = useState({ name: "", startDate: "", endDate: "", isCurrent: false, academicYearId: "" });
+  const [yearForm, setYearForm] = useState({
+    year: "",
+    startDate: "",
+    endDate: "",
+    isCurrent: false,
+  });
+  const [termForm, setTermForm] = useState({
+    name: "",
+    startDate: "",
+    endDate: "",
+    isCurrent: false,
+    academicYearId: "",
+  });
 
   const uniqueYears = years.reduce<AcademicYearResponse[]>((acc, y) => {
     const ex = acc.find((a) => a.year === y.year);
@@ -889,7 +1040,10 @@ function AcademicSetupSection() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [y, t] = await Promise.all([getAcademicYears().catch(() => []), getTerms().catch(() => [])]);
+      const [y, t] = await Promise.all([
+        getAcademicYears().catch(() => []),
+        getTerms().catch(() => []),
+      ]);
       setYears(y || []);
       setTerms(t || []);
     } finally {
@@ -897,10 +1051,14 @@ function AcademicSetupSection() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const fmtDate = (d: string) =>
-    d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+    d
+      ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "—";
 
   const progress = (() => {
     if (!currentYear || !currentTerm) return null;
@@ -912,41 +1070,66 @@ function AcademicSetupSection() {
     const pct = Math.round((elapsed / total) * 100);
     const daysElapsed = Math.round(elapsed / 86400000);
     const daysRemaining = Math.round((end - now) / 86400000);
-    return { pct, daysElapsed, daysRemaining: Math.max(0, daysRemaining), total: Math.round(total / 86400000) };
+    return {
+      pct,
+      daysElapsed,
+      daysRemaining: Math.max(0, daysRemaining),
+      total: Math.round(total / 86400000),
+    };
   })();
 
   const submitYear = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!yearForm.year.trim()) return toast.error("Academic year is required");
     if (!yearForm.startDate || !yearForm.endDate) return toast.error("Dates are required");
-    if (new Date(yearForm.startDate) >= new Date(yearForm.endDate)) return toast.error("End date must be after start date");
-    if (uniqueYears.some((y) => y.year === yearForm.year.trim())) return toast.error("Academic year already exists");
+    if (new Date(yearForm.startDate) >= new Date(yearForm.endDate))
+      return toast.error("End date must be after start date");
+    if (uniqueYears.some((y) => y.year === yearForm.year.trim()))
+      return toast.error("Academic year already exists");
     setSubmitting(true);
     try {
-      await createAcademicYear({ ...yearForm, year: yearForm.year.trim(), startDate: new Date(yearForm.startDate).toISOString(), endDate: new Date(yearForm.endDate).toISOString() });
+      await createAcademicYear({
+        ...yearForm,
+        year: yearForm.year.trim(),
+        startDate: new Date(yearForm.startDate).toISOString(),
+        endDate: new Date(yearForm.endDate).toISOString(),
+      });
       setYearForm({ year: "", startDate: "", endDate: "", isCurrent: false });
       setShowYearForm(false);
       toast.success("Academic year created");
       load();
-    } catch { toast.error("Failed to create academic year"); }
-    finally { setSubmitting(false); }
+    } catch {
+      toast.error("Failed to create academic year");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submitTerm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!termForm.name.trim()) return toast.error("Term name is required");
     if (!termForm.startDate || !termForm.endDate) return toast.error("Dates are required");
-    if (new Date(termForm.startDate) >= new Date(termForm.endDate)) return toast.error("End date must be after start date");
+    if (new Date(termForm.startDate) >= new Date(termForm.endDate))
+      return toast.error("End date must be after start date");
     if (!termForm.academicYearId) return toast.error("Academic year is required");
     setSubmitting(true);
     try {
-      await createTerm({ name: termForm.name.trim(), startDate: termForm.startDate, endDate: termForm.endDate, isCurrent: termForm.isCurrent, academicYearId: termForm.academicYearId });
+      await createTerm({
+        name: termForm.name.trim(),
+        startDate: termForm.startDate,
+        endDate: termForm.endDate,
+        isCurrent: termForm.isCurrent,
+        academicYearId: termForm.academicYearId,
+      });
       setTermForm({ name: "", startDate: "", endDate: "", isCurrent: false, academicYearId: "" });
       setShowTermForm(false);
       toast.success("Term created");
       load();
-    } catch { toast.error("Failed to create term"); }
-    finally { setSubmitting(false); }
+    } catch {
+      toast.error("Failed to create term");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const doSetCurrentTerm = async (termId: string) => {
@@ -955,8 +1138,12 @@ function AcademicSetupSection() {
       await setCurrentTerm(termId);
       toast.success("Current term updated");
       load();
-    } catch { toast.error("Failed to update current term"); }
-    finally { setSubmitting(false); setShowChangeTermModal(false); }
+    } catch {
+      toast.error("Failed to update current term");
+    } finally {
+      setSubmitting(false);
+      setShowChangeTermModal(false);
+    }
   };
 
   if (loading) {
@@ -975,12 +1162,17 @@ function AcademicSetupSection() {
 
   return (
     <div className="space-y-5">
-      <SectionHeader title="Academic Setup" desc="Manage academic years, terms and grading periods" />
+      <SectionHeader
+        title="Academic Setup"
+        desc="Manage academic years, terms and grading periods"
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
           <p className="text-xs text-gray-500 mb-1">Current Academic Year</p>
-          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{currentYear?.year || "Not set"}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
+            {currentYear?.year || "Not set"}
+          </p>
           {currentYear && (
             <>
               <StatusBadge status="Active" />
@@ -992,7 +1184,9 @@ function AcademicSetupSection() {
         </Card>
         <Card className="p-4">
           <p className="text-xs text-gray-500 mb-1">Current Term</p>
-          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{currentTerm?.name || "Not set"}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
+            {currentTerm?.name || "Not set"}
+          </p>
           {currentTerm && (
             <>
               <StatusBadge status="Active" />
@@ -1008,7 +1202,10 @@ function AcademicSetupSection() {
             <>
               <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{progress.pct}%</p>
               <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-                <div className="bg-[#003366] h-1.5 rounded-full transition-all" style={{ width: `${progress.pct}%` }} />
+                <div
+                  className="bg-[#003366] h-1.5 rounded-full transition-all"
+                  style={{ width: `${progress.pct}%` }}
+                />
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 {progress.daysElapsed}d elapsed · {progress.daysRemaining}d remaining
@@ -1031,20 +1228,61 @@ function AcademicSetupSection() {
         />
         <AnimatePresence>
           {showYearForm && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <form onSubmit={submitYear} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <form
+                onSubmit={submitYear}
+                className="p-5 border-b border-gray-100 bg-gray-50 space-y-4"
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <InputField label="Academic Year" value={yearForm.year} onChange={(v) => setYearForm({ ...yearForm, year: v })} placeholder="e.g. 2027/2028" required />
-                  <InputField label="Start Date" value={yearForm.startDate} onChange={(v) => setYearForm({ ...yearForm, startDate: v })} type="date" required />
-                  <InputField label="End Date" value={yearForm.endDate} onChange={(v) => setYearForm({ ...yearForm, endDate: v })} type="date" required />
+                  <InputField
+                    label="Academic Year"
+                    value={yearForm.year}
+                    onChange={(v) => setYearForm({ ...yearForm, year: v })}
+                    placeholder="e.g. 2027/2028"
+                    required
+                  />
+                  <InputField
+                    label="Start Date"
+                    value={yearForm.startDate}
+                    onChange={(v) => setYearForm({ ...yearForm, startDate: v })}
+                    type="date"
+                    required
+                  />
+                  <InputField
+                    label="End Date"
+                    value={yearForm.endDate}
+                    onChange={(v) => setYearForm({ ...yearForm, endDate: v })}
+                    type="date"
+                    required
+                  />
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" id="yearCurrent" checked={yearForm.isCurrent} onChange={(e) => setYearForm({ ...yearForm, isCurrent: e.target.checked })} className="rounded border-gray-300" />
-                  <label htmlFor="yearCurrent" className="text-xs text-gray-700 dark:text-slate-300">Set as current academic year</label>
+                  <input
+                    type="checkbox"
+                    id="yearCurrent"
+                    checked={yearForm.isCurrent}
+                    onChange={(e) => setYearForm({ ...yearForm, isCurrent: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <label
+                    htmlFor="yearCurrent"
+                    className="text-xs text-gray-700 dark:text-slate-300"
+                  >
+                    Set as current academic year
+                  </label>
                 </div>
                 <div className="flex gap-3">
-                  <OutlineBtn onClick={() => setShowYearForm(false)} disabled={submitting}>Cancel</OutlineBtn>
-                  <PrimaryBtn type="submit" loading={submitting}>Save Academic Year</PrimaryBtn>
+                  <OutlineBtn onClick={() => setShowYearForm(false)} disabled={submitting}>
+                    Cancel
+                  </OutlineBtn>
+                  <PrimaryBtn type="submit" loading={submitting}>
+                    Save Academic Year
+                  </PrimaryBtn>
                 </div>
               </form>
             </motion.div>
@@ -1055,24 +1293,40 @@ function AcademicSetupSection() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 {["Academic Year", "Start Date", "End Date", "Status", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {uniqueYears.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm">No academic years found</td></tr>
+                <tr>
+                  <td colSpan={5} className="text-center py-10 text-gray-400 text-sm">
+                    No academic years found
+                  </td>
+                </tr>
               ) : (
                 uniqueYears.map((y) => (
                   <tr key={y._id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
-                      {y.year} {y.isCurrent && <span className="ml-1.5 text-xs text-blue-600 font-semibold">Current</span>}
+                      {y.year}{" "}
+                      {y.isCurrent && (
+                        <span className="ml-1.5 text-xs text-blue-600 font-semibold">Current</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(y.startDate)}</td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(y.endDate)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={y.isCurrent ? "Active" : "Completed"} /></td>
                     <td className="px-4 py-3">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
+                      <StatusBadge status={y.isCurrent ? "Active" : "Completed"} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -1086,40 +1340,88 @@ function AcademicSetupSection() {
         <CardHeader
           title="Terms"
           action={
-            <PrimaryBtn onClick={() => setShowTermForm(!showTermForm)} disabled={uniqueYears.length === 0}>
+            <PrimaryBtn
+              onClick={() => setShowTermForm(!showTermForm)}
+              disabled={uniqueYears.length === 0}
+            >
               <Plus className="w-3.5 h-3.5" /> Add Term
             </PrimaryBtn>
           }
         />
         <AnimatePresence>
           {showTermForm && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <form onSubmit={submitTerm} className="p-5 border-b border-gray-100 bg-gray-50 space-y-4">
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <form
+                onSubmit={submitTerm}
+                className="p-5 border-b border-gray-100 bg-gray-50 space-y-4"
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InputField label="Term Name" value={termForm.name} onChange={(v) => setTermForm({ ...termForm, name: v })} placeholder="e.g. First Term" required />
+                  <InputField
+                    label="Term Name"
+                    value={termForm.name}
+                    onChange={(v) => setTermForm({ ...termForm, name: v })}
+                    placeholder="e.g. First Term"
+                    required
+                  />
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Academic Year <span className="text-red-500">*</span></label>
-                    <select value={termForm.academicYearId} onChange={(e) => setTermForm({ ...termForm, academicYearId: e.target.value })}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]" required>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+                      Academic Year <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={termForm.academicYearId}
+                      onChange={(e) => setTermForm({ ...termForm, academicYearId: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]"
+                      required
+                    >
                       <option value="">Select academic year</option>
                       {uniqueYears.map((y) => (
-                        <option key={y._id} value={y._id}>{y.year}</option>
+                        <option key={y._id} value={y._id}>
+                          {y.year}
+                        </option>
                       ))}
                     </select>
                   </div>
-                  <InputField label="Start Date" value={termForm.startDate} onChange={(v) => setTermForm({ ...termForm, startDate: v })} type="date" required />
-                  <InputField label="End Date" value={termForm.endDate} onChange={(v) => setTermForm({ ...termForm, endDate: v })} type="date" required />
+                  <InputField
+                    label="Start Date"
+                    value={termForm.startDate}
+                    onChange={(v) => setTermForm({ ...termForm, startDate: v })}
+                    type="date"
+                    required
+                  />
+                  <InputField
+                    label="End Date"
+                    value={termForm.endDate}
+                    onChange={(v) => setTermForm({ ...termForm, endDate: v })}
+                    type="date"
+                    required
+                  />
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setTermForm({ ...termForm, isCurrent: !termForm.isCurrent })}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${termForm.isCurrent ? "bg-[#003366]" : "bg-gray-200"}`}>
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${termForm.isCurrent ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                  <button
+                    type="button"
+                    onClick={() => setTermForm({ ...termForm, isCurrent: !termForm.isCurrent })}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${termForm.isCurrent ? "bg-[#003366]" : "bg-gray-200"}`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${termForm.isCurrent ? "translate-x-4.5" : "translate-x-0.5"}`}
+                    />
                   </button>
-                  <label className="text-xs text-gray-700 dark:text-slate-300">Set as current term</label>
+                  <label className="text-xs text-gray-700 dark:text-slate-300">
+                    Set as current term
+                  </label>
                 </div>
                 <div className="flex gap-3">
-                  <OutlineBtn onClick={() => setShowTermForm(false)} disabled={submitting}>Cancel</OutlineBtn>
-                  <PrimaryBtn type="submit" loading={submitting}>Save Term</PrimaryBtn>
+                  <OutlineBtn onClick={() => setShowTermForm(false)} disabled={submitting}>
+                    Cancel
+                  </OutlineBtn>
+                  <PrimaryBtn type="submit" loading={submitting}>
+                    Save Term
+                  </PrimaryBtn>
                 </div>
               </form>
             </motion.div>
@@ -1129,34 +1431,58 @@ function AcademicSetupSection() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                {["Term Name", "Start Date", "End Date", "Status", "Is Current", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
-                ))}
+                {["Term Name", "Start Date", "End Date", "Status", "Is Current", "Actions"].map(
+                  (h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody>
               {terms.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">No terms found</td></tr>
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">
+                    No terms found
+                  </td>
+                </tr>
               ) : (
                 terms.map((t) => (
                   <tr key={t._id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{t.name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
+                      {t.name}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(t.startDate)}</td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(t.endDate)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={t.isCurrent ? "Active" : "Upcoming"} /></td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={t.isCurrent ? "Active" : "Upcoming"} />
+                    </td>
                     <td className="px-4 py-3">
                       {t.isCurrent ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-blue-600"><Check className="w-3 h-3" /> Current</span>
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                          <Check className="w-3 h-3" /> Current
+                        </span>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button
+                          className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
                         {!t.isCurrent && (
-                          <button onClick={() => { setPendingTermId(t._id); setShowChangeTermModal(true); }}
-                            className="px-2 py-1 text-xs text-[#003366] border border-[#003366]/20 rounded hover:bg-[#003366]/5 transition">
+                          <button
+                            onClick={() => {
+                              setPendingTermId(t._id);
+                              setShowChangeTermModal(true);
+                            }}
+                            className="px-2 py-1 text-xs text-[#003366] border border-[#003366]/20 rounded hover:bg-[#003366]/5 transition"
+                          >
                             Set Current
                           </button>
                         )}
@@ -1182,13 +1508,20 @@ function AcademicSetupSection() {
                   {terms.find((t) => t._id === pendingTermId)?.name} will become the current term.
                 </p>
                 {currentTerm && (
-                  <p className="text-xs text-gray-500 mt-1">{currentTerm.name} will be set to Upcoming.</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {currentTerm.name} will be set to Upcoming.
+                  </p>
                 )}
               </div>
               <div className="flex gap-3 justify-center pt-2">
-                <OutlineBtn onClick={() => setShowChangeTermModal(false)} disabled={submitting}>Cancel</OutlineBtn>
-                <button onClick={() => doSetCurrentTerm(pendingTermId)} disabled={submitting}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-50">
+                <OutlineBtn onClick={() => setShowChangeTermModal(false)} disabled={submitting}>
+                  Cancel
+                </OutlineBtn>
+                <button
+                  onClick={() => doSetCurrentTerm(pendingTermId)}
+                  disabled={submitting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                >
                   {submitting ? "Updating…" : "Change Term"}
                 </button>
               </div>
@@ -1205,18 +1538,49 @@ function AcademicSetupSection() {
 function ClassesCurriculumSection() {
   const router = useRouter();
   const cards = [
-    { title: "Manage Classes", desc: "Add, edit and manage class levels for your school", icon: Users, link: "/classes", action: "Go to Classes" },
-    { title: "Manage Subjects", desc: "Add, edit and assign subjects to classes", icon: BookOpen, link: "/subject", action: "Go to Subjects" },
-    { title: "Curriculum Library", desc: "View and manage curriculum content linked to classes", icon: FileText, link: "/curriculum", action: "Go to Curriculum" },
-    { title: "Class Promotion Settings", desc: "Configure promotion rules and criteria", icon: ChevronRight, link: "/classes", action: "Configure" },
+    {
+      title: "Manage Classes",
+      desc: "Add, edit and manage class levels for your school",
+      icon: Users,
+      link: "/classes",
+      action: "Go to Classes",
+    },
+    {
+      title: "Manage Subjects",
+      desc: "Add, edit and assign subjects to classes",
+      icon: BookOpen,
+      link: "/subject",
+      action: "Go to Subjects",
+    },
+    {
+      title: "Curriculum Library",
+      desc: "View and manage curriculum content linked to classes",
+      icon: FileText,
+      link: "/curriculum",
+      action: "Go to Curriculum",
+    },
+    {
+      title: "Class Promotion Settings",
+      desc: "Configure promotion rules and criteria",
+      icon: ChevronRight,
+      link: "/classes",
+      action: "Configure",
+    },
   ];
 
   return (
     <div className="space-y-5">
-      <SectionHeader title="Classes & Curriculum" desc="Quick access to class and curriculum management" />
+      <SectionHeader
+        title="Classes & Curriculum"
+        desc="Quick access to class and curriculum management"
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map((c) => (
-          <Card key={c.title} className="p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(c.link)}>
+          <Card
+            key={c.title}
+            className="p-5 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => router.push(c.link)}
+          >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#EBF0F7] flex items-center justify-center shrink-0">
                 <c.icon className="w-5 h-5 text-[#003366]" />
@@ -1225,8 +1589,10 @@ function ClassesCurriculumSection() {
                 <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
               </div>
-              <button onClick={() => router.push(c.link)}
-                className="text-xs text-[#003366] font-medium hover:underline shrink-0 flex items-center gap-1">
+              <button
+                onClick={() => router.push(c.link)}
+                className="text-xs text-[#003366] font-medium hover:underline shrink-0 flex items-center gap-1"
+              >
                 {c.action} <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -1241,15 +1607,15 @@ function ClassesCurriculumSection() {
 
 const GRADING_SCALE = [
   { grade: "A+", min: 90, max: 100 },
-  { grade: "A",  min: 80, max: 89 },
+  { grade: "A", min: 80, max: 89 },
   { grade: "B+", min: 75, max: 79 },
-  { grade: "B",  min: 70, max: 74 },
+  { grade: "B", min: 70, max: 74 },
   { grade: "C+", min: 65, max: 69 },
-  { grade: "C",  min: 60, max: 64 },
+  { grade: "C", min: 60, max: 64 },
   { grade: "D+", min: 55, max: 59 },
-  { grade: "D",  min: 50, max: 54 },
-  { grade: "E",  min: 45, max: 49 },
-  { grade: "F",  min: 0,  max: 44 },
+  { grade: "D", min: 50, max: 54 },
+  { grade: "E", min: 45, max: 49 },
+  { grade: "F", min: 0, max: 44 },
 ];
 
 function AssessmentSettingsSection() {
@@ -1288,7 +1654,10 @@ function AssessmentSettingsSection() {
           <Card>
             <CardHeader title="Score Weighting" />
             <div className="p-5 space-y-3">
-              {[{ label: "Test Score (CA)", value: 30 }, { label: "Exam Score", value: 70 }].map((s) => (
+              {[
+                { label: "Test Score (CA)", value: 30 },
+                { label: "Exam Score", value: 70 },
+              ].map((s) => (
                 <div key={s.label} className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{s.label}</p>
                   <span className="text-sm font-bold text-[#003366]">{s.value}%</span>
@@ -1299,9 +1668,23 @@ function AssessmentSettingsSection() {
           <Card>
             <CardHeader title="Other Settings" />
             <div className="p-5 space-y-1">
-              <ToggleRow label="Allow decimals in scores" checked={allowDecimals} onChange={setAllowDecimals} />
-              <ToggleRow label="Auto-calculate results" desc="Automatically compute final scores from CA and exam" checked={autoCalculate} onChange={setAutoCalculate} />
-              <ToggleRow label="Publish results to parents" desc="Make results visible in the parent portal" checked={publishToParents} onChange={setPublishToParents} />
+              <ToggleRow
+                label="Allow decimals in scores"
+                checked={allowDecimals}
+                onChange={setAllowDecimals}
+              />
+              <ToggleRow
+                label="Auto-calculate results"
+                desc="Automatically compute final scores from CA and exam"
+                checked={autoCalculate}
+                onChange={setAutoCalculate}
+              />
+              <ToggleRow
+                label="Publish results to parents"
+                desc="Make results visible in the parent portal"
+                checked={publishToParents}
+                onChange={setPublishToParents}
+              />
             </div>
           </Card>
         </div>
@@ -1310,7 +1693,10 @@ function AssessmentSettingsSection() {
         <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
         <p className="text-xs text-blue-700">
           Full assessment configuration is available in the{" "}
-          <a href="/assessments" className="underline font-medium">Assessments module</a>.
+          <a href="/assessments" className="underline font-medium">
+            Assessments module
+          </a>
+          .
         </p>
       </div>
     </div>
@@ -1354,39 +1740,58 @@ function FeesReceiptsSection() {
     setSaving(true);
     try {
       await updateReceiptSettings({ footerNote });
-      setSettings((s) => s ? { ...s, footerNote } : s);
+      setSettings((s) => (s ? { ...s, footerNote } : s));
       toast.success("Footer note saved");
-    } catch { toast.error("Failed to save footer note"); }
-    finally { setSaving(false); }
+    } catch {
+      toast.error("Failed to save footer note");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) { toast.error("Only PNG or JPG files"); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("Max 2MB"); return; }
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
+      toast.error("Only PNG or JPG files");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Max 2MB");
+      return;
+    }
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("upload_preset", "presetOne");
-      const r = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", { method: "POST", body: fd });
+      const r = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", {
+        method: "POST",
+        body: fd,
+      });
       const data = await r.json();
       if (data.secure_url) {
         await updateReceiptSettings({ signatureUrl: data.secure_url });
-        setSettings((s) => s ? { ...s, signatureUrl: data.secure_url } : s);
+        setSettings((s) => (s ? { ...s, signatureUrl: data.secure_url } : s));
         toast.success("Signature uploaded");
       }
-    } catch { toast.error("Upload failed"); }
-    finally { setUploading(false); }
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeSignature = async () => {
     try {
       await updateReceiptSettings({ signatureUrl: "", signatureName: "", signatureTitle: "" });
-      setSettings((s) => s ? { ...s, signatureUrl: "", signatureName: "", signatureTitle: "" } : s);
+      setSettings((s) =>
+        s ? { ...s, signatureUrl: "", signatureName: "", signatureTitle: "" } : s
+      );
       toast.success("Signature removed");
-    } catch { toast.error("Failed to remove signature"); }
+    } catch {
+      toast.error("Failed to remove signature");
+    }
   };
 
   if (loading) return <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />;
@@ -1402,7 +1807,9 @@ function FeesReceiptsSection() {
               <Receipt className="w-5 h-5 text-[#003366]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Fee Categories</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                Fee Categories
+              </p>
               <p className="text-xs text-gray-500">Manage fee types, invoices and assignments</p>
             </div>
           </div>
@@ -1418,19 +1825,55 @@ function FeesReceiptsSection() {
           {settings?.signatureUrl ? (
             <div className="flex items-start gap-5">
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-w-[160px] text-center">
-                <img src={settings.signatureUrl} alt="Signature" className="max-h-16 mx-auto object-contain" />
-                {settings.signatureName && <p className="text-xs font-semibold text-gray-700 mt-2">{settings.signatureName}</p>}
-                {settings.signatureTitle && <p className="text-xs text-gray-500">{settings.signatureTitle}</p>}
+                <img
+                  src={settings.signatureUrl}
+                  alt="Signature"
+                  className="max-h-16 mx-auto object-contain"
+                />
+                {settings.signatureName && (
+                  <p className="text-xs font-semibold text-gray-700 mt-2">
+                    {settings.signatureName}
+                  </p>
+                )}
+                {settings.signatureTitle && (
+                  <p className="text-xs text-gray-500">{settings.signatureTitle}</p>
+                )}
               </div>
               <div className="space-y-3 flex-1">
-                <InputField label="Signatory Name" value={settings.signatureName || ""} onChange={async (v) => { setSettings((s) => s ? { ...s, signatureName: v } : s); await updateReceiptSettings({ signatureName: v }); }} placeholder="e.g. A. Okafor" />
-                <InputField label="Signatory Title" value={settings.signatureTitle || ""} onChange={async (v) => { setSettings((s) => s ? { ...s, signatureTitle: v } : s); await updateReceiptSettings({ signatureTitle: v }); }} placeholder="e.g. Principal" />
+                <InputField
+                  label="Signatory Name"
+                  value={settings.signatureName || ""}
+                  onChange={async (v) => {
+                    setSettings((s) => (s ? { ...s, signatureName: v } : s));
+                    await updateReceiptSettings({ signatureName: v });
+                  }}
+                  placeholder="e.g. A. Okafor"
+                />
+                <InputField
+                  label="Signatory Title"
+                  value={settings.signatureTitle || ""}
+                  onChange={async (v) => {
+                    setSettings((s) => (s ? { ...s, signatureTitle: v } : s));
+                    await updateReceiptSettings({ signatureTitle: v });
+                  }}
+                  placeholder="e.g. Principal"
+                />
                 <div className="flex gap-2">
-                  <input ref={signatureRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleSignatureUpload} />
+                  <input
+                    ref={signatureRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={handleSignatureUpload}
+                  />
                   <OutlineBtn onClick={() => signatureRef.current?.click()} disabled={uploading}>
-                    <Upload className="w-3.5 h-3.5" /> {uploading ? "Uploading…" : "Change Signature"}
+                    <Upload className="w-3.5 h-3.5" />{" "}
+                    {uploading ? "Uploading…" : "Change Signature"}
                   </OutlineBtn>
-                  <OutlineBtn onClick={removeSignature} className="text-red-600 border-red-200 hover:bg-red-50">
+                  <OutlineBtn
+                    onClick={removeSignature}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
                     <Trash2 className="w-3.5 h-3.5" /> Remove
                   </OutlineBtn>
                 </div>
@@ -1439,7 +1882,13 @@ function FeesReceiptsSection() {
           ) : (
             <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
               <p className="text-sm text-gray-500 mb-3">No signature uploaded</p>
-              <input ref={signatureRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleSignatureUpload} />
+              <input
+                ref={signatureRef}
+                type="file"
+                accept="image/png,image/jpeg"
+                className="hidden"
+                onChange={handleSignatureUpload}
+              />
               <PrimaryBtn onClick={() => signatureRef.current?.click()} loading={uploading}>
                 <Upload className="w-4 h-4" /> Upload Signature
               </PrimaryBtn>
@@ -1452,22 +1901,45 @@ function FeesReceiptsSection() {
       <Card>
         <CardHeader title="Receipt Preferences" />
         <div className="px-5 pb-2 pt-1">
-          <ToggleRow label="Show school logo on receipt" checked={settings?.showSchoolLogo ?? true} onChange={(v) => updateToggle("showSchoolLogo", v)} />
-          <ToggleRow label="Allow parents to download receipts" checked={settings?.allowParentDownload ?? true} onChange={(v) => updateToggle("allowParentDownload", v)} />
-          <ToggleRow label="Show QR verification code" checked={settings?.showQrVerification ?? false} onChange={(v) => updateToggle("showQrVerification", v)} />
-          <ToggleRow label="Show authorized signature" checked={settings?.showAuthorizedSignature ?? false} onChange={(v) => updateToggle("showAuthorizedSignature", v)} />
+          <ToggleRow
+            label="Show school logo on receipt"
+            checked={settings?.showSchoolLogo ?? true}
+            onChange={(v) => updateToggle("showSchoolLogo", v)}
+          />
+          <ToggleRow
+            label="Allow parents to download receipts"
+            checked={settings?.allowParentDownload ?? true}
+            onChange={(v) => updateToggle("allowParentDownload", v)}
+          />
+          <ToggleRow
+            label="Show QR verification code"
+            checked={settings?.showQrVerification ?? false}
+            onChange={(v) => updateToggle("showQrVerification", v)}
+          />
+          <ToggleRow
+            label="Show authorized signature"
+            checked={settings?.showAuthorizedSignature ?? false}
+            onChange={(v) => updateToggle("showAuthorizedSignature", v)}
+          />
         </div>
       </Card>
 
       <Card>
         <CardHeader title="Receipt Footer Note" />
         <div className="p-5 space-y-3">
-          <textarea value={footerNote} onChange={(e) => setFooterNote(e.target.value)} maxLength={250}
-            rows={3} placeholder="e.g. Thank you for your payment. Every child. Every classroom. Every future."
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] resize-none" />
+          <textarea
+            value={footerNote}
+            onChange={(e) => setFooterNote(e.target.value)}
+            maxLength={250}
+            rows={3}
+            placeholder="e.g. Thank you for your payment. Every child. Every classroom. Every future."
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] resize-none"
+          />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{footerNote.length}/250 characters</span>
-            <PrimaryBtn onClick={saveFooterNote} loading={saving}>Save Preferences</PrimaryBtn>
+            <PrimaryBtn onClick={saveFooterNote} loading={saving}>
+              Save Preferences
+            </PrimaryBtn>
           </div>
         </div>
       </Card>
@@ -1531,7 +2003,11 @@ function AddBankAccountForm({
   // Auto-resolve account name when account number reaches 10 digits (Nigeria/Paystack)
   useEffect(() => {
     if (!usePaystack || !selectedBank || accountNumber.length !== 10) {
-      if (accountNumber.length < 10) { setAccountName(""); setResolved(false); setResolveError(""); }
+      if (accountNumber.length < 10) {
+        setAccountName("");
+        setResolved(false);
+        setResolveError("");
+      }
       return;
     }
     if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current);
@@ -1550,7 +2026,9 @@ function AddBankAccountForm({
         setResolving(false);
       }
     }, 600);
-    return () => { if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current); };
+    return () => {
+      if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current);
+    };
   }, [accountNumber, selectedBank]);
 
   // Close bank dropdown on outside click
@@ -1578,8 +2056,20 @@ function AddBankAccountForm({
     setSaving(true);
     try {
       const payload = usePaystack
-        ? { bankName: selectedBank!.name, bankCode: selectedBank!.code, accountNumber, accountName, country }
-        : { bankName: bankSearch.trim(), bankCode: "INTL", accountNumber: accountNumber.trim(), accountName: accountName.trim(), country };
+        ? {
+            bankName: selectedBank!.name,
+            bankCode: selectedBank!.code,
+            accountNumber,
+            accountName,
+            country,
+          }
+        : {
+            bankName: bankSearch.trim(),
+            bankCode: "INTL",
+            accountNumber: accountNumber.trim(),
+            accountName: accountName.trim(),
+            country,
+          };
       const r = await addBankAccount(payload);
       onSuccess(r.account);
       toast.success("Bank account added");
@@ -1591,17 +2081,32 @@ function AddBankAccountForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="p-5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 space-y-4"
+    >
       {/* Country */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Country <span className="text-red-500">*</span></label>
+        <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Country <span className="text-red-500">*</span>
+        </label>
         <select
           value={country}
-          onChange={(e) => { setCountry(e.target.value); setSelectedBank(null); setBankSearch(""); setAccountNumber(""); setAccountName(""); setResolved(false); setResolveError(""); }}
+          onChange={(e) => {
+            setCountry(e.target.value);
+            setSelectedBank(null);
+            setBankSearch("");
+            setAccountNumber("");
+            setAccountName("");
+            setResolved(false);
+            setResolveError("");
+          }}
           className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]"
         >
           {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.label}
+            </option>
           ))}
         </select>
       </div>
@@ -1610,11 +2115,19 @@ function AddBankAccountForm({
         <>
           {/* Bank Search */}
           <div ref={dropdownRef} className="relative">
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Bank <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+              Bank <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               value={selectedBank ? selectedBank.name : bankSearch}
-              onChange={(e) => { setBankSearch(e.target.value); setSelectedBank(null); setShowBankDropdown(true); setAccountName(""); setResolved(false); }}
+              onChange={(e) => {
+                setBankSearch(e.target.value);
+                setSelectedBank(null);
+                setShowBankDropdown(true);
+                setAccountName("");
+                setResolved(false);
+              }}
               onFocus={() => setShowBankDropdown(true)}
               placeholder={loadingBanks ? "Loading banks…" : "Search for your bank"}
               disabled={loadingBanks}
@@ -1626,7 +2139,13 @@ function AddBankAccountForm({
                   <button
                     key={b.code}
                     type="button"
-                    onClick={() => { setSelectedBank(b); setBankSearch(b.name); setShowBankDropdown(false); setAccountName(""); setResolved(false); }}
+                    onClick={() => {
+                      setSelectedBank(b);
+                      setBankSearch(b.name);
+                      setShowBankDropdown(false);
+                      setAccountName("");
+                      setResolved(false);
+                    }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                   >
                     {b.name}
@@ -1637,7 +2156,12 @@ function AddBankAccountForm({
             {selectedBank && (
               <button
                 type="button"
-                onClick={() => { setSelectedBank(null); setBankSearch(""); setAccountName(""); setResolved(false); }}
+                onClick={() => {
+                  setSelectedBank(null);
+                  setBankSearch("");
+                  setAccountName("");
+                  setResolved(false);
+                }}
                 className="absolute right-3 top-8 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-3.5 h-3.5" />
@@ -1647,12 +2171,17 @@ function AddBankAccountForm({
 
           {/* Account Number */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Account Number <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+              Account Number <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <input
                 type="text"
                 value={accountNumber}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setAccountNumber(v); }}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setAccountNumber(v);
+                }}
                 placeholder="10-digit account number"
                 maxLength={10}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] pr-10"
@@ -1668,14 +2197,22 @@ function AddBankAccountForm({
 
           {/* Account Name (auto-populated) */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Account Name</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+              Account Name
+            </label>
             <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg min-h-[42px]">
               {resolving ? (
-                <span className="text-xs text-gray-400 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying account…</span>
+                <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying account…
+                </span>
               ) : accountName ? (
-                <span className="text-sm font-medium text-gray-800 dark:text-slate-200 flex-1">{accountName}</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-slate-200 flex-1">
+                  {accountName}
+                </span>
               ) : (
-                <span className="text-sm text-gray-400">Auto-populated after account number entry</span>
+                <span className="text-sm text-gray-400">
+                  Auto-populated after account number entry
+                </span>
               )}
               {accountName && <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
             </div>
@@ -1684,25 +2221,50 @@ function AddBankAccountForm({
       ) : (
         <>
           {/* Manual entry for non-Paystack countries */}
-          <InputField label="Bank Name" value={bankSearch} onChange={setBankSearch} placeholder="e.g. Barclays, HSBC" required />
+          <InputField
+            label="Bank Name"
+            value={bankSearch}
+            onChange={setBankSearch}
+            placeholder="e.g. Barclays, HSBC"
+            required
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputField label="Account / IBAN Number" value={accountNumber} onChange={setAccountNumber} placeholder="Account number or IBAN" required />
-            <InputField label="Account Name" value={accountName} onChange={setAccountName} placeholder="Name on account" required />
+            <InputField
+              label="Account / IBAN Number"
+              value={accountNumber}
+              onChange={setAccountNumber}
+              placeholder="Account number or IBAN"
+              required
+            />
+            <InputField
+              label="Account Name"
+              value={accountName}
+              onChange={setAccountName}
+              placeholder="Name on account"
+              required
+            />
           </div>
           <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 dark:text-blue-400">International bank payouts are processed manually. Our team will verify the account details.</p>
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              International bank payouts are processed manually. Our team will verify the account
+              details.
+            </p>
           </div>
         </>
       )}
 
       <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
         <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-yellow-700 dark:text-yellow-400">Ensure the account details are correct. Wrong details may cause withdrawal delays.</p>
+        <p className="text-xs text-yellow-700 dark:text-yellow-400">
+          Ensure the account details are correct. Wrong details may cause withdrawal delays.
+        </p>
       </div>
 
       <div className="flex gap-3">
-        <OutlineBtn onClick={onCancel} disabled={saving}>Cancel</OutlineBtn>
+        <OutlineBtn onClick={onCancel} disabled={saving}>
+          Cancel
+        </OutlineBtn>
         <PrimaryBtn type="submit" loading={saving} disabled={!canSubmit}>
           <CreditCard className="w-3.5 h-3.5" /> Add Account
         </PrimaryBtn>
@@ -1723,9 +2285,18 @@ function PaymentsFinanceSection() {
 
   useEffect(() => {
     Promise.all([
-      getWalletSummary().then((r) => setWallet(r.summary)).catch(() => {}),
-      getBankAccounts().then((r) => setAccounts(r.accounts || [])).catch(() => {}),
-      getFinanceSettings().then((r) => { setFinSettings(r.settings); setMinAmount(String(r.settings.minimumWithdrawalAmount || 10000)); }).catch(() => {}),
+      getWalletSummary()
+        .then((r) => setWallet(r.summary))
+        .catch(() => {}),
+      getBankAccounts()
+        .then((r) => setAccounts(r.accounts || []))
+        .catch(() => {}),
+      getFinanceSettings()
+        .then((r) => {
+          setFinSettings(r.settings);
+          setMinAmount(String(r.settings.minimumWithdrawalAmount || 10000));
+        })
+        .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -1733,20 +2304,30 @@ function PaymentsFinanceSection() {
     if (!finSettings) return;
     const prev = { ...finSettings };
     setFinSettings({ ...finSettings, requireEmailOtpForWithdrawals: v });
-    try { await updateFinanceSettings({ requireEmailOtpForWithdrawals: v }); }
-    catch { setFinSettings(prev); toast.error("Failed to save"); }
+    try {
+      await updateFinanceSettings({ requireEmailOtpForWithdrawals: v });
+    } catch {
+      setFinSettings(prev);
+      toast.error("Failed to save");
+    }
   };
 
   const saveMinAmount = async () => {
     const amt = parseFloat(minAmount);
-    if (isNaN(amt) || amt < 0) { toast.error("Invalid amount"); return; }
+    if (isNaN(amt) || amt < 0) {
+      toast.error("Invalid amount");
+      return;
+    }
     setSavingFin(true);
     try {
       await updateFinanceSettings({ minimumWithdrawalAmount: amt });
-      setFinSettings((s) => s ? { ...s, minimumWithdrawalAmount: amt } : s);
+      setFinSettings((s) => (s ? { ...s, minimumWithdrawalAmount: amt } : s));
       toast.success("Minimum withdrawal amount saved");
-    } catch { toast.error("Failed to save"); }
-    finally { setSavingFin(false); }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSavingFin(false);
+    }
   };
 
   const makeDefault = async (id: string) => {
@@ -1754,7 +2335,9 @@ function PaymentsFinanceSection() {
       await setDefaultBankAccount(id);
       setAccounts((prev) => prev.map((a) => ({ ...a, isDefault: a._id === id })));
       toast.success("Default account updated");
-    } catch { toast.error("Failed to update"); }
+    } catch {
+      toast.error("Failed to update");
+    }
   };
 
   if (loading) return <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />;
@@ -1767,11 +2350,29 @@ function PaymentsFinanceSection() {
         <CardHeader title="Payment Providers" />
         <div className="p-5 space-y-3">
           {[
-            { name: "Paystack", desc: "Cards, Bank Transfer, USSD", color: "text-green-700", bg: "bg-green-50 border-green-200" },
-            { name: "OPay", desc: "Wallet, Transfer, Card", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-            { name: "Stripe", desc: "Card (Visa, Mastercard)", color: "text-purple-700", bg: "bg-purple-50 border-purple-200" },
+            {
+              name: "Paystack",
+              desc: "Cards, Bank Transfer, USSD",
+              color: "text-green-700",
+              bg: "bg-green-50 border-green-200",
+            },
+            {
+              name: "OPay",
+              desc: "Wallet, Transfer, Card",
+              color: "text-blue-700",
+              bg: "bg-blue-50 border-blue-200",
+            },
+            {
+              name: "Stripe",
+              desc: "Card (Visa, Mastercard)",
+              color: "text-purple-700",
+              bg: "bg-purple-50 border-purple-200",
+            },
           ].map((p) => (
-            <div key={p.name} className={`flex items-center justify-between px-4 py-3 rounded-lg border ${p.bg}`}>
+            <div
+              key={p.name}
+              className={`flex items-center justify-between px-4 py-3 rounded-lg border ${p.bg}`}
+            >
               <div>
                 <p className={`text-sm font-semibold ${p.color}`}>{p.name}</p>
                 <p className="text-xs text-gray-500">{p.desc}</p>
@@ -1784,17 +2385,36 @@ function PaymentsFinanceSection() {
 
       {wallet && (
         <Card>
-          <CardHeader title="School Wallet" action={
-            <OutlineBtn onClick={() => router.push("/finance")}>
-              View Finance <ChevronRight className="w-3.5 h-3.5" />
-            </OutlineBtn>
-          } />
+          <CardHeader
+            title="School Wallet"
+            action={
+              <OutlineBtn onClick={() => router.push("/finance")}>
+                View Finance <ChevronRight className="w-3.5 h-3.5" />
+              </OutlineBtn>
+            }
+          />
           <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: "Available Balance", value: NGN(wallet.availableBalance), color: "text-green-700" },
-              { label: "Pending Balance", value: NGN(wallet.pendingBalance), color: "text-yellow-700" },
-              { label: "Total Received", value: NGN(wallet.ledgerBalance), color: "text-[#003366]" },
-              { label: "Total Withdrawn", value: NGN(wallet.withdrawnBalance), color: "text-gray-700" },
+              {
+                label: "Available Balance",
+                value: NGN(wallet.availableBalance),
+                color: "text-green-700",
+              },
+              {
+                label: "Pending Balance",
+                value: NGN(wallet.pendingBalance),
+                color: "text-yellow-700",
+              },
+              {
+                label: "Total Received",
+                value: NGN(wallet.ledgerBalance),
+                color: "text-[#003366]",
+              },
+              {
+                label: "Total Withdrawn",
+                value: NGN(wallet.withdrawnBalance),
+                color: "text-gray-700",
+              },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
@@ -1808,17 +2428,33 @@ function PaymentsFinanceSection() {
       <Card>
         <CardHeader title="Withdrawal Settings" />
         <div className="px-5 pb-3 pt-1">
-          <ToggleRow label="Require email OTP for withdrawals" desc="Send a 6-digit OTP to your email before each withdrawal" checked={finSettings?.requireEmailOtpForWithdrawals ?? true} onChange={toggleOtp} />
+          <ToggleRow
+            label="Require email OTP for withdrawals"
+            desc="Send a 6-digit OTP to your email before each withdrawal"
+            checked={finSettings?.requireEmailOtpForWithdrawals ?? true}
+            onChange={toggleOtp}
+          />
           <div className="py-3 border-b border-gray-50 dark:border-slate-700">
-            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-2">Minimum Withdrawal Amount (₦)</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-2">
+              Minimum Withdrawal Amount (₦)
+            </p>
             <div className="flex items-center gap-3">
-              <input type="number" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} min={0}
-                className="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]" />
-              <PrimaryBtn onClick={saveMinAmount} loading={savingFin}>Save</PrimaryBtn>
+              <input
+                type="number"
+                value={minAmount}
+                onChange={(e) => setMinAmount(e.target.value)}
+                min={0}
+                className="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]"
+              />
+              <PrimaryBtn onClick={saveMinAmount} loading={savingFin}>
+                Save
+              </PrimaryBtn>
             </div>
           </div>
           <div className="py-3">
-            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-1">Default Payout Account</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-1">
+              Default Payout Account
+            </p>
             <p className="text-xs text-gray-500">
               {accounts.find((a) => a.isDefault)
                 ? `${accounts.find((a) => a.isDefault)!.bankName} – ${accounts.find((a) => a.isDefault)!.accountNumber}`
@@ -1829,14 +2465,22 @@ function PaymentsFinanceSection() {
       </Card>
 
       <Card>
-        <CardHeader title="Bank Accounts" action={
-          <OutlineBtn onClick={() => setShowAddAccount(!showAddAccount)}>
-            <Plus className="w-3.5 h-3.5" /> {showAddAccount ? "Cancel" : "Add Account"}
-          </OutlineBtn>
-        } />
+        <CardHeader
+          title="Bank Accounts"
+          action={
+            <OutlineBtn onClick={() => setShowAddAccount(!showAddAccount)}>
+              <Plus className="w-3.5 h-3.5" /> {showAddAccount ? "Cancel" : "Add Account"}
+            </OutlineBtn>
+          }
+        />
         <AnimatePresence>
           {showAddAccount && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
               <AddBankAccountForm
                 onSuccess={(account) => {
                   setAccounts((prev) => [...prev, account]);
@@ -1858,19 +2502,29 @@ function PaymentsFinanceSection() {
                     <Building2 className="w-4 h-4 text-[#003366] dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{a.bankName} – {a.accountNumber}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      {a.bankName} – {a.accountNumber}
+                    </p>
                     <p className="text-xs text-gray-500">{a.accountName}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {a.isDefault ? (
-                    <span className="text-xs text-green-600 font-medium border border-green-200 bg-green-50 px-2 py-0.5 rounded-full">Default</span>
+                    <span className="text-xs text-green-600 font-medium border border-green-200 bg-green-50 px-2 py-0.5 rounded-full">
+                      Default
+                    </span>
                   ) : (
-                    <button onClick={() => makeDefault(a._id)} className="text-xs text-gray-500 hover:text-[#003366] border border-gray-200 dark:border-slate-600 px-2 py-0.5 rounded-full transition">
+                    <button
+                      onClick={() => makeDefault(a._id)}
+                      className="text-xs text-gray-500 hover:text-[#003366] border border-gray-200 dark:border-slate-600 px-2 py-0.5 rounded-full transition"
+                    >
                       Set Default
                     </button>
                   )}
-                  <span className={`w-2 h-2 rounded-full ${a.isVerified ? "bg-green-400" : "bg-gray-300"}`} title={a.isVerified ? "Verified" : "Unverified"} />
+                  <span
+                    className={`w-2 h-2 rounded-full ${a.isVerified ? "bg-green-400" : "bg-gray-300"}`}
+                    title={a.isVerified ? "Verified" : "Unverified"}
+                  />
                 </div>
               </div>
             ))
@@ -1889,9 +2543,24 @@ function CommunicationSection() {
       <SectionHeader title="Communication" desc="Email, SMS and messaging preferences" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          { title: "Email Notifications", desc: "Configure automated email notifications sent to parents and staff", icon: Bell, link: "/notifications" },
-          { title: "SMS Alerts", desc: "Manage SMS alerts for fee payments, results and attendance", icon: MessageSquare, link: "/notifications" },
-          { title: "Parent Messages", desc: "Configure parent-teacher messaging preferences", icon: Users, link: "/messages" },
+          {
+            title: "Email Notifications",
+            desc: "Configure automated email notifications sent to parents and staff",
+            icon: Bell,
+            link: "/notifications",
+          },
+          {
+            title: "SMS Alerts",
+            desc: "Manage SMS alerts for fee payments, results and attendance",
+            icon: MessageSquare,
+            link: "/notifications",
+          },
+          {
+            title: "Parent Messages",
+            desc: "Configure parent-teacher messaging preferences",
+            icon: Users,
+            link: "/messages",
+          },
         ].map((c) => (
           <Card key={c.title} className="p-5">
             <div className="flex items-start gap-3 mb-3">
@@ -1903,7 +2572,10 @@ function CommunicationSection() {
                 <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
               </div>
             </div>
-            <a href={c.link} className="inline-flex items-center gap-1 text-xs text-[#003366] font-medium hover:underline">
+            <a
+              href={c.link}
+              className="inline-flex items-center gap-1 text-xs text-[#003366] font-medium hover:underline"
+            >
               Configure <ChevronRight className="w-3 h-3" />
             </a>
           </Card>
@@ -1911,7 +2583,10 @@ function CommunicationSection() {
       </div>
       <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
         <Info className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-yellow-700">Full communication engine configuration is coming soon. Use the links above to access current messaging features.</p>
+        <p className="text-xs text-yellow-700">
+          Full communication engine configuration is coming soon. Use the links above to access
+          current messaging features.
+        </p>
       </div>
     </div>
   );
@@ -1973,7 +2648,9 @@ function NotificationsSection() {
         }
       })
       .catch(() => {
-        setError("Could not load preferences. Showing defaults — your changes will still be saved.");
+        setError(
+          "Could not load preferences. Showing defaults — your changes will still be saved."
+        );
       })
       .finally(() => setLoading(false));
   }, []);
@@ -2023,19 +2700,61 @@ function NotificationsSection() {
       <Card>
         <CardHeader title="Notification Preferences" />
         <div className="px-5 pb-2 pt-1">
-          <ToggleRow label="Announcement notifications" desc="Get notified when announcements are published"       checked={prefs.announcementsEnabled} onChange={(v) => toggle("announcementsEnabled", v)} disabled={saving.announcementsEnabled} />
-          <ToggleRow label="Fee payment alerts"         desc="Notify when parents make payments or withdrawals"   checked={prefs.feesEnabled}          onChange={(v) => toggle("feesEnabled", v)}          disabled={saving.feesEnabled} />
-          <ToggleRow label="Leave request alerts"       desc="Notify on new or updated leave requests"            checked={prefs.attendanceEnabled}    onChange={(v) => toggle("attendanceEnabled", v)}    disabled={saving.attendanceEnabled} />
-          <ToggleRow label="Result publishing alerts"   desc="Notify when results are published to parents"       checked={prefs.resultsEnabled}       onChange={(v) => toggle("resultsEnabled", v)}       disabled={saving.resultsEnabled} />
-          <ToggleRow label="New message alerts"         desc="Notify when you receive a new message"              checked={prefs.messagesEnabled}      onChange={(v) => toggle("messagesEnabled", v)}      disabled={saving.messagesEnabled} />
+          <ToggleRow
+            label="Announcement notifications"
+            desc="Get notified when announcements are published"
+            checked={prefs.announcementsEnabled}
+            onChange={(v) => toggle("announcementsEnabled", v)}
+            disabled={saving.announcementsEnabled}
+          />
+          <ToggleRow
+            label="Fee payment alerts"
+            desc="Notify when parents make payments or withdrawals"
+            checked={prefs.feesEnabled}
+            onChange={(v) => toggle("feesEnabled", v)}
+            disabled={saving.feesEnabled}
+          />
+          <ToggleRow
+            label="Leave request alerts"
+            desc="Notify on new or updated leave requests"
+            checked={prefs.attendanceEnabled}
+            onChange={(v) => toggle("attendanceEnabled", v)}
+            disabled={saving.attendanceEnabled}
+          />
+          <ToggleRow
+            label="Result publishing alerts"
+            desc="Notify when results are published to parents"
+            checked={prefs.resultsEnabled}
+            onChange={(v) => toggle("resultsEnabled", v)}
+            disabled={saving.resultsEnabled}
+          />
+          <ToggleRow
+            label="New message alerts"
+            desc="Notify when you receive a new message"
+            checked={prefs.messagesEnabled}
+            onChange={(v) => toggle("messagesEnabled", v)}
+            disabled={saving.messagesEnabled}
+          />
         </div>
       </Card>
 
       <Card>
         <CardHeader title="Delivery" />
         <div className="px-5 pb-2 pt-1">
-          <ToggleRow label="Push notifications"  desc="Send alerts to this device"  checked={prefs.pushEnabled}  onChange={(v) => toggle("pushEnabled", v)}  disabled={saving.pushEnabled} />
-          <ToggleRow label="Email notifications" desc="Receive updates via email"   checked={prefs.emailEnabled} onChange={(v) => toggle("emailEnabled", v)} disabled={saving.emailEnabled} />
+          <ToggleRow
+            label="Push notifications"
+            desc="Send alerts to this device"
+            checked={prefs.pushEnabled}
+            onChange={(v) => toggle("pushEnabled", v)}
+            disabled={saving.pushEnabled}
+          />
+          <ToggleRow
+            label="Email notifications"
+            desc="Receive updates via email"
+            checked={prefs.emailEnabled}
+            onChange={(v) => toggle("emailEnabled", v)}
+            disabled={saving.emailEnabled}
+          />
         </div>
       </Card>
 
@@ -2110,8 +2829,10 @@ function SecuritySection() {
         const merged = { ...cached, ...fresh };
         localStorage.setItem("user", JSON.stringify(merged));
         setProfile(merged);
-      } catch {}
-      finally { setLoadingProfile(false); }
+      } catch {
+      } finally {
+        setLoadingProfile(false);
+      }
     };
     fetchProfile();
 
@@ -2141,8 +2862,12 @@ function SecuritySection() {
           <div className="p-5">
             <div className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Account Password</p>
-                <p className="text-xs text-gray-500 mt-0.5">Update your password regularly for security</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">
+                  Account Password
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Update your password regularly for security
+                </p>
               </div>
               <OutlineBtn onClick={() => setShowPwModal(true)}>
                 <Lock className="w-3.5 h-3.5" /> Change
@@ -2157,35 +2882,48 @@ function SecuritySection() {
           <div className="p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Email OTP (Withdrawals)</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">
+                  Email OTP (Withdrawals)
+                </p>
                 <p className="text-xs text-gray-500">OTP sent to: {masked}</p>
               </div>
               {loadingFin ? (
                 <div className="w-16 h-5 bg-gray-100 rounded-full animate-pulse" />
               ) : (
-                <span className={`text-xs font-medium border px-2 py-0.5 rounded-full ${
-                  otpEnabled
-                    ? "text-green-600 border-green-200 bg-green-50"
-                    : "text-gray-500 border-gray-200 bg-gray-50"
-                }`}>
+                <span
+                  className={`text-xs font-medium border px-2 py-0.5 rounded-full ${
+                    otpEnabled
+                      ? "text-green-600 border-green-200 bg-green-50"
+                      : "text-gray-500 border-gray-200 bg-gray-50"
+                  }`}
+                >
                   {otpEnabled ? "Enabled" : "Disabled"}
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-500">
               Manage OTP settings in{" "}
-              <button onClick={() => {}} className="text-[#003366] underline font-medium">Payments & Finance</button>
+              <button onClick={() => {}} className="text-[#003366] underline font-medium">
+                Payments & Finance
+              </button>
             </p>
           </div>
         </Card>
 
         {/* Session Security */}
         <Card>
-          <CardHeader title="Session Security" action={
-            loadingProfile ? <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-[#003366] rounded-full animate-spin" /> : (
-              <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Live</span>
-            )
-          } />
+          <CardHeader
+            title="Session Security"
+            action={
+              loadingProfile ? (
+                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-[#003366] rounded-full animate-spin" />
+              ) : (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Live
+                </span>
+              )
+            }
+          />
           <div className="p-5 space-y-2">
             {[
               {
@@ -2194,23 +2932,50 @@ function SecuritySection() {
               },
               {
                 label: "Email Verified",
-                value: profile?.isEmailVerified === undefined ? "—" : profile.isEmailVerified ? "Yes" : "No",
-                highlight: profile?.isEmailVerified === undefined ? "" : profile.isEmailVerified ? "text-green-600" : "text-red-500",
-                icon: profile?.isEmailVerified ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : profile?.isEmailVerified === false ? <AlertCircle className="w-3.5 h-3.5 text-red-400" /> : null,
+                value:
+                  profile?.isEmailVerified === undefined
+                    ? "—"
+                    : profile.isEmailVerified
+                      ? "Yes"
+                      : "No",
+                highlight:
+                  profile?.isEmailVerified === undefined
+                    ? ""
+                    : profile.isEmailVerified
+                      ? "text-green-600"
+                      : "text-red-500",
+                icon: profile?.isEmailVerified ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                ) : profile?.isEmailVerified === false ? (
+                  <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+                ) : null,
               },
               {
                 label: "Account Status",
-                value: profile?.isActive === undefined ? "—" : profile.isActive ? "Active" : "Inactive",
-                highlight: profile?.isActive === undefined ? "" : profile.isActive ? "text-green-600" : "text-red-500",
+                value:
+                  profile?.isActive === undefined ? "—" : profile.isActive ? "Active" : "Inactive",
+                highlight:
+                  profile?.isActive === undefined
+                    ? ""
+                    : profile.isActive
+                      ? "text-green-600"
+                      : "text-red-500",
               },
             ].map((s) => (
-              <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
+              <div
+                key={s.label}
+                className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0"
+              >
                 <span className="text-gray-500">{s.label}</span>
-                <span className={`font-medium flex items-center gap-1.5 ${s.highlight || "text-gray-800 dark:text-slate-200"}`}>
+                <span
+                  className={`font-medium flex items-center gap-1.5 ${s.highlight || "text-gray-800 dark:text-slate-200"}`}
+                >
                   {"icon" in s && s.icon}
                   {loadingProfile && s.value === "—" ? (
                     <span className="inline-block w-24 h-3.5 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
-                  ) : s.value}
+                  ) : (
+                    s.value
+                  )}
                 </span>
               </div>
             ))}
@@ -2226,12 +2991,17 @@ function SecuritySection() {
               { label: "School", value: profile?.schoolName || profile?.schoolId?.name || "—" },
               { label: "User ID", value: profile?.userId || profile?._id || "—" },
             ].map((s) => (
-              <div key={s.label} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
+              <div
+                key={s.label}
+                className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0"
+              >
                 <span className="text-gray-500">{s.label}</span>
                 {loadingProfile && s.value === "—" ? (
                   <span className="inline-block w-28 h-3.5 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
                 ) : (
-                  <span className="text-gray-800 dark:text-slate-200 font-medium capitalize truncate max-w-[180px]">{s.value}</span>
+                  <span className="text-gray-800 dark:text-slate-200 font-medium capitalize truncate max-w-[180px]">
+                    {s.value}
+                  </span>
                 )}
               </div>
             ))}
@@ -2306,7 +3076,11 @@ function DataSystemSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {exportCards.map((c) => (
-          <Card key={c.title} className="p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={c.action}>
+          <Card
+            key={c.title}
+            className="p-5 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={c.action}
+          >
             <div className="flex items-start gap-3 mb-3">
               <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] flex items-center justify-center shrink-0">
                 <c.icon className="w-4 h-4 text-[#003366]" />
@@ -2317,16 +3091,25 @@ function DataSystemSection() {
               </div>
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); c.action(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                c.action();
+              }}
               disabled={exporting === c.type}
               className="inline-flex items-center gap-1.5 text-xs text-[#003366] font-medium hover:underline disabled:opacity-50"
             >
               {exporting === c.type ? (
-                <><Loader2 className="w-3 h-3 animate-spin" /> Exporting…</>
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" /> Exporting…
+                </>
               ) : c.type ? (
-                <><Download className="w-3 h-3" /> Download CSV</>
+                <>
+                  <Download className="w-3 h-3" /> Download CSV
+                </>
               ) : (
-                <><ExternalLink className="w-3 h-3" /> Open</>
+                <>
+                  <ExternalLink className="w-3 h-3" /> Open
+                </>
               )}
             </button>
           </Card>
@@ -2341,18 +3124,31 @@ function DataSystemSection() {
             <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-green-700">Backup completed successfully</p>
-              <p className="text-xs text-green-600">Your school data is securely backed up by Talim</p>
+              <p className="text-xs text-green-600">
+                Your school data is securely backed up by Talim
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
             {[
-              { label: "Last Backup", value: new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleString() },
-              { label: "Next Backup", value: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleString() },
+              {
+                label: "Last Backup",
+                value: new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleString(),
+              },
+              {
+                label: "Next Backup",
+                value: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleString(),
+              },
               { label: "Backup Frequency", value: "Weekly (Every Sunday)" },
             ].map((s) => (
-              <div key={s.label} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600">
+              <div
+                key={s.label}
+                className="p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600"
+              >
                 <p className="text-xs text-gray-500">{s.label}</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mt-0.5">{s.value}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200 mt-0.5">
+                  {s.value}
+                </p>
               </div>
             ))}
           </div>
@@ -2369,12 +3165,19 @@ function DataSystemSection() {
             { label: "Environment", value: "Production" },
             { label: "Support", value: "support@mytalim.com" },
           ].map((s) => (
-            <div key={s.label} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
+            <div
+              key={s.label}
+              className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0"
+            >
               <span className="text-gray-500">{s.label}</span>
               <span className="text-gray-800 dark:text-slate-200 font-medium">
                 {s.label === "Support" ? (
-                  <a href={`mailto:${s.value}`} className="text-[#003366] hover:underline">{s.value}</a>
-                ) : s.value}
+                  <a href={`mailto:${s.value}`} className="text-[#003366] hover:underline">
+                    {s.value}
+                  </a>
+                ) : (
+                  s.value
+                )}
               </span>
             </div>
           ))}
@@ -2388,7 +3191,7 @@ function DataSystemSection() {
 
 const THEME_OPTIONS: { value: Theme; label: string; desc: string; icon: React.ElementType }[] = [
   { value: "light", label: "Light", desc: "Clean white interface", icon: Sun },
-  { value: "dark",  label: "Dark",  desc: "Easy on the eyes at night", icon: Moon },
+  { value: "dark", label: "Dark", desc: "Easy on the eyes at night", icon: Moon },
   { value: "system", label: "System", desc: "Follows your device preference", icon: Monitor },
 ];
 
@@ -2397,7 +3200,10 @@ function AppearanceSection() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Appearance" desc="Choose how Talim School Admin looks on this device." />
+      <SectionHeader
+        title="Appearance"
+        desc="Choose how Talim School Admin looks on this device."
+      />
       <Card>
         <CardHeader title="Theme" />
         <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2414,13 +3220,19 @@ function AppearanceSection() {
                     : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                 }`}
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  selected ? "bg-[#003366] dark:bg-blue-600 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
-                }`}>
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    selected
+                      ? "bg-[#003366] dark:bg-blue-600 text-white"
+                      : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
+                  }`}
+                >
                   <Icon className="w-6 h-6" />
                 </div>
                 <div className="text-center">
-                  <p className={`text-sm font-semibold ${selected ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-200"}`}>
+                  <p
+                    className={`text-sm font-semibold ${selected ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-200"}`}
+                  >
                     {label}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{desc}</p>
@@ -2438,7 +3250,8 @@ function AppearanceSection() {
       <Card>
         <div className="px-5 py-4">
           <p className="text-xs text-gray-400 dark:text-slate-500">
-            Theme preference is stored locally on this device and does not sync across browsers or devices.
+            Theme preference is stored locally on this device and does not sync across browsers or
+            devices.
           </p>
         </div>
       </Card>
@@ -2460,11 +3273,11 @@ const SECTION_MAP: Record<Section, React.ComponentType> = {
   "assessment-settings": AssessmentSettingsSection,
   "fees-receipts": FeesReceiptsSection,
   "payments-finance": PaymentsFinanceSection,
-  "communication": CommunicationSection,
-  "notifications": NotificationsSection,
-  "security": SecuritySection,
+  communication: CommunicationSection,
+  notifications: NotificationsSection,
+  security: SecuritySection,
   "data-system": DataSystemSection,
-  "appearance": AppearanceSection,
+  appearance: AppearanceSection,
   "sub-admins": SubAdminSettingsSection,
 };
 
@@ -2474,9 +3287,7 @@ export default function SettingsPage() {
   const ActiveSection = SECTION_MAP[active];
 
   // Sub-Admins section is only accessible to full school_admin
-  const visibleSections = SECTIONS.filter(
-    (s) => s.id !== "sub-admins" || isFullAdmin
-  );
+  const visibleSections = SECTIONS.filter((s) => s.id !== "sub-admins" || isFullAdmin);
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 overflow-hidden">
@@ -2484,7 +3295,9 @@ export default function SettingsPage() {
       <aside className="w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col overflow-hidden">
         <div className="px-5 py-5 border-b border-gray-100 dark:border-slate-800">
           <h1 className="text-base font-bold text-gray-900 dark:text-slate-100">Settings</h1>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Manage your school&apos;s preferences</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+            Manage your school&apos;s preferences
+          </p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {visibleSections.map((s) => {
@@ -2500,12 +3313,18 @@ export default function SettingsPage() {
                     : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800"
                 }`}
               >
-                <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
+                <Icon
+                  className={`w-4 h-4 mt-0.5 shrink-0 ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`}
+                />
                 <div className="min-w-0">
-                  <p className={`text-xs font-semibold truncate ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-300"}`}>
+                  <p
+                    className={`text-xs font-semibold truncate ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-300"}`}
+                  >
                     {s.label}
                   </p>
-                  <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate leading-tight mt-0.5">{s.desc}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate leading-tight mt-0.5">
+                    {s.desc}
+                  </p>
                 </div>
               </button>
             );

@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "../lib/api/config";
-import { PerformanceMonitor, performantFetch } from "../lib/performance";
+import { PerformanceMonitor } from "../lib/performance";
 import { apiClient } from "@/lib/apiClient";
 
 interface User {
@@ -130,14 +130,7 @@ export interface Student {
   enrollmentDate?: string;
   assignedSubjects?: string[];
   attendance?: string;
-  [key: string]:
-    | string
-    | boolean
-    | string[]
-    | User
-    | Class
-    | ParentContact
-    | undefined;
+  [key: string]: string | boolean | string[] | User | Class | ParentContact | undefined;
 }
 
 export interface StudentById {
@@ -268,8 +261,7 @@ export const registerStudent = async (payload: RegisterStudentPayload) => {
     const errorData = await response.json();
     console.error("Registration failed:", errorData);
     throw new Error(
-      errorData.message ||
-        `Registration failed: ${response.status} ${response.statusText}`
+      errorData.message || `Registration failed: ${response.status} ${response.statusText}`
     );
   }
 
@@ -278,9 +270,7 @@ export const registerStudent = async (payload: RegisterStudentPayload) => {
   return result;
 };
 
-export const createStudentProfile = async (
-  payload: CreateStudentProfilePayload
-) => {
+export const createStudentProfile = async (payload: CreateStudentProfilePayload) => {
   console.log("Creating student profile with payload:", payload);
 
   const response = await apiClient.post(API_ENDPOINTS.CREATE_STUDENT, payload);
@@ -289,8 +279,7 @@ export const createStudentProfile = async (
     const errorData = await response.json();
     console.error("Profile creation failed:", errorData);
     throw new Error(
-      errorData.message ||
-        `Profile creation failed: ${response.status} ${response.statusText}`
+      errorData.message || `Profile creation failed: ${response.status} ${response.statusText}`
     );
   }
 
@@ -335,23 +324,17 @@ export const editClass = async (classId: string, data: any) => {
       throw new Error(errorData.message || "Failed to update class");
     } catch (jsonError) {
       // If we can't parse JSON, use the status text
-      throw new Error(
-        `Server error: ${response.status} ${response.statusText}`
-      );
+      throw new Error(`Server error: ${response.status} ${response.statusText}`);
     }
   }
 
   return response.json();
 };
 
-export const updateCoursesInClass = async (
-  classId: string,
-  courseIds: string[]
-) => {
-  const response = await apiClient.put(
-    API_ENDPOINTS.UPDATE_COURSES_BY_CLASS(classId),
-    { courseIds }
-  );
+export const updateCoursesInClass = async (classId: string, courseIds: string[]) => {
+  const response = await apiClient.put(API_ENDPOINTS.UPDATE_COURSES_BY_CLASS(classId), {
+    courseIds,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to update courses in class");
@@ -362,59 +345,53 @@ export const updateCoursesInClass = async (
 
 export const getClass = async (classId: string) => {
   try {
-    console.log('🔍 Attempting direct fetch for class:', classId);
+    console.log("🔍 Attempting direct fetch for class:", classId);
     const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASS}/${classId}`);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Direct fetch successful');
+      console.log("✅ Direct fetch successful");
       return data;
     }
 
     // If not ok, log the error but continue to fallback
     const errorText = await response.text();
-    console.warn('⚠️ Direct fetch failed:', response.status, errorText);
-
+    console.warn("⚠️ Direct fetch failed:", response.status, errorText);
   } catch (directError) {
-    console.warn('⚠️ Direct fetch threw error:', directError);
+    console.warn("⚠️ Direct fetch threw error:", directError);
   }
 
   // Fallback: Get all classes and find the one we need
-  console.log('📋 Falling back to list endpoint...');
+  console.log("📋 Falling back to list endpoint...");
   try {
     const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
-    
+
     if (!response.ok) {
       throw new Error("Failed to fetch classes from list endpoint");
     }
 
     const allClasses = await response.json();
-    console.log('📋 Retrieved', allClasses.length, 'classes from list');
-    
+    console.log("📋 Retrieved", allClasses.length, "classes from list");
+
     const foundClass = allClasses.find((c: any) => c._id === classId);
-    
+
     if (!foundClass) {
       throw new Error(`Class with ID ${classId} not found`);
     }
-    
-    console.log('✅ Found class from list endpoint');
+
+    console.log("✅ Found class from list endpoint");
     return foundClass;
-    
   } catch (fallbackError) {
-    console.error('❌ Fallback also failed:', fallbackError);
-    throw new Error(`Failed to fetch class: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+    console.error("❌ Fallback also failed:", fallbackError);
+    throw new Error(
+      `Failed to fetch class: ${fallbackError instanceof Error ? fallbackError.message : "Unknown error"}`
+    );
   }
 };
 
-export const updateStudent = async (
-  studentId: string,
-  data: Partial<Student>
-) => {
+export const updateStudent = async (studentId: string, data: Partial<Student>) => {
   try {
-    const response = await apiClient.put(
-      `${API_ENDPOINTS.STUDENTS}/${studentId}`,
-      data
-    );
+    const response = await apiClient.put(`${API_ENDPOINTS.STUDENTS}/${studentId}`, data);
 
     if (!response.ok) {
       // Parse the error response to get detailed error information
@@ -449,10 +426,7 @@ export const updateStudent = async (
 };
 
 export const studentService = {
-  async getStudents(
-    page: number = 1,
-    limit: number = 10
-  ): Promise<GetStudentsResponse> {
+  async getStudents(page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
     try {
       const response = await apiClient.get(
         `${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`
@@ -466,38 +440,29 @@ export const studentService = {
 
   async getStudentById(studentId: string): Promise<StudentById> {
     try {
-      return await PerformanceMonitor.measureAsync(
-        `getStudentById-${studentId}`,
-        async () => {
-          const response = await apiClient.get(
-            `${API_ENDPOINTS.GET_STUDENT}/${studentId}`
-          );
+      return await PerformanceMonitor.measureAsync(`getStudentById-${studentId}`, async () => {
+        const response = await apiClient.get(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`);
 
-          if (!response.ok) {
-            // Handle 404 specifically
-            if (response.status === 404) {
-              throw new Error("Student not found");
-            }
-            const errorData = await response.json();
-            throw new Error(
-              errorData.message || "Failed to fetch student details"
-            );
+        if (!response.ok) {
+          // Handle 404 specifically
+          if (response.status === 404) {
+            throw new Error("Student not found");
           }
-
-          const data = await response.json();
-          console.log("Student data received:", {
-            id: studentId,
-            hasData: !!data,
-          });
-          return data.data[0];
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch student details");
         }
-      );
+
+        const data = await response.json();
+        console.log("Student data received:", {
+          id: studentId,
+          hasData: !!data,
+        });
+        return data.data[0];
+      });
     } catch (error) {
       if (error instanceof Error && error.name === "TimeoutError") {
         console.error("❌ Student fetch timed out");
-        throw new Error(
-          "Request timed out. Please check your connection and try again."
-        );
+        throw new Error("Request timed out. Please check your connection and try again.");
       }
       console.error("❌ Error fetching student:", error);
       throw error;
@@ -511,9 +476,7 @@ export const studentService = {
   ): Promise<GetStudentsResponse> {
     try {
       const response = await apiClient.get(
-        `${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(
-          classId
-        )}?page=${page}&limit=${limit}`
+        `${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?page=${page}&limit=${limit}`
       );
 
       if (!response.ok) {
@@ -529,20 +492,14 @@ export const studentService = {
   },
 };
 
-export const updateClass = async (
-  classId: string,
-  updateData: UpdateClassData
-): Promise<Class> => {
+export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> => {
   try {
-    const response = await apiClient.put(
-      `${API_ENDPOINTS.BASE_URL}/classes/${classId}`,
-      {
-        name: updateData.name,
-        ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
-        classDescription: updateData.classDescription,
-        classCapacity: updateData.classCapacity,
-      }
-    );
+    const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`, {
+      name: updateData.name,
+      ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
+      classDescription: updateData.classDescription,
+      classCapacity: updateData.classCapacity,
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -556,10 +513,7 @@ export const updateClass = async (
   }
 };
 
-export const assignTeacherToClass = async (
-  classId: string,
-  teacherId: string
-): Promise<Class> => {
+export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> => {
   try {
     const response = await apiClient.put(
       `${API_ENDPOINTS.BASE_URL}/classes/${classId}/assign-teacher`,
@@ -580,9 +534,7 @@ export const assignTeacherToClass = async (
 
 export const deleteClass = async (classId: string): Promise<void> => {
   try {
-    const response = await apiClient.delete(
-      `${API_ENDPOINTS.BASE_URL}/classes/${classId}`
-    );
+    const response = await apiClient.delete(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`);
 
     if (!response.ok) {
       const error = await response.json();
@@ -605,16 +557,13 @@ export const updateStudentStatus = async (
   isActive: boolean
 ): Promise<{ message: string }> => {
   try {
-    const response = await apiClient.put(
-      `${API_ENDPOINTS.BASE_URL}/students/${studentId}/status`,
-      { isActive }
-    );
+    const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/students/${studentId}/status`, {
+      isActive,
+    });
 
     if (!response.ok) {
       // Try to parse error response if available
-      let errorMessage = `Failed to ${
-        isActive ? "activate" : "deactivate"
-      } student`;
+      let errorMessage = `Failed to ${isActive ? "activate" : "deactivate"} student`;
       try {
         const error = await response.json();
         errorMessage = error.message || errorMessage;
@@ -629,9 +578,7 @@ export const updateStudentStatus = async (
     if (response.status === 204) {
       // No content response, return success message
       return {
-        message: `Student ${
-          isActive ? "activated" : "deactivated"
-        } successfully`,
+        message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
       };
     }
 
@@ -641,18 +588,14 @@ export const updateStudentStatus = async (
       if (responseText.trim() === "") {
         // Empty response, return success message
         return {
-          message: `Student ${
-            isActive ? "activated" : "deactivated"
-          } successfully`,
+          message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
         };
       }
       return JSON.parse(responseText);
     } catch (jsonError) {
       // If JSON parsing fails, still return success since response was ok
       return {
-        message: `Student ${
-          isActive ? "activated" : "deactivated"
-        } successfully`,
+        message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
       };
     }
   } catch (error) {

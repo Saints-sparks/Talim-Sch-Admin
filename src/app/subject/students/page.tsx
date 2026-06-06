@@ -2,7 +2,6 @@
 
 import { Header } from "@/components/Header";
 import StudentGrid from "@/components/TeacherGrid";
-import { use } from "react";
 
 const StudentPage: React.FC = () => {
   const text = "Student Overview";

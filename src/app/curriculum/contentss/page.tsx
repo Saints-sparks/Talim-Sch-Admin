@@ -10,14 +10,11 @@ import {
   Plus,
   Edit,
   Trash2,
-  BookOpen,
   FileText,
-  Download,
   X,
   ChevronLeft,
   Calendar,
   Users,
-  Clock,
 } from "lucide-react";
 
 interface CurriculumContent {
@@ -89,9 +86,7 @@ const CurriculumContentMain: React.FC = () => {
   const searchParams = useSearchParams();
   const initialAction = searchParams?.get("action");
 
-  const [curriculumContents, setCurriculumContents] = useState<
-    CurriculumContent[]
-  >([]);
+  const [curriculumContents, setCurriculumContents] = useState<CurriculumContent[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -103,8 +98,7 @@ const CurriculumContentMain: React.FC = () => {
   // Modal States
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
-  const [selectedContent, setSelectedContent] =
-    useState<CurriculumContent | null>(null);
+  const [selectedContent, setSelectedContent] = useState<CurriculumContent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newContent, setNewContent] = useState<NewCurriculumContent>({
     course: "",
@@ -127,12 +121,7 @@ const CurriculumContentMain: React.FC = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        fetchCurriculumContents(),
-        fetchCourses(),
-        fetchTerms(),
-        fetchTeachers(),
-      ]);
+      await Promise.all([fetchCurriculumContents(), fetchCourses(), fetchTerms(), fetchTeachers()]);
     } catch (error) {
       toast.error("Failed to load data");
     } finally {
@@ -224,12 +213,7 @@ const CurriculumContentMain: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (
-      !newContent.course ||
-      !newContent.term ||
-      !newContent.content ||
-      !newContent.teacherId
-    ) {
+    if (!newContent.course || !newContent.term || !newContent.content || !newContent.teacherId) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -253,13 +237,10 @@ const CurriculumContentMain: React.FC = () => {
         body: JSON.stringify(newContent),
       });
 
-      if (!response.ok)
-        throw new Error(`Failed to ${modalMode} curriculum content`);
+      if (!response.ok) throw new Error(`Failed to ${modalMode} curriculum content`);
 
       toast.success(
-        `Curriculum content ${
-          modalMode === "add" ? "created" : "updated"
-        } successfully!`
+        `Curriculum content ${modalMode === "add" ? "created" : "updated"} successfully!`
       );
       setShowModal(false);
       fetchCurriculumContents(); // Refresh the list
@@ -272,11 +253,7 @@ const CurriculumContentMain: React.FC = () => {
   };
 
   const handleDelete = async (contentId: string) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this curriculum content?"
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to delete this curriculum content?")) {
       return;
     }
 
@@ -328,9 +305,7 @@ const CurriculumContentMain: React.FC = () => {
 
   const getTeacherName = (teacherId: string) => {
     const teacher = teachers.find((t) => t._id === teacherId);
-    return teacher
-      ? `${teacher.userId.firstName} ${teacher.userId.lastName}`
-      : teacherId;
+    return teacher ? `${teacher.userId.firstName} ${teacher.userId.lastName}` : teacherId;
   };
 
   // Filter contents
@@ -340,10 +315,8 @@ const CurriculumContentMain: React.FC = () => {
       content.course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       content.content.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCourse =
-      selectedCourse === "all" || content.course._id === selectedCourse;
-    const matchesTerm =
-      selectedTerm === "all" || content.term._id === selectedTerm;
+    const matchesCourse = selectedCourse === "all" || content.course._id === selectedCourse;
+    const matchesTerm = selectedTerm === "all" || content.term._id === selectedTerm;
 
     return matchesSearch && matchesCourse && matchesTerm;
   });
@@ -365,9 +338,7 @@ const CurriculumContentMain: React.FC = () => {
               <ChevronLeft className="w-4 h-4" />
               Back to Dashboard
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Curriculum Content
-            </h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Curriculum Content</h1>
           </div>
           <button
             onClick={openAddModal}
@@ -436,9 +407,7 @@ const CurriculumContentMain: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {content.course.code}
                       </h3>
-                      <p className="text-sm text-gray-600">
-                        {content.course.name}
-                      </p>
+                      <p className="text-sm text-gray-600">{content.course.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -467,28 +436,21 @@ const CurriculumContentMain: React.FC = () => {
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Users className="w-4 h-4" />
                       <span>
-                        {content.teacherId.firstName}{" "}
-                        {content.teacherId.lastName}
+                        {content.teacherId.firstName} {content.teacherId.lastName}
                       </span>
                     </div>
                   </div>
 
                   {/* Content Preview */}
                   <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Content:
-                    </h4>
-                    <p className="text-sm text-gray-600 line-clamp-3">
-                      {content.content}
-                    </p>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Content:</h4>
+                    <p className="text-sm text-gray-600 line-clamp-3">{content.content}</p>
                   </div>
 
                   {/* Attachments */}
                   {content.attachments && content.attachments.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Attachments:
-                      </h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments:</h4>
                       <div className="flex items-center gap-2 text-sm text-blue-600">
                         <FileText className="w-4 h-4" />
                         <span>{content.attachments.length} file(s)</span>
@@ -510,22 +472,18 @@ const CurriculumContentMain: React.FC = () => {
                 No curriculum content found
               </h3>
               <p className="text-gray-500 mb-4">
-                {searchTerm ||
-                selectedCourse !== "all" ||
-                selectedTerm !== "all"
+                {searchTerm || selectedCourse !== "all" || selectedTerm !== "all"
                   ? "Try adjusting your search or filters."
                   : "Get started by creating your first curriculum content."}
               </p>
-              {!searchTerm &&
-                selectedCourse === "all" &&
-                selectedTerm === "all" && (
-                  <button
-                    onClick={openAddModal}
-                    className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
-                  >
-                    Add First Content
-                  </button>
-                )}
+              {!searchTerm && selectedCourse === "all" && selectedTerm === "all" && (
+                <button
+                  onClick={openAddModal}
+                  className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
+                >
+                  Add First Content
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -537,9 +495,7 @@ const CurriculumContentMain: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">
-                {modalMode === "add"
-                  ? "Add New Curriculum Content"
-                  : "Edit Curriculum Content"}
+                {modalMode === "add" ? "Add New Curriculum Content" : "Edit Curriculum Content"}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -552,9 +508,7 @@ const CurriculumContentMain: React.FC = () => {
             <div className="p-6 space-y-6">
               {/* Course Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course *</label>
                 <select
                   value={newContent.course}
                   onChange={(e) =>
@@ -577,14 +531,10 @@ const CurriculumContentMain: React.FC = () => {
 
               {/* Term Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Term *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Term *</label>
                 <select
                   value={newContent.term}
-                  onChange={(e) =>
-                    setNewContent((prev) => ({ ...prev, term: e.target.value }))
-                  }
+                  onChange={(e) => setNewContent((prev) => ({ ...prev, term: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -599,9 +549,7 @@ const CurriculumContentMain: React.FC = () => {
 
               {/* Teacher Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teacher *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Teacher *</label>
                 <select
                   value={newContent.teacherId}
                   onChange={(e) =>
@@ -616,8 +564,7 @@ const CurriculumContentMain: React.FC = () => {
                   <option value="">Select a teacher</option>
                   {teachers.map((teacher) => (
                     <option key={teacher._id} value={teacher._id}>
-                      {teacher.userId.firstName} {teacher.userId.lastName} (
-                      {teacher.userId.email})
+                      {teacher.userId.firstName} {teacher.userId.lastName} ({teacher.userId.email})
                     </option>
                   ))}
                 </select>
@@ -645,9 +592,7 @@ const CurriculumContentMain: React.FC = () => {
 
               {/* Attachments */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Attachments
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input
@@ -674,9 +619,7 @@ const CurriculumContentMain: React.FC = () => {
                           key={index}
                           className="flex items-center justify-between bg-gray-50 p-2 rounded"
                         >
-                          <span className="text-sm text-gray-700 truncate">
-                            {attachment}
-                          </span>
+                          <span className="text-sm text-gray-700 truncate">{attachment}</span>
                           <button
                             type="button"
                             onClick={() => removeAttachment(index)}

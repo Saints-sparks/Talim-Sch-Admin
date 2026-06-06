@@ -6,7 +6,6 @@ import {
   FiFilter,
   FiChevronLeft,
   FiChevronRight,
-  FiMoreVertical,
   FiEdit,
   FiTrash2,
   FiCalendar,
@@ -14,12 +13,7 @@ import {
   FiCheckCircle,
   FiAlertCircle,
 } from "react-icons/fi";
-import {
-  Assessment,
-  AssessmentStatus,
-  Term,
-} from "@/components/assessment/AssessmentForm.types";
-import AssessmentCard from "./AssessmentCard";
+import { Assessment, AssessmentStatus, Term } from "@/components/assessment/AssessmentForm.types";
 import TermSelector from "./TermSelector";
 
 interface AssessmentListProps {
@@ -81,14 +75,10 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
       const matchesSearch =
         !filters.search ||
         assessment.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        assessment.description
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase());
+        assessment.description?.toLowerCase().includes(filters.search.toLowerCase());
 
-      const matchesTerm =
-        !filters.termId || assessment.termId._id === filters.termId;
-      const matchesStatus =
-        !filters.status || assessment.status === filters.status;
+      const matchesTerm = !filters.termId || assessment.termId._id === filters.termId;
+      const matchesStatus = !filters.status || assessment.status === filters.status;
 
       return matchesSearch && matchesTerm && matchesStatus;
     });
@@ -110,13 +100,9 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
             </span>{" "}
             to{" "}
             <span className="font-medium">
-              {Math.min(
-                pagination.currentPage * pagination.limit,
-                pagination.totalCount
-              )}
+              {Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)}
             </span>{" "}
-            of <span className="font-medium">{pagination.totalCount}</span>{" "}
-            assessments
+            of <span className="font-medium">{pagination.totalCount}</span> assessments
           </span>
         </div>
 
@@ -131,38 +117,32 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
           </button>
 
           <div className="flex space-x-1">
-            {Array.from(
-              { length: Math.min(pagination.totalPages, 5) },
-              (_, i) => {
-                let page;
-                if (pagination.totalPages <= 5) {
-                  page = i + 1;
-                } else if (pagination.currentPage <= 3) {
-                  page = i + 1;
-                } else if (
-                  pagination.currentPage >=
-                  pagination.totalPages - 2
-                ) {
-                  page = pagination.totalPages - 4 + i;
-                } else {
-                  page = pagination.currentPage - 2 + i;
-                }
-
-                return (
-                  <button
-                    key={page}
-                    onClick={() => onPageChange(page)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
-                      page === pagination.currentPage
-                        ? "bg-blue-600 text-white shadow-lg"
-                        : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-300"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
+            {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+              let page;
+              if (pagination.totalPages <= 5) {
+                page = i + 1;
+              } else if (pagination.currentPage <= 3) {
+                page = i + 1;
+              } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                page = pagination.totalPages - 4 + i;
+              } else {
+                page = pagination.currentPage - 2 + i;
               }
-            )}
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+                    page === pagination.currentPage
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-300"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
           </div>
 
           <button
@@ -192,8 +172,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
   };
 
   const getStatusBadge = (status: AssessmentStatus) => {
-    const baseClasses =
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
 
     switch (status) {
       case "active":
@@ -253,9 +232,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                   <TermSelector
                     terms={terms}
                     selectedTermId={filters.termId}
-                    onTermSelect={(termId) =>
-                      handleFilterChange("termId", termId)
-                    }
+                    onTermSelect={(termId) => handleFilterChange("termId", termId)}
                     placeholder="All terms"
                     allowEmpty
                   />
@@ -300,10 +277,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse"
-              >
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
@@ -333,9 +307,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
               <FiCalendar className="h-10 w-10 text-gray-400" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              {hasActiveFilters
-                ? "No assessments match your criteria"
-                : "No assessments found"}
+              {hasActiveFilters ? "No assessments match your criteria" : "No assessments found"}
             </h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               {hasActiveFilters
@@ -361,8 +333,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                     new Date(assessment.startDate).getTime()) /
                     (1000 * 60 * 60 * 24)
                 );
-                const durationText =
-                  duration === 1 ? "1 day" : `${duration} days`;
+                const durationText = duration === 1 ? "1 day" : `${duration} days`;
 
                 return (
                   <div
@@ -382,29 +353,18 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                           </h3>
                           <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
                             <FiCalendar className="h-4 w-4" />
-                            <span>
-                              {new Date(
-                                assessment.startDate
-                              ).toLocaleDateString()}
-                            </span>
+                            <span>{new Date(assessment.startDate).toLocaleDateString()}</span>
                             <span>-</span>
-                            <span>
-                              {new Date(
-                                assessment.endDate
-                              ).toLocaleDateString()}
-                            </span>
+                            <span>{new Date(assessment.endDate).toLocaleDateString()}</span>
                           </div>
                           <p className="text-sm text-gray-600 line-clamp-2">
-                            {assessment.description ||
-                              "No description provided"}
+                            {assessment.description || "No description provided"}
                           </p>
                         </div>
                         <div className="flex items-center ml-4">
                           <span className={getStatusBadge(assessment.status)}>
                             {getStatusIcon(assessment.status)}
-                            <span className="ml-1 capitalize">
-                              {assessment.status}
-                            </span>
+                            <span className="ml-1 capitalize">{assessment.status}</span>
                           </span>
                         </div>
                       </div>
@@ -422,9 +382,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
 
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Duration:</span>
-                          <span className="font-medium text-gray-900">
-                            {durationText}
-                          </span>
+                          <span className="font-medium text-gray-900">{durationText}</span>
                         </div>
                       </div>
 
@@ -455,9 +413,7 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
             </div>
 
             {/* Enhanced Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="mt-8">{renderPagination()}</div>
-            )}
+            {pagination.totalPages > 1 && <div className="mt-8">{renderPagination()}</div>}
           </>
         )}
       </div>

@@ -68,9 +68,7 @@ const Timetable = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [timetableEntries, setTimetableEntries] = useState<
-    Record<string, TimetableEntry[]>
-  >({});
+  const [timetableEntries, setTimetableEntries] = useState<Record<string, TimetableEntry[]>>({});
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [isLoadingTimetable, setIsLoadingTimetable] = useState(false);
@@ -223,9 +221,7 @@ const Timetable = () => {
       const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
       if (!response.ok) throw new Error("Failed to fetch classes");
       const classesData = await response.json();
-      const classesArray = Array.isArray(classesData)
-        ? classesData
-        : classesData.data || [];
+      const classesArray = Array.isArray(classesData) ? classesData : classesData.data || [];
       setClasses(classesArray);
 
       if (classesArray.length > 0 && !selectedClassId) {
@@ -252,17 +248,13 @@ const Timetable = () => {
       if (!coursesResponse.ok) throw new Error("Failed to fetch courses for class");
 
       const coursesData = await coursesResponse.json();
-      const coursesArray = Array.isArray(coursesData)
-        ? coursesData
-        : coursesData.data || [];
+      const coursesArray = Array.isArray(coursesData) ? coursesData : coursesData.data || [];
 
       // Build a teacher ID → display name map so getCourseTeacherName
       // can resolve plain string teacherIds without a populated object.
       if (teachersResponse.ok) {
         const teachersData = await teachersResponse.json();
-        const teachersArray = Array.isArray(teachersData)
-          ? teachersData
-          : teachersData.data || [];
+        const teachersArray = Array.isArray(teachersData) ? teachersData : teachersData.data || [];
         const map = new Map<string, string>();
         teachersArray.forEach((t: any) => {
           const userId = t._id || t.id;
@@ -289,10 +281,7 @@ const Timetable = () => {
           subjectsMap.set(subjectId, {
             _id: subjectId,
             name: getCourseSubjectName(course),
-            code:
-              typeof course.subjectId === "string"
-                ? ""
-                : course.subjectId?.code || "",
+            code: typeof course.subjectId === "string" ? "" : course.subjectId?.code || "",
             courses: [],
           });
         }
@@ -318,9 +307,7 @@ const Timetable = () => {
       setNoTimetable(false);
 
       try {
-        const res = await apiClient.get(
-          API_ENDPOINTS.GET_TIMETABLE_BY_CLASS(selectedClassId)
-        );
+        const res = await apiClient.get(API_ENDPOINTS.GET_TIMETABLE_BY_CLASS(selectedClassId));
 
         if (res.status === 404) {
           setTimetableEntries({});
@@ -332,30 +319,35 @@ const Timetable = () => {
         if (!res.ok) throw new Error("Failed to fetch timetable");
 
         const data = await res.json();
-        const formattedTimetable = Object.keys(data).reduce((acc, day) => {
-          acc[day] = data[day].map((entry: any) => {
-            // Resolve teacherName from the teacher map when the backend omits it
-            // or when it still shows as "Unassigned teacher"
-            const matchedCourse = getEntryCourse(entry);
-            let teacherName = entry.teacherName;
-            if (
-              !teacherName ||
-              teacherName === "Unassigned teacher" ||
-              teacherName === "Unassigned"
-            ) {
-              teacherName = getCourseTeacherName(matchedCourse);
-            }
-            return {
-              ...entry,
-              courseId: getEntryCourseId(entry),
-              course: entry.course || matchedCourse?.title || "Course",
-              subject: entry.subject || (matchedCourse ? getCourseSubjectName(matchedCourse) : "Subject"),
-              startTime: entry.startTime || entry.startTIme,
-              teacherName: teacherName || "Unassigned",
-            };
-          });
-          return acc;
-        }, {} as Record<string, TimetableEntry[]>);
+        const formattedTimetable = Object.keys(data).reduce(
+          (acc, day) => {
+            acc[day] = data[day].map((entry: any) => {
+              // Resolve teacherName from the teacher map when the backend omits it
+              // or when it still shows as "Unassigned teacher"
+              const matchedCourse = getEntryCourse(entry);
+              let teacherName = entry.teacherName;
+              if (
+                !teacherName ||
+                teacherName === "Unassigned teacher" ||
+                teacherName === "Unassigned"
+              ) {
+                teacherName = getCourseTeacherName(matchedCourse);
+              }
+              return {
+                ...entry,
+                courseId: getEntryCourseId(entry),
+                course: entry.course || matchedCourse?.title || "Course",
+                subject:
+                  entry.subject ||
+                  (matchedCourse ? getCourseSubjectName(matchedCourse) : "Subject"),
+                startTime: entry.startTime || entry.startTIme,
+                teacherName: teacherName || "Unassigned",
+              };
+            });
+            return acc;
+          },
+          {} as Record<string, TimetableEntry[]>
+        );
 
         setTimetableEntries(formattedTimetable);
         setNoTimetable(Object.keys(formattedTimetable).length === 0);
@@ -392,11 +384,7 @@ const Timetable = () => {
     e.preventDefault();
   };
 
-  const handleDrop = async (
-    e: React.DragEvent,
-    day: string,
-    timeSlot: (typeof timeSlots)[0]
-  ) => {
+  const handleDrop = async (e: React.DragEvent, day: string, timeSlot: (typeof timeSlots)[0]) => {
     e.preventDefault();
 
     if (!draggedCourse || !selectedClassId) return;
@@ -410,10 +398,7 @@ const Timetable = () => {
         endTime: formatSlotTimeForApi(timeSlot.end),
       };
 
-      const res = await apiClient.post(
-        API_ENDPOINTS.CREATE_TIMETABLE_ENTRY,
-        payload
-      );
+      const res = await apiClient.post(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, payload);
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(errorData?.message || "Failed to create timetable entry");
@@ -447,7 +432,9 @@ const Timetable = () => {
     // Helper function to convert 12-hour format to 24-hour format for comparison
     const convertTo24Hour = (time12h: string) => {
       const [time, modifier] = time12h.split(" ");
-      let [hours, minutes] = time.split(":");
+      const timeParts = time.split(":");
+      let hours = timeParts[0];
+      const minutes = timeParts[1];
       if (hours === "12") {
         hours = "00";
       }
@@ -509,7 +496,9 @@ const Timetable = () => {
         // Handle AM/PM format
         if (timeStr.includes("AM") || timeStr.includes("PM")) {
           const [time, modifier] = timeStr.split(" ");
-          let [hours, minutes] = time.split(":");
+          const normalParts = time.split(":");
+          let hours = normalParts[0];
+          const minutes = normalParts[1];
           if (hours === "12") {
             hours = "00";
           }
@@ -642,7 +631,11 @@ const Timetable = () => {
     try {
       for (let dayIndex = 0; dayIndex < weekDays.length; dayIndex += 1) {
         const day = weekDays[dayIndex];
-        for (let slotIndex = 0; slotIndex < Math.min(timeSlots.length, courses.length); slotIndex += 1) {
+        for (
+          let slotIndex = 0;
+          slotIndex < Math.min(timeSlots.length, courses.length);
+          slotIndex += 1
+        ) {
           const course = courses[(slotIndex + dayIndex) % courses.length];
           const slot = timeSlots[slotIndex];
           const res = await apiClient.post(API_ENDPOINTS.CREATE_TIMETABLE_ENTRY, {
@@ -663,7 +656,9 @@ const Timetable = () => {
       if (createdCount > 0) {
         toast.success(`Template applied with ${createdCount} timetable entries`);
       } else {
-        toast.info("No template entries were added. The timetable may already be full or have conflicts.");
+        toast.info(
+          "No template entries were added. The timetable may already be full or have conflicts."
+        );
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to apply timetable template");
@@ -742,12 +737,10 @@ const Timetable = () => {
             />
           </svg>
         </div>
-        <h3 className="text-[19px] font-semibold text-[#1A1A1A] mb-3">
-          No Class Selected
-        </h3>
+        <h3 className="text-[19px] font-semibold text-[#1A1A1A] mb-3">No Class Selected</h3>
         <p className="text-[#4D4D4D] text-center max-w-md mb-8 text-[15px] leading-relaxed">
-          Please select a class from the dropdown above to view the timetable
-          schedule and start managing your class sessions.
+          Please select a class from the dropdown above to view the timetable schedule and start
+          managing your class sessions.
         </p>
         <div className="text-center">
           <div className="text-[13px] text-[#808080] font-medium">
@@ -782,12 +775,10 @@ const Timetable = () => {
           </svg>
         </div>
 
-        <h3 className="text-xl font-semibold text-gray-900 mb-3">
-          No Timetable Yet
-        </h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">No Timetable Yet</h3>
         <p className="text-gray-600 text-center max-w-md mb-6 leading-relaxed">
-          It looks like a timetable hasn't been created for this class yet. You
-          can create one now — it'll only take a moment.
+          It looks like a timetable hasn't been created for this class yet. You can create one now —
+          it'll only take a moment.
         </p>
         <div className="flex gap-3">
           <button
@@ -820,9 +811,7 @@ const Timetable = () => {
             />
           </svg>
         </div>
-        <h3 className="text-xl font-semibold text-red-700 mb-3">
-          Error Loading Timetable
-        </h3>
+        <h3 className="text-xl font-semibold text-red-700 mb-3">Error Loading Timetable</h3>
         <p className="text-red-600 text-center max-w-md mb-8">{message}</p>
         <button
           onClick={() => {
@@ -847,8 +836,7 @@ const Timetable = () => {
     try {
       // Find the selected class name
       const selectedClassName =
-        classes.find((cls) => cls._id === selectedClassId)?.name ||
-        "Unknown Class";
+        classes.find((cls) => cls._id === selectedClassId)?.name || "Unknown Class";
 
       // Create worksheet data
       const wsData: any[][] = [];
@@ -865,9 +853,7 @@ const Timetable = () => {
           const entry = getEntryForSlot(day, timeSlot);
           if (entry) {
             row.push(
-              `${entry.course}\n(${entry.subject})\n${
-                entry.teacherName || "Unassigned teacher"
-              }`
+              `${entry.course}\n(${entry.subject})\n${entry.teacherName || "Unassigned teacher"}`
             );
           } else {
             row.push("");
@@ -925,42 +911,54 @@ const Timetable = () => {
             <h1 className="text-[19px] font-semibold ">Class Timetable</h1>
           </div>
           <div className="flex items-center gap-2" data-guide="timetable-actions">
-            <Tooltip content="Reload classes, courses, and the selected class timetable after curriculum changes." side="top">
-            <button
-              onClick={refreshTimetablePage}
-              disabled={isLoadingTimetable || isLoadingSubjects || isLoadingClasses}
-              className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-4 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors disabled:opacity-60"
-              title="Refresh timetable"
+            <Tooltip
+              content="Reload classes, courses, and the selected class timetable after curriculum changes."
+              side="top"
             >
-              <RefreshCw
-                className={`w-4 h-4 ${
-                  isLoadingTimetable || isLoadingSubjects || isLoadingClasses
-                    ? "animate-spin"
-                    : ""
-                }`}
-              />
-            </button>
+              <button
+                onClick={refreshTimetablePage}
+                disabled={isLoadingTimetable || isLoadingSubjects || isLoadingClasses}
+                className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-4 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors disabled:opacity-60"
+                title="Refresh timetable"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${
+                    isLoadingTimetable || isLoadingSubjects || isLoadingClasses
+                      ? "animate-spin"
+                      : ""
+                  }`}
+                />
+              </button>
             </Tooltip>
-            <Tooltip content="Download the timetable as an Excel file for printing or sharing." side="top">
-            <button
-              onClick={downloadTimetable}
-              className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-2 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors"
+            <Tooltip
+              content="Download the timetable as an Excel file for printing or sharing."
+              side="top"
             >
-              Download
-              <Download />
-            </button>
+              <button
+                onClick={downloadTimetable}
+                className="bg-white border border-[#E0E0E0] font-semibold rounded-xl h-full flex items-center gap-2 px-2 py-2 text-[#1A1A1A] hover:text-gray-900 transition-colors"
+              >
+                Download
+                <Download />
+              </button>
             </Tooltip>
           </div>
         </div>
 
         {/* Class Selection */}
-        <div className=" bg-white gap-4 p-4 mt-4 mb-6 border border-[#F2F2F2] rounded-xl" data-guide="timetable-controls">
+        <div
+          className=" bg-white gap-4 p-4 mt-4 mb-6 border border-[#F2F2F2] rounded-xl"
+          data-guide="timetable-controls"
+        >
           <div className="bg-[#F8F8F8] border border-[#F2F2F2] flex p-6 gap-4 items-center rounded-lg">
             <div className="relative">
-              <Tooltip content="This should match the active academic period for the timetable you are building." side="right">
-              <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">
-                Session/Term
-              </label>
+              <Tooltip
+                content="This should match the active academic period for the timetable you are building."
+                side="right"
+              >
+                <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">
+                  Session/Term
+                </label>
               </Tooltip>
               <div className="relative">
                 <select
@@ -977,9 +975,7 @@ const Timetable = () => {
             </div>
             <div className="relative">
               <Tooltip content="Narrow the timetable to one class." side="right">
-              <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">
-                Class
-              </label>
+                <label className="block text-[15px] font-semibold text-[#4D4D4D] mb-1">Class</label>
               </Tooltip>
               <div className="relative">
                 <select
@@ -998,24 +994,30 @@ const Timetable = () => {
                 <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
-            <Tooltip content="Duplicate this session to another day without re-entering all details." side="top">
-            <button
-              onClick={applyTemplate}
-              disabled={isApplyingTemplate || courses.length === 0}
-              className="flex items-center gap-2 px-6 py-2 bg-white text-[15px] font-semibold border border-[#E0E0E0] rounded-xl hover:bg-blue-50 transition-colors mt-6 disabled:opacity-60"
+            <Tooltip
+              content="Duplicate this session to another day without re-entering all details."
+              side="top"
             >
-              <Copy />
-              {isApplyingTemplate ? "Applying..." : "Copy from Template"}
-            </button>
+              <button
+                onClick={applyTemplate}
+                disabled={isApplyingTemplate || courses.length === 0}
+                className="flex items-center gap-2 px-6 py-2 bg-white text-[15px] font-semibold border border-[#E0E0E0] rounded-xl hover:bg-blue-50 transition-colors mt-6 disabled:opacity-60"
+              >
+                <Copy />
+                {isApplyingTemplate ? "Applying..." : "Copy from Template"}
+              </button>
             </Tooltip>
-            <Tooltip content="Schedule a course session for a specific class, day, and time." side="top">
-            <button
-              onClick={toggleModal}
-              disabled={!selectedClassId || courses.length === 0}
-              className="flex items-center gap-2 px-6 py-2 bg-[#003366] text-white text-[15px] font-semibold border border-[#003366] rounded-xl hover:bg-[#002244] transition-colors mt-6 disabled:opacity-60"
+            <Tooltip
+              content="Schedule a course session for a specific class, day, and time."
+              side="top"
             >
-              Add Entry
-            </button>
+              <button
+                onClick={toggleModal}
+                disabled={!selectedClassId || courses.length === 0}
+                className="flex items-center gap-2 px-6 py-2 bg-[#003366] text-white text-[15px] font-semibold border border-[#003366] rounded-xl hover:bg-[#002244] transition-colors mt-6 disabled:opacity-60"
+              >
+                Add Entry
+              </button>
             </Tooltip>
           </div>
         </div>
@@ -1024,7 +1026,10 @@ const Timetable = () => {
       {/* Main Content */}
       <div className="flex gap-4 h-[calc(100vh-200px)]">
         {/* Subjects Sidebar */}
-        <div className="w-[182px] bg-white border border-[#F0F0F0] flex flex-col rounded-2xl" data-guide="timetable-subjects">
+        <div
+          className="w-[182px] bg-white border border-[#F0F0F0] flex flex-col rounded-2xl"
+          data-guide="timetable-subjects"
+        >
           <div className="p-4">
             <h2 className="font-semibold text-[15px]">Subject</h2>
           </div>
@@ -1057,19 +1062,19 @@ const Timetable = () => {
                     content="Drag this course into an empty timetable slot. Its assigned teacher follows it automatically."
                     side="right"
                   >
-                  <div
-                    draggable
-                    onDragStart={() => handleDragStart(course)}
-                    className="w-[142px] h-[100px] bg-[#F2F2F2] border border-[#E0E0E0] rounded-xl flex px-2 justify-center flex-col cursor-move hover:bg-gray-100 transition-colors border border-gray-200 hover:shadow-sm"
-                  >
-                    <BookOpen />
-                    <div className="flex items-center gap-2 text-[15px] font-semibold">
-                      {course.title}
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(course)}
+                      className="w-[142px] h-[100px] bg-[#F2F2F2] border border-[#E0E0E0] rounded-xl flex px-2 justify-center flex-col cursor-move hover:bg-gray-100 transition-colors border border-gray-200 hover:shadow-sm"
+                    >
+                      <BookOpen />
+                      <div className="flex items-center gap-2 text-[15px] font-semibold">
+                        {course.title}
+                      </div>
+                      <div className="text-[15px] font-medium mt-1">
+                        {getCourseTeacherName(course)}
+                      </div>
                     </div>
-                    <div className="text-[15px] font-medium mt-1">
-                      {getCourseTeacherName(course)}
-                    </div>
-                  </div>
                   </Tooltip>
                 ))}
               </div>
@@ -1089,15 +1094,13 @@ const Timetable = () => {
             <div className="bg-white rounded-2xl border border-[#F0F0F0]">
               {noTimetable && (
                 <div className="mx-4 mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  No timetable yet. Drag a course into a slot, use Add Entry,
-                  or copy from the template to get started.
+                  No timetable yet. Drag a course into a slot, use Add Entry, or copy from the
+                  template to get started.
                 </div>
               )}
               {/* Grid Header */}
               <div className="grid grid-cols-6 border-b border-gray-200">
-                <div className="p-4 font-medium text-[15px] text-[#030E18]">
-                  Time
-                </div>
+                <div className="p-4 font-medium text-[15px] text-[#030E18]">Time</div>
                 {weekDays.map((day) => (
                   <div
                     key={day}
@@ -1128,9 +1131,7 @@ const Timetable = () => {
                       >
                         {entry ? (
                           (() => {
-                            const colorScheme = getColorScheme(
-                              Math.floor(Math.random() * 5)
-                            );
+                            const colorScheme = getColorScheme(Math.floor(Math.random() * 5));
                             return (
                               <div
                                 className={`${colorScheme.bg} border ${colorScheme.border} ${colorScheme.dash} rounded-lg px-3 py-4 h-full flex flex-col justify-between relative group`}
@@ -1139,14 +1140,10 @@ const Timetable = () => {
 
                                 <div className="flex  gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <div
-                                      className={`text-[15px] font-semibold truncate`}
-                                    >
+                                    <div className={`text-[15px] font-semibold truncate`}>
                                       {entry.course}
                                     </div>
-                                    <div
-                                      className={`text-[15px] font-medium truncate`}
-                                    >
+                                    <div className={`text-[15px] font-medium truncate`}>
                                       {entry.teacherName || "Unassigned teacher"}
                                     </div>
                                   </div>
@@ -1188,9 +1185,7 @@ const Timetable = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-[#030E18]">
-                Add Timetable Entry
-              </h2>
+              <h2 className="text-lg font-semibold text-[#030E18]">Add Timetable Entry</h2>
               <p className="mt-1 text-sm text-[#4D4D4D]">
                 Schedule a registered course for the selected class.
               </p>
@@ -1203,9 +1198,7 @@ const Timetable = () => {
                 </label>
                 <select
                   value={formData.courseId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, courseId: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, courseId: e.target.value }))}
                   className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -1219,14 +1212,10 @@ const Timetable = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
-                  Day
-                </label>
+                <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">Day</label>
                 <select
                   value={formData.day}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, day: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, day: e.target.value }))}
                   className="w-full rounded-xl border border-[#E0E0E0] px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -1241,10 +1230,13 @@ const Timetable = () => {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Tooltip content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged." side="right">
-                  <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
-                    Start Time
-                  </label>
+                  <Tooltip
+                    content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged."
+                    side="right"
+                  >
+                    <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                      Start Time
+                    </label>
                   </Tooltip>
                   <input
                     type="time"
@@ -1260,10 +1252,13 @@ const Timetable = () => {
                   />
                 </div>
                 <div>
-                  <Tooltip content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged." side="right">
-                  <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
-                    End Time
-                  </label>
+                  <Tooltip
+                    content="Use 24-hour format (e.g. 09:00 – 10:00). Overlapping entries for the same class will be flagged."
+                    side="right"
+                  >
+                    <label className="mb-1 block text-sm font-semibold text-[#4D4D4D]">
+                      End Time
+                    </label>
                   </Tooltip>
                   <input
                     type="time"

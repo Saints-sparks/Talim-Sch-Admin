@@ -1,6 +1,5 @@
-import { Plus, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 // Utility function to generate consistent colors from strings
@@ -15,11 +14,7 @@ function generateColorFromString(str: string): string {
 }
 
 // Utility function to get user initials
-function getUserInitials(
-  firstName?: string,
-  lastName?: string,
-  name?: string
-): string {
+function getUserInitials(firstName?: string, lastName?: string, name?: string): string {
   if (firstName || lastName) {
     return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
   }
@@ -86,16 +81,9 @@ const Students = ({ participants = [] }: StudentsProps) => {
       </div>
       <div className="flex flex-col overflow-y-auto max-h-[320px] scrollbar-hide">
         {members.map((mem, index) => {
-          const displayName =
-            mem.name || `${mem.firstName || ""} ${mem.lastName || ""}`.trim();
-          const initials = getUserInitials(
-            mem.firstName,
-            mem.lastName,
-            mem.name
-          );
-          const bgColor = generateColorFromString(
-            displayName || mem.email || "user"
-          );
+          const displayName = mem.name || `${mem.firstName || ""} ${mem.lastName || ""}`.trim();
+          const initials = getUserInitials(mem.firstName, mem.lastName, mem.name);
+          const bgColor = generateColorFromString(displayName || mem.email || "user");
 
           return (
             <div
@@ -113,16 +101,10 @@ const Students = ({ participants = [] }: StudentsProps) => {
               </Avatar>
               <div className="flex-1">
                 <p className="text-[16px]">{displayName}</p>
-                <p className="text-sm text-[#7B7B7B]">
-                  {mem.role || "Student"}
-                </p>
-                {mem.email && (
-                  <p className="text-xs text-[#999999]">{mem.email}</p>
-                )}
+                <p className="text-sm text-[#7B7B7B]">{mem.role || "Student"}</p>
+                {mem.email && <p className="text-xs text-[#999999]">{mem.email}</p>}
               </div>
-              {mem.isOnline && (
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-              )}
+              {mem.isOnline && <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>}
             </div>
           );
         })}

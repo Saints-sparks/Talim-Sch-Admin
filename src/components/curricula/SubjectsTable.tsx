@@ -1,6 +1,6 @@
 "use client";
 import { getCoursesBySubject } from "@/app/services/subjects.service";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 // import { getCoursesBySubject } from "@/services/courseService"; // adjust path as needed
 
 interface Course {
@@ -33,12 +33,8 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
   onAddCourse,
   onDeleteCourse,
 }) => {
-  const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(
-    null
-  );
-  const [subjectCourses, setSubjectCourses] = useState<
-    Record<string, Course[]>
-  >({});
+  const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
+  const [subjectCourses, setSubjectCourses] = useState<Record<string, Course[]>>({});
   const [loading, setLoading] = useState<string | null>(null);
 
   const toggleExpand = async (subjectId: string) => {
@@ -47,17 +43,17 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
 
     if (!isCurrentlyExpanded) {
       console.log(isCurrentlyExpanded);
-      
+
       if (!subjectCourses[subjectId]) {
         console.log(subjectCourses[subjectId]);
-        
+
         setLoading(subjectId);
         try {
           console.log("Fetching courses for subject:", subjectId);
-          
+
           const courses = await getCoursesBySubject(subjectId);
           console.log(courses);
-          
+
           setSubjectCourses((prev) => ({ ...prev, [subjectId]: courses }));
         } catch (err) {
           console.error("Failed to fetch courses", err);
@@ -92,9 +88,7 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
                     onClick={() => toggleExpand(subject._id)}
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    {expandedSubjectId === subject._id
-                      ? "Hide Courses"
-                      : "View Courses"}
+                    {expandedSubjectId === subject._id ? "Hide Courses" : "View Courses"}
                   </button>
                   <button
                     onClick={() => onEdit(subject)}
@@ -115,9 +109,7 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
                 <tr>
                   <td colSpan={3} className="px-6 py-2 bg-gray-50">
                     {loading === subject._id ? (
-                      <p className="text-gray-600 text-sm">
-                        Loading courses...
-                      </p>
+                      <p className="text-gray-600 text-sm">Loading courses...</p>
                     ) : (
                       <ul className="pl-4 list-disc text-sm text-gray-700 space-y-2">
                         {(subjectCourses[subject._id] || []).map((course) => (
@@ -136,17 +128,13 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
                             <div className="flex sm:flex-col items-start sm:items-end gap-2 sm:space-y-1 shrink-0">
                               <button
                                 className="text-blue-500 text-sm hover:underline"
-                                onClick={() =>
-                                  onEditCourse(subject._id, course)
-                                }
+                                onClick={() => onEditCourse(subject._id, course)}
                               >
                                 Edit
                               </button>
                               <button
                                 className="text-red-500 text-sm hover:underline"
-                                onClick={() =>
-                                  onDeleteCourse(subject._id, course._id)
-                                }
+                                onClick={() => onDeleteCourse(subject._id, course._id)}
                               >
                                 Delete
                               </button>

@@ -1,5 +1,4 @@
 import { apiClient } from "@/lib/apiClient";
-import { API_ENDPOINTS } from "@/app/lib/api/config";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -233,7 +232,9 @@ export async function getPromotionRun(id: string): Promise<PromotionRun> {
   return handle<PromotionRun>(res);
 }
 
-export async function createPromotionRun(payload: CreatePromotionRunPayload): Promise<PromotionRun> {
+export async function createPromotionRun(
+  payload: CreatePromotionRunPayload
+): Promise<PromotionRun> {
   const res = await apiClient.post("/transit/promotions", payload);
   return handle<PromotionRun>(res);
 }

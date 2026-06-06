@@ -2,30 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 
-import {
-  FiEdit,
-  FiArrowLeft,
-  FiBook,
-  FiCalendar,
-  FiEdit2,
-  FiTrash2,
-} from "react-icons/fi";
+import { FiEdit, FiTrash2 } from "react-icons/fi";
 import {
   BookOpen,
   GraduationCap,
   Users,
   User,
   Info,
-  Calendar,
-  Settings,
   ChevronLeft,
-  Bell,
-  MapPin,
-  Phone,
   Mail,
   Badge,
-  Calendar as CalendarIcon,
-  MoreVertical,
   Clock,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
@@ -137,9 +123,7 @@ const ViewClass: React.FC = () => {
 
   // Course modal states
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">(
-    "edit"
-  );
+  const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">("edit");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   // Helper function to safely extract string values from potentially nested objects
@@ -154,10 +138,7 @@ const ViewClass: React.FC = () => {
 
   // Helper function to get teacher name from populated data
   const getTeacherName = (classData: ClassDetails): string => {
-    if (
-      classData.classTeacherId?.userId?.firstName &&
-      classData.classTeacherId?.userId?.lastName
-    ) {
+    if (classData.classTeacherId?.userId?.firstName && classData.classTeacherId?.userId?.lastName) {
       return `${classData.classTeacherId.userId.firstName} ${classData.classTeacherId.userId.lastName}`;
     }
     return "No teacher assigned";
@@ -213,17 +194,10 @@ const ViewClass: React.FC = () => {
 
       if (error.message?.includes("not found")) {
         errorMessage = `${courseTitle} not found. It may have already been deleted.`;
-      } else if (
-        error.message?.includes("unauthorized") ||
-        error.message?.includes("forbidden")
-      ) {
+      } else if (error.message?.includes("unauthorized") || error.message?.includes("forbidden")) {
         errorMessage = "You don't have permission to delete this course.";
-      } else if (
-        error.message?.includes("network") ||
-        error.message?.includes("fetch")
-      ) {
-        errorMessage =
-          "Network error. Please check your connection and try again.";
+      } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+        errorMessage = "Network error. Please check your connection and try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -300,10 +274,7 @@ const ViewClass: React.FC = () => {
             <div className="border-b border-gray-200 px-6 py-4 bg-gray-50">
               <div className="flex space-x-8">
                 {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-24 bg-gray-200 rounded animate-pulse"
-                  ></div>
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -313,10 +284,7 @@ const ViewClass: React.FC = () => {
               <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-16 bg-gray-200 rounded animate-pulse"
-                  ></div>
+                  <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -346,9 +314,7 @@ const ViewClass: React.FC = () => {
                 ></path>
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Error Loading Class
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Class</h3>
             <p className="text-red-600 mb-6">{error}</p>
             <button
               onClick={() => router.push("/classes")}
@@ -367,12 +333,8 @@ const ViewClass: React.FC = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-md mx-auto mt-32">
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Class Not Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              The class you're looking for doesn't exist.
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Class Not Found</h3>
+            <p className="text-gray-600 mb-6">The class you're looking for doesn't exist.</p>
             <button
               onClick={() => router.push("/classes")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -417,11 +379,7 @@ const ViewClass: React.FC = () => {
       {/* Main Content */}
       <div className="p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-gray-50 border-b border-gray-200 rounded-none h-auto p-0">
               <TabsTrigger
                 value="details"
@@ -430,14 +388,17 @@ const ViewClass: React.FC = () => {
                 <Info className="w-4 h-4" />
                 Class Details
               </TabsTrigger>
-              <Tooltip content="Courses currently assigned to this class. Manage courses in Curriculum." side="top">
-              <TabsTrigger
-                value="courses"
-                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
+              <Tooltip
+                content="Courses currently assigned to this class. Manage courses in Curriculum."
+                side="top"
               >
-                <BookOpen className="w-4 h-4" />
-                Courses
-              </TabsTrigger>
+                <TabsTrigger
+                  value="courses"
+                  className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] rounded-none font-medium transition-all"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Courses
+                </TabsTrigger>
               </Tooltip>
               <TabsTrigger
                 value="teacher"
@@ -462,12 +423,8 @@ const ViewClass: React.FC = () => {
                   <TabsContent value="details" className="space-y-8 mt-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          {classData.name}
-                        </h2>
-                        <p className="text-gray-600 mt-1">
-                          Class information and statistics
-                        </p>
+                        <h2 className="text-2xl font-bold text-gray-900">{classData.name}</h2>
+                        <p className="text-gray-600 mt-1">Class information and statistics</p>
                       </div>
                     </div>
 
@@ -479,9 +436,7 @@ const ViewClass: React.FC = () => {
                           Class Name
                         </label>
                         <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <span className="text-gray-900">
-                            {classData.name}
-                          </span>
+                          <span className="text-gray-900">{classData.name}</span>
                         </div>
                       </div>
 
@@ -510,16 +465,17 @@ const ViewClass: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Tooltip content="The form teacher responsible for this class. Assign a teacher from Users → Teachers." side="right">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Class Teacher
-                        </label>
+                        <Tooltip
+                          content="The form teacher responsible for this class. Assign a teacher from Users → Teachers."
+                          side="right"
+                        >
+                          <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            Class Teacher
+                          </label>
                         </Tooltip>
                         <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <span className="text-gray-900">
-                            {getTeacherName(classData)}
-                          </span>
+                          <span className="text-gray-900">{getTeacherName(classData)}</span>
                         </div>
                       </div>
 
@@ -530,8 +486,7 @@ const ViewClass: React.FC = () => {
                         </label>
                         <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                           <span className="text-gray-900">
-                            {classData.classDescription ||
-                              "No description available"}
+                            {classData.classDescription || "No description available"}
                           </span>
                         </div>
                       </div>
@@ -545,9 +500,7 @@ const ViewClass: React.FC = () => {
                             <p className="text-2xl font-bold text-gray-900">
                               {classData.courses?.length || 0}
                             </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Total Courses
-                            </p>
+                            <p className="text-sm text-gray-600 mt-1">Total Courses</p>
                           </div>
                           <div className="p-3 bg-blue-50 rounded-lg">
                             <BookOpen className="w-6 h-6 text-blue-600" />
@@ -561,9 +514,7 @@ const ViewClass: React.FC = () => {
                             <p className="text-2xl font-bold text-gray-900">
                               {classData.classCapacity || "0"}
                             </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Class Capacity
-                            </p>
+                            <p className="text-sm text-gray-600 mt-1">Class Capacity</p>
                           </div>
                           <div className="p-3 bg-blue-50 rounded-lg">
                             <Users className="w-6 h-6 text-[#003366]" />
@@ -575,9 +526,7 @@ const ViewClass: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-2xl font-bold text-gray-900">1</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Class Teacher
-                            </p>
+                            <p className="text-sm text-gray-600 mt-1">Class Teacher</p>
                           </div>
                           <div className="p-3 bg-[#003366]/10 rounded-lg">
                             <User className="w-6 h-6 text-[#003366]" />
@@ -591,21 +540,15 @@ const ViewClass: React.FC = () => {
                   <TabsContent value="courses" className="space-y-8 mt-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          Courses
-                        </h2>
-                        <p className="text-gray-600 mt-1">
-                          Manage courses for this class
-                        </p>
+                        <h2 className="text-2xl font-bold text-gray-900">Courses</h2>
+                        <p className="text-gray-600 mt-1">Manage courses for this class</p>
                       </div>
                     </div>
 
                     {!classData.courses || classData.courses.length === 0 ? (
                       <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
                         <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          No courses yet
-                        </h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No courses yet</h3>
                         <p className="text-sm text-gray-500">
                           Courses assigned from Curriculum will appear here.
                         </p>
@@ -630,9 +573,7 @@ const ViewClass: React.FC = () => {
                                   <FiEdit className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    handleDeleteCourse(course._id, course.title)
-                                  }
+                                  onClick={() => handleDeleteCourse(course._id, course.title)}
                                   disabled={isDeletingCourse === course._id}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                                 >
@@ -644,21 +585,16 @@ const ViewClass: React.FC = () => {
                             {/* Course Info */}
                             <div className="space-y-3">
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium text-gray-700">
-                                  Code:
-                                </span>
+                                <span className="font-medium text-gray-700">Code:</span>
                                 <span className="text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
                                   {course.courseCode || "N/A"}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium text-gray-700">
-                                  Subject:
-                                </span>
+                                <span className="font-medium text-gray-700">Subject:</span>
                                 <span className="text-gray-900">
-                                  {course.subjectId?.name} (
-                                  {course.subjectId?.code})
+                                  {course.subjectId?.name} ({course.subjectId?.code})
                                 </span>
                               </div>
 
@@ -666,10 +602,7 @@ const ViewClass: React.FC = () => {
                                 <div className="flex items-center gap-2 text-sm">
                                   <Clock className="w-4 h-4 text-gray-400" />
                                   <span className="text-gray-600">
-                                    Updated{" "}
-                                    {new Date(
-                                      course.updatedAt
-                                    ).toLocaleDateString()}
+                                    Updated {new Date(course.updatedAt).toLocaleDateString()}
                                   </span>
                                 </div>
                               )}
@@ -687,9 +620,7 @@ const ViewClass: React.FC = () => {
                         <h2 className="text-2xl font-bold text-gray-900">
                           Class Teacher Information
                         </h2>
-                        <p className="text-gray-600 mt-1">
-                          Teacher assigned to this class
-                        </p>
+                        <p className="text-gray-600 mt-1">Teacher assigned to this class</p>
                       </div>
                     </div>
 
@@ -779,9 +710,7 @@ const ViewClass: React.FC = () => {
                                     : "bg-gray-100 text-gray-700"
                                 }`}
                               >
-                                {classData.classTeacherId.isFormTeacher
-                                  ? "Yes"
-                                  : "No"}
+                                {classData.classTeacherId.isFormTeacher ? "Yes" : "No"}
                               </span>
                             </div>
                           </div>
@@ -797,9 +726,7 @@ const ViewClass: React.FC = () => {
                           A teacher can be assigned through the edit page.
                         </p>
                         <button
-                          onClick={() =>
-                            router.push(`/classes/edit-class/${classId}`)
-                          }
+                          onClick={() => router.push(`/classes/edit-class/${classId}`)}
                           className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] text-sm font-medium"
                         >
                           Assign Teacher

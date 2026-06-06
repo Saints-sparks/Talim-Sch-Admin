@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Mail, Phone, MoreVertical, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Phone, Loader2 } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import { teacherService, Teacher } from "@/app/services/teacher.service";
+import { teacherService } from "@/app/services/teacher.service";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 
 // Extend the Teacher interface to match API response
 interface ApiTeacher {
   _id: string;
-  firstName: string;  // Flat structure - not nested
-  lastName: string;   // Flat structure - not nested
-  email: string;      // Flat structure - not nested
+  firstName: string; // Flat structure - not nested
+  lastName: string; // Flat structure - not nested
+  email: string; // Flat structure - not nested
   phoneNumber?: string;
   userAvatar?: string;
   role: string;
@@ -55,13 +55,13 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = teachers.filter((teacher) => {
-        const firstName = teacher.firstName || '';
-        const lastName = teacher.lastName || '';
-        const email = teacher.email || '';
-        const specialization = teacher.specialization || '';
-        const employmentRole = teacher.employmentRole || '';
+        const firstName = teacher.firstName || "";
+        const lastName = teacher.lastName || "";
+        const email = teacher.email || "";
+        const specialization = teacher.specialization || "";
+        const employmentRole = teacher.employmentRole || "";
         const fullName = `${firstName} ${lastName}`.toLowerCase();
-        
+
         return (
           firstName.toLowerCase().includes(term) ||
           lastName.toLowerCase().includes(term) ||
@@ -102,17 +102,17 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
   // Get teacher display name - UPDATED to use flat structure
   const getTeacherName = (teacher: ApiTeacher) => {
     // Direct access to firstName and lastName (not nested)
-    return `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || 'Unknown Teacher';
+    return `${teacher.firstName || ""} ${teacher.lastName || ""}`.trim() || "Unknown Teacher";
   };
 
   // Get teacher email - UPDATED to use flat structure
   const getTeacherEmail = (teacher: ApiTeacher) => {
-    return teacher.email || 'No email';
+    return teacher.email || "No email";
   };
 
   // Get teacher phone - UPDATED to use flat structure
   const getTeacherPhone = (teacher: ApiTeacher) => {
-    return teacher.phoneNumber || '';
+    return teacher.phoneNumber || "";
   };
 
   // Get teacher role/specialization
@@ -123,7 +123,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
     if (teacher.specialization) {
       return teacher.specialization;
     }
-    return 'Teacher';
+    return "Teacher";
   };
 
   // Get assigned classes count
@@ -141,9 +141,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
       {/* Header with Add Teacher button */}
       {chatRoomId && (
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-medium text-gray-700">
-            Teachers ({teachers.length})
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700">Teachers ({teachers.length})</h3>
           <Button
             onClick={() => setIsAddTeacherModalOpen(true)}
             size="sm"
@@ -176,12 +174,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
         ) : error ? (
           <div className="text-center py-8">
             <p className="text-red-500 text-sm mb-3">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchTeachers}
-              className="text-xs"
-            >
+            <Button variant="outline" size="sm" onClick={fetchTeachers} className="text-xs">
               Try Again
             </Button>
           </div>
@@ -203,7 +196,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarFallback 
+                    <AvatarFallback
                       className="text-white font-medium"
                       style={{ backgroundColor: bgColor }}
                     >
@@ -211,12 +204,8 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm text-gray-900">
-                      {fullName}
-                    </p>
-                    <p className="text-xs text-purple-600 font-medium">
-                      {role}
-                    </p>
+                    <p className="font-medium text-sm text-gray-900">{fullName}</p>
+                    <p className="text-xs text-purple-600 font-medium">{role}</p>
                     <div className="space-y-1 mt-1">
                       {email && (
                         <p className="text-xs text-gray-500 flex items-center gap-1">
@@ -233,17 +222,23 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Classes and Courses info */}
                 <div className="flex gap-1">
                   {classesCount > 0 && (
-                    <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full" title={`${classesCount} class${classesCount !== 1 ? 'es' : ''}`}>
-                      {classesCount} class{classesCount !== 1 ? 'es' : ''}
+                    <div
+                      className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full"
+                      title={`${classesCount} class${classesCount !== 1 ? "es" : ""}`}
+                    >
+                      {classesCount} class{classesCount !== 1 ? "es" : ""}
                     </div>
                   )}
                   {coursesCount > 0 && (
-                    <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full" title={`${coursesCount} course${coursesCount !== 1 ? 's' : ''}`}>
-                      {coursesCount} course{coursesCount !== 1 ? 's' : ''}
+                    <div
+                      className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full"
+                      title={`${coursesCount} course${coursesCount !== 1 ? "s" : ""}`}
+                    >
+                      {coursesCount} course{coursesCount !== 1 ? "s" : ""}
                     </div>
                   )}
                 </div>
@@ -253,9 +248,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p className="text-sm">
-              {searchTerm
-                ? "No teachers found matching your search"
-                : "No teachers available"}
+              {searchTerm ? "No teachers found matching your search" : "No teachers available"}
             </p>
           </div>
         )}

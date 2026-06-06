@@ -35,7 +35,6 @@ function getPermissionLabel(value: string): string {
 function Avatar({ sub }: { sub: SubAdmin }) {
   if (sub.userAvatar) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={sub.userAvatar}
         alt={`${sub.firstName} ${sub.lastName}`}
@@ -83,12 +82,8 @@ function ConfirmDialog({
             <AlertCircle className="w-5 h-5 text-red-500" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">
-              {title}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              {description}
-            </p>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{description}</p>
           </div>
         </div>
         <div className="flex gap-3 justify-end">
@@ -162,9 +157,7 @@ export function SubAdminsSection() {
   };
 
   const handlePermissionsUpdated = (updated: SubAdmin) => {
-    setSubAdmins((prev) =>
-      prev.map((s) => (s.userId === updated.userId ? updated : s))
-    );
+    setSubAdmins((prev) => prev.map((s) => (s.userId === updated.userId ? updated : s)));
     setEditTarget(null);
   };
 
@@ -173,9 +166,7 @@ export function SubAdminsSection() {
     setIsActioning(true);
     try {
       const updated = await subAdminService.toggleStatus(toggleTarget.userId);
-      setSubAdmins((prev) =>
-        prev.map((s) => (s.userId === updated.userId ? updated : s))
-      );
+      setSubAdmins((prev) => prev.map((s) => (s.userId === updated.userId ? updated : s)));
       toast.success(
         `${updated.firstName} ${updated.lastName} is now ${updated.isActive ? "active" : "suspended"}`
       );
@@ -192,9 +183,7 @@ export function SubAdminsSection() {
     setIsActioning(true);
     try {
       await subAdminService.demoteSubAdmin(demoteTarget.userId);
-      setSubAdmins((prev) =>
-        prev.filter((s) => s.userId !== demoteTarget.userId)
-      );
+      setSubAdmins((prev) => prev.filter((s) => s.userId !== demoteTarget.userId));
       toast.success(
         `${demoteTarget.firstName} ${demoteTarget.lastName} has been removed as sub-admin`
       );
@@ -213,9 +202,7 @@ export function SubAdminsSection() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-            Sub-Admins
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Sub-Admins</h2>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             Delegate school administration responsibilities to trusted staff
           </p>
@@ -254,9 +241,7 @@ export function SubAdminsSection() {
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
-            {error}
-          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             onClick={() => load(page)}
             className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -273,8 +258,8 @@ export function SubAdminsSection() {
             No Sub-Admins Yet
           </h3>
           <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm">
-            Create a new sub-admin account or promote an existing teacher to
-            help manage the school portal.
+            Create a new sub-admin account or promote an existing teacher to help manage the school
+            portal.
           </p>
           <div className="flex gap-3 mt-5">
             <button
@@ -326,9 +311,7 @@ export function SubAdminsSection() {
                           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                             {sub.firstName} {sub.lastName}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-slate-400">
-                            {sub.email}
-                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">{sub.email}</p>
                         </div>
                       </div>
                     </td>

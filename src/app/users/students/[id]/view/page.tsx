@@ -8,29 +8,21 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { studentService, StudentById } from "@/app/services/student.service";
 import { PerformanceMonitor } from "@/app/lib/performance";
 import { apiClient } from "@/lib/apiClient";
-import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Search,
-  Bell,
   User,
   BookOpen,
   Users,
   GraduationCap,
-  Briefcase,
   Clock,
-  Award,
   Mail,
   Phone,
-  MapPin,
   Badge,
-  Calendar as CalendarIcon,
   UserCheck,
   School,
   Heart,
@@ -80,20 +72,16 @@ const StudentProfile = () => {
         setStudent(studentData);
 
         // End overall timing
-        const totalTime =
-          PerformanceMonitor.endMeasurement("student-page-load");
+        const totalTime = PerformanceMonitor.endMeasurement("student-page-load");
 
         // Log performance warning if slow
         if (totalTime > 2000) {
           console.warn(
-            `🐌 Student page took ${totalTime.toFixed(
-              2
-            )}ms to load - this is slower than expected`
+            `🐌 Student page took ${totalTime.toFixed(2)}ms to load - this is slower than expected`
           );
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch student data";
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch student data";
         setError(errorMessage);
         console.error("Error fetching student:", err);
 
@@ -145,10 +133,7 @@ const StudentProfile = () => {
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex space-x-8">
                 {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-24 bg-gray-200 rounded animate-pulse"
-                  ></div>
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -203,9 +188,7 @@ const StudentProfile = () => {
                 ></path>
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Error Loading Student
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Student</h3>
             <p className="text-red-600 mb-6">{error}</p>
             <button
               onClick={() => router.push("/users/students")}
@@ -224,12 +207,8 @@ const StudentProfile = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-md mx-auto mt-32">
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Student Not Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              The student you're looking for doesn't exist.
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Student Not Found</h3>
+            <p className="text-gray-600 mb-6">The student you're looking for doesn't exist.</p>
             <button
               onClick={() => router.push("/users/students")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -269,15 +248,18 @@ const StudentProfile = () => {
 
             {/* Right Actions */}
             <div className="flex items-center space-x-3">
-              <Tooltip content="Update student personal details, guardian info, or class assignment." side="top">
-              <button
-                onClick={() => router.push(`/users/students/${studentId}/edit`)}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-200 text-sm font-medium"
+              <Tooltip
+                content="Update student personal details, guardian info, or class assignment."
+                side="top"
               >
-                <FiEdit className="w-4 h-4" />
-                <span className="hidden sm:inline">Edit Profile</span>
-                <span className="sm:hidden">Edit</span>
-              </button>
+                <button
+                  onClick={() => router.push(`/users/students/${studentId}/edit`)}
+                  className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-200 text-sm font-medium"
+                >
+                  <FiEdit className="w-4 h-4" />
+                  <span className="hidden sm:inline">Edit Profile</span>
+                  <span className="sm:hidden">Edit</span>
+                </button>
               </Tooltip>
             </div>
           </div>
@@ -288,11 +270,7 @@ const StudentProfile = () => {
       <div className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid grid-cols-2 sm:grid-cols-4 bg-gray-50/50 border-b border-gray-100 rounded-none h-auto p-0">
                 <TabsTrigger
                   value="personal-details"
@@ -302,15 +280,18 @@ const StudentProfile = () => {
                   <span className="hidden sm:inline">Personal Details</span>
                   <span className="sm:hidden">Personal</span>
                 </TabsTrigger>
-                <Tooltip content="Contact details for the student's primary guardian. Visible to class teachers." side="top">
-                <TabsTrigger
-                  value="parent-guardian"
-                  className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50"
+                <Tooltip
+                  content="Contact details for the student's primary guardian. Visible to class teachers."
+                  side="top"
                 >
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Parent/Guardian</span>
-                  <span className="sm:hidden">Parent</span>
-                </TabsTrigger>
+                  <TabsTrigger
+                    value="parent-guardian"
+                    className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50"
+                  >
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Parent/Guardian</span>
+                    <span className="sm:hidden">Parent</span>
+                  </TabsTrigger>
                 </Tooltip>
                 <TabsTrigger
                   value="academic-info"
@@ -358,10 +339,7 @@ const StudentProfile = () => {
                               <div className="relative">
                                 <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-gray-100">
                                   <AvatarImage
-                                    src={
-                                      student.userId.userAvatar ||
-                                      "/placeholder.svg"
-                                    }
+                                    src={student.userId.userAvatar || "/placeholder.svg"}
                                     alt={`${student.userId.firstName} ${student.userId.lastName}`}
                                   />
                                   <AvatarFallback className="bg-blue-500 text-white text-lg sm:text-2xl font-semibold">
@@ -374,12 +352,9 @@ const StudentProfile = () => {
 
                               <div className="text-center mt-4 space-y-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                                  {student.userId.firstName}{" "}
-                                  {student.userId.lastName}
+                                  {student.userId.firstName} {student.userId.lastName}
                                 </h3>
-                                <p className="text-sm sm:text-base text-gray-600">
-                                  Student
-                                </p>
+                                <p className="text-sm sm:text-base text-gray-600">Student</p>
                                 <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium inline-block">
                                   {student.isActive ? "Active" : "Inactive"}
                                 </div>
@@ -436,9 +411,7 @@ const StudentProfile = () => {
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
                                 {student.userId.dateOfBirth
-                                  ? new Date(
-                                      student.userId.dateOfBirth
-                                    ).toLocaleDateString()
+                                  ? new Date(student.userId.dateOfBirth).toLocaleDateString()
                                   : "Not specified"}
                               </div>
                             </div>
@@ -475,10 +448,7 @@ const StudentProfile = () => {
                               <div className="relative">
                                 <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-gray-100">
                                   <AvatarImage
-                                    src={
-                                      student.userId.userAvatar ||
-                                      "/placeholder.svg"
-                                    }
+                                    src={student.userId.userAvatar || "/placeholder.svg"}
                                     alt={`${student.userId.firstName} ${student.userId.lastName}`}
                                   />
                                   <AvatarFallback className="bg-green-500 text-white text-lg sm:text-2xl font-semibold">
@@ -491,12 +461,9 @@ const StudentProfile = () => {
 
                               <div className="text-center mt-4 space-y-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                                  {student.userId.firstName}{" "}
-                                  {student.userId.lastName}
+                                  {student.userId.firstName} {student.userId.lastName}
                                 </h3>
-                                <p className="text-sm sm:text-base text-gray-600">
-                                  Student
-                                </p>
+                                <p className="text-sm sm:text-base text-gray-600">Student</p>
                                 <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium inline-block">
                                   {student.isActive ? "Active" : "Inactive"}
                                 </div>
@@ -512,8 +479,7 @@ const StudentProfile = () => {
                                 Full Name
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                {student.parentContact.fullName ||
-                                  "Not specified"}
+                                {student.parentContact.fullName || "Not specified"}
                               </div>
                             </div>
 
@@ -523,8 +489,7 @@ const StudentProfile = () => {
                                 Relationship
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                {student.parentContact.relationship ||
-                                  "Not specified"}
+                                {student.parentContact.relationship || "Not specified"}
                               </div>
                             </div>
 
@@ -534,8 +499,7 @@ const StudentProfile = () => {
                                 Phone Number
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                {student.parentContact.phoneNumber ||
-                                  "Not specified"}
+                                {student.parentContact.phoneNumber || "Not specified"}
                               </div>
                             </div>
 
@@ -571,10 +535,7 @@ const StudentProfile = () => {
                               <div className="relative">
                                 <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-gray-100">
                                   <AvatarImage
-                                    src={
-                                      student.userId.userAvatar ||
-                                      "/placeholder.svg"
-                                    }
+                                    src={student.userId.userAvatar || "/placeholder.svg"}
                                     alt={`${student.userId.firstName} ${student.userId.lastName}`}
                                   />
                                   <AvatarFallback className="bg-purple-500 text-white text-lg sm:text-2xl font-semibold">
@@ -587,12 +548,9 @@ const StudentProfile = () => {
 
                               <div className="text-center mt-4 space-y-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                                  {student.userId.firstName}{" "}
-                                  {student.userId.lastName}
+                                  {student.userId.firstName} {student.userId.lastName}
                                 </h3>
-                                <p className="text-sm sm:text-base text-gray-600">
-                                  Student
-                                </p>
+                                <p className="text-sm sm:text-base text-gray-600">Student</p>
                                 <div className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs sm:text-sm font-medium inline-block">
                                   {student.classId?.name || "No Class Assigned"}
                                 </div>
@@ -639,9 +597,7 @@ const StudentProfile = () => {
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
                                 {student.enrollmentDate
-                                  ? new Date(
-                                      student.enrollmentDate
-                                    ).toLocaleDateString()
+                                  ? new Date(student.enrollmentDate).toLocaleDateString()
                                   : "Not specified"}
                               </div>
                             </div>
@@ -652,8 +608,7 @@ const StudentProfile = () => {
                                 Assigned Subjects
                               </label>
                               <div className="px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 border rounded-lg text-gray-900 text-sm sm:text-base">
-                                {student.assignedSubjects &&
-                                student.assignedSubjects.length > 0
+                                {student.assignedSubjects && student.assignedSubjects.length > 0
                                   ? student.assignedSubjects.join(", ")
                                   : "No subjects assigned"}
                               </div>
@@ -683,9 +638,15 @@ const StudentProfile = () => {
                           </div>
                           {attendanceData?.dateRange && (
                             <p className="text-xs text-gray-400">
-                              {new Date(attendanceData.dateRange.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {new Date(attendanceData.dateRange.startDate).toLocaleDateString(
+                                "en-US",
+                                { month: "short", day: "numeric", year: "numeric" }
+                              )}
                               {" – "}
-                              {new Date(attendanceData.dateRange.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {new Date(attendanceData.dateRange.endDate).toLocaleDateString(
+                                "en-US",
+                                { month: "short", day: "numeric", year: "numeric" }
+                              )}
                             </p>
                           )}
                         </div>
@@ -695,7 +656,10 @@ const StudentProfile = () => {
                             <div className="h-36 bg-gray-100 rounded-xl animate-pulse" />
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                               {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+                                <div
+                                  key={i}
+                                  className="h-20 bg-gray-100 rounded-xl animate-pulse"
+                                />
                               ))}
                             </div>
                           </div>
@@ -711,8 +675,8 @@ const StudentProfile = () => {
                                   attendanceData.attendanceRate >= 80
                                     ? "text-green-600"
                                     : attendanceData.attendanceRate >= 60
-                                    ? "text-orange-500"
-                                    : "text-red-600"
+                                      ? "text-orange-500"
+                                      : "text-red-600"
                                 }`}
                               >
                                 {attendanceData.attendanceRate}%
@@ -723,14 +687,17 @@ const StudentProfile = () => {
                                     attendanceData.attendanceRate >= 80
                                       ? "bg-green-500"
                                       : attendanceData.attendanceRate >= 60
-                                      ? "bg-orange-500"
-                                      : "bg-red-500"
+                                        ? "bg-orange-500"
+                                        : "bg-red-500"
                                   }`}
-                                  style={{ width: `${Math.min(attendanceData.attendanceRate, 100)}%` }}
+                                  style={{
+                                    width: `${Math.min(attendanceData.attendanceRate, 100)}%`,
+                                  }}
                                 />
                               </div>
                               <p className="text-xs text-gray-400 mt-2">
-                                {attendanceData.presentDays} present out of {attendanceData.totalDays} recorded days
+                                {attendanceData.presentDays} present out of{" "}
+                                {attendanceData.totalDays} recorded days
                               </p>
                             </div>
 
@@ -740,13 +707,17 @@ const StudentProfile = () => {
                                 <div className="text-2xl font-bold text-blue-700">
                                   {attendanceData.totalDays}
                                 </div>
-                                <div className="text-xs text-blue-600 mt-1 font-medium">Total Days</div>
+                                <div className="text-xs text-blue-600 mt-1 font-medium">
+                                  Total Days
+                                </div>
                               </div>
                               <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
                                 <div className="text-2xl font-bold text-green-700">
                                   {attendanceData.presentDays}
                                 </div>
-                                <div className="text-xs text-green-600 mt-1 font-medium">Present</div>
+                                <div className="text-xs text-green-600 mt-1 font-medium">
+                                  Present
+                                </div>
                               </div>
                               <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
                                 <div className="text-2xl font-bold text-red-700">
@@ -764,7 +735,9 @@ const StudentProfile = () => {
                                 <div className="text-2xl font-bold text-slate-600">
                                   {attendanceData.excusedDays}
                                 </div>
-                                <div className="text-xs text-slate-500 mt-1 font-medium">Excused</div>
+                                <div className="text-xs text-slate-500 mt-1 font-medium">
+                                  Excused
+                                </div>
                               </div>
                             </div>
 
@@ -773,7 +746,9 @@ const StudentProfile = () => {
                               <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
                                 <School className="w-5 h-5 text-gray-400 flex-shrink-0" />
                                 <div>
-                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Class</p>
+                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                                    Class
+                                  </p>
                                   <p className="text-sm font-semibold text-gray-800 mt-0.5">
                                     {attendanceData.classInfo.name}
                                   </p>
@@ -782,7 +757,9 @@ const StudentProfile = () => {
                               <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
                                 <Clock className="w-5 h-5 text-gray-400 flex-shrink-0" />
                                 <div>
-                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Account Status</p>
+                                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                                    Account Status
+                                  </p>
                                   <span
                                     className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                       student.isActive
@@ -801,9 +778,12 @@ const StudentProfile = () => {
                             <div className="p-4 bg-gray-100 rounded-full mb-4">
                               <UserCheck className="w-8 h-8 text-gray-400" />
                             </div>
-                            <p className="text-sm font-medium text-gray-700">No attendance data yet</p>
+                            <p className="text-sm font-medium text-gray-700">
+                              No attendance data yet
+                            </p>
                             <p className="text-xs text-gray-400 mt-1 max-w-xs">
-                              Attendance records will appear here once a teacher begins marking attendance for this student.
+                              Attendance records will appear here once a teacher begins marking
+                              attendance for this student.
                             </p>
                           </div>
                         )}

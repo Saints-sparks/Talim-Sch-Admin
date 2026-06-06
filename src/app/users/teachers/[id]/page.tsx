@@ -3,22 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiEdit } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { teacherService, TeacherById } from "@/app/services/teacher.service";
-import { Header } from "@/components/Header";
-import { API_ENDPOINTS } from "@/app/lib/api/config";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CardContent } from "@/components/ui/card";
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Search,
-  Bell,
   User,
   BookOpen,
   Users,
@@ -48,9 +40,7 @@ const TeacherProfile = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const teachers = await teacherService.getTeacherProfileOrFallback(
-          teacherId
-        );
+        const teachers = await teacherService.getTeacherProfileOrFallback(teacherId);
 
         if (!teachers) {
           throw new Error("Teacher not found");
@@ -59,9 +49,7 @@ const TeacherProfile = () => {
         // No need to manually transform the data since it should match the interface now
         setTeacher(teachers);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch teacher"
-        );
+        setError(err instanceof Error ? err.message : "Failed to fetch teacher");
       } finally {
         setIsLoading(false);
       }
@@ -104,10 +92,7 @@ const TeacherProfile = () => {
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex space-x-8">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-24 bg-gray-200 rounded animate-pulse"
-                  ></div>
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -162,9 +147,7 @@ const TeacherProfile = () => {
                 ></path>
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Error Loading Teacher
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Teacher</h3>
             <p className="text-red-600 mb-6">{error}</p>
             <button
               onClick={() => router.push("/users/teachers")}
@@ -187,9 +170,7 @@ const TeacherProfile = () => {
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
               <User className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Teacher Not Found
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Teacher Not Found</h3>
             <p className="text-gray-600 mb-6">
               The teacher you're looking for doesn't exist or has been removed.
             </p>
@@ -245,8 +226,8 @@ const TeacherProfile = () => {
           </div>
           {!teacher.hasTeacherProfile && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              This teacher account exists, but its teacher profile has not been
-              completed yet. You can still view the account details.
+              This teacher account exists, but its teacher profile has not been completed yet. You
+              can still view the account details.
             </div>
           )}
         </div>
@@ -256,11 +237,7 @@ const TeacherProfile = () => {
       <div className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-gray-50/50 border-b border-gray-100 rounded-none h-auto p-0">
                 <TabsTrigger
                   value="personal-details"
@@ -286,15 +263,18 @@ const TeacherProfile = () => {
                   <span className="hidden sm:inline">Employment</span>
                   <span className="sm:hidden">Work</span>
                 </TabsTrigger>
-                <Tooltip content="Classes this teacher teaches or is a form teacher for." side="top">
-                <TabsTrigger
-                  value="assign"
-                  className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hidden sm:flex lg:flex hover:bg-white/50"
+                <Tooltip
+                  content="Classes this teacher teaches or is a form teacher for."
+                  side="top"
                 >
-                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Assignments</span>
-                  <span className="sm:hidden">Assign</span>
-                </TabsTrigger>
+                  <TabsTrigger
+                    value="assign"
+                    className="flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 rounded-none font-medium transition-all text-xs sm:text-sm hidden sm:flex lg:flex hover:bg-white/50"
+                  >
+                    <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Assignments</span>
+                    <span className="sm:hidden">Assign</span>
+                  </TabsTrigger>
                 </Tooltip>
                 <TabsTrigger
                   value="availability"
@@ -344,8 +324,7 @@ const TeacherProfile = () => {
                           </div>
                           <div className="space-y-2">
                             <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                              {teacher.userId.firstName}{" "}
-                              {teacher.userId.lastName}
+                              {teacher.userId.firstName} {teacher.userId.lastName}
                             </h3>
                             {teacher.isFormTeacher && (
                               <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-emerald-100 text-emerald-800 text-xs sm:text-sm rounded-full font-medium">
@@ -356,21 +335,15 @@ const TeacherProfile = () => {
                             <div className="flex items-center justify-center gap-1">
                               <span
                                 className={`w-2 h-2 rounded-full ${
-                                  teacher.userId.isActive
-                                    ? "bg-green-500"
-                                    : "bg-gray-400"
+                                  teacher.userId.isActive ? "bg-green-500" : "bg-gray-400"
                                 }`}
                               ></span>
                               <span
                                 className={`text-xs font-medium ${
-                                  teacher.userId.isActive
-                                    ? "text-green-700"
-                                    : "text-gray-500"
+                                  teacher.userId.isActive ? "text-green-700" : "text-gray-500"
                                 }`}
                               >
-                                {teacher.userId.isActive
-                                  ? "Active"
-                                  : "Inactive"}
+                                {teacher.userId.isActive ? "Active" : "Inactive"}
                               </span>
                             </div>
                           </div>
@@ -454,14 +427,10 @@ const TeacherProfile = () => {
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  teacher.userId.isActive
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
+                                  teacher.userId.isActive ? "bg-green-500" : "bg-red-500"
                                 }`}
                               ></span>
-                              {teacher.userId.isActive
-                                ? "Active Account"
-                                : "Inactive Account"}
+                              {teacher.userId.isActive ? "Active Account" : "Inactive Account"}
                             </span>
                           </div>
                         </div>
@@ -507,9 +476,7 @@ const TeacherProfile = () => {
                             <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                               {teacher.specialization}
                             </h3>
-                            <p className="text-sm text-gray-600">
-                              Specialization
-                            </p>
+                            <p className="text-sm text-gray-600">Specialization</p>
                           </div>
                         </div>
                       </div>
@@ -517,11 +484,14 @@ const TeacherProfile = () => {
                       {/* Information Display */}
                       <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 order-2 lg:order-2">
                         <div className="space-y-3">
-                          <Tooltip content="Academic credential. For record-keeping only." side="right">
-                          <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Award className="w-4 h-4" />
-                            Highest Qualification
-                          </Label>
+                          <Tooltip
+                            content="Academic credential. For record-keeping only."
+                            side="right"
+                          >
+                            <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                              <Award className="w-4 h-4" />
+                              Highest Qualification
+                            </Label>
                           </Tooltip>
                           <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg px-4 py-4">
                             <span className="text-emerald-900 font-semibold text-sm sm:text-base">
@@ -619,9 +589,7 @@ const TeacherProfile = () => {
                                 <span className="text-amber-900 font-semibold text-sm sm:text-base">
                                   {teacher.employmentType}
                                 </span>
-                                <p className="text-amber-700 text-xs sm:text-sm">
-                                  Work schedule
-                                </p>
+                                <p className="text-amber-700 text-xs sm:text-sm">Work schedule</p>
                               </div>
                             </div>
                           </div>
@@ -641,9 +609,7 @@ const TeacherProfile = () => {
                                 <span className="text-blue-900 font-semibold">
                                   {teacher.employmentRole}
                                 </span>
-                                <p className="text-blue-700 text-sm">
-                                  Position type
-                                </p>
+                                <p className="text-blue-700 text-sm">Position type</p>
                               </div>
                             </div>
                           </div>
@@ -688,9 +654,7 @@ const TeacherProfile = () => {
                                   }`}
                                 >
                                   <Badge className="w-3 h-3" />
-                                  {teacher.isFormTeacher
-                                    ? "Form Teacher"
-                                    : "Subject Teacher"}
+                                  {teacher.isFormTeacher ? "Form Teacher" : "Subject Teacher"}
                                 </span>
                               </div>
                             </div>
@@ -710,96 +674,86 @@ const TeacherProfile = () => {
                             </div>
                             <div className="space-y-3">
                               {/* Regular assigned classes */}
-                              {teacher.assignedClasses &&
-                                teacher.assignedClasses.length > 0 && (
-                                  <>
-                                    {teacher.assignedClasses.map(
-                                      (classObj, index) => (
-                                        <div
-                                          key={`assigned-${index}`}
-                                          className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all"
-                                        >
-                                          <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                              <div className="flex items-center gap-2 mb-2">
-                                                <Users className="w-4 h-4 text-blue-600" />
-                                                <span className="font-semibold text-blue-900">
-                                                  {classObj.name}
-                                                </span>
-                                              </div>
-                                              <div className="space-y-1">
-                                                <div className="flex items-center gap-2 text-sm text-blue-700">
-                                                  <User className="w-3 h-3" />
-                                                  <span>
-                                                    Capacity:{" "}
-                                                    {classObj.classCapacity}{" "}
-                                                    students
-                                                  </span>
-                                                </div>
-                                                {classObj.classDescription && (
-                                                  <p className="text-sm text-blue-600">
-                                                    {classObj.classDescription}
-                                                  </p>
-                                                )}
-                                              </div>
-                                            </div>
-                                            <span className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                                              Subject Teacher
+                              {teacher.assignedClasses && teacher.assignedClasses.length > 0 && (
+                                <>
+                                  {teacher.assignedClasses.map((classObj, index) => (
+                                    <div
+                                      key={`assigned-${index}`}
+                                      className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all"
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <Users className="w-4 h-4 text-blue-600" />
+                                            <span className="font-semibold text-blue-900">
+                                              {classObj.name}
                                             </span>
                                           </div>
+                                          <div className="space-y-1">
+                                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                                              <User className="w-3 h-3" />
+                                              <span>
+                                                Capacity: {classObj.classCapacity} students
+                                              </span>
+                                            </div>
+                                            {classObj.classDescription && (
+                                              <p className="text-sm text-blue-600">
+                                                {classObj.classDescription}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
-                                      )
-                                    )}
-                                  </>
-                                )}
+                                        <span className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                                          Subject Teacher
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
 
                               {/* Form teacher classes */}
                               {teacher.classTeacherClasses &&
                                 teacher.classTeacherClasses.length > 0 && (
                                   <>
-                                    {teacher.classTeacherClasses.map(
-                                      (classObj, index) => (
-                                        <div
-                                          key={`form-teacher-${index}`}
-                                          className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition-all"
-                                        >
-                                          <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                              <div className="flex items-center gap-2 mb-2">
-                                                <Badge className="w-4 h-4 text-emerald-600" />
-                                                <span className="font-semibold text-emerald-900">
-                                                  {classObj.name}
+                                    {teacher.classTeacherClasses.map((classObj, index) => (
+                                      <div
+                                        key={`form-teacher-${index}`}
+                                        className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition-all"
+                                      >
+                                        <div className="flex justify-between items-start">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <Badge className="w-4 h-4 text-emerald-600" />
+                                              <span className="font-semibold text-emerald-900">
+                                                {classObj.name}
+                                              </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                                                <User className="w-3 h-3" />
+                                                <span>
+                                                  Capacity: {classObj.classCapacity} students
                                                 </span>
                                               </div>
-                                              <div className="space-y-1">
-                                                <div className="flex items-center gap-2 text-sm text-emerald-700">
-                                                  <User className="w-3 h-3" />
-                                                  <span>
-                                                    Capacity:{" "}
-                                                    {classObj.classCapacity}{" "}
-                                                    students
-                                                  </span>
-                                                </div>
-                                                {classObj.classDescription && (
-                                                  <p className="text-sm text-emerald-600">
-                                                    {classObj.classDescription}
-                                                  </p>
-                                                )}
-                                              </div>
+                                              {classObj.classDescription && (
+                                                <p className="text-sm text-emerald-600">
+                                                  {classObj.classDescription}
+                                                </p>
+                                              )}
                                             </div>
-                                            <span className="bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                                              Form Teacher
-                                            </span>
                                           </div>
+                                          <span className="bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                                            Form Teacher
+                                          </span>
                                         </div>
-                                      )
-                                    )}
+                                      </div>
+                                    ))}
                                   </>
                                 )}
 
                               {/* Show message if no classes assigned */}
-                              {(!teacher.assignedClasses ||
-                                teacher.assignedClasses.length === 0) &&
+                              {(!teacher.assignedClasses || teacher.assignedClasses.length === 0) &&
                                 (!teacher.classTeacherClasses ||
                                   teacher.classTeacherClasses.length === 0) && (
                                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
@@ -820,19 +774,16 @@ const TeacherProfile = () => {
                               </h3>
                             </div>
                             <div className="space-y-3">
-                              {teacher.assignedCourses &&
-                              teacher.assignedCourses.length > 0 ? (
+                              {teacher.assignedCourses && teacher.assignedCourses.length > 0 ? (
                                 teacher.assignedCourses.map((course, index) => {
                                   // Find the class name from both assigned classes and form teacher classes
-                                  let assignedClass =
-                                    teacher.assignedClasses?.find(
+                                  let assignedClass = teacher.assignedClasses?.find(
+                                    (cls) => cls._id === course.classId
+                                  );
+                                  if (!assignedClass) {
+                                    assignedClass = teacher.classTeacherClasses?.find(
                                       (cls) => cls._id === course.classId
                                     );
-                                  if (!assignedClass) {
-                                    assignedClass =
-                                      teacher.classTeacherClasses?.find(
-                                        (cls) => cls._id === course.classId
-                                      );
                                   }
                                   const className = assignedClass
                                     ? assignedClass.name
@@ -878,9 +829,7 @@ const TeacherProfile = () => {
                               ) : (
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                                   <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                  <span className="text-gray-500 italic">
-                                    No courses assigned
-                                  </span>
+                                  <span className="text-gray-500 italic">No courses assigned</span>
                                 </div>
                               )}
                             </div>
@@ -897,9 +846,7 @@ const TeacherProfile = () => {
                       <div className="p-2 bg-teal-100 rounded-lg">
                         <Clock className="w-5 h-5 text-teal-600" />
                       </div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Teacher Availability
-                      </h2>
+                      <h2 className="text-xl font-semibold text-gray-900">Teacher Availability</h2>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -913,14 +860,10 @@ const TeacherProfile = () => {
                             <Clock className="w-12 h-12 text-white" />
                           </div>
                           <div className="text-center space-y-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Work Schedule
-                            </h3>
+                            <h3 className="text-lg font-semibold text-gray-900">Work Schedule</h3>
                             <div className="flex items-center justify-center gap-1">
                               <Clock className="w-4 h-4 text-teal-600" />
-                              <span className="text-sm text-gray-600">
-                                Teaching Hours
-                              </span>
+                              <span className="text-sm text-gray-600">Teaching Hours</span>
                             </div>
                           </div>
                         </div>
@@ -934,8 +877,7 @@ const TeacherProfile = () => {
                             Available Days
                           </Label>
                           <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg p-6">
-                            {teacher.availabilityDays &&
-                            teacher.availabilityDays.length > 0 ? (
+                            {teacher.availabilityDays && teacher.availabilityDays.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
                                 {teacher.availabilityDays.map((day, index) => (
                                   <span
@@ -973,9 +915,7 @@ const TeacherProfile = () => {
                                   <span className="text-blue-900 font-semibold text-lg">
                                     {teacher.availableTime}
                                   </span>
-                                  <p className="text-blue-700 text-sm">
-                                    Working hours
-                                  </p>
+                                  <p className="text-blue-700 text-sm">Working hours</p>
                                 </div>
                               </div>
                             ) : (

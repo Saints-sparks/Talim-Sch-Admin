@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Users, Circle } from "lucide-react";
+import { X, Circle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
@@ -104,7 +104,11 @@ export default function GroupMembersModal({
                     )}
                     <Circle
                       size={10}
-                      className={participant.isOnline ? "fill-green-500 text-green-500" : "fill-gray-300 text-gray-300"}
+                      className={
+                        participant.isOnline
+                          ? "fill-green-500 text-green-500"
+                          : "fill-gray-300 text-gray-300"
+                      }
                     />
                   </div>
                 </div>

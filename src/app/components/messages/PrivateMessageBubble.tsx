@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCheck, Download, FileText, ImageIcon } from "lucide-react";
+import { CheckCheck, Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
@@ -64,9 +64,7 @@ export default function MessageBubble({
             alt={attachment.name || "Image"}
             className="rounded-lg max-w-[220px] max-h-[220px] object-cover"
           />
-          {msg.text && (
-            <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>
-          )}
+          {msg.text && <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>}
         </div>
       );
     }
@@ -89,11 +87,7 @@ export default function MessageBubble({
       );
     }
 
-    return (
-      <p className="text-sm sm:text-base leading-relaxed break-words">
-        {msg.text}
-      </p>
-    );
+    return <p className="text-sm sm:text-base leading-relaxed break-words">{msg.text}</p>;
   };
 
   return (
@@ -102,9 +96,11 @@ export default function MessageBubble({
         isCurrentUser ? "justify-end" : "justify-start"
       } gap-2 px-2 sm:px-0 mb-3`}
     >
-      <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${
-        isCurrentUser ? "flex-row-reverse" : "flex-row"
-      }`}>
+      <div
+        className={`flex gap-2 max-w-[85%] sm:max-w-md ${
+          isCurrentUser ? "flex-row-reverse" : "flex-row"
+        }`}
+      >
         {!isCurrentUser && (
           <div className="relative w-8 h-8 flex-shrink-0 self-end mb-1">
             <Avatar className="w-8 h-8 rounded-full">
@@ -121,9 +117,7 @@ export default function MessageBubble({
 
         <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
           {!isCurrentUser && (
-            <span className="text-xs text-gray-600 mb-1 ml-1 font-medium">
-              {msg.sender}
-            </span>
+            <span className="text-xs text-gray-600 mb-1 ml-1 font-medium">{msg.sender}</span>
           )}
 
           <Card
@@ -143,9 +137,11 @@ export default function MessageBubble({
             {renderContent()}
           </Card>
 
-          <div className={`flex items-center gap-1 text-xs text-gray-400 mt-1 px-1 ${
-            isCurrentUser ? "flex-row-reverse" : "flex-row"
-          }`}>
+          <div
+            className={`flex items-center gap-1 text-xs text-gray-400 mt-1 px-1 ${
+              isCurrentUser ? "flex-row-reverse" : "flex-row"
+            }`}
+          >
             <span>{msg.time}</span>
             {isCurrentUser && <CheckCheck size={12} className="text-blue-400" />}
           </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiChevronRight, FiCalendar, FiSearch, FiX } from "react-icons/fi";
+import { FiChevronRight, FiSearch } from "react-icons/fi";
 import { toast } from "@/components/CustomToast";
 import {
   createFeeItem,
@@ -103,7 +103,9 @@ function SummaryPanel({
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Fee Type</span>
-          <span className="font-medium text-gray-800 capitalize">{form.feeType.replace("_", " ") || "—"}</span>
+          <span className="font-medium text-gray-800 capitalize">
+            {form.feeType.replace("_", " ") || "—"}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Amount (NGN)</span>
@@ -153,13 +155,14 @@ function SummaryPanel({
                 </div>
               ))}
               {selectedClasses.size > 4 && (
-                <p className="text-xs text-gray-400 pl-2">+{selectedClasses.size - 4} more classes</p>
+                <p className="text-xs text-gray-400 pl-2">
+                  +{selectedClasses.size - 4} more classes
+                </p>
               )}
             </div>
           </div>
           <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
-            This fee will be assigned to{" "}
-            <strong>{totalStudents} students</strong>
+            This fee will be assigned to <strong>{totalStudents} students</strong>
             <br />
             <span className="text-blue-500">Total students in selected classes</span>
           </div>
@@ -186,9 +189,7 @@ function ClassSelector({
 }) {
   const [search, setSearch] = useState("");
 
-  const filtered = classes.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = classes.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-3">
@@ -203,7 +204,10 @@ function ClassSelector({
           Select All Classes
         </label>
         <div className="relative">
-          <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+          <FiSearch
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+            size={13}
+          />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -338,8 +342,7 @@ function CreateFeeContent() {
     load();
   }, [editId]);
 
-  const set = (key: keyof FormData, value: any) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const set = (key: keyof FormData, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const toggleClass = (id: string) => {
     setSelectedClasses((prev) => {
@@ -452,7 +455,9 @@ function CreateFeeContent() {
               <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
                 <div>
                   <h2 className="text-base font-semibold text-gray-800">1. Fee Information</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Enter the basic details of the fee.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Enter the basic details of the fee.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -500,9 +505,7 @@ function CreateFeeContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select
                       value={form.status}
                       onChange={(e) => set("status", e.target.value as FeeItem["status"])}
@@ -623,7 +626,9 @@ function CreateFeeContent() {
               <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <div>
                   <h2 className="text-base font-semibold text-gray-800">3. Additional Settings</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Configure other options for this fee.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Configure other options for this fee.
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Toggle

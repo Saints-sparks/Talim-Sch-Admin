@@ -3,16 +3,13 @@
 import React, { useState, useEffect } from "react";
 
 import { FiSave, FiX } from "react-icons/fi";
-import { 
-  BookOpen, 
-  GraduationCap, 
-  Users, 
-  User, 
+import {
+  BookOpen,
+  GraduationCap,
+  User,
   Info,
-  Calendar,
   Settings,
   ChevronLeft,
-  Bell,
   Search,
   ChevronDown,
   ChevronUp,
@@ -81,7 +78,7 @@ const EditClassPage: React.FC = () => {
   const [assigningTeacher, setAssigningTeacher] = useState(false);
 
   // Filter teachers based on search
-  const filteredTeachers = teachers.filter(teacher => {
+  const filteredTeachers = teachers.filter((teacher) => {
     const fullName = `${teacher.firstName} ${teacher.lastName}`.toLowerCase();
     const email = teacher.email.toLowerCase();
     const search = teacherSearch.toLowerCase();
@@ -159,7 +156,7 @@ const EditClassPage: React.FC = () => {
 
       await updateClass(id, updateData);
       toast.success("Class updated successfully!");
-      
+
       // Refresh class details
       const updatedData = await getClass(id);
       setClassDetails(updatedData);
@@ -180,11 +177,11 @@ const EditClassPage: React.FC = () => {
       setAssigningTeacher(true);
       await assignTeacherToClass(id, selectedTeacher._id);
       toast.success("Teacher assigned successfully!");
-      
+
       // Refresh class details to show updated teacher
       const updatedData = await getClass(id);
       setClassDetails(updatedData);
-      
+
       // Reset teacher selection
       setSelectedTeacher(null);
       setTeacherSearch("");
@@ -200,7 +197,6 @@ const EditClassPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading class details...</div>
         </div>
@@ -211,7 +207,6 @@ const EditClassPage: React.FC = () => {
   if (!classDetails) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="flex items-center justify-center h-64">
           <div className="text-lg text-red-500">Failed to load class details</div>
         </div>
@@ -221,8 +216,6 @@ const EditClassPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
-      
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
@@ -234,7 +227,7 @@ const EditClassPage: React.FC = () => {
               <ChevronLeft className="w-5 h-5 mr-2" />
               Back to Classes
             </button>
-            
+
             <nav className="space-y-2">
               <div className="flex items-center px-4 py-2 text-indigo-600 bg-indigo-50 rounded-lg">
                 <Settings className="w-5 h-5 mr-3" />
@@ -247,14 +240,11 @@ const EditClassPage: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
-            
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Edit Class: {classDetails.name}
               </h1>
-              <p className="text-gray-600">
-                Modify class details and manage teacher assignments
-              </p>
+              <p className="text-gray-600">Modify class details and manage teacher assignments</p>
             </div>
 
             {/* Class Information Card */}
@@ -329,9 +319,7 @@ const EditClassPage: React.FC = () => {
                     <User className="w-6 h-6 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900">
-                      {getCurrentTeacherDisplayName()}
-                    </h3>
+                    <h3 className="font-medium text-gray-900">{getCurrentTeacherDisplayName()}</h3>
                     {classDetails.classTeacherId && (
                       <p className="text-sm text-gray-600">{getCurrentTeacherEmail()}</p>
                     )}
@@ -424,7 +412,9 @@ const EditClassPage: React.FC = () => {
                           <h4 className="font-medium text-gray-900">
                             {getTeacherDisplayName(selectedTeacher)}
                           </h4>
-                          <p className="text-sm text-gray-600">{getTeacherEmail(selectedTeacher)}</p>
+                          <p className="text-sm text-gray-600">
+                            {getTeacherEmail(selectedTeacher)}
+                          </p>
                         </div>
                       </div>
                       <button

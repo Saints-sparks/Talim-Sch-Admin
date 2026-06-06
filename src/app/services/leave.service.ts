@@ -1,5 +1,4 @@
 import { API_BASE_URL, API_ENDPOINTS } from "../lib/api/config";
-import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 
 export interface LeaveRequest {
@@ -39,14 +38,9 @@ export interface LeaveRequestsResponse {
   meta: LeaveMeta;
 }
 
-export const createLeaveRequest = async (
-  leave: LeaveRequest
-): Promise<LeaveResponse> => {
+export const createLeaveRequest = async (leave: LeaveRequest): Promise<LeaveResponse> => {
   try {
-    const response = await apiClient.post(
-      `${API_BASE_URL}/leave/requests`,
-      leave
-    );
+    const response = await apiClient.post(`${API_BASE_URL}/leave/requests`, leave);
 
     const data: LeaveResponse = await response.json();
     return data;
@@ -71,13 +65,9 @@ export const getLeaveRequests = async (
   }
 };
 
-export const getLeaveRequestById = async (
-  leaveId: string
-): Promise<LeaveResponse> => {
+export const getLeaveRequestById = async (leaveId: string): Promise<LeaveResponse> => {
   try {
-    const response = await apiClient.get(
-      `${API_BASE_URL}/leave-requests/${leaveId}`
-    );
+    const response = await apiClient.get(`${API_BASE_URL}/leave-requests/${leaveId}`);
 
     const data: LeaveResponse = await response.json();
     return data;
@@ -92,10 +82,9 @@ export const updateLeaveRequestStatus = async (
   status: string
 ): Promise<LeaveResponse> => {
   try {
-    const response = await apiClient.put(
-      `${API_BASE_URL}/leave-requests/${leaveId}/status`,
-      { status }
-    );
+    const response = await apiClient.put(`${API_BASE_URL}/leave-requests/${leaveId}/status`, {
+      status,
+    });
 
     const data: LeaveResponse = await response.json();
     return data;

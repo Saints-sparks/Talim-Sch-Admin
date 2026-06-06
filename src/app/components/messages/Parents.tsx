@@ -4,9 +4,9 @@
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Mail, Phone, MoreVertical, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Phone, Loader2 } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import { parentService, Parent } from "@/app/services/parent.service";
+import { parentService } from "@/app/services/parent.service";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 
 // Extend the Parent interface to match API response
@@ -51,11 +51,11 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = parents.filter((parent) => {
-        const firstName = parent.userId?.firstName || '';
-        const lastName = parent.userId?.lastName || '';
-        const email = parent.userId?.email || '';
+        const firstName = parent.userId?.firstName || "";
+        const lastName = parent.userId?.lastName || "";
+        const email = parent.userId?.email || "";
         const fullName = `${firstName} ${lastName}`.toLowerCase();
-        
+
         return (
           firstName.toLowerCase().includes(term) ||
           lastName.toLowerCase().includes(term) ||
@@ -94,19 +94,22 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
   // Get parent display name
   const getParentName = (parent: ApiParent) => {
     if (parent.userId) {
-      return `${parent.userId.firstName || ''} ${parent.userId.lastName || ''}`.trim() || 'Unknown Parent';
+      return (
+        `${parent.userId.firstName || ""} ${parent.userId.lastName || ""}`.trim() ||
+        "Unknown Parent"
+      );
     }
-    return 'Unknown Parent';
+    return "Unknown Parent";
   };
 
   // Get parent email
   const getParentEmail = (parent: ApiParent) => {
-    return parent.userId?.email || 'No email';
+    return parent.userId?.email || "No email";
   };
 
   // Get parent phone
   const getParentPhone = (parent: ApiParent) => {
-    return parent.userId?.phoneNumber || '';
+    return parent.userId?.phoneNumber || "";
   };
 
   return (
@@ -114,9 +117,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
       {/* Header with Add Parent button */}
       {chatRoomId && (
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-medium text-gray-700">
-            Parents ({parents.length})
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700">Parents ({parents.length})</h3>
           <Button
             onClick={() => setIsAddParentModalOpen(true)}
             size="sm"
@@ -149,12 +150,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
         ) : error ? (
           <div className="text-center py-8">
             <p className="text-red-500 text-sm mb-3">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchParents}
-              className="text-xs"
-            >
+            <Button variant="outline" size="sm" onClick={fetchParents} className="text-xs">
               Try Again
             </Button>
           </div>
@@ -174,7 +170,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarFallback 
+                    <AvatarFallback
                       className="text-white font-medium"
                       style={{ backgroundColor: bgColor }}
                     >
@@ -182,9 +178,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm text-gray-900">
-                      {fullName}
-                    </p>
+                    <p className="font-medium text-sm text-gray-900">{fullName}</p>
                     <div className="space-y-1">
                       {email && (
                         <p className="text-xs text-gray-500 flex items-center gap-1">
@@ -201,11 +195,11 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Children info */}
                 {childCount > 0 && (
                   <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full">
-                    {childCount} child{childCount !== 1 ? 'ren' : ''}
+                    {childCount} child{childCount !== 1 ? "ren" : ""}
                   </div>
                 )}
               </div>
@@ -214,9 +208,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p className="text-sm">
-              {searchTerm
-                ? "No parents found matching your search"
-                : "No parents available"}
+              {searchTerm ? "No parents found matching your search" : "No parents available"}
             </p>
           </div>
         )}

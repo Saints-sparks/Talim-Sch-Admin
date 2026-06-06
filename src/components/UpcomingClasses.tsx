@@ -1,6 +1,5 @@
 import React from "react";
 import { useRouter } from "next/navigation"; // Import useRouter hook
-import { FaCalendarAlt } from "react-icons/fa";
 
 // Define ClassCardProps
 type ClassCardProps = {
@@ -27,9 +26,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
       }`}
     >
       <div className="flex justify-between items-center mb-7">
-        <span
-          className={`text-sm font-semibold ${isActive ? "text-white" : "text-black"}`}
-        >
+        <span className={`text-sm font-semibold ${isActive ? "text-white" : "text-black"}`}>
           {subject}
         </span>
         <span
@@ -38,9 +35,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
           {duration}
         </span>
       </div>
-      <h3
-        className={`mt-6 text-lg font-medium ${isActive ? "text-white" : "text-black"}`}
-      >
+      <h3 className={`mt-6 text-lg font-medium ${isActive ? "text-white" : "text-black"}`}>
         {title}
       </h3>
       <div className="flex justify-between mt-4">

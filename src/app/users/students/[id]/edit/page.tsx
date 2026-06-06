@@ -11,7 +11,6 @@ import {
   getClasses,
   Class,
 } from "@/app/services/student.service";
-import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,23 +27,12 @@ import { toast } from "@/components/CustomToast";
 import {
   Calendar,
   ChevronLeft,
-  ChevronRight,
-  Search,
-  Bell,
   User,
-  BookOpen,
   Users,
-  GraduationCap,
-  Briefcase,
   Clock,
-  Award,
   Mail,
   Phone,
-  MapPin,
-  Badge,
-  Calendar as CalendarIcon,
   UserCheck,
-  School,
   Heart,
 } from "lucide-react";
 
@@ -78,8 +66,7 @@ const EditStudentProfile = () => {
         setStudent(studentData);
         setClasses(classesData);
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch student data";
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch student data";
         setError(errorMessage);
         console.error("Error fetching data:", err);
       } finally {
@@ -232,10 +219,7 @@ const EditStudentProfile = () => {
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex space-x-8">
                 {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-24 bg-gray-200 rounded animate-pulse"
-                  ></div>
+                  <div key={i} className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
                 ))}
               </div>
             </div>
@@ -287,9 +271,7 @@ const EditStudentProfile = () => {
                 ></path>
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Error Loading Student
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Student</h3>
             <p className="text-red-600 mb-6">{error}</p>
             <button
               onClick={() => router.push("/users/students")}
@@ -308,12 +290,8 @@ const EditStudentProfile = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-md mx-auto mt-32">
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Student Not Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              The student you're looking for doesn't exist.
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Student Not Found</h3>
+            <p className="text-gray-600 mb-6">The student you're looking for doesn't exist.</p>
             <button
               onClick={() => router.push("/users/students")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -342,9 +320,7 @@ const EditStudentProfile = () => {
             <div className="text-gray-300">|</div>
             <div className="flex items-center space-x-2">
               <User className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
-                Edit Student Profile
-              </span>
+              <span className="text-sm text-gray-600">Edit Student Profile</span>
             </div>
           </div>
           <button
@@ -361,11 +337,7 @@ const EditStudentProfile = () => {
       {/* Main Content */}
       <div className="p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-gray-50 border-b border-gray-200 rounded-none h-auto p-0">
               <TabsTrigger
                 value="personal-details"
@@ -400,18 +372,11 @@ const EditStudentProfile = () => {
                   transition={{ duration: 0.2 }}
                   className="space-y-8"
                 >
-                  <TabsContent
-                    value="personal-details"
-                    className="space-y-8 mt-0"
-                  >
+                  <TabsContent value="personal-details" className="space-y-8 mt-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          Personal Information
-                        </h2>
-                        <p className="text-gray-600 mt-1">
-                          Edit student's personal details
-                        </p>
+                        <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
+                        <p className="text-gray-600 mt-1">Edit student's personal details</p>
                       </div>
                     </div>
 
@@ -421,9 +386,7 @@ const EditStudentProfile = () => {
                         <div className="relative">
                           <Avatar className="w-32 h-32 ring-4 ring-gray-100">
                             <AvatarImage
-                              src={
-                                student.userId.userAvatar || "/placeholder.svg"
-                              }
+                              src={student.userId.userAvatar || "/placeholder.svg"}
                               alt={`${student.userId.firstName} ${student.userId.lastName}`}
                             />
                             <AvatarFallback className="bg-blue-500 text-white text-2xl font-semibold">
@@ -432,9 +395,7 @@ const EditStudentProfile = () => {
                             </AvatarFallback>
                           </Avatar>
                           <button
-                            onClick={() =>
-                              document.getElementById("photoInput")?.click()
-                            }
+                            onClick={() => document.getElementById("photoInput")?.click()}
                             className="absolute bottom-2 right-2 w-8 h-8 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center hover:bg-blue-600 transition-colors"
                           >
                             <FiUpload className="w-4 h-4 text-white" />
@@ -466,11 +427,7 @@ const EditStudentProfile = () => {
                           <Input
                             value={student.userId.firstName || ""}
                             onChange={(e) =>
-                              handleInputChange(
-                                "firstName",
-                                e.target.value,
-                                "userId"
-                              )
+                              handleInputChange("firstName", e.target.value, "userId")
                             }
                             placeholder="Enter first name"
                           />
@@ -484,11 +441,7 @@ const EditStudentProfile = () => {
                           <Input
                             value={student.userId.lastName || ""}
                             onChange={(e) =>
-                              handleInputChange(
-                                "lastName",
-                                e.target.value,
-                                "userId"
-                              )
+                              handleInputChange("lastName", e.target.value, "userId")
                             }
                             placeholder="Enter last name"
                           />
@@ -502,13 +455,7 @@ const EditStudentProfile = () => {
                           <Input
                             type="email"
                             value={student.userId.email || ""}
-                            onChange={(e) =>
-                              handleInputChange(
-                                "email",
-                                e.target.value,
-                                "userId"
-                              )
-                            }
+                            onChange={(e) => handleInputChange("email", e.target.value, "userId")}
                             placeholder="Enter email address"
                           />
                         </div>
@@ -521,11 +468,7 @@ const EditStudentProfile = () => {
                           <Input
                             value={student.userId.phoneNumber || ""}
                             onChange={(e) =>
-                              handleInputChange(
-                                "phoneNumber",
-                                e.target.value,
-                                "userId"
-                              )
+                              handleInputChange("phoneNumber", e.target.value, "userId")
                             }
                             placeholder="Enter phone number"
                           />
@@ -540,11 +483,7 @@ const EditStudentProfile = () => {
                             type="date"
                             value={student.userId.dateOfBirth || ""}
                             onChange={(e) =>
-                              handleInputChange(
-                                "dateOfBirth",
-                                e.target.value,
-                                "userId"
-                              )
+                              handleInputChange("dateOfBirth", e.target.value, "userId")
                             }
                           />
                         </div>
@@ -556,9 +495,7 @@ const EditStudentProfile = () => {
                           </label>
                           <Select
                             value={student.userId.gender || ""}
-                            onValueChange={(value) =>
-                              handleInputChange("gender", value, "userId")
-                            }
+                            onValueChange={(value) => handleInputChange("gender", value, "userId")}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select gender" />
@@ -574,18 +511,14 @@ const EditStudentProfile = () => {
                     </div>
                   </TabsContent>
 
-                  <TabsContent
-                    value="parent-guardian"
-                    className="space-y-8 mt-0"
-                  >
+                  <TabsContent value="parent-guardian" className="space-y-8 mt-0">
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900">
                           Parent/Guardian Information
                         </h2>
                         <p className="text-gray-600 mt-1">
-                          Edit contact information for student's parent or
-                          guardian
+                          Edit contact information for student's parent or guardian
                         </p>
                       </div>
                     </div>
@@ -599,11 +532,7 @@ const EditStudentProfile = () => {
                         <Input
                           value={student.parentContact.fullName || ""}
                           onChange={(e) =>
-                            handleInputChange(
-                              "fullName",
-                              e.target.value,
-                              "parentContact"
-                            )
+                            handleInputChange("fullName", e.target.value, "parentContact")
                           }
                           placeholder="Enter parent/guardian full name"
                         />
@@ -617,11 +546,7 @@ const EditStudentProfile = () => {
                         <Select
                           value={student.parentContact.relationship || ""}
                           onValueChange={(value) =>
-                            handleInputChange(
-                              "relationship",
-                              value,
-                              "parentContact"
-                            )
+                            handleInputChange("relationship", value, "parentContact")
                           }
                         >
                           <SelectTrigger>
@@ -631,9 +556,7 @@ const EditStudentProfile = () => {
                             <SelectItem value="MOTHER">Mother</SelectItem>
                             <SelectItem value="FATHER">Father</SelectItem>
                             <SelectItem value="GUARDIAN">Guardian</SelectItem>
-                            <SelectItem value="GRANDPARENT">
-                              Grandparent
-                            </SelectItem>
+                            <SelectItem value="GRANDPARENT">Grandparent</SelectItem>
                             <SelectItem value="OTHER">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -647,11 +570,7 @@ const EditStudentProfile = () => {
                         <Input
                           value={student.parentContact.phoneNumber || ""}
                           onChange={(e) =>
-                            handleInputChange(
-                              "phoneNumber",
-                              e.target.value,
-                              "parentContact"
-                            )
+                            handleInputChange("phoneNumber", e.target.value, "parentContact")
                           }
                           placeholder="Enter phone number"
                         />
@@ -666,11 +585,7 @@ const EditStudentProfile = () => {
                           type="email"
                           value={student.parentContact.email || ""}
                           onChange={(e) =>
-                            handleInputChange(
-                              "email",
-                              e.target.value,
-                              "parentContact"
-                            )
+                            handleInputChange("email", e.target.value, "parentContact")
                           }
                           placeholder="Enter email address"
                         />
@@ -681,9 +596,7 @@ const EditStudentProfile = () => {
                   <TabsContent value="settings" className="space-y-8 mt-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          Student Settings
-                        </h2>
+                        <h2 className="text-2xl font-bold text-gray-900">Student Settings</h2>
                         <p className="text-gray-600 mt-1">
                           Manage student account settings and status
                         </p>
@@ -719,9 +632,7 @@ const EditStudentProfile = () => {
                         </label>
                         <Input
                           value={student.attendance || ""}
-                          onChange={(e) =>
-                            handleInputChange("attendance", e.target.value)
-                          }
+                          onChange={(e) => handleInputChange("attendance", e.target.value)}
                           placeholder="Enter attendance status"
                         />
                       </div>
@@ -734,12 +645,9 @@ const EditStudentProfile = () => {
                         </h3>
                         <div className="space-y-4">
                           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <h4 className="text-red-800 font-semibold mb-2">
-                              Danger Zone
-                            </h4>
+                            <h4 className="text-red-800 font-semibold mb-2">Danger Zone</h4>
                             <p className="text-red-600 text-sm mb-4">
-                              These actions cannot be undone. Please proceed
-                              with caution.
+                              These actions cannot be undone. Please proceed with caution.
                             </p>
                             <Button
                               variant="destructive"

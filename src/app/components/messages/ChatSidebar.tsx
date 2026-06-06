@@ -3,16 +3,15 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Search, 
-  ChevronDown, 
-  Loader2, 
-  Users, 
-  MessageCircle, 
-  Wifi, 
+import {
+  Search,
+  ChevronDown,
+  Loader2,
+  Users,
+  MessageCircle,
   WifiOff,
   Plus,
-  Filter
+  Filter,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,11 +43,11 @@ interface DisplayChatRoom {
     userId: string;
     name?: string;
     role?: string;
-    email?: string;   
+    email?: string;
     isOnline: boolean;
   }>;
   avatarInfo: {
-    type: 'image' | 'initials';
+    type: "image" | "initials";
     value: string;
     bgColor?: string;
   };
@@ -62,110 +61,117 @@ interface ChatSidebarProps {
   className?: string;
 }
 
-export default function ChatSidebar({
-  onSelectChat,
-  chats,
-  className = "",
-}: ChatSidebarProps) {
+export default function ChatSidebar({ onSelectChat, chats, className = "" }: ChatSidebarProps) {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
   const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
-  
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [locallyReadRoomIds, setLocallyReadRoomIds] = useState<Set<string>>(
-    () => new Set()
-  );
 
-  const {
-    chatRooms: originalRooms,
-    isLoading,
-    error,
-    fetchChatRooms,
-  } = chats;
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [locallyReadRoomIds, setLocallyReadRoomIds] = useState<Set<string>>(() => new Set());
+
+  const { chatRooms: originalRooms, isLoading, error, fetchChatRooms } = chats;
 
   // Transform original chat rooms to display format
   const transformedRooms = useMemo(() => {
-    return originalRooms.map(room => {
-      // Determine if it's a group chat
-      // Map ChatRoomType to DisplayChatRoom type
-      let isGroup = false;
-      let displayType: "private" | "group" = "private";
-      // Any type other than one-to-one is treated as a group
-      if (room.type !== ChatRoomType.ONE_TO_ONE) {
-        isGroup = true;
-        displayType = 'group';
-      } else {
-        isGroup = false;
-        displayType = 'private';
-      }
-      // Get display name
-      let displayName = room.name || 'Chat';
-      let isOnline = false;
-      // For one-to-one chats, find the other participant
-      if (!isGroup && room.participants && Array.isArray(room.participants)) {
-        // room.createdBy is a string, so compare to participant.userId or _id
-        const otherParticipant = room.participants.find(p => {
-          if (typeof p === 'string') return p !== room.createdBy;
-          return p.userId !== room.createdBy && p._id !== room.createdBy;
-        });
-        if (otherParticipant && typeof otherParticipant !== 'string') {
-          displayName = ((otherParticipant.firstName || '') + (otherParticipant.lastName ? ' ' + otherParticipant.lastName : '')).trim() || 'User';
-          // isOnline is not available on Participant, so default to false
-          isOnline = false;
+    return originalRooms
+      .map((room) => {
+        // Determine if it's a group chat
+        // Map ChatRoomType to DisplayChatRoom type
+        let isGroup = false;
+        let displayType: "private" | "group" = "private";
+        // Any type other than one-to-one is treated as a group
+        if (room.type !== ChatRoomType.ONE_TO_ONE) {
+          isGroup = true;
+          displayType = "group";
+        } else {
+          isGroup = false;
+          displayType = "private";
         }
-      }
-
-      // Generate avatar
-      const avatarInfo = {
-        type: 'initials' as const,
-        value: getUserInitials(displayName),
-        bgColor: generateColorFromString(displayName)
-      };
-
-      // Get last message
-      const lastMessage = room.lastMessage ? {
-        content: room.lastMessage.content || '',
-        senderId: room.lastMessage.senderId || '',
-        senderName: room.lastMessage.senderName || 'Unknown',
-        timestamp: new Date(room.lastMessage.createdAt),
-        type: 'text'
-      } : undefined;
-
-      return {
-        roomId: room._id,
-        displayName,
-        type: displayType,
-        lastMessage,
-        unreadCount: locallyReadRoomIds.has(room._id) && selectedRoomId === room._id
-          ? 0
-          : room.unreadCount || 0,
-        participants: room.participants?.map((p: any) => {
-          if (typeof p === 'string') {
-            return {
-              userId: p,
-              name: undefined,
-              role: undefined,
-              isOnline: false
-            };
-          } else {
-            const participantId = p.userId || p._id || p.id || p.user?._id || p.user?.id || p.user?.userId || '';
-            const participantName = ((p.firstName || p.user?.firstName || '') + ((p.lastName || p.user?.lastName) ? ' ' + (p.lastName || p.user?.lastName) : '')).trim();
-            return {
-              userId: participantId,
-              name: participantName || p.name || p.user?.name || p.email || p.user?.email || undefined,
-              role: p.role || p.user?.role,
-              isOnline: false // Participant does not have isActive
-            };
+        // Get display name
+        let displayName = room.name || "Chat";
+        let isOnline = false;
+        // For one-to-one chats, find the other participant
+        if (!isGroup && room.participants && Array.isArray(room.participants)) {
+          // room.createdBy is a string, so compare to participant.userId or _id
+          const otherParticipant = room.participants.find((p) => {
+            if (typeof p === "string") return p !== room.createdBy;
+            return p.userId !== room.createdBy && p._id !== room.createdBy;
+          });
+          if (otherParticipant && typeof otherParticipant !== "string") {
+            displayName =
+              (
+                (otherParticipant.firstName || "") +
+                (otherParticipant.lastName ? " " + otherParticipant.lastName : "")
+              ).trim() || "User";
+            // isOnline is not available on Participant, so default to false
+            isOnline = false;
           }
-        }) || [],
-        avatarInfo,
-        isOnline,
-        updatedAt: new Date(room.updatedAt || room.createdAt)
-      };
-    }).sort((a, b) => 
-      (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
-    );
+        }
+
+        // Generate avatar
+        const avatarInfo = {
+          type: "initials" as const,
+          value: getUserInitials(displayName),
+          bgColor: generateColorFromString(displayName),
+        };
+
+        // Get last message
+        const lastMessage = room.lastMessage
+          ? {
+              content: room.lastMessage.content || "",
+              senderId: room.lastMessage.senderId || "",
+              senderName: room.lastMessage.senderName || "Unknown",
+              timestamp: new Date(room.lastMessage.createdAt),
+              type: "text",
+            }
+          : undefined;
+
+        return {
+          roomId: room._id,
+          displayName,
+          type: displayType,
+          lastMessage,
+          unreadCount:
+            locallyReadRoomIds.has(room._id) && selectedRoomId === room._id
+              ? 0
+              : room.unreadCount || 0,
+          participants:
+            room.participants?.map((p: any) => {
+              if (typeof p === "string") {
+                return {
+                  userId: p,
+                  name: undefined,
+                  role: undefined,
+                  isOnline: false,
+                };
+              } else {
+                const participantId =
+                  p.userId || p._id || p.id || p.user?._id || p.user?.id || p.user?.userId || "";
+                const participantName = (
+                  (p.firstName || p.user?.firstName || "") +
+                  (p.lastName || p.user?.lastName ? " " + (p.lastName || p.user?.lastName) : "")
+                ).trim();
+                return {
+                  userId: participantId,
+                  name:
+                    participantName ||
+                    p.name ||
+                    p.user?.name ||
+                    p.email ||
+                    p.user?.email ||
+                    undefined,
+                  role: p.role || p.user?.role,
+                  isOnline: false, // Participant does not have isActive
+                };
+              }
+            }) || [],
+          avatarInfo,
+          isOnline,
+          updatedAt: new Date(room.updatedAt || room.createdAt),
+        };
+      })
+      .sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
   }, [originalRooms, locallyReadRoomIds, selectedRoomId]);
 
   const totalVisibleUnreadCount = transformedRooms.reduce(
@@ -178,13 +184,12 @@ export default function ChatSidebar({
     let filtered = [...transformedRooms];
 
     // Apply type filter
-    if (filterType !== 'all') {
-      if (filterType === 'groups') {
-        filtered = filtered.filter(room => room.type === 'group');
-      } else if (filterType === 'teachers') {
-        filtered = filtered.filter(room => 
-          room.type === 'private' && 
-          room.participants.some(p => p.role === 'teacher')
+    if (filterType !== "all") {
+      if (filterType === "groups") {
+        filtered = filtered.filter((room) => room.type === "group");
+      } else if (filterType === "teachers") {
+        filtered = filtered.filter(
+          (room) => room.type === "private" && room.participants.some((p) => p.role === "teacher")
         );
       }
     }
@@ -192,10 +197,11 @@ export default function ChatSidebar({
     // Apply search filter
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(room => 
-        room.displayName.toLowerCase().includes(term) ||
-        room.lastMessage?.content?.toLowerCase().includes(term) ||
-        room.participants.some(p => p.name?.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        (room) =>
+          room.displayName.toLowerCase().includes(term) ||
+          room.lastMessage?.content?.toLowerCase().includes(term) ||
+          room.participants.some((p) => p.name?.toLowerCase().includes(term))
       );
     }
 
@@ -219,11 +225,11 @@ export default function ChatSidebar({
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString([], { weekday: "short" });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { month: "short", day: "numeric" });
     }
   };
 
@@ -235,9 +241,7 @@ export default function ChatSidebar({
           Messages
           {totalVisibleUnreadCount > 0 && (
             <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-              {totalVisibleUnreadCount > 99
-                ? '99+'
-                : totalVisibleUnreadCount}
+              {totalVisibleUnreadCount > 99 ? "99+" : totalVisibleUnreadCount}
             </span>
           )}
         </h2>
@@ -245,9 +249,15 @@ export default function ChatSidebar({
       </div>
 
       {/* Search Section */}
-      <div className="p-3 sm:p-4 space-y-3 bg-white border-b border-gray-50" data-guide="messages-search">
+      <div
+        className="p-3 sm:p-4 space-y-3 bg-white border-b border-gray-50"
+        data-guide="messages-search"
+      >
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+            size={16}
+          />
           <Input
             className="pl-9 pr-4 py-3 sm:py-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-gray-500 touch-manipulation"
             placeholder="Search conversations..."
@@ -255,7 +265,7 @@ export default function ChatSidebar({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -270,13 +280,13 @@ export default function ChatSidebar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-32">
-              <DropdownMenuItem onClick={() => handleFilterChange('all')}>
+              <DropdownMenuItem onClick={() => handleFilterChange("all")}>
                 All Chats
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterChange('teachers')}>
+              <DropdownMenuItem onClick={() => handleFilterChange("teachers")}>
                 Teachers
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterChange('groups')}>
+              <DropdownMenuItem onClick={() => handleFilterChange("groups")}>
                 Groups
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -288,21 +298,21 @@ export default function ChatSidebar({
             onClick={() => fetchChatRooms(true)}
             className="flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="12" 
-              height="12" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
-              className={isLoading ? 'animate-spin' : ''}
+              className={isLoading ? "animate-spin" : ""}
             >
-              <path d="M23 4v6h-6"/>
-              <path d="M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
             Refresh
           </Button>
@@ -313,7 +323,7 @@ export default function ChatSidebar({
       {error && (
         <div className="mx-3 sm:mx-4 mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
-          <button 
+          <button
             onClick={() => fetchChatRooms()}
             className="text-xs text-red-700 underline mt-1 hover:text-red-800"
           >
@@ -356,13 +366,9 @@ export default function ChatSidebar({
           <div className="flex items-center justify-center p-6 text-gray-500">
             <div className="text-center">
               <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">
-                {searchTerm ? 'No chats found' : 'No chats yet'}
-              </p>
+              <p className="text-sm">{searchTerm ? "No chats found" : "No chats yet"}</p>
               {!searchTerm && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Start by creating a group chat
-                </p>
+                <p className="text-xs text-gray-400 mt-1">Start by creating a group chat</p>
               )}
             </div>
           </div>
@@ -376,17 +382,17 @@ export default function ChatSidebar({
                 key={room.roomId}
                 className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 ${
                   selectedRoomId === room.roomId
-                    ? 'bg-blue-50 border border-blue-200 shadow-sm'
-                    : ''
+                    ? "bg-blue-50 border border-blue-200 shadow-sm"
+                    : ""
                 } touch-manipulation`}
                 onClick={() => handleSelectChat(room)}
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  {room.avatarInfo.type === 'image' ? (
+                  {room.avatarInfo.type === "image" ? (
                     <Avatar className="w-11 h-11">
                       <AvatarImage src={room.avatarInfo.value} />
-                      <AvatarFallback 
+                      <AvatarFallback
                         className="text-white font-medium text-sm"
                         style={{ backgroundColor: room.avatarInfo.bgColor }}
                       >
@@ -401,24 +407,30 @@ export default function ChatSidebar({
                       {room.avatarInfo.value}
                     </div>
                   )}
-                  
+
                   {/* Online indicator for private chats */}
-                  {room.type === 'private' && (
-                    <Tooltip content="One-to-one conversation with a teacher or parent." side="right">
-                    <span
-                      className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full ${
-                        room.isOnline ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
-                    />
+                  {room.type === "private" && (
+                    <Tooltip
+                      content="One-to-one conversation with a teacher or parent."
+                      side="right"
+                    >
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full ${
+                          room.isOnline ? "bg-green-500" : "bg-gray-400"
+                        }`}
+                      />
                     </Tooltip>
                   )}
-                  
+
                   {/* Group indicator */}
-                  {room.type === 'group' && (
-                    <Tooltip content="Broadcast conversations with all members. Any member can send a message." side="right">
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center">
-                      <Users className="w-2 h-2 text-white" />
-                    </span>
+                  {room.type === "group" && (
+                    <Tooltip
+                      content="Broadcast conversations with all members. Any member can send a message."
+                      side="right"
+                    >
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center">
+                        <Users className="w-2 h-2 text-white" />
+                      </span>
                     </Tooltip>
                   )}
                 </div>
@@ -435,16 +447,19 @@ export default function ChatSidebar({
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500 truncate pr-2">
                       {room.lastMessage?.content || "No messages yet"}
                     </p>
                     {room.unreadCount > 0 && (
-                      <Tooltip content="Number of messages you haven't read yet in this conversation." side="top">
-                      <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium text-white bg-blue-600 rounded-full">
-                        {room.unreadCount > 99 ? '99+' : room.unreadCount}
-                      </span>
+                      <Tooltip
+                        content="Number of messages you haven't read yet in this conversation."
+                        side="top"
+                      >
+                        <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium text-white bg-blue-600 rounded-full">
+                          {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                        </span>
                       </Tooltip>
                     )}
                   </div>

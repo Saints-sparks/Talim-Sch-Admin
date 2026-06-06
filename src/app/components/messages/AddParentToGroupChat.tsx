@@ -5,9 +5,8 @@ import { useState, useEffect } from "react";
 import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { parentService } from "@/app/services/parent.service";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { generateColorFromString } from "@/lib/colorUtils";
 import { useChats } from "@/hooks/useChats";
 
 // Define the interface to match the API response
@@ -57,7 +56,7 @@ export default function AddParentToGroupChatModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { addParticipantsToRoom } = useChats();
 
   // Fetch parents when modal opens
@@ -72,9 +71,9 @@ export default function AddParentToGroupChatModal({
     if (searchTerm.trim() && parents.length > 0) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = parents.filter((parent) => {
-        const firstName = parent.userId?.firstName || '';
-        const lastName = parent.userId?.lastName || '';
-        const email = parent.userId?.email || '';
+        const firstName = parent.userId?.firstName || "";
+        const lastName = parent.userId?.lastName || "";
+        const email = parent.userId?.email || "";
         const fullName = `${firstName} ${lastName}`.toLowerCase();
         return (
           firstName.toLowerCase().includes(term) ||
@@ -116,46 +115,46 @@ export default function AddParentToGroupChatModal({
     setSelectedParents(newSelected);
   };
 
-const handleAddParents = async () => {
-  if (selectedParents.size === 0) return;
+  const handleAddParents = async () => {
+    if (selectedParents.size === 0) return;
 
-  setIsAdding(true);
-  setError(null);
-  try {
-    // Extract the actual user IDs from the parent objects
-    const participantIds = Array.from(selectedParents).map(parentId => {
-      const parent = parents.find(p => p._id === parentId);
-      
-      // Validate that parent exists and has a userId
-      if (!parent?.userId || typeof parent.userId !== 'object') {
-        throw new Error(`Invalid parent data for ID: ${parentId}`);
+    setIsAdding(true);
+    setError(null);
+    try {
+      // Extract the actual user IDs from the parent objects
+      const participantIds = Array.from(selectedParents).map((parentId) => {
+        const parent = parents.find((p) => p._id === parentId);
+
+        // Validate that parent exists and has a userId
+        if (!parent?.userId || typeof parent.userId !== "object") {
+          throw new Error(`Invalid parent data for ID: ${parentId}`);
+        }
+
+        // Return the actual user ID (not the parent document ID)
+        return parent.userId._id;
+      });
+
+      // Log the participantIds being sent to the backend
+      console.log("🚀 Sending participantIds to backend:", participantIds);
+
+      // Validate that all IDs are 24-character hex strings
+      const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+      for (const id of participantIds) {
+        if (!objectIdPattern.test(id)) {
+          throw new Error(`Invalid user ID format: ${id}`);
+        }
       }
-      
-      // Return the actual user ID (not the parent document ID)
-      return parent.userId._id;
-    });
 
-    // Log the participantIds being sent to the backend
-    console.log('🚀 Sending participantIds to backend:', participantIds);
-
-    // Validate that all IDs are 24-character hex strings
-    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-    for (const id of participantIds) {
-      if (!objectIdPattern.test(id)) {
-        throw new Error(`Invalid user ID format: ${id}`);
-      }
+      await addParticipantsToRoom(chatRoomId, participantIds);
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add parents");
+      console.error("Error adding parents:", err);
+    } finally {
+      setIsAdding(false);
     }
-    
-    await addParticipantsToRoom(chatRoomId, participantIds);
-    onSuccess?.();
-    onClose();
-  } catch (err) {
-    setError(err instanceof Error ? err.message : "Failed to add parents");
-    console.error("Error adding parents:", err);
-  } finally {
-    setIsAdding(false);
-  }
-};
+  };
 
   const handleSelectAll = () => {
     if (selectedParents.size === filteredParents.length) {
@@ -167,29 +166,29 @@ const handleAddParents = async () => {
 
   // Helper function to get parent display name
   const getParentName = (parent: ParentWithUser) => {
-    if (parent.userId && typeof parent.userId === 'object') {
+    if (parent.userId && typeof parent.userId === "object") {
       const { firstName, lastName, _id } = parent.userId;
       if (firstName || lastName) {
-        return `${firstName || ''} ${lastName || ''}`.trim();
+        return `${firstName || ""} ${lastName || ""}`.trim();
       }
       if (_id) {
         return `Parent (${_id.substring(0, 8)}...)`;
       }
     }
-    return 'Unknown Parent';
+    return "Unknown Parent";
   };
 
   // Helper function to get parent email
   const getParentEmail = (parent: ParentWithUser) => {
-    if (parent.userId && typeof parent.userId === 'object' && parent.userId.email) {
+    if (parent.userId && typeof parent.userId === "object" && parent.userId.email) {
       return parent.userId.email;
     }
-    return 'Email not available';
+    return "Email not available";
   };
 
   // Helper function to get parent initials
   const getParentInitials = (parent: ParentWithUser) => {
-    if (parent.userId && typeof parent.userId === 'object') {
+    if (parent.userId && typeof parent.userId === "object") {
       const { firstName, lastName } = parent.userId;
       if (firstName && lastName) {
         return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -199,7 +198,7 @@ const handleAddParents = async () => {
         return lastName[0].toUpperCase();
       }
     }
-    return 'P';
+    return "P";
   };
 
   if (!isOpen) return null;
@@ -213,10 +212,7 @@ const handleAddParents = async () => {
             <UserPlus size={20} />
             Add Parents to Group
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -224,7 +220,10 @@ const handleAddParents = async () => {
         {/* Search */}
         <div className="p-4 border-b border-gray-100">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={18}
+            />
             <Input
               className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
               placeholder="Search parents..."
@@ -241,13 +240,9 @@ const handleAddParents = async () => {
               onClick={handleSelectAll}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              {selectedParents.size === filteredParents.length
-                ? "Clear All"
-                : "Select All"}
+              {selectedParents.size === filteredParents.length ? "Clear All" : "Select All"}
             </button>
-            <span className="text-sm text-gray-500">
-              {selectedParents.size} selected
-            </span>
+            <span className="text-sm text-gray-500">{selectedParents.size} selected</span>
           </div>
         )}
 
@@ -261,21 +256,14 @@ const handleAddParents = async () => {
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-red-500 text-sm mb-3">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchParents}
-                className="text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={fetchParents} className="text-xs">
                 Try Again
               </Button>
             </div>
           ) : filteredParents.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                {searchTerm
-                  ? "No parents found matching your search"
-                  : "No parents available"}
+                {searchTerm ? "No parents found matching your search" : "No parents available"}
               </p>
             </div>
           ) : (
@@ -312,18 +300,13 @@ const handleAddParents = async () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">
-                        {fullName}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {email}
-                      </p>
+                      <p className="font-medium text-gray-900 text-sm">{fullName}</p>
+                      <p className="text-xs text-gray-500 truncate">{email}</p>
                       {childCount > 0 && (
                         <p className="text-xs text-gray-400 mt-1">
-                          {childCount} child{childCount !== 1 ? 'ren' : ''}
+                          {childCount} child{childCount !== 1 ? "ren" : ""}
                         </p>
                       )}
-                      
                     </div>
                   </div>
                 );
@@ -334,12 +317,7 @@ const handleAddParents = async () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="text-gray-600"
-            disabled={isAdding}
-          >
+          <Button variant="outline" onClick={onClose} className="text-gray-600" disabled={isAdding}>
             Cancel
           </Button>
           <Button
@@ -353,7 +331,7 @@ const handleAddParents = async () => {
                 Adding...
               </>
             ) : (
-              `Add ${selectedParents.size} Parent${selectedParents.size !== 1 ? 's' : ''}`
+              `Add ${selectedParents.size} Parent${selectedParents.size !== 1 ? "s" : ""}`
             )}
           </Button>
         </div>

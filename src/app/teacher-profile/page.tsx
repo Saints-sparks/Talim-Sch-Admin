@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/legacy/image";
 import { useState } from "react";
 import { usePageIndicator } from "../context/PageIndicatorContext";
 import { Header } from "@/components/Header";
@@ -34,9 +33,7 @@ export default function Step1() {
     logo: null,
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -72,12 +69,7 @@ export default function Step1() {
           </div>
           <label className="cursor-pointer">
             <span className="text-blue-500 underline">Upload Photo</span>
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              accept="image/*"
-            />
+            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
           </label>
         </div>
 

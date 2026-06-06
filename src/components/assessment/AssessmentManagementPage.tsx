@@ -10,19 +10,9 @@ import {
   FiTrendingUp,
   FiCalendar,
   FiUsers,
-  FiEdit,
-  FiTrash2,
-  FiEye,
-  FiSearch,
-  FiFilter,
   FiTarget,
-  FiArrowLeft,
 } from "react-icons/fi";
-import {
-  Assessment,
-  AssessmentForm,
-  Term,
-} from "@/components/assessment/AssessmentForm.types";
+import { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
 import {
   assessmentService,
   AssessmentHasGradesError,
@@ -36,16 +26,12 @@ interface AssessmentManagementPageProps {
   terms: Term[] | any[]; // Allow both Term[] and TermResponse[]
 }
 
-const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
-  terms,
-}) => {
+const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({ terms }) => {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(
-    null
-  );
+  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,8 +69,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
     const matchesSearch =
       assessment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assessment.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || assessment.status === filterStatus;
+    const matchesStatus = filterStatus === "all" || assessment.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -97,20 +82,14 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
   };
 
   // Load assessments with improved error handling
-  const loadAssessments = async (
-    page: number = 1,
-    showLoadingState: boolean = true
-  ) => {
+  const loadAssessments = async (page: number = 1, showLoadingState: boolean = true) => {
     try {
       if (showLoadingState) {
         setLoading(true);
       }
       setError(null); // Clear any previous errors
 
-      const response = await assessmentService.getAssessmentsBySchool(
-        page,
-        pagination.limit
-      );
+      const response = await assessmentService.getAssessmentsBySchool(page, pagination.limit);
 
       // Validate response structure
       if (!response || !response.assessments) {
@@ -121,8 +100,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
       setPagination({
         currentPage: response.pagination?.currentPage || page,
         totalPages: response.pagination?.totalPages || 1,
-        totalCount:
-          response.pagination?.totalItems || response.assessments.length,
+        totalCount: response.pagination?.totalItems || response.assessments.length,
         limit: response.pagination?.itemsPerPage || pagination.limit,
       });
 
@@ -136,21 +114,13 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
 
       if (err instanceof Error) {
         if (err.message.includes("Network")) {
-          errorMessage =
-            "Network error. Please check your connection and try again.";
-        } else if (
-          err.message.includes("401") ||
-          err.message.includes("Unauthorized")
-        ) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (err.message.includes("401") || err.message.includes("Unauthorized")) {
           errorMessage = "Authentication error. Please log in again.";
-        } else if (
-          err.message.includes("403") ||
-          err.message.includes("Forbidden")
-        ) {
+        } else if (err.message.includes("403") || err.message.includes("Forbidden")) {
           errorMessage = "You do not have permission to view assessments.";
         } else if (err.message.includes("404")) {
-          errorMessage =
-            "Assessment service not found. Please contact support.";
+          errorMessage = "Assessment service not found. Please contact support.";
         } else if (err.message.includes("500")) {
           errorMessage = "Server error. Please try again later.";
         }
@@ -196,10 +166,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
       // Let the modal handle specific error display
       let errorMessage = "Failed to create assessment.";
       if (err instanceof Error) {
-        if (
-          err.message.includes("duplicate") ||
-          err.message.includes("already exists")
-        ) {
+        if (err.message.includes("duplicate") || err.message.includes("already exists")) {
           errorMessage = "An assessment with this name already exists.";
         } else if (err.message.includes("validation")) {
           errorMessage = "Please check your input and try again.";
@@ -279,11 +246,9 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
       let errorMessage = "Failed to deactivate assessment.";
       if (err instanceof Error) {
         if (err.message.includes("not found")) {
-          errorMessage =
-            "Assessment not found. It may have already been deactivated.";
+          errorMessage = "Assessment not found. It may have already been deactivated.";
         } else if (err.message.includes("permission")) {
-          errorMessage =
-            "You do not have permission to deactivate this assessment.";
+          errorMessage = "You do not have permission to deactivate this assessment.";
         }
       }
       setError(errorMessage);
@@ -330,26 +295,25 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <>
-          {/* Enhanced Header with Talim Styling */}
-          <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl" data-guide="assessments-header">
-            <div className="px-6 py-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <FiTarget className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">
-                      Assessment Management
-                    </h1>
-                    <p className="text-blue-100 mt-1">
-                      Create, manage and track student assessments
-                    </p>
-                  </div>
+        {/* Enhanced Header with Talim Styling */}
+        <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl" data-guide="assessments-header">
+          <div className="px-6 py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <FiTarget className="h-7 w-7 text-white" />
                 </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">Assessment Management</h1>
+                  <p className="text-blue-100 mt-1">Create, manage and track student assessments</p>
+                </div>
+              </div>
 
-                <div className="flex items-center space-x-3">
-                  <Tooltip content="Set up an exam, test, or project for the selected term." side="top">
+              <div className="flex items-center space-x-3">
+                <Tooltip
+                  content="Set up an exam, test, or project for the selected term."
+                  side="top"
+                >
                   <button
                     data-guide="assessments-create"
                     onClick={() => {
@@ -361,191 +325,179 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                     <FiPlus className="h-4 w-4 mr-2" />
                     Create Assessment
                   </button>
-                  </Tooltip>
-                </div>
+                </Tooltip>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Enhanced Content Area */}
-          <div className="flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto">
-              <div className="px-6 ">
-                {/* Enhanced Stats Dashboard Cards */}
+        {/* Enhanced Content Area */}
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            <div className="px-6 ">
+              {/* Enhanced Stats Dashboard Cards */}
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+                data-guide="assessments-stats"
+              >
+                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Total Assessments</p>
+                      <p className="text-3xl font-bold text-[#003366]">{assessmentStats.total}</p>
+                    </div>
+                    <div className="p-3 bg-[#003366] rounded-xl shadow-lg group-hover:shadow-blue-200">
+                      <FiClipboard className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Active</p>
+                      <p className="text-3xl font-bold text-[#154473]">{assessmentStats.active}</p>
+                    </div>
+                    <div className="p-3 bg-[#154473] rounded-xl shadow-lg">
+                      <FiTrendingUp className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Pending</p>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
+                        {assessmentStats.pending}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg group-hover:shadow-amber-200">
+                      <FiCalendar className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
+                      <p className="text-3xl font-bold text-[#003366]">
+                        {assessmentStats.completed}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-[#003366] rounded-xl shadow-lg">
+                      <FiUsers className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-sm">
+                  <div className="flex items-start">
+                    <div className="p-2 bg-red-100 rounded-xl">
+                      <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <h3 className="text-lg font-semibold text-red-800 mb-2">
+                        Something went wrong
+                      </h3>
+                      <p className="text-red-700 mb-4">{error}</p>
+
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={handleRetry}
+                          disabled={isRetrying}
+                          className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 shadow-lg"
+                        >
+                          {isRetrying ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <FiRefreshCw className="h-4 w-4 mr-2" />
+                              Try Again
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={clearError}
+                          className="px-5 py-2.5 text-red-600 hover:text-red-800 font-medium bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-300"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+
+                      {retryCount > 0 && (
+                        <p className="mt-3 text-sm text-red-600 bg-red-100 px-3 py-1 rounded-lg inline-block">
+                          Retry attempts: {retryCount}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Enhanced Assessment Content */}
+              {!error && filteredAssessments.length === 0 ? (
                 <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-                  data-guide="assessments-stats"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
+                  data-guide="assessments-list"
                 >
-                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">
-                          Total Assessments
-                        </p>
-                        <p className="text-3xl font-bold text-[#003366]">
-                          {assessmentStats.total}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-[#003366] rounded-xl shadow-lg group-hover:shadow-blue-200">
-                        <FiClipboard className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <FiClipboard className="h-12 w-12 text-blue-600" />
                   </div>
-
-                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">
-                          Active
-                        </p>
-                        <p className="text-3xl font-bold text-[#154473]">
-                          {assessmentStats.active}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-[#154473] rounded-xl shadow-lg">
-                        <FiTrendingUp className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">
-                          Pending
-                        </p>
-                        <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
-                          {assessmentStats.pending}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg group-hover:shadow-amber-200">
-                        <FiCalendar className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">
-                          Completed
-                        </p>
-                        <p className="text-3xl font-bold text-[#003366]">
-                          {assessmentStats.completed}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-[#003366] rounded-xl shadow-lg">
-                        <FiUsers className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-sm">
-                    <div className="flex items-start">
-                      <div className="p-2 bg-red-100 rounded-xl">
-                        <FiAlertTriangle className="h-6 w-6 text-red-600" />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <h3 className="text-lg font-semibold text-red-800 mb-2">
-                          Something went wrong
-                        </h3>
-                        <p className="text-red-700 mb-4">{error}</p>
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            onClick={handleRetry}
-                            disabled={isRetrying}
-                            className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 shadow-lg"
-                          >
-                            {isRetrying ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Retrying...
-                              </>
-                            ) : (
-                              <>
-                                <FiRefreshCw className="h-4 w-4 mr-2" />
-                                Try Again
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={clearError}
-                            className="px-5 py-2.5 text-red-600 hover:text-red-800 font-medium bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-300"
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-
-                        {retryCount > 0 && (
-                          <p className="mt-3 text-sm text-red-600 bg-red-100 px-3 py-1 rounded-lg inline-block">
-                            Retry attempts: {retryCount}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Enhanced Assessment Content */}
-                {!error && filteredAssessments.length === 0 ? (
-                  <div
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
-                    data-guide="assessments-list"
-                  >
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-8">
-                      <FiClipboard className="h-12 w-12 text-blue-600" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                      {searchQuery || filterStatus !== "all"
-                        ? "No assessments found"
-                        : "No assessments created yet"}
-                    </h3>
-                    <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
-                      {searchQuery || filterStatus !== "all"
-                        ? "Try adjusting your search or filter criteria to find what you're looking for."
-                        : "Get started by creating your first assessment to evaluate student performance and track academic progress."}
-                    </p>
-                    {!searchQuery && filterStatus === "all" && (
-                      <button
-                        onClick={() => {
-                          setEditingAssessment(null);
-                          setShowCreateModal(true);
-                        }}
-                        className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-                      >
-                        <FiPlus className="h-5 w-5 mr-3" />
-                        Create Your First Assessment
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-                    data-guide="assessments-list"
-                  >
-                    <AssessmentList
-                      assessments={filteredAssessments}
-                      terms={terms}
-                      loading={false}
-                      pagination={pagination}
-                      onPageChange={handlePageChange}
-                      onEdit={openEditModal}
-                      onDelete={openDeleteConfirm}
-                      onView={handleViewAssessment}
-                      onRefresh={() => {
-                        setError(null);
-                        loadAssessments(pagination.currentPage);
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    {searchQuery || filterStatus !== "all"
+                      ? "No assessments found"
+                      : "No assessments created yet"}
+                  </h3>
+                  <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
+                    {searchQuery || filterStatus !== "all"
+                      ? "Try adjusting your search or filter criteria to find what you're looking for."
+                      : "Get started by creating your first assessment to evaluate student performance and track academic progress."}
+                  </p>
+                  {!searchQuery && filterStatus === "all" && (
+                    <button
+                      onClick={() => {
+                        setEditingAssessment(null);
+                        setShowCreateModal(true);
                       }}
-                    />
-                  </div>
-                )}
-              </div>
+                      className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                    >
+                      <FiPlus className="h-5 w-5 mr-3" />
+                      Create Your First Assessment
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                  data-guide="assessments-list"
+                >
+                  <AssessmentList
+                    assessments={filteredAssessments}
+                    terms={terms}
+                    loading={false}
+                    pagination={pagination}
+                    onPageChange={handlePageChange}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteConfirm}
+                    onView={handleViewAssessment}
+                    onRefresh={() => {
+                      setError(null);
+                      loadAssessments(pagination.currentPage);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
-        </>
+        </div>
+      </>
 
       {/* Create/Edit Assessment Modal */}
       <AssessmentCreateModal
@@ -554,9 +506,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
           setShowCreateModal(false);
           setEditingAssessment(null);
         }}
-        onSubmit={
-          editingAssessment ? handleEditAssessment : handleCreateAssessment
-        }
+        onSubmit={editingAssessment ? handleEditAssessment : handleCreateAssessment}
         terms={terms}
         editingAssessment={editingAssessment}
         loading={loading}
@@ -573,24 +523,17 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                   <FiAlertTriangle className="h-7 w-7 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Cannot Deactivate Assessment
-                  </h3>
-                  <p className="text-gray-500 mt-1 text-sm">
-                    Grades have already been recorded
-                  </p>
+                  <h3 className="text-xl font-bold text-gray-900">Cannot Deactivate Assessment</h3>
+                  <p className="text-gray-500 mt-1 text-sm">Grades have already been recorded</p>
                 </div>
               </div>
 
               {/* Explanation */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                 <p className="text-amber-800 text-sm">
-                  <span className="font-semibold">
-                    "{gradesConflict.assessmentName}"
-                  </span>{" "}
-                  cannot be deactivated because the following courses already
-                  have grades recorded against it. Deactivating would cause
-                  those grades to disappear from reports.
+                  <span className="font-semibold">"{gradesConflict.assessmentName}"</span> cannot be
+                  deactivated because the following courses already have grades recorded against it.
+                  Deactivating would cause those grades to disappear from reports.
                 </p>
               </div>
 
@@ -615,10 +558,7 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                         <p className="text-xs text-gray-600 truncate">
                           {item.teacherName}
                           {item.teacherEmail && (
-                            <span className="text-gray-400">
-                              {" "}
-                              &middot; {item.teacherEmail}
-                            </span>
+                            <span className="text-gray-400"> &middot; {item.teacherEmail}</span>
                           )}
                         </p>
                       </div>
@@ -657,12 +597,8 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({
                   <FiAlertTriangle className="h-7 w-7 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Deactivate Assessment
-                  </h3>
-                  <p className="text-gray-500 mt-1">
-                    The assessment will be hidden from teachers
-                  </p>
+                  <h3 className="text-xl font-bold text-gray-900">Deactivate Assessment</h3>
+                  <p className="text-gray-500 mt-1">The assessment will be hidden from teachers</p>
                 </div>
               </div>
 

@@ -1,11 +1,8 @@
 "use client";
 
-import { useSidebar } from "@/context/SidebarContext";
 import Sidebar from "@/components/Sidebar";
 import { Header } from "@/components/Header";
-import SchoolAdminNavbar from "@/components/Navbar";
 import PageTransition from "@/components/PageTransition";
-import classNames from "classnames";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 
@@ -14,10 +11,7 @@ type LayoutShellProps = {
   showSidebar: boolean;
 };
 
-export default function LayoutShell({
-  children,
-  showSidebar,
-}: LayoutShellProps) {
+export default function LayoutShell({ children, showSidebar }: LayoutShellProps) {
   const pathname = usePathname();
 
   return (

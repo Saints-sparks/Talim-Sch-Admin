@@ -13,7 +13,6 @@ import {
   X,
   Eye,
   EyeOff,
-  Edit3,
   AlertCircle,
   Building,
   Globe,
@@ -24,15 +23,8 @@ import {
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import Image from "next/image";
-import {
-  getSchoolDashboard,
-  type SchoolDashboardData,
-} from "../services/dashboard.service";
-import {
-  getSchoolId,
-  updateSchool,
-  type UpdateSchoolPayload,
-} from "../services/school.service";
+import { getSchoolDashboard, type SchoolDashboardData } from "../services/dashboard.service";
+import { getSchoolId, updateSchool, type UpdateSchoolPayload } from "../services/school.service";
 import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
 import { getLocalStorageItem } from "../utils/localStorage";
 import {
@@ -94,9 +86,7 @@ export default function Profile() {
         const storedUser = getLocalStorageItem("user");
         if (storedUser && storedUser.userId) {
           try {
-            const userProfile: UserProfile = await authService.getUserProfile(
-              storedUser.userId
-            );
+            const userProfile: UserProfile = await authService.getUserProfile(storedUser.userId);
             setFormData((prev) => ({
               ...prev,
               adminFirstName: userProfile.firstName || "",
@@ -174,8 +164,7 @@ export default function Profile() {
       if (!formData.adminEmail.trim()) return "Email is required";
       if (!formData.adminPhone.trim()) return "Phone number is required";
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.adminEmail.trim()))
-        return "Please enter a valid email address";
+      if (!emailRegex.test(formData.adminEmail.trim())) return "Please enter a valid email address";
       if (password || confirmPassword) {
         if (password.length < 8) return "Password must be at least 8 characters";
         if (password !== confirmPassword) return "Passwords do not match";
@@ -249,8 +238,14 @@ export default function Profile() {
   // ─── Save ─────────────────────────────────────────────────────────────────────
   const handleUpdate = async (section: EditingSection) => {
     const validationError = validateForm(section);
-    if (validationError) { toast.error(validationError); return; }
-    if (isUploadingImage) { toast.error("Please wait for image upload to complete"); return; }
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    if (isUploadingImage) {
+      toast.error("Please wait for image upload to complete");
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -316,7 +311,8 @@ export default function Profile() {
 
   // ─── Derived helpers ──────────────────────────────────────────────────────────
   const adminInitials =
-    `${formData.adminFirstName?.[0] ?? ""}${formData.adminLastName?.[0] ?? ""}`.toUpperCase() || "AD";
+    `${formData.adminFirstName?.[0] ?? ""}${formData.adminLastName?.[0] ?? ""}`.toUpperCase() ||
+    "AD";
   const adminFullName =
     [formData.adminFirstName, formData.adminLastName].filter(Boolean).join(" ") || "Administrator";
   const isEditingAdmin = editingSection === "admin";
@@ -326,7 +322,7 @@ export default function Profile() {
   if (isLoadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
+        <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile</h2>
           <p className="text-gray-500 text-sm">Please wait while we fetch your information…</p>
@@ -368,7 +364,9 @@ export default function Profile() {
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-gray-900 text-sm"
         />
       ) : (
-        <p className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal">Not set</span>}</p>
+        <p className="text-gray-900 font-medium">
+          {value || <span className="text-gray-400 font-normal">Not set</span>}
+        </p>
       )}
     </div>
   );
@@ -405,28 +403,36 @@ export default function Profile() {
           >
             <option value="">{placeholder || "Select…"}</option>
             {options.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
           <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
       ) : (
-        <p className="text-gray-900 font-medium">{value || <span className="text-gray-400 font-normal">Not set</span>}</p>
+        <p className="text-gray-900 font-medium">
+          {value || <span className="text-gray-400 font-normal">Not set</span>}
+        </p>
       )}
     </div>
   );
 
-  const CardHeader = ({
-    title,
-    section,
-  }: {
-    title: string;
-    section: "admin" | "school";
-  }) => {
+  const CardHeader = ({ title, section }: { title: string; section: "admin" | "school" }) => {
     const isActive = editingSection === section;
     return (
       <div className="bg-gray-100 px-6 py-4 flex items-center justify-between border-b border-gray-200">
@@ -460,9 +466,15 @@ export default function Profile() {
         className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white text-sm font-semibold rounded-lg hover:bg-[#002244] transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
-          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Saving…
+          </>
         ) : (
-          <><Save className="w-4 h-4" />Save Changes</>
+          <>
+            <Save className="w-4 h-4" />
+            Save Changes
+          </>
         )}
       </button>
       <button
@@ -482,7 +494,6 @@ export default function Profile() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Profile</h1>
 
       <div className="max-w-4xl space-y-6">
-
         {/* ── Admin hero row ──────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-start gap-6">
           {/* Avatar */}
@@ -518,21 +529,24 @@ export default function Profile() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Tooltip content="Shown alongside your name in messages, announcements, and leave request responses." side="top">
-              <label
-                htmlFor="admin-avatar-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+              <Tooltip
+                content="Shown alongside your name in messages, announcements, and leave request responses."
+                side="top"
               >
-                <Camera className="w-4 h-4" />
-                Change Photo
-                <input
-                  id="admin-avatar-upload"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => handleFileChange(e, "avatar")}
-                />
-              </label>
+                <label
+                  htmlFor="admin-avatar-upload"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+                >
+                  <Camera className="w-4 h-4" />
+                  Change Photo
+                  <input
+                    id="admin-avatar-upload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, "avatar")}
+                  />
+                </label>
               </Tooltip>
               {(formData.adminAvatar || avatarPreview) && (
                 <button
@@ -559,10 +573,40 @@ export default function Profile() {
 
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Field label="First Name" icon={User} value={formData.adminFirstName} name="adminFirstName" editing={isEditingAdmin} placeholder="First name" />
-              <Field label="Last Name" icon={User} value={formData.adminLastName} name="adminLastName" editing={isEditingAdmin} placeholder="Last name" />
-              <Field label="Email Address" icon={Mail} value={formData.adminEmail} name="adminEmail" type="email" editing={isEditingAdmin} placeholder="Email address" />
-              <Field label="Phone Number" icon={Phone} value={formData.adminPhone} name="adminPhone" type="tel" editing={isEditingAdmin} placeholder="Phone number" />
+              <Field
+                label="First Name"
+                icon={User}
+                value={formData.adminFirstName}
+                name="adminFirstName"
+                editing={isEditingAdmin}
+                placeholder="First name"
+              />
+              <Field
+                label="Last Name"
+                icon={User}
+                value={formData.adminLastName}
+                name="adminLastName"
+                editing={isEditingAdmin}
+                placeholder="Last name"
+              />
+              <Field
+                label="Email Address"
+                icon={Mail}
+                value={formData.adminEmail}
+                name="adminEmail"
+                type="email"
+                editing={isEditingAdmin}
+                placeholder="Email address"
+              />
+              <Field
+                label="Phone Number"
+                icon={Phone}
+                value={formData.adminPhone}
+                name="adminPhone"
+                type="tel"
+                editing={isEditingAdmin}
+                placeholder="Phone number"
+              />
             </div>
 
             {/* Password section — only shown when editing */}
@@ -572,11 +616,14 @@ export default function Profile() {
                 animate={{ opacity: 1, height: "auto" }}
                 className="mt-6 pt-6 border-t border-gray-100 space-y-4"
               >
-                <Tooltip content="Passwords must be at least 8 characters. You'll be logged out of all other devices when changed." side="top">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Key className="w-4 h-4 text-[#003366]" />
-                  Change Password <span className="font-normal text-gray-400">(optional)</span>
-                </h3>
+                <Tooltip
+                  content="Passwords must be at least 8 characters. You'll be logged out of all other devices when changed."
+                  side="top"
+                >
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Key className="w-4 h-4 text-[#003366]" />
+                    Change Password <span className="font-normal text-gray-400">(optional)</span>
+                  </h3>
                 </Tooltip>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="relative">
@@ -608,14 +655,19 @@ export default function Profile() {
                       onClick={() => setShowConfirmPassword((s) => !s)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-amber-700">
-                    Leave password fields empty if you don't want to change your password. Minimum 8 characters.
+                    Leave password fields empty if you don't want to change your password. Minimum 8
+                    characters.
                   </p>
                 </div>
               </motion.div>
@@ -661,21 +713,24 @@ export default function Profile() {
               )}
             </div>
             <div className="flex flex-wrap gap-3">
-              <Tooltip content="Appears on reports, the student app, and the parent app. Square format recommended." side="top">
-              <label
-                htmlFor="school-logo-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+              <Tooltip
+                content="Appears on reports, the student app, and the parent app. Square format recommended."
+                side="top"
               >
-                <Camera className="w-4 h-4" />
-                Change Logo
-                <input
-                  id="school-logo-upload"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => handleFileChange(e, "logo")}
-                />
-              </label>
+                <label
+                  htmlFor="school-logo-upload"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+                >
+                  <Camera className="w-4 h-4" />
+                  Change Logo
+                  <input
+                    id="school-logo-upload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => handleFileChange(e, "logo")}
+                  />
+                </label>
               </Tooltip>
               {(formData.logo || logoPreview) && (
                 <button
@@ -703,13 +758,39 @@ export default function Profile() {
 
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Field label="School Name" icon={Building} value={formData.schoolName} name="schoolName" editing={isEditingSchool} placeholder="School name" />
-              <Tooltip content={'A short code prepended to student IDs (e.g. "TLM" → student ID "TLM-0042").'} side="right">
-              <div>
-                <Field label="School Prefix" icon={Building} value={formData.schoolPrefix} name="schoolPrefix" editing={isEditingSchool} placeholder="e.g. USS" />
-              </div>
+              <Field
+                label="School Name"
+                icon={Building}
+                value={formData.schoolName}
+                name="schoolName"
+                editing={isEditingSchool}
+                placeholder="School name"
+              />
+              <Tooltip
+                content={
+                  'A short code prepended to student IDs (e.g. "TLM" → student ID "TLM-0042").'
+                }
+                side="right"
+              >
+                <div>
+                  <Field
+                    label="School Prefix"
+                    icon={Building}
+                    value={formData.schoolPrefix}
+                    name="schoolPrefix"
+                    editing={isEditingSchool}
+                    placeholder="e.g. USS"
+                  />
+                </div>
               </Tooltip>
-              <Field label="Street Address" icon={MapPin} value={formData.street} name="street" editing={isEditingSchool} placeholder="Street address" />
+              <Field
+                label="Street Address"
+                icon={MapPin}
+                value={formData.street}
+                name="street"
+                editing={isEditingSchool}
+                placeholder="Street address"
+              />
               <SelectField
                 label="State"
                 icon={MapPin}
@@ -744,7 +825,6 @@ export default function Profile() {
             {isEditingSchool && <SaveBar section="school" />}
           </div>
         </motion.div>
-
       </div>
     </div>
   );

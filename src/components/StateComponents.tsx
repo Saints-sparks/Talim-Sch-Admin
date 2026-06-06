@@ -2,7 +2,6 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import SmoothButton from "./SmoothButton";
 
 interface LoadingStateProps {
   message?: string;
@@ -23,9 +22,7 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = ({
-  message = "Loading...",
-}) => {
+export const LoadingState: React.FC<LoadingStateProps> = ({ message = "Loading..." }) => {
   return (
     <motion.div
       className="flex flex-col items-center justify-center py-16"

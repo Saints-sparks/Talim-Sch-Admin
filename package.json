@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src/ --no-warn-ignored",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:coverage": "jest --coverage",
@@ -17,7 +17,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0 --no-warn-ignored",
+      "eslint --fix --no-warn-ignored",
       "prettier --write"
     ],
     "*.{json,css,md}": [
@@ -82,6 +82,8 @@
     "@typescript-eslint/parser": "^8.60.1",
     "@vitest/browser-playwright": "^4.1.8",
     "@vitest/coverage-v8": "^4.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",

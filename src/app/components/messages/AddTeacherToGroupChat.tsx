@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { teacherService } from "@/app/services/teacher.service";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { generateColorFromString } from "@/lib/colorUtils";
 import { useChats } from "@/hooks/useChats";
 
 // Define the interface to match the API response (flat structure)
@@ -46,7 +45,7 @@ export default function AddTeacherToGroupChatModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { addParticipantsToRoom } = useChats();
 
   // Fetch teachers when modal opens
@@ -61,13 +60,13 @@ export default function AddTeacherToGroupChatModal({
     if (searchTerm.trim() && teachers.length > 0) {
       const term = searchTerm.toLowerCase().trim();
       const filtered = teachers.filter((teacher) => {
-        const firstName = teacher.firstName || '';
-        const lastName = teacher.lastName || '';
-        const email = teacher.email || '';
-        const specialization = teacher.specialization || '';
-        const employmentRole = teacher.employmentRole || '';
+        const firstName = teacher.firstName || "";
+        const lastName = teacher.lastName || "";
+        const email = teacher.email || "";
+        const specialization = teacher.specialization || "";
+        const employmentRole = teacher.employmentRole || "";
         const fullName = `${firstName} ${lastName}`.toLowerCase();
-        
+
         return (
           firstName.toLowerCase().includes(term) ||
           lastName.toLowerCase().includes(term) ||
@@ -120,7 +119,7 @@ export default function AddTeacherToGroupChatModal({
       const participantIds = Array.from(selectedTeachers);
 
       // Log the participantIds being sent to the backend
-      console.log('🚀 Sending teacher participantIds to backend:', participantIds);
+      console.log("🚀 Sending teacher participantIds to backend:", participantIds);
 
       // Validate that all IDs are 24-character hex strings
       const objectIdPattern = /^[0-9a-fA-F]{24}$/;
@@ -129,7 +128,7 @@ export default function AddTeacherToGroupChatModal({
           throw new Error(`Invalid user ID format: ${id}`);
         }
       }
-      
+
       await addParticipantsToRoom(chatRoomId, participantIds);
       onSuccess?.();
       onClose();
@@ -151,12 +150,12 @@ export default function AddTeacherToGroupChatModal({
 
   // Helper function to get teacher display name - UPDATED for flat structure
   const getTeacherName = (teacher: TeacherWithUser) => {
-    return `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || 'Unknown Teacher';
+    return `${teacher.firstName || ""} ${teacher.lastName || ""}`.trim() || "Unknown Teacher";
   };
 
   // Helper function to get teacher email - UPDATED for flat structure
   const getTeacherEmail = (teacher: TeacherWithUser) => {
-    return teacher.email || 'Email not available';
+    return teacher.email || "Email not available";
   };
 
   // Helper function to get teacher role
@@ -167,7 +166,7 @@ export default function AddTeacherToGroupChatModal({
     if (teacher.specialization) {
       return teacher.specialization;
     }
-    return 'Teacher';
+    return "Teacher";
   };
 
   // Helper function to get teacher initials
@@ -180,7 +179,7 @@ export default function AddTeacherToGroupChatModal({
     } else if (lastName) {
       return lastName[0].toUpperCase();
     }
-    return 'T';
+    return "T";
   };
 
   if (!isOpen) return null;
@@ -194,10 +193,7 @@ export default function AddTeacherToGroupChatModal({
             <UserPlus size={20} />
             Add Teachers to Group
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -205,7 +201,10 @@ export default function AddTeacherToGroupChatModal({
         {/* Search */}
         <div className="p-4 border-b border-gray-100">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={18}
+            />
             <Input
               className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
               placeholder="Search teachers by name, email, or role..."
@@ -222,13 +221,9 @@ export default function AddTeacherToGroupChatModal({
               onClick={handleSelectAll}
               className="text-sm text-purple-600 hover:text-purple-800 font-medium"
             >
-              {selectedTeachers.size === filteredTeachers.length
-                ? "Clear All"
-                : "Select All"}
+              {selectedTeachers.size === filteredTeachers.length ? "Clear All" : "Select All"}
             </button>
-            <span className="text-sm text-gray-500">
-              {selectedTeachers.size} selected
-            </span>
+            <span className="text-sm text-gray-500">{selectedTeachers.size} selected</span>
           </div>
         )}
 
@@ -242,21 +237,14 @@ export default function AddTeacherToGroupChatModal({
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-red-500 text-sm mb-3">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchTeachers}
-                className="text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={fetchTeachers} className="text-xs">
                 Try Again
               </Button>
             </div>
           ) : filteredTeachers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                {searchTerm
-                  ? "No teachers found matching your search"
-                  : "No teachers available"}
+                {searchTerm ? "No teachers found matching your search" : "No teachers available"}
               </p>
             </div>
           ) : (
@@ -295,20 +283,16 @@ export default function AddTeacherToGroupChatModal({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">
-                        {fullName}
-                      </p>
-                      <p className="text-xs text-purple-600 font-medium">
-                        {role}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {email}
-                      </p>
+                      <p className="font-medium text-gray-900 text-sm">{fullName}</p>
+                      <p className="text-xs text-purple-600 font-medium">{role}</p>
+                      <p className="text-xs text-gray-500 truncate">{email}</p>
                       {(classesCount > 0 || coursesCount > 0) && (
                         <p className="text-xs text-gray-400 mt-1">
-                          {classesCount > 0 && `${classesCount} class${classesCount !== 1 ? 'es' : ''}`}
-                          {classesCount > 0 && coursesCount > 0 && ' • '}
-                          {coursesCount > 0 && `${coursesCount} course${coursesCount !== 1 ? 's' : ''}`}
+                          {classesCount > 0 &&
+                            `${classesCount} class${classesCount !== 1 ? "es" : ""}`}
+                          {classesCount > 0 && coursesCount > 0 && " • "}
+                          {coursesCount > 0 &&
+                            `${coursesCount} course${coursesCount !== 1 ? "s" : ""}`}
                         </p>
                       )}
                     </div>
@@ -321,12 +305,7 @@ export default function AddTeacherToGroupChatModal({
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="text-gray-600"
-            disabled={isAdding}
-          >
+          <Button variant="outline" onClick={onClose} className="text-gray-600" disabled={isAdding}>
             Cancel
           </Button>
           <Button
@@ -340,7 +319,7 @@ export default function AddTeacherToGroupChatModal({
                 Adding...
               </>
             ) : (
-              `Add ${selectedTeachers.size} Teacher${selectedTeachers.size !== 1 ? 's' : ''}`
+              `Add ${selectedTeachers.size} Teacher${selectedTeachers.size !== 1 ? "s" : ""}`
             )}
           </Button>
         </div>

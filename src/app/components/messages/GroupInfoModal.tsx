@@ -6,7 +6,6 @@ import {
   Video,
   MessageSquare,
   X,
-  Users,
   Image,
   Video as VideoIcon,
   Link2,
@@ -76,7 +75,7 @@ export default function GroupInfoModal({
   const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentParticipants, setCurrentParticipants] = useState<Participant[]>(participants);
-  
+
   const { fetchChatRooms } = useChats();
 
   // Update participants when prop changes
@@ -103,9 +102,9 @@ export default function GroupInfoModal({
   const getParticipantDisplayName = (participant: Participant) => {
     if (participant.name) return participant.name;
     if (participant.firstName || participant.lastName) {
-      return `${participant.firstName || ''} ${participant.lastName || ''}`.trim();
+      return `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
     }
-    return 'Unknown User';
+    return "Unknown User";
   };
 
   // Get initials for a participant
@@ -124,17 +123,11 @@ export default function GroupInfoModal({
               <div
                 key={item.name}
                 className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${
-                  selectedMenu === item.name
-                    ? "bg-gray-200 font-medium"
-                    : "hover:bg-gray-200"
+                  selectedMenu === item.name ? "bg-gray-200 font-medium" : "hover:bg-gray-200"
                 }`}
                 onClick={() => setSelectedMenu(item.name)}
               >
-                <item.icon
-                  strokeWidth="1px"
-                  size={18}
-                  className="text-gray-600"
-                />
+                <item.icon strokeWidth="1px" size={18} className="text-gray-600" />
                 <span>{item.name}</span>
               </div>
             ))}
@@ -154,39 +147,28 @@ export default function GroupInfoModal({
               <div className="text-center">
                 <Avatar className="w-16 h-16 rounded-full mx-auto">
                   <AvatarImage src={avatar} />
-                  <AvatarFallback 
+                  <AvatarFallback
                     className="text-white font-medium text-sm"
                     style={{ backgroundColor: generateColorFromString(name) }}
                   >
                     {getUserInitials(name)}
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="mt-3 text-lg text-[#030E18] font-medium">
-                  {name}
-                </h2>
+                <h2 className="mt-3 text-lg text-[#030E18] font-medium">{name}</h2>
                 <p className="text-sm text-[#7B7B7B]">Group Name</p>
 
                 {/* Action Buttons */}
                 <div className="flex justify-center gap-4 mt-5">
                   <div className="flex flex-col border border-[#F0F0F0] px-8 py-2 gap-2 rounded-lg items-center cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Phone
-                      size={20}
-                      className="text-gray-600 hover:text-gray-800"
-                    />
+                    <Phone size={20} className="text-gray-600 hover:text-gray-800" />
                     <p className="text-sm mt-1">Voice Call</p>
                   </div>
                   <div className="flex flex-col border border-[#F0F0F0] px-8 py-2 gap-2 rounded-lg items-center cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Video
-                      size={20}
-                      className="text-gray-600 hover:text-gray-800"
-                    />
+                    <Video size={20} className="text-gray-600 hover:text-gray-800" />
                     <p className="text-sm mt-1">Video Call</p>
                   </div>
                   <div className="flex flex-col border border-[#F0F0F0] px-8 py-2 gap-2 rounded-lg items-center cursor-pointer hover:bg-gray-50 transition-colors">
-                    <MessageSquare
-                      size={20}
-                      className="text-gray-600 hover:text-gray-800"
-                    />
+                    <MessageSquare size={20} className="text-gray-600 hover:text-gray-800" />
                     <p className="text-sm mt-1">Message</p>
                   </div>
                 </div>
@@ -211,7 +193,7 @@ export default function GroupInfoModal({
                         </>
                       )}
                     </Button>
-                    
+
                     <Button
                       onClick={() => setIsAddTeacherModalOpen(true)}
                       disabled={isRefreshing}
@@ -255,7 +237,11 @@ export default function GroupInfoModal({
                         >
                           <div
                             className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                            style={{ backgroundColor: generateColorFromString(getParticipantDisplayName(participant)) }}
+                            style={{
+                              backgroundColor: generateColorFromString(
+                                getParticipantDisplayName(participant)
+                              ),
+                            }}
                           >
                             {getParticipantInitials(participant)}
                           </div>
@@ -280,21 +266,16 @@ export default function GroupInfoModal({
             {/* Content for Other Sections */}
             {selectedMenu !== "" && (
               <div className="text-center">
-                <h2 className="text-lg text-left mb-5 font-medium">
-                  {selectedMenu}
-                </h2>
+                <h2 className="text-lg text-left mb-5 font-medium">{selectedMenu}</h2>
               </div>
             )}
-            
+
             {/* Render section components */}
             {selectedMenu === "Parents" && (
-              <Parents 
-                chatRoomId={chatRoomId}
-                onAddParentSuccess={handleAddParticipantsSuccess}
-              />
+              <Parents chatRoomId={chatRoomId} onAddParentSuccess={handleAddParticipantsSuccess} />
             )}
             {selectedMenu === "Teachers" && (
-              <Teachers 
+              <Teachers
                 chatRoomId={chatRoomId}
                 onAddTeacherSuccess={handleAddParticipantsSuccess}
               />

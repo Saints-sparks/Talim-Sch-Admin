@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS } from "../lib/api/config";
+import { API_ENDPOINTS } from "../lib/api/config";
 import { getLocalStorageItem } from "../utils/localStorage";
 
 export interface LoginCredentials {
@@ -25,12 +25,7 @@ export interface User {
   isEmailVerified: boolean;
 }
 
-export type UserRole =
-  | "STUDENT"
-  | "TEACHER"
-  | "ADMIN"
-  | "PARENT"
-  | "SCHOOL_ADMIN";
+export type UserRole = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT" | "SCHOOL_ADMIN";
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 
 export interface UpdateUserProfilePayload {
@@ -199,8 +194,7 @@ export const authService = {
   },
 
   async logout() {
-    const rawCookies =
-      typeof document !== "undefined" ? document.cookie : "";
+    const rawCookies = typeof document !== "undefined" ? document.cookie : "";
     const cookieMap = Object.fromEntries(
       rawCookies
         .split("; ")
@@ -230,10 +224,8 @@ export const authService = {
 
       // Expire auth cookies
       if (typeof document !== "undefined") {
-        document.cookie =
-          "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie =
-          "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
 
       // Clear localStorage
@@ -264,8 +256,7 @@ export const authService = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message ||
-            `Failed to fetch user profile: ${response.statusText}`
+          errorData.message || `Failed to fetch user profile: ${response.statusText}`
         );
       }
 
@@ -277,9 +268,7 @@ export const authService = {
     }
   },
 
-  updateUserProfile: async (
-    payload: UpdateUserProfilePayload
-  ): Promise<UserProfile> => {
+  updateUserProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => {
     try {
       const token = getLocalStorageItem("accessToken");
       if (!token) {
@@ -301,8 +290,7 @@ export const authService = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message ||
-            `Failed to update user profile: ${response.statusText}`
+          errorData.message || `Failed to update user profile: ${response.statusText}`
         );
       }
 
