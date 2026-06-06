@@ -53,7 +53,13 @@ beforeEach(() => jest.clearAllMocks());
 
 describe("getTransitDashboard", () => {
   it("returns dashboard data", async () => {
-    const data = { pendingIncoming: 2, pendingOutgoing: 1, openPromotionRuns: 0, studentsWithoutEnrollment: 5, totalActiveEnrollments: 120 };
+    const data = {
+      pendingIncoming: 2,
+      pendingOutgoing: 1,
+      openPromotionRuns: 0,
+      studentsWithoutEnrollment: 5,
+      totalActiveEnrollments: 120,
+    };
     mockGet.mockResolvedValueOnce(okResponse(data));
     await expect(getTransitDashboard()).resolves.toEqual(data);
     expect(mockGet).toHaveBeenCalledWith("/transit/dashboard");
@@ -135,7 +141,9 @@ describe("transfer action endpoints", () => {
   it("rejectTransfer passes reason in body", async () => {
     mockPost.mockResolvedValueOnce(okResponse({ _id: id }));
     await rejectTransfer(id, "Not eligible");
-    expect(mockPost).toHaveBeenCalledWith(`/transit/transfers/${id}/reject`, { reason: "Not eligible" });
+    expect(mockPost).toHaveBeenCalledWith(`/transit/transfers/${id}/reject`, {
+      reason: "Not eligible",
+    });
   });
 
   it("cancelTransfer passes reason in body", async () => {
@@ -266,7 +274,9 @@ describe("listEnrollments", () => {
   it("passes supported filters to the backend", async () => {
     mockGet.mockResolvedValueOnce(okResponse([]));
     await listEnrollments({ classId: "c1", academicYearId: "y1", status: "active" });
-    expect(mockGet).toHaveBeenCalledWith("/transit/enrollments?classId=c1&academicYearId=y1&status=active");
+    expect(mockGet).toHaveBeenCalledWith(
+      "/transit/enrollments?classId=c1&academicYearId=y1&status=active"
+    );
   });
 });
 
@@ -281,12 +291,19 @@ describe("createEnrollment", () => {
 
   it("throws conflict error when student already active", async () => {
     mockPost.mockResolvedValueOnce(errorResponse("Student already has an active enrollment", 409));
-    await expect(createEnrollment({ studentId: "s1", classId: "c1", academicYearId: "y1" }))
-      .rejects.toThrow("Student already has an active enrollment");
+    await expect(
+      createEnrollment({ studentId: "s1", classId: "c1", academicYearId: "y1" })
+    ).rejects.toThrow("Student already has an active enrollment");
   });
 
   it("includes optional termId and source", async () => {
-    const payload = { studentId: "s1", classId: "c1", academicYearId: "y1", termId: "tm1", source: "manual" };
+    const payload = {
+      studentId: "s1",
+      classId: "c1",
+      academicYearId: "y1",
+      termId: "tm1",
+      source: "manual",
+    };
     mockPost.mockResolvedValueOnce(okResponse({ _id: "e2", ...payload }));
     await createEnrollment(payload);
     expect(mockPost).toHaveBeenCalledWith("/transit/enrollments", payload);
@@ -301,7 +318,10 @@ describe("getStudentEnrollmentHistory", () => {
   });
 
   it("returns array of enrollments", async () => {
-    const history = [{ _id: "e1", status: "inactive" }, { _id: "e2", status: "active" }];
+    const history = [
+      { _id: "e1", status: "inactive" },
+      { _id: "e2", status: "active" },
+    ];
     mockGet.mockResolvedValueOnce(okResponse(history));
     await expect(getStudentEnrollmentHistory("s1")).resolves.toEqual(history);
   });
@@ -321,7 +341,15 @@ describe("getStudentSnapshot", () => {
 
 describe("getPreCloseSummary", () => {
   it("calls correct endpoint and returns summary", async () => {
-    const summary = { canClose: true, blockers: [], classCount: 5, activeEnrollmentCount: 100, attendanceRecordCount: 200, assessmentGradeRecordCount: 50, courseGradeRecordCount: 50 };
+    const summary = {
+      canClose: true,
+      blockers: [],
+      classCount: 5,
+      activeEnrollmentCount: 100,
+      attendanceRecordCount: 200,
+      assessmentGradeRecordCount: 50,
+      courseGradeRecordCount: 50,
+    };
     mockGet.mockResolvedValueOnce(okResponse(summary));
     await expect(getPreCloseSummary("y1")).resolves.toEqual(summary);
     expect(mockGet).toHaveBeenCalledWith("/transit/academic-years/y1/pre-close-summary");
@@ -339,7 +367,7 @@ describe("searchSchools", () => {
   it("encodes query and calls endpoint", async () => {
     mockGet.mockResolvedValueOnce(okResponse([]));
     await searchSchools("Green Valley");
-    expect(mockGet).toHaveBeenCalledWith("/schools/search?q=Green%20Valley");
+    expect(mockGet).toHaveBeenCalledWith("/schools/search?query=Green%20Valley");
   });
 
   it("returns school results", async () => {

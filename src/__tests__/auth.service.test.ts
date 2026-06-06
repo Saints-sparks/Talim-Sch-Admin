@@ -1,12 +1,14 @@
+/** @jest-environment jsdom */
 import { authService } from "@/app/services/auth.service";
 
 // auth.service uses fetch directly (not apiClient)
 global.fetch = jest.fn();
 const mockFetch = global.fetch as jest.Mock;
 
-// Stub document.cookie — authService.logout reads access_token from it
+// Stub document.cookie — authService reads and writes cookies on logout
 Object.defineProperty(document, "cookie", {
   get: () => "access_token=tok123",
+  set: jest.fn(), // logout clears cookies by writing expiry; silently accept
   configurable: true,
 });
 
@@ -22,10 +24,10 @@ jest.mock("@/app/utils/localStorage", () => ({
 }));
 
 function ok(body: unknown) {
-  return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+  return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
 }
 function err(message: string, status = 400) {
-  return Promise.resolve(new Response(JSON.stringify({ message }), { status }));
+  return Promise.resolve({ ok: false, status, json: () => Promise.resolve({ message }) });
 }
 
 beforeEach(() => jest.clearAllMocks());
@@ -36,7 +38,9 @@ describe("authService.login", () => {
   it("posts credentials and returns tokens", async () => {
     const tokens = { access_token: "abc", refresh_token: "xyz" };
     mockFetch.mockReturnValueOnce(ok(tokens));
-    await expect(authService.login({ email: "a@b.com", password: "pass" })).resolves.toEqual(tokens);
+    await expect(authService.login({ email: "a@b.com", password: "pass" })).resolves.toEqual(
+      tokens
+    );
     const [, options] = mockFetch.mock.calls[0];
     expect(options.method).toBe("POST");
     const body = JSON.parse(options.body);
@@ -47,7 +51,12 @@ describe("authService.login", () => {
 
   it("uses provided deviceToken and platform", async () => {
     mockFetch.mockReturnValueOnce(ok({ access_token: "a", refresh_token: "b" }));
-    await authService.login({ email: "a@b.com", password: "p", deviceToken: "mobile123", platform: "ios" });
+    await authService.login({
+      email: "a@b.com",
+      password: "p",
+      deviceToken: "mobile123",
+      platform: "ios",
+    });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.deviceToken).toBe("mobile123");
     expect(body.platform).toBe("ios");
@@ -55,7 +64,9 @@ describe("authService.login", () => {
 
   it("throws with server message on failure", async () => {
     mockFetch.mockReturnValueOnce(err("Invalid credentials", 401));
-    await expect(authService.login({ email: "x@y.com", password: "wrong" })).rejects.toThrow("Invalid credentials");
+    await expect(authService.login({ email: "x@y.com", password: "wrong" })).rejects.toThrow(
+      "Invalid credentials"
+    );
   });
 });
 
@@ -63,7 +74,22 @@ describe("authService.login", () => {
 
 describe("authService.introspectToken", () => {
   it("posts token and returns introspect result", async () => {
-    const result = { active: true, exp: 9999, iat: 1000, user: { userId: "u1", email: "a@b.com", firstName: "A", lastName: "B", role: "ADMIN", schoolId: "sc1", phoneNumber: "", isActive: true, isEmailVerified: true } };
+    const result = {
+      active: true,
+      exp: 9999,
+      iat: 1000,
+      user: {
+        userId: "u1",
+        email: "a@b.com",
+        firstName: "A",
+        lastName: "B",
+        role: "ADMIN",
+        schoolId: "sc1",
+        phoneNumber: "",
+        isActive: true,
+        isEmailVerified: true,
+      },
+    };
     mockFetch.mockReturnValueOnce(ok(result));
     await expect(authService.introspectToken("tok")).resolves.toEqual(result);
     const [, options] = mockFetch.mock.calls[0];
@@ -81,7 +107,9 @@ describe("authService.introspectToken", () => {
 describe("authService.forgotPassword", () => {
   it("posts email and returns message", async () => {
     mockFetch.mockReturnValueOnce(ok({ message: "Reset code sent" }));
-    await expect(authService.forgotPassword("a@b.com")).resolves.toEqual({ message: "Reset code sent" });
+    await expect(authService.forgotPassword("a@b.com")).resolves.toEqual({
+      message: "Reset code sent",
+    });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.email).toBe("a@b.com");
   });
