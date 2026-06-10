@@ -1,6 +1,7 @@
+import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { InlineSpinner, SectionSkeleton, GridSkeleton, PageSkeleton } from "./loading";
 
-// Dynamically import Loading to see what the component exposes
 const meta: Meta = {
   title: "UI/Loading",
   tags: ["autodocs"],
@@ -9,10 +10,22 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-// Render the loading file as-is — adjust import path if the export name differs
 export const Default: Story = {
-  render: () => {
-    const { default: Loading } = require("./loading");
-    return <Loading />;
-  },
+  render: () => <InlineSpinner />,
+};
+
+export const CustomLabel: Story = {
+  render: () => <InlineSpinner label="Saving..." />,
+};
+
+export const Section: Story = {
+  render: () => <SectionSkeleton rows={3} />,
+};
+
+export const Grid: Story = {
+  render: () => <GridSkeleton cards={3} />,
+};
+
+export const Page: Story = {
+  render: () => <PageSkeleton />,
 };

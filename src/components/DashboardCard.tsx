@@ -9,13 +9,7 @@ interface DashboardCardProps {
   onNavigate: (id: number) => void;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({
-  id,
-  icon,
-  count,
-  label,
-  onNavigate,
-}) => {
+const DashboardCard: React.FC<DashboardCardProps> = ({ id, icon, count, label, onNavigate }) => {
   return (
     <div className="h-[168px] px-6 rounded-xl border border-[#F2F2F2] flex flex-col justify-between  bg-white transition-shadow duration-300">
       <div className="flex items-start gap-5 mt-6">
@@ -25,15 +19,13 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             : React.createElement(icon as React.ComponentType<any>)}
         </div>
         <div className="flex flex-col">
-          <p className="text-[23px] leading-[120%] font-semibold">
-            {count.toLocaleString()}
-          </p>
-          <p className="text-[#B3B3B3] text-[13px] font-medium">{label}</p>
+          <p className="text-[23px] leading-[120%] font-semibold">{count.toLocaleString()}</p>
+          <p className="text-gray-500 text-[13px] font-medium">{label}</p>
         </div>
       </div>
 
       <div className="pt-4 border-b border-[#EBEBEB] -mx-6"></div>
-      <div className="mt-3 mb-5 text-[#808080] font-medium leading-[120%] text-[15px] flex justify-between items-center">
+      <div className="mt-3 mb-5 text-gray-500 font-medium leading-[120%] text-[15px] flex justify-between items-center">
         <span>See more</span> <ChevronRight />
       </div>
     </div>

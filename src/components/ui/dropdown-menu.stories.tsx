@@ -40,8 +40,14 @@ export const OpensOnClick: Story = {
   render: Default.render,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Click the trigger to open the menu
     await userEvent.click(canvas.getByRole("button", { name: /open menu/i }));
-    await expect(canvas.getByText("View Profile")).toBeVisible();
-    await expect(canvas.getByText("Delete")).toBeVisible();
+    // Radix renders the dropdown in a portal (document.body), not inside canvasElement
+    const body = within(document.body);
+    await expect(body.getByText("View Profile")).toBeVisible();
+    await expect(body.getByText("Delete")).toBeVisible();
+    // Close the menu so the a11y afterEach check runs on a clean DOM
+    // (Radix sets aria-hidden on sibling nodes while open, which triggers aria-hidden-focus)
+    await userEvent.keyboard("{Escape}");
   },
 };

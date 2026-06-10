@@ -35,5 +35,5 @@ export const Disabled: Story = {
 };
 
 export const WithValue: Story = {
-  args: { defaultValue: "Pre-filled value", type: "text" },
+  args: { defaultValue: "Pre-filled value", type: "text", "aria-label": "Pre-filled input" },
 };

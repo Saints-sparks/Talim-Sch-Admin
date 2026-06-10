@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -8,7 +8,7 @@
 
 /* Global Styles */
 body {
-  font-family: 'Manrope', Arial, Helvetica, sans-serif;
+  font-family: "Manrope", Arial, Helvetica, sans-serif;
 }
 
 /* Enhanced smooth scrolling */
@@ -28,7 +28,10 @@ textarea:focus {
 /* Smooth hover states for interactive elements only */
 button,
 a[href] {
-  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Loading state animations */
@@ -60,10 +63,10 @@ a[href] {
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted-foreground: 0 0% 40%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 73.7% 41.8%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
@@ -120,36 +123,36 @@ a[href] {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
   }
-  
+
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-  
+
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
-  
+
   /* Improved focus states */
   .focus-visible\:ring-offset-background:focus-visible {
     --tw-ring-offset-color: hsl(var(--background));
   }
-  
+
   /* Container improvements */
   .container {
     @apply mx-auto max-w-7xl;
   }
-  
+
   /* Backdrop blur support */
   .backdrop-blur-supports {
     backdrop-filter: blur(8px);
   }
-  
+
   @supports (backdrop-filter: blur(0)) {
     .backdrop-blur-supports {
       background-color: hsla(var(--background), 0.8);
@@ -173,7 +176,9 @@ a[href] {
    ============================================================ */
 
 /* --- Backgrounds: white / near-white / light gray → slate-900 --- */
-html.dark .bg-white { background-color: #0f172a; }
+html.dark .bg-white {
+  background-color: #0f172a;
+}
 
 html.dark [class*="bg-[#FDFDFD]"],
 html.dark [class*="bg-[#FBFCFE]"],
@@ -182,7 +187,9 @@ html.dark [class*="bg-[#F9FAFB]"],
 html.dark [class*="bg-[#F8F8F8]"],
 html.dark [class*="bg-[#F7F7F7]"],
 html.dark [class*="bg-[#F3F3F3]"],
-html.dark [class*="bg-[#F2F2F2]"] { background-color: #0f172a; }
+html.dark [class*="bg-[#F2F2F2]"] {
+  background-color: #0f172a;
+}
 
 html.dark [class*="bg-[#F8FBFF]"],
 html.dark [class*="bg-[#F7F9FC]"],
@@ -191,22 +198,34 @@ html.dark [class*="bg-[#EFF5FF]"],
 html.dark [class*="bg-[#EBF0F7]"],
 html.dark [class*="bg-[#EAF2FB]"],
 html.dark [class*="bg-[#E8EDF3]"],
-html.dark [class*="bg-[#E6F2FB]"] { background-color: #1a2740; }
+html.dark [class*="bg-[#E6F2FB]"] {
+  background-color: #1a2740;
+}
 
-html.dark [class*="bg-[#D6EDE1]"] { background-color: #0d2e20; }
-html.dark [class*="bg-[#FAEBEB]"] { background-color: #2a0f0f; }
+html.dark [class*="bg-[#D6EDE1]"] {
+  background-color: #0d2e20;
+}
+html.dark [class*="bg-[#FAEBEB]"] {
+  background-color: #2a0f0f;
+}
 html.dark [class*="bg-[#FFF7E5]"],
-html.dark [class*="bg-[#FFF8E8]"] { background-color: #2a1f00; }
+html.dark [class*="bg-[#FFF8E8]"] {
+  background-color: #2a1f00;
+}
 
 /* Mid-gray / muted UI surfaces → slate-800 */
 html.dark [class*="bg-[#ADBECE]"],
 html.dark [class*="bg-[#B0B0B0]"],
 html.dark [class*="bg-[#C7C7C7]"],
 html.dark [class*="bg-[#D6D6D6]"],
-html.dark [class*="bg-[#D8D8D8]"] { background-color: #1e293b; }
+html.dark [class*="bg-[#D8D8D8]"] {
+  background-color: #1e293b;
+}
 
 /* --- Borders: light gray → slate-800 --- */
-html.dark .border-white { border-color: #1e293b; }
+html.dark .border-white {
+  border-color: #1e293b;
+}
 
 html.dark [class*="border-[#F9F9F9]"],
 html.dark [class*="border-[#F4F4F4]"],
@@ -223,16 +242,26 @@ html.dark [class*="border-[#E4E4E4]"],
 html.dark [class*="border-[#E0E0E0]"],
 html.dark [class*="border-[#DCE5F2]"],
 html.dark [class*="border-[#D8D8D8]"],
-html.dark [class*="border-[#D6D6D6]"] { border-color: #1e293b; }
+html.dark [class*="border-[#D6D6D6]"] {
+  border-color: #1e293b;
+}
 
 /* Brand blue borders — visible in dark mode */
 html.dark [class*="border-[#003366]"],
 html.dark [class*="border-[#0B63CE]"],
-html.dark [class*="border-[#154473]"] { border-color: #3b82f6; }
+html.dark [class*="border-[#154473]"] {
+  border-color: #3b82f6;
+}
 
-html.dark [class*="border-[#2E8B57]"] { border-color: #16a34a; }
-html.dark [class*="border-[#6A5ACD]"] { border-color: #8b5cf6; }
-html.dark [class*="border-[#CC3333]"] { border-color: #ef4444; }
+html.dark [class*="border-[#2E8B57]"] {
+  border-color: #16a34a;
+}
+html.dark [class*="border-[#6A5ACD]"] {
+  border-color: #8b5cf6;
+}
+html.dark [class*="border-[#CC3333]"] {
+  border-color: #ef4444;
+}
 
 /* --- Text: dark hex colors → light equivalents --- */
 
@@ -241,13 +270,17 @@ html.dark [class*="text-[#030E18]"],
 html.dark [class*="text-[#0B1220]"],
 html.dark [class*="text-[#101828]"],
 html.dark [class*="text-[#131616]"],
-html.dark [class*="text-[#1A1A1A]"] { color: #f1f5f9; }
+html.dark [class*="text-[#1A1A1A]"] {
+  color: #f1f5f9;
+}
 
 /* Dark gray → slate-200 */
 html.dark [class*="text-[#2F2F2F]"],
 html.dark [class*="text-[#344054]"],
 html.dark [class*="text-[#393939]"],
-html.dark [class*="text-[#434343]"] { color: #e2e8f0; }
+html.dark [class*="text-[#434343]"] {
+  color: #e2e8f0;
+}
 
 /* Mid dark gray → slate-300 */
 html.dark [class*="text-[#4A5568]"],
@@ -255,7 +288,9 @@ html.dark [class*="text-[#4D4D4D]"],
 html.dark [class*="text-[#525252]"],
 html.dark [class*="text-[#545454]"],
 html.dark [class*="text-[#595959]"],
-html.dark [class*="text-[#5D5D5D]"] { color: #cbd5e1; }
+html.dark [class*="text-[#5D5D5D]"] {
+  color: #cbd5e1;
+}
 
 /* Medium gray → slate-400 */
 html.dark [class*="text-[#667085]"],
@@ -264,7 +299,9 @@ html.dark [class*="text-[#707070]"],
 html.dark [class*="text-[#7B7B7B]"],
 html.dark [class*="text-[#808080]"],
 html.dark [class*="text-[#878787]"],
-html.dark [class*="text-[#898989]"] { color: #94a3b8; }
+html.dark [class*="text-[#898989]"] {
+  color: #94a3b8;
+}
 
 /* Light gray → slate-500 */
 html.dark [class*="text-[#929292]"],
@@ -272,24 +309,34 @@ html.dark [class*="text-[#979797]"],
 html.dark [class*="text-[#98A2B3]"],
 html.dark [class*="text-[#999999]"],
 html.dark [class*="text-[#A5A5A5]"],
-html.dark [class*="text-[#B3B3B3]"] { color: #64748b; }
+html.dark [class*="text-[#B3B3B3]"] {
+  color: #64748b;
+}
 
 /* Navy brand text → blue-300 */
 html.dark [class*="text-[#002244]"],
 html.dark [class*="text-[#003366]"],
 html.dark [class*="text-[#123961]"],
-html.dark [class*="text-[#154473]"] { color: #93c5fd; }
+html.dark [class*="text-[#154473]"] {
+  color: #93c5fd;
+}
 
 /* Blue links / interactive → blue-400 */
 html.dark [class*="text-[#0B63CE]"],
-html.dark [class*="text-[#0B79D0]"] { color: #60a5fa; }
+html.dark [class*="text-[#0B79D0]"] {
+  color: #60a5fa;
+}
 
 /* Amber/gold text */
 html.dark [class*="text-[#7A5600]"],
-html.dark [class*="text-[#B88916]"] { color: #fbbf24; }
+html.dark [class*="text-[#B88916]"] {
+  color: #fbbf24;
+}
 
 /* Green text */
-html.dark [class*="text-[#2E8B57]"] { color: #4ade80; }
+html.dark [class*="text-[#2E8B57]"] {
+  color: #4ade80;
+}
 
 /* --- Inputs, selects, textareas --- */
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -306,19 +353,37 @@ html.dark textarea::placeholder {
 }
 
 /* --- Tables --- */
-html.dark table { border-color: #1e293b; }
-html.dark thead { background-color: #1e293b; }
-html.dark thead th { color: #94a3b8; border-color: #334155; }
-html.dark tbody tr { border-color: #1e293b; }
-html.dark tbody tr:hover { background-color: #1a2740; }
-html.dark td { border-color: #1e293b; color: #cbd5e1; }
+html.dark table {
+  border-color: #1e293b;
+}
+html.dark thead {
+  background-color: #1e293b;
+}
+html.dark thead th {
+  color: #94a3b8;
+  border-color: #334155;
+}
+html.dark tbody tr {
+  border-color: #1e293b;
+}
+html.dark tbody tr:hover {
+  background-color: #1a2740;
+}
+html.dark td {
+  border-color: #1e293b;
+  color: #cbd5e1;
+}
 
 /* --- Modals / dialogs --- */
 html.dark [role="dialog"],
-html.dark [data-radix-dialog-content] { background-color: #0f172a; }
+html.dark [data-radix-dialog-content] {
+  background-color: #0f172a;
+}
 
 /* --- Dividers --- */
-html.dark hr { border-color: #1e293b; }
+html.dark hr {
+  border-color: #1e293b;
+}
 
 /* ============================================================
    DARK MODE — Parent app parity for standard Tailwind utilities
@@ -360,7 +425,8 @@ html.dark .from-blue-50 {
 
 html.dark .via-white {
   --tw-gradient-to: rgb(15 22 41 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #0f1629 var(--tw-gradient-via-position), var(--tw-gradient-to);
+  --tw-gradient-stops:
+    var(--tw-gradient-from), #0f1629 var(--tw-gradient-via-position), var(--tw-gradient-to);
 }
 
 html.dark .to-indigo-50 {
@@ -583,14 +649,20 @@ html.dark .focus\:bg-white:focus {
 }
 
 html.dark .shadow-sm {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 html.dark .shadow-md {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 html.dark .shadow-lg,
 html.dark .shadow-xl {
-  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.45), 0 8px 12px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 18px 30px rgba(0, 0, 0, 0.45),
+    0 8px 12px rgba(0, 0, 0, 0.35);
 }

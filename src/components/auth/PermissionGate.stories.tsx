@@ -2,6 +2,7 @@ import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 import { PermissionGate } from "./PermissionGate";
+import { AuthContext } from "@/context/AuthContext";
 
 // ─── Mock usePermissions per story via a module-level mock ───────────────────
 // Storybook's mock system lets us override the module for individual stories.
@@ -97,21 +98,39 @@ export const SubAdminWithPermission: Story = {
 
 // ─── Sub-admin without the required permission ────────────────────────────────
 
-export const SubAdminBlocked: Story = {
-  parameters: {
-    moduleMock: {
-      mock: () => ({
-        usePermissions: () => ({
-          isFullAdmin: false,
-          isSubAdmin: true,
-          hasPermission: () => false,
-          hasAllPermissions: () => false,
-          hasAnyPermission: () => false,
-          permissions: ["manage:students"],
-        }),
-      }),
-    },
+const subAdminBlockedAuth = {
+  user: {
+    userId: "sub-user",
+    email: "sub@talim.test",
+    firstName: "Sub",
+    lastName: "Admin",
+    role: "school_sub_admin",
+    schoolId: "school-1",
+    schoolName: "Talim Demo School",
+    permissions: ["manage:students"] as string[],
+    isSubAdmin: true,
   },
+  accessToken: "mock-token",
+  isAuthenticated: true,
+  isLoading: false,
+  isFullAdmin: false,
+  isSubAdmin: true,
+  hasPermission: () => false,
+  login: async () => true,
+  logout: async () => {},
+  refreshToken: async () => true,
+  setAccessToken: () => {},
+  updateUser: () => {},
+};
+
+export const SubAdminBlocked: Story = {
+  decorators: [
+    (Story) => (
+      <AuthContext.Provider value={subAdminBlockedAuth}>
+        <Story />
+      </AuthContext.Provider>
+    ),
+  ],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.queryByText(/Protected content visible/i)).not.toBeInTheDocument();
@@ -147,20 +166,13 @@ export const NoRequirement: Story = {
 
 export const BlockedNoFallback: Story = {
   args: { fallback: undefined },
-  parameters: {
-    moduleMock: {
-      mock: () => ({
-        usePermissions: () => ({
-          isFullAdmin: false,
-          isSubAdmin: true,
-          hasPermission: () => false,
-          hasAllPermissions: () => false,
-          hasAnyPermission: () => false,
-          permissions: [],
-        }),
-      }),
-    },
-  },
+  decorators: [
+    (Story) => (
+      <AuthContext.Provider value={subAdminBlockedAuth}>
+        <Story />
+      </AuthContext.Provider>
+    ),
+  ],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.queryByText(/Protected content visible/i)).not.toBeInTheDocument();

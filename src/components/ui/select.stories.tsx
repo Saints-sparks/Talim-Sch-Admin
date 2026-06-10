@@ -12,7 +12,7 @@ type Story = StoryObj;
 export const Default: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-56">
+      <SelectTrigger className="w-56" aria-label="Select a term">
         <SelectValue placeholder="Select a term..." />
       </SelectTrigger>
       <SelectContent>
@@ -27,7 +27,7 @@ export const Default: Story = {
 export const WithDefaultValue: Story = {
   render: () => (
     <Select defaultValue="term1">
-      <SelectTrigger className="w-56">
+      <SelectTrigger className="w-56" aria-label="Select a term">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -42,7 +42,7 @@ export const WithDefaultValue: Story = {
 export const Disabled: Story = {
   render: () => (
     <Select disabled>
-      <SelectTrigger className="w-56">
+      <SelectTrigger className="w-56" aria-label="Locked select">
         <SelectValue placeholder="Locked" />
       </SelectTrigger>
       <SelectContent>

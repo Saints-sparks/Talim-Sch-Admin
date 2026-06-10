@@ -20,7 +20,11 @@ export const Default: Story = {
 };
 
 export const WithValue: Story = {
-  args: { defaultValue: "This assessment covers chapters 1 through 5.", rows: 4 },
+  args: {
+    defaultValue: "This assessment covers chapters 1 through 5.",
+    rows: 4,
+    "aria-label": "Assessment description",
+  },
 };
 
 export const Disabled: Story = {
