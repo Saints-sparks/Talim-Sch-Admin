@@ -72,15 +72,11 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       if (currentStep === 0) {
         // Validate required fields
-        if (
-          !formData.email ||
-          !formData.firstName ||
-          !formData.lastName
-        ) {
+        if (!formData.email || !formData.firstName || !formData.lastName) {
           toast.error("Please fill in all required fields");
           return;
         }
-        
+
         // Helper function to generate random password
         const generateRandomPassword = () => {
           const length = 12;
@@ -121,7 +117,10 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           !formData.classId ||
           !formData.gradeLevel ||
           !formData.parentContact.firstName ||
-          !formData.parentContact.lastName
+          !formData.parentContact.lastName ||
+          !formData.parentContact.relationship ||
+          !formData.parentContact.phoneNumber ||
+          !formData.parentContact.email
         ) {
           toast.error("Please fill in all required fields");
           return;
@@ -147,9 +146,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     } catch (error) {
       console.error("Error:", error);
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An error occurred. Please try again.";
+        error instanceof Error ? error.message : "An error occurred. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -157,9 +154,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     if (name === "parentContact") return;
@@ -178,9 +173,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const handleParentContactChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData({
@@ -212,9 +205,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                   </svg>
                 </div>
-                <h4 className="text-base font-semibold text-gray-900">
-                  Login Credentials
-                </h4>
+                <h4 className="text-base font-semibold text-gray-900">Login Credentials</h4>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
@@ -253,9 +244,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                   </svg>
                 </div>
-                <h4 className="text-base font-semibold text-gray-900">
-                  Personal Information
-                </h4>
+                <h4 className="text-base font-semibold text-gray-900">Personal Information</h4>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,8 +311,8 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </svg>
                 <div>
                   <p className="text-sm text-blue-900 leading-relaxed">
-                    A secure password will be automatically generated for the student's account. 
-                    The login credentials will be sent to the provided email address.
+                    A secure password will be automatically generated for the student's account. The
+                    login credentials will be sent to the provided email address.
                   </p>
                 </div>
               </div>
@@ -352,9 +341,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                   </svg>
                 </div>
-                <h4 className="text-base font-semibold text-gray-900">
-                  Academic Information
-                </h4>
+                <h4 className="text-base font-semibold text-gray-900">Academic Information</h4>
               </div>
 
               <div className="space-y-4">
@@ -383,11 +370,13 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Grade Level
                   </label>
-                  <div className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
-                    formData.gradeLevel
-                      ? "bg-gray-50 border-gray-200 text-gray-700"
-                      : "bg-gray-50 border-gray-200 text-gray-400"
-                  }`}>
+                  <div
+                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
+                      formData.gradeLevel
+                        ? "bg-gray-50 border-gray-200 text-gray-700"
+                        : "bg-gray-50 border-gray-200 text-gray-400"
+                    }`}
+                  >
                     {formData.gradeLevel || "Auto-filled when a class is selected"}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Inherited from the selected class</p>
@@ -469,7 +458,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -478,11 +467,12 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onChange={handleParentContactChange}
                     placeholder="+234 XXX XXX XXXX"
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    required
                   />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Email Address <span className="text-gray-400 text-xs">(Optional)</span>
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -491,6 +481,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onChange={handleParentContactChange}
                     placeholder="parent@example.com"
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
+                    required
                   />
                 </div>
               </div>
@@ -514,8 +505,8 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </svg>
                 <div>
                   <p className="text-sm text-green-900 leading-relaxed">
-                    All required information has been collected. Click "Create Student" 
-                    to finalize the account setup.
+                    All required information has been collected. Click "Create Student" to finalize
+                    the account setup.
                   </p>
                 </div>
               </div>
@@ -544,18 +535,16 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
       }}
     >
-      <div className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300" data-guide="student-create-modal">
+      <div
+        className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300"
+        data-guide="student-create-modal"
+      >
         {/* Header */}
         <div className="bg-[#003366] px-6 py-5 text-white flex-shrink-0">
           <div className="flex justify-between items-start mb-5">
             <div className="flex items-start gap-3">
               <div className="bg-white bg-opacity-20 p-2.5 rounded-lg mt-0.5">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -575,12 +564,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               onClick={onClose}
               className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -593,57 +577,60 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
           {/* Progress Steps */}
           <div className="relative" data-guide="student-create-progress">
-            <Tooltip content="Student setup has two stages: account credentials first, then class placement and parent contact details." side="bottom">
-            <div className="flex items-center justify-between">
-              {/* Progress Line */}
-              <div className="absolute top-5 left-0 right-0 h-0.5 bg-blue-400"></div>
-              <div 
-                className="absolute top-5 left-0 h-0.5 bg-white transition-all duration-300"
-                style={{ width: currentStep === 0 ? '0%' : '100%' }}
-              ></div>
+            <Tooltip
+              content="Student setup has two stages: account credentials first, then class placement and parent contact details."
+              side="bottom"
+            >
+              <div className="flex items-center justify-between">
+                {/* Progress Line */}
+                <div className="absolute top-5 left-0 right-0 h-0.5 bg-blue-400"></div>
+                <div
+                  className="absolute top-5 left-0 h-0.5 bg-white transition-all duration-300"
+                  style={{ width: currentStep === 0 ? "0%" : "100%" }}
+                ></div>
 
-              {[
-                { step: 0, title: "Account", icon: "1" },
-                { step: 1, title: "Profile", icon: "2" },
-              ].map((step) => (
-                <div key={step.step} className="relative z-10 flex flex-col items-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                      currentStep >= step.step
-                        ? "bg-white text-blue-600 shadow-lg"
-                        : "bg-blue-500 text-white"
-                    }`}
-                  >
-                    {currentStep > step.step ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    ) : (
-                      step.icon
-                    )}
-                  </div>
-                  <div className="mt-2 text-center">
+                {[
+                  { step: 0, title: "Account", icon: "1" },
+                  { step: 1, title: "Profile", icon: "2" },
+                ].map((step) => (
+                  <div key={step.step} className="relative z-10 flex flex-col items-center">
                     <div
-                      className={`text-xs font-medium ${
-                        currentStep >= step.step ? "text-white" : "text-blue-200"
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                        currentStep >= step.step
+                          ? "bg-white text-blue-600 shadow-lg"
+                          : "bg-blue-500 text-white"
                       }`}
                     >
-                      {step.title}
+                      {currentStep > step.step ? (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        step.icon
+                      )}
+                    </div>
+                    <div className="mt-2 text-center">
+                      <div
+                        className={`text-xs font-medium ${
+                          currentStep >= step.step ? "text-white" : "text-blue-200"
+                        }`}
+                      >
+                        {step.title}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             </Tooltip>
           </div>
         </div>
@@ -652,11 +639,10 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto bg-gray-50">
           <div className="p-6" data-guide="student-create-fields">
             <div className="mb-5 rounded-2xl border border-[#F4B740]/30 bg-gradient-to-r from-[#FFF8E8] to-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-[#003366]">
-                Student setup guide
-              </p>
+              <p className="text-sm font-semibold text-[#003366]">Student setup guide</p>
               <p className="mt-1 text-sm leading-6 text-gray-600">
-                Talim creates the learner account first, then links academic details and guardian information for communication and records.
+                Talim creates the learner account first, then links academic details and guardian
+                information for communication and records.
               </p>
             </div>
             {renderPageContent()}
@@ -675,12 +661,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -691,54 +672,52 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               Back
             </button>
 
-            <Tooltip content={currentStep === 1 ? "Create the student profile and connect it to the selected class and parent details." : "Save the account details and continue to the student profile step."} side="top">
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#003366] text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            <Tooltip
+              content={
+                currentStep === 1
+                  ? "Create the student profile and connect it to the selected class and parent details."
+                  : "Save the account details and continue to the student profile step."
+              }
+              side="top"
             >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {currentStep === 1 ? "Create Student" : "Continue"}
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </>
-              )}
-            </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#003366] text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {currentStep === 1 ? "Create Student" : "Continue"}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
             </Tooltip>
           </div>
         </div>

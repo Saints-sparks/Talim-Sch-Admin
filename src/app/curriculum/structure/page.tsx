@@ -49,9 +49,7 @@ const LoadingSpinner = () => (
   <div className="flex flex-col h-screen bg-background">
     <div className="flex-1 flex flex-col items-center justify-center space-y-4">
       <Loader2 className="h-8 w-8 animate-spin text-[#003366]" />
-      <p className="text-sm text-muted-foreground">
-        Loading curriculum structure...
-      </p>
+      <p className="text-sm text-muted-foreground">Loading curriculum structure...</p>
     </div>
   </div>
 );
@@ -91,8 +89,7 @@ const CurriculumStructureMain: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">("add");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [activeSubjectForCourse, setActiveSubjectForCourse] =
-    useState<Subject | null>(null);
+  const [activeSubjectForCourse, setActiveSubjectForCourse] = useState<Subject | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -111,7 +108,12 @@ const CurriculumStructureMain: React.FC = () => {
 
   // Handle URL action after data is loaded
   useEffect(() => {
-    if (!loading && subjects.length > 0 && initialAction && handledActionRef.current !== initialAction) {
+    if (
+      !loading &&
+      subjects.length > 0 &&
+      initialAction &&
+      handledActionRef.current !== initialAction
+    ) {
       handledActionRef.current = initialAction;
       if (initialAction === "add-course") {
         const firstSubject = subjects[0];
@@ -126,8 +128,7 @@ const CurriculumStructureMain: React.FC = () => {
           let foundCourse: Course | null = null;
           for (const subject of subjects) {
             if (subject.courses) {
-              foundCourse =
-                subject.courses.find((c) => c._id === courseId) || null;
+              foundCourse = subject.courses.find((c) => c._id === courseId) || null;
               if (foundCourse) break;
             }
           }
@@ -242,9 +243,7 @@ const CurriculumStructureMain: React.FC = () => {
         });
       }
 
-      toast.success(
-        `Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`
-      );
+      toast.success(`Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`);
       setShowSubjectModal(false);
       fetchSubjects();
     } catch (error: any) {
@@ -349,16 +348,10 @@ const CurriculumStructureMain: React.FC = () => {
     return classItem ? classItem.name : null;
   };
 
-  const getPersonName = (person?: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  }) => {
+  const getPersonName = (person?: { firstName?: string; lastName?: string; email?: string }) => {
     const firstName = person?.firstName || "";
     const lastName = person?.lastName || "";
-    return firstName || lastName
-      ? `${firstName} ${lastName}`.trim()
-      : person?.email || "";
+    return firstName || lastName ? `${firstName} ${lastName}`.trim() : person?.email || "";
   };
 
   const getTeacherName = (teacherRef?: unknown) => {
@@ -370,12 +363,14 @@ const CurriculumStructureMain: React.FC = () => {
         firstName?: string;
         lastName?: string;
         email?: string;
-        userId?: string | {
-          _id?: string;
-          firstName?: string;
-          lastName?: string;
-          email?: string;
-        };
+        userId?:
+          | string
+          | {
+              _id?: string;
+              firstName?: string;
+              lastName?: string;
+              email?: string;
+            };
       };
       const directName = getPersonName(teacherObject);
       if (directName) return directName;
@@ -398,8 +393,8 @@ const CurriculumStructureMain: React.FC = () => {
       typeof teacherRef === "string"
         ? teacherRef
         : typeof teacherObject?.userId === "string"
-        ? teacherObject.userId
-        : teacherObject?.userId?._id || teacherObject?._id || "";
+          ? teacherObject.userId
+          : teacherObject?.userId?._id || teacherObject?._id || "";
 
     const teacher = teachers.find((t) => {
       const teacherWithUser = t as any;
@@ -418,15 +413,11 @@ const CurriculumStructureMain: React.FC = () => {
     const matchesSearch =
       subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subject.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass =
-      selectedClass === "all" || subject.classId === selectedClass;
+    const matchesClass = selectedClass === "all" || subject.classId === selectedClass;
     return matchesSearch && matchesClass;
   });
 
-  const totalCourses = subjects.reduce(
-    (sum, s) => sum + (s.courses?.length || 0),
-    0
-  );
+  const totalCourses = subjects.reduce((sum, s) => sum + (s.courses?.length || 0), 0);
 
   if (!mounted || loading) {
     return <LoadingSpinner />;
@@ -435,7 +426,10 @@ const CurriculumStructureMain: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-5" data-guide="curriculum-structure-header">
+      <div
+        className="bg-white border-b border-gray-200 px-6 py-5"
+        data-guide="curriculum-structure-header"
+      >
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -453,21 +447,27 @@ const CurriculumStructureMain: React.FC = () => {
               <p className="text-sm text-gray-500">Manage subjects and their associated courses</p>
             </div>
           </div>
-          <Tooltip content="Create a new subject area. You can add courses to it afterwards." side="top">
-          <button
-            onClick={openAddSubjectModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+          <Tooltip
+            content="Create a new subject area. You can add courses to it afterwards."
+            side="top"
           >
-            <Plus className="w-4 h-4" />
-            Add Subject
-          </button>
+            <button
+              onClick={openAddSubjectModal}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add Subject
+            </button>
           </Tooltip>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-guide="curriculum-structure-stats">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+          data-guide="curriculum-structure-stats"
+        >
           <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
               <LayoutList className="w-4 h-4 text-[#003366]" />
@@ -498,7 +498,10 @@ const CurriculumStructureMain: React.FC = () => {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3" data-guide="curriculum-structure-filters">
+        <div
+          className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3"
+          data-guide="curriculum-structure-filters"
+        >
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -528,219 +531,254 @@ const CurriculumStructureMain: React.FC = () => {
 
         {/* Subjects List */}
         <div data-guide="curriculum-structure-list">
-        {filteredSubjects.length > 0 ? (
-          <div className="space-y-2">
-            {filteredSubjects.map((subject) => {
-              const isExpanded = expandedSubjects.has(subject._id);
-              const courseCount = subject.courses?.length || 0;
-              const className = getClassName(subject.classId || "");
+          {filteredSubjects.length > 0 ? (
+            <div className="space-y-2">
+              {filteredSubjects.map((subject) => {
+                const isExpanded = expandedSubjects.has(subject._id);
+                const courseCount = subject.courses?.length || 0;
+                const className = getClassName(subject.classId || "");
 
-              return (
-                <div
-                  key={subject._id}
-                  className="bg-white rounded-xl border border-gray-100 overflow-hidden"
-                >
-                  {/* Subject Row */}
-                  <div className="flex items-center gap-3 px-4 py-3.5">
-                    {/* Expand toggle */}
-                    <Tooltip content="Expand the subject to view its courses, teachers, and course actions." side="right">
-                    <button
-                      onClick={() => toggleSubject(subject._id)}
-                      className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
-                      title={isExpanded ? "Collapse" : "Expand"}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
-                    </Tooltip>
+                return (
+                  <div
+                    key={subject._id}
+                    className="bg-white rounded-xl border border-gray-100 overflow-hidden"
+                  >
+                    {/* Subject Row */}
+                    <div className="flex items-center gap-3 px-4 py-3.5">
+                      {/* Expand toggle */}
+                      <Tooltip
+                        content="Expand the subject to view its courses, teachers, and course actions."
+                        side="right"
+                      >
+                        <button
+                          onClick={() => toggleSubject(subject._id)}
+                          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
+                          title={isExpanded ? "Collapse" : "Expand"}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                          )}
+                        </button>
+                      </Tooltip>
 
-                    {/* Subject icon */}
-                    <div className="w-8 h-8 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-4 h-4 text-[#003366]" />
-                    </div>
+                      {/* Subject icon */}
+                      <div className="w-8 h-8 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-4 h-4 text-[#003366]" />
+                      </div>
 
-                    {/* Subject info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-gray-900 text-sm truncate">
-                          {subject.name}
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#003366]/10 text-[#003366]">
-                          {subject.code}
-                        </span>
-                        {className && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
-                            {className}
+                      {/* Subject info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-gray-900 text-sm truncate">
+                            {subject.name}
                           </span>
-                        )}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#003366]/10 text-[#003366]">
+                            {subject.code}
+                          </span>
+                          {className && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                              {className}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Course count badge */}
+                      <span className="text-xs text-gray-500 flex-shrink-0 hidden sm:block">
+                        {courseCount} {courseCount === 1 ? "course" : "courses"}
+                      </span>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Tooltip
+                          content="Create a course within the selected subject. Choose which class it belongs to."
+                          side="top"
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAddCourseModal(subject);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-xs font-medium"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Add Course</span>
+                          </button>
+                        </Tooltip>
+                        <Tooltip
+                          content="Edit the subject name or code used across courses, reports, and timetables."
+                          side="top"
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditSubjectModal(subject);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
+                            title="Edit subject"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip
+                          content="Deleting a subject removes all its courses. This cannot be undone."
+                          side="top"
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubject(subject);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete subject"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
 
-                    {/* Course count badge */}
-                    <span className="text-xs text-gray-500 flex-shrink-0 hidden sm:block">
-                      {courseCount} {courseCount === 1 ? "course" : "courses"}
-                    </span>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Tooltip content="Create a course within the selected subject. Choose which class it belongs to." side="top">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openAddCourseModal(subject); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-xs font-medium"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Add Course</span>
-                      </button>
-                      </Tooltip>
-                      <Tooltip content="Edit the subject name or code used across courses, reports, and timetables." side="top">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openEditSubjectModal(subject); }}
-                        className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
-                        title="Edit subject"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      </Tooltip>
-                      <Tooltip content="Deleting a subject removes all its courses. This cannot be undone." side="top">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject); }}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        title="Delete subject"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-
-                  {/* Courses panel (accordion) */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 bg-gray-50/50">
-                      {courseCount > 0 ? (
-                        <div className="divide-y divide-gray-100">
-                          {subject.courses!.map((course) => (
-                            <div
-                              key={course._id}
-                              className="flex items-center gap-3 px-5 py-3 hover:bg-white transition-colors"
-                            >
-                              <div className="w-7 h-7 rounded-md bg-[#003366]/5 flex items-center justify-center flex-shrink-0">
-                                <GraduationCap className="w-3.5 h-3.5 text-[#003366]" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-medium text-gray-900 text-sm truncate">
-                                    {course.title}
-                                  </span>
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                                    {course.courseCode}
-                                  </span>
+                    {/* Courses panel (accordion) */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50/50">
+                        {courseCount > 0 ? (
+                          <div className="divide-y divide-gray-100">
+                            {subject.courses!.map((course) => (
+                              <div
+                                key={course._id}
+                                className="flex items-center gap-3 px-5 py-3 hover:bg-white transition-colors"
+                              >
+                                <div className="w-7 h-7 rounded-md bg-[#003366]/5 flex items-center justify-center flex-shrink-0">
+                                  <GraduationCap className="w-3.5 h-3.5 text-[#003366]" />
                                 </div>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <Users className="w-3 h-3 text-gray-400" />
-                                  <span className="text-xs text-gray-500 truncate">
-                                    {getTeacherName((course as any).teacherId)}
-                                  </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-medium text-gray-900 text-sm truncate">
+                                      {course.title}
+                                    </span>
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                      {course.courseCode}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <Users className="w-3 h-3 text-gray-400" />
+                                    <span className="text-xs text-gray-500 truncate">
+                                      {getTeacherName((course as any).teacherId)}
+                                    </span>
+                                  </div>
+                                </div>
+                                {course.description && (
+                                  <p className="text-xs text-gray-500 line-clamp-1 hidden md:block max-w-xs flex-shrink-0">
+                                    {course.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <Tooltip
+                                    content="Update the course class, teacher, code, or description."
+                                    side="top"
+                                  >
+                                    <button
+                                      onClick={() => openEditCourseModal(course)}
+                                      className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
+                                      title="Edit course"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                  </Tooltip>
+                                  <Tooltip
+                                    content="Remove this course from the curriculum structure."
+                                    side="top"
+                                  >
+                                    <button
+                                      onClick={() => handleDeleteCourse(course._id)}
+                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                      title="Delete course"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </Tooltip>
                                 </div>
                               </div>
-                              {course.description && (
-                                <p className="text-xs text-gray-500 line-clamp-1 hidden md:block max-w-xs flex-shrink-0">
-                                  {course.description}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <Tooltip content="Update the course class, teacher, code, or description." side="top">
+                            ))}
+                            {/* Add course row */}
+                            <div className="px-5 py-2.5">
+                              <Tooltip
+                                content="Add another class-level course under this subject."
+                                side="top"
+                              >
                                 <button
-                                  onClick={() => openEditCourseModal(course)}
-                                  className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
-                                  title="Edit course"
+                                  onClick={() => openAddCourseModal(subject)}
+                                  className="flex items-center gap-1.5 text-xs text-[#003366] hover:text-[#002244] font-medium transition-colors"
                                 >
-                                  <Edit className="w-3.5 h-3.5" />
+                                  <Plus className="w-3.5 h-3.5" />
+                                  Add another course
                                 </button>
-                                </Tooltip>
-                                <Tooltip content="Remove this course from the curriculum structure." side="top">
-                                <button
-                                  onClick={() => handleDeleteCourse(course._id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                  title="Delete course"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                                </Tooltip>
-                              </div>
+                              </Tooltip>
                             </div>
-                          ))}
-                          {/* Add course row */}
-                          <div className="px-5 py-2.5">
-                            <Tooltip content="Add another class-level course under this subject." side="top">
-                            <button
-                              onClick={() => openAddCourseModal(subject)}
-                              className="flex items-center gap-1.5 text-xs text-[#003366] hover:text-[#002244] font-medium transition-colors"
+                          </div>
+                        ) : (
+                          <div className="py-8 flex flex-col items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[#003366]/10 flex items-center justify-center">
+                              <GraduationCap className="w-5 h-5 text-[#003366]" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-gray-700">No courses yet</p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Add the first course to this subject
+                              </p>
+                            </div>
+                            <Tooltip
+                              content="Create the first course for this subject so it can be assigned to classes and teachers."
+                              side="top"
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              Add another course
-                            </button>
+                              <button
+                                onClick={() => openAddCourseModal(subject)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-sm font-medium"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Course
+                              </button>
                             </Tooltip>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="py-8 flex flex-col items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-[#003366]/10 flex items-center justify-center">
-                            <GraduationCap className="w-5 h-5 text-[#003366]" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-medium text-gray-700">No courses yet</p>
-                            <p className="text-xs text-gray-500 mt-0.5">Add the first course to this subject</p>
-                          </div>
-                          <Tooltip content="Create the first course for this subject so it can be assigned to classes and teachers." side="top">
-                          <button
-                            onClick={() => openAddCourseModal(subject)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-sm font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add Course
-                          </button>
-                          </Tooltip>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 py-16">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-[#003366]/10 flex items-center justify-center">
-                <BookOpen className="w-7 h-7 text-[#003366]" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {searchTerm || selectedClass !== "all"
-                    ? "No subjects found"
-                    : "No subjects yet"}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-                  {searchTerm || selectedClass !== "all"
-                    ? "Try adjusting your search or filters to find what you're looking for."
-                    : "Get started by creating your first subject to begin building your curriculum structure."}
-                </p>
-              </div>
-              {!searchTerm && selectedClass === "all" && (
-                <button
-                  onClick={openAddSubjectModal}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add First Subject
-                </button>
-              )}
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 py-16">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-[#003366]/10 flex items-center justify-center">
+                  <BookOpen className="w-7 h-7 text-[#003366]" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {searchTerm || selectedClass !== "all"
+                      ? "No subjects found"
+                      : "No subjects yet"}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                    {searchTerm || selectedClass !== "all"
+                      ? "Try adjusting your search or filters to find what you're looking for."
+                      : "Get started by creating your first subject to begin building your curriculum structure."}
+                  </p>
+                </div>
+                {!searchTerm && selectedClass === "all" && (
+                  <button
+                    onClick={openAddSubjectModal}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add First Subject
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -769,9 +807,7 @@ const CurriculumStructureMain: React.FC = () => {
             <button
               type="button"
               onClick={handleSubjectSubmit}
-              disabled={
-                isSubmittingSubject || !newSubject.name || !newSubject.code
-              }
+              disabled={isSubmittingSubject || !newSubject.name || !newSubject.code}
               className="px-6 py-3 bg-[#003366] text-white rounded-xl hover:bg-[#002244] transition-all duration-200 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isSubmittingSubject ? (
@@ -780,9 +816,7 @@ const CurriculumStructureMain: React.FC = () => {
                   {subjectMode === "add" ? "Creating..." : "Updating..."}
                 </>
               ) : (
-                <>
-                  {subjectMode === "add" ? "Create Subject" : "Update Subject"}
-                </>
+                <>{subjectMode === "add" ? "Create Subject" : "Update Subject"}</>
               )}
             </button>
           </div>
@@ -797,15 +831,11 @@ const CurriculumStructureMain: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subject Name *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
               <input
                 type="text"
                 value={newSubject.name}
-                onChange={(e) =>
-                  setNewSubject((prev) => ({ ...prev, name: e.target.value }))
-                }
+                onChange={(e) => setNewSubject((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Mathematics"
                 className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all text-gray-900 placeholder-gray-400"
                 required
@@ -813,17 +843,18 @@ const CurriculumStructureMain: React.FC = () => {
             </div>
 
             <div>
-              <Tooltip content="A short unique identifier for the subject (e.g. MTH, ENG). Used on reports and timetables." side="right">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subject Code *
-              </label>
+              <Tooltip
+                content="A short unique identifier for the subject (e.g. MTH, ENG). Used on reports and timetables."
+                side="right"
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Subject Code *
+                </label>
               </Tooltip>
               <input
                 type="text"
                 value={newSubject.code}
-                onChange={(e) =>
-                  setNewSubject((prev) => ({ ...prev, code: e.target.value }))
-                }
+                onChange={(e) => setNewSubject((prev) => ({ ...prev, code: e.target.value }))}
                 placeholder="e.g., MATH"
                 className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all text-gray-900 placeholder-gray-400"
                 required
@@ -894,6 +925,8 @@ const CurriculumStructureMain: React.FC = () => {
         subjectId={activeSubjectForCourse?._id}
         subjectName={activeSubjectForCourse?.name}
         initialClassId={activeSubjectForCourse?.classId || ""}
+        preloadedTeachers={teachers}
+        preloadedClasses={classes}
       />
     </div>
   );

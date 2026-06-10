@@ -13,7 +13,6 @@ import {
   StudentSnapshot,
 } from "@/app/services/transit.service";
 import { apiClient } from "@/lib/apiClient";
-import { dedupeAcademicYearsByName, getAcademicYearLabel } from "@/app/services/academic.service";
 
 interface RawStudent {
   _id: string;
@@ -39,26 +38,7 @@ function flattenStudent(s: RawStudent): Student {
   };
 }
 
-interface ClassItem {
-  _id: string;
-  name: string;
-  gradeLevel: string;
-}
-
-interface AcademicYear {
-  _id: string;
-  name?: string;
-  year?: string;
-  isCurrent?: boolean;
-}
-
-const STEPS = [
-  "Select Student",
-  "Select Target School",
-  "Select Class & Year",
-  "Review",
-  "Confirm",
-];
+const STEPS = ["Select Student", "Select Target School", "Review", "Confirm"];
 
 function StepHeader({ step, total }: { step: number; total: number }) {
   return (
@@ -97,13 +77,6 @@ async function handleRes<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-function academicYearArray(
-  data: AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }
-): AcademicYear[] {
-  if (Array.isArray(data)) return data;
-  return data.academicYears ?? data.data ?? [];
-}
-
 export default function SourceTransferWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -121,12 +94,6 @@ export default function SourceTransferWizard() {
   const [schools, setSchools] = useState<SearchSchoolResult[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<SearchSchoolResult | null>(null);
-
-  // Step 2 — class & year
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
-  const [selectedYear, setSelectedYear] = useState<AcademicYear | null>(null);
   const [reason, setReason] = useState("");
 
   // Load all school students once on mount
@@ -171,38 +138,13 @@ export default function SourceTransferWizard() {
     return () => clearTimeout(t);
   }, [schoolSearch]);
 
-  // Load classes & academic years for selected school
-  useEffect(() => {
-    if (!selectedSchool) return;
-    Promise.all([
-      apiClient
-        .get(`/classes?schoolId=${selectedSchool._id}`)
-        .then((r) => handleRes<ClassItem[]>(r)),
-      apiClient
-        .get(`/academic-year-term/academic-year/school?schoolId=${selectedSchool._id}`)
-        .then((r) =>
-          handleRes<AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }>(r)
-        ),
-    ])
-      .then(([cls, yrs]) => {
-        setClasses(Array.isArray(cls) ? cls : []);
-        setAcademicYears(dedupeAcademicYearsByName(academicYearArray(yrs)));
-      })
-      .catch(() => {
-        setClasses([]);
-        setAcademicYears([]);
-      });
-  }, [selectedSchool]);
-
   async function submit() {
-    if (!selectedStudent || !selectedSchool || !selectedClass || !selectedYear) return;
+    if (!selectedStudent || !selectedSchool) return;
     setSubmitting(true);
     try {
       await createTransfer({
         studentId: selectedStudent._id,
         targetSchoolId: selectedSchool._id,
-        targetClassId: selectedClass._id,
-        targetAcademicYearId: selectedYear._id,
         reason: reason || undefined,
         initiatedBy: "source",
       });
@@ -215,9 +157,7 @@ export default function SourceTransferWizard() {
     }
   }
 
-  const canNext = [!!selectedStudent, !!selectedSchool, !!(selectedClass && selectedYear), true][
-    step
-  ];
+  const canNext = [!!selectedStudent, !!selectedSchool, true][step];
 
   return (
     <div className="p-6">
@@ -374,66 +314,6 @@ export default function SourceTransferWizard() {
                   Selected: <span className="font-semibold">{selectedSchool.name}</span>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Step 2: Select Class & Year */}
-          {step === 2 && (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-xs font-medium text-[#929292] mb-2">
-                  Target Class
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {classes.length === 0 ? (
-                    <p className="col-span-2 text-sm text-[#929292]">
-                      No classes found for this school
-                    </p>
-                  ) : (
-                    classes.map((c) => (
-                      <button
-                        key={c._id}
-                        onClick={() => setSelectedClass(c)}
-                        className={cn(
-                          "px-3 py-2.5 text-left text-sm rounded-lg border transition-colors",
-                          selectedClass?._id === c._id
-                            ? "border-[#003366] bg-[#003366]/5 text-[#003366] font-medium"
-                            : "border-gray-200 text-[#4A5568] hover:border-[#003366]/30"
-                        )}
-                      >
-                        <p className="font-medium">{c.name}</p>
-                        <p className="text-xs opacity-70">{c.gradeLevel}</p>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[#929292] mb-2">
-                  Academic Year
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {academicYears.length === 0 ? (
-                    <p className="col-span-2 text-sm text-[#929292]">No academic years found</p>
-                  ) : (
-                    academicYears.map((y) => (
-                      <button
-                        key={y._id}
-                        onClick={() => setSelectedYear(y)}
-                        className={cn(
-                          "px-3 py-2.5 text-sm rounded-lg border transition-colors",
-                          selectedYear?._id === y._id
-                            ? "border-[#003366] bg-[#003366]/5 text-[#003366] font-medium"
-                            : "border-gray-200 text-[#4A5568] hover:border-[#003366]/30"
-                        )}
-                      >
-                        {getAcademicYearLabel(y)}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#929292] mb-2">
@@ -450,8 +330,8 @@ export default function SourceTransferWizard() {
             </div>
           )}
 
-          {/* Step 3: Review */}
-          {step === 3 && selectedStudent && selectedSchool && selectedClass && selectedYear && (
+          {/* Step 2: Review */}
+          {step === 2 && selectedStudent && selectedSchool && (
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between">
@@ -464,18 +344,6 @@ export default function SourceTransferWizard() {
                   <span className="text-sm text-[#929292]">Target School</span>
                   <span className="text-sm font-medium text-[#030E18]">{selectedSchool.name}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[#929292]">Target Class</span>
-                  <span className="text-sm font-medium text-[#030E18]">
-                    {selectedClass.name} ({selectedClass.gradeLevel})
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[#929292]">Academic Year</span>
-                  <span className="text-sm font-medium text-[#030E18]">
-                    {getAcademicYearLabel(selectedYear)}
-                  </span>
-                </div>
                 {reason && (
                   <div className="flex justify-between">
                     <span className="text-sm text-[#929292]">Reason</span>
@@ -487,13 +355,14 @@ export default function SourceTransferWizard() {
               </div>
               <p className="text-sm text-[#929292]">
                 Submitting this request will notify the target school. The student will remain
-                enrolled at your school until the transfer is fully accepted.
+                enrolled at your school until the transfer is fully accepted. The target school will
+                assign the class and academic year upon acceptance.
               </p>
             </div>
           )}
 
-          {/* Step 4: Confirm */}
-          {step === 4 && (
+          {/* Step 3: Confirm */}
+          {step === 3 && (
             <div className="text-center py-4 space-y-4">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                 <Check className="w-8 h-8 text-green-600" />

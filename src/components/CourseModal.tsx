@@ -35,6 +35,8 @@ interface CourseModalProps {
   subjectId?: string;
   subjectName?: string;
   initialClassId?: string;
+  preloadedTeachers?: Teacher[];
+  preloadedClasses?: Class[];
 }
 
 interface NewCourse {
@@ -55,6 +57,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
   subjectId,
   subjectName,
   initialClassId,
+  preloadedTeachers,
+  preloadedClasses,
 }) => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -93,9 +97,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
           teacherId:
             typeof course.teacherId === "string"
               ? course.teacherId
-              : (course.teacherId as any)?.userId?._id ||
-                (course.teacherId as any)?._id ||
-                "",
+              : (course.teacherId as any)?.userId?._id || (course.teacherId as any)?._id || "",
           classId: course.classId || initialClassId || "",
           subjectId:
             typeof course.subjectId === "string"
@@ -122,14 +124,17 @@ const CourseModal: React.FC<CourseModalProps> = ({
   }, [isOpen, mode, course, subjectId, initialClassId, mounted]);
 
   const fetchData = async () => {
+    if (preloadedTeachers && preloadedClasses) {
+      setTeachers(preloadedTeachers);
+      setClasses(preloadedClasses);
+      return;
+    }
+
     if (typeof window === "undefined" || !mounted) return;
 
     try {
       setIsLoadingTeachers(true);
-      const [teachersData, classesData] = await Promise.all([
-        getTeachers(),
-        getClasses(),
-      ]);
+      const [teachersData, classesData] = await Promise.all([getTeachers(), getClasses()]);
       setTeachers(teachersData);
       setClasses(classesData);
     } catch (error) {
@@ -165,9 +170,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
         await updateCourseService(course._id, newCourse);
       }
 
-      toast.success(
-        `Course ${mode === "add" ? "created" : "updated"} successfully!`
-      );
+      toast.success(`Course ${mode === "add" ? "created" : "updated"} successfully!`);
 
       onSuccess();
       handleClose();
@@ -211,8 +214,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
     const gradeLevel = cls.gradeLevel || "";
 
     return (
-      name.toLowerCase().includes(searchLower) ||
-      gradeLevel.toLowerCase().includes(searchLower)
+      name.toLowerCase().includes(searchLower) || gradeLevel.toLowerCase().includes(searchLower)
     );
   });
 
@@ -254,8 +256,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   {mode === "add" && subjectName
                     ? `Create a new course for ${subjectName}`
                     : mode === "add"
-                    ? "Create a new course"
-                    : "Update the course information"}
+                      ? "Create a new course"
+                      : "Update the course information"}
                 </p>
               </div>
             </div>
@@ -301,10 +303,13 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   </div>
 
                   <div>
-                    <Tooltip content="A short unique identifier for this course (e.g. MTH101). Used on timetables and assessments." side="right">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Course Code *
-                    </label>
+                    <Tooltip
+                      content="A short unique identifier for this course (e.g. MTH101). Used on timetables and assessments."
+                      side="right"
+                    >
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Course Code *
+                      </label>
                     </Tooltip>
                     <input
                       type="text"
@@ -353,9 +358,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Assigned Teacher *
                       {isLoadingTeachers && (
-                        <span className="ml-2 text-sm text-blue-600">
-                          Loading...
-                        </span>
+                        <span className="ml-2 text-sm text-blue-600">Loading...</span>
                       )}
                     </label>
                     <div className="relative">
@@ -364,9 +367,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                         <input
                           type="text"
                           value={
-                            showTeacherDropdown
-                              ? teacherSearchTerm
-                              : getSelectedTeacherDisplay()
+                            showTeacherDropdown ? teacherSearchTerm : getSelectedTeacherDisplay()
                           }
                           onChange={(e) => {
                             setTeacherSearchTerm(e.target.value);
@@ -377,68 +378,61 @@ const CourseModal: React.FC<CourseModalProps> = ({
                             setTeacherSearchTerm("");
                           }}
                           onBlur={() => {
-                            setTimeout(
-                              () => setShowTeacherDropdown(false),
-                              150
-                            );
+                            setTimeout(() => setShowTeacherDropdown(false), 150);
                           }}
                           placeholder={
                             isLoadingTeachers
                               ? "Loading teachers..."
                               : teachers.length === 0
-                              ? "No teachers available"
-                              : "Search and select a teacher..."
+                                ? "No teachers available"
+                                : "Search and select a teacher..."
                           }
                           className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-400"
                           disabled={isLoadingTeachers || teachers.length === 0}
                         />
                       </div>
-                      {showTeacherDropdown &&
-                        !isLoadingTeachers &&
-                        teachers.length > 0 && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            <div
-                              onClick={() => {
-                                setNewCourse((prev) => ({
-                                  ...prev,
-                                  teacherId: "",
-                                }));
-                                setTeacherSearchTerm("");
-                                setShowTeacherDropdown(false);
-                              }}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 text-gray-500 text-sm"
-                            >
-                              Clear selection
-                            </div>
-                            {filteredTeachers.length > 0 ? (
-                              filteredTeachers.map((teacher) => (
-                                <div
-                                  key={teacher._id}
-                                  onClick={() => {
-                                    setNewCourse((prev) => ({
-                                      ...prev,
-                                      teacherId: teacher._id,
-                                    }));
-                                    setTeacherSearchTerm("");
-                                    setShowTeacherDropdown(false);
-                                  }}
-                                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors"
-                                >
-                                  <div className="font-medium text-gray-900">
-                                    {teacher.firstName} {teacher.lastName}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {teacher.email}
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="px-4 py-3 text-gray-500 text-sm">
-                                No teachers found matching "{teacherSearchTerm}"
-                              </div>
-                            )}
+                      {showTeacherDropdown && !isLoadingTeachers && teachers.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          <div
+                            onClick={() => {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                teacherId: "",
+                              }));
+                              setTeacherSearchTerm("");
+                              setShowTeacherDropdown(false);
+                            }}
+                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 text-gray-500 text-sm"
+                          >
+                            Clear selection
                           </div>
-                        )}
+                          {filteredTeachers.length > 0 ? (
+                            filteredTeachers.map((teacher) => (
+                              <div
+                                key={teacher._id}
+                                onClick={() => {
+                                  setNewCourse((prev) => ({
+                                    ...prev,
+                                    teacherId: teacher._id,
+                                  }));
+                                  setTeacherSearchTerm("");
+                                  setShowTeacherDropdown(false);
+                                }}
+                                className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors"
+                              >
+                                <div className="font-medium text-gray-900">
+                                  {teacher.firstName} {teacher.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">{teacher.email}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-gray-500 text-sm">
+                              No teachers found matching "{teacherSearchTerm}"
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {!isLoadingTeachers && teachers.length === 0 && (
                       <div className="flex items-start space-x-2 mt-2 p-3 bg-gray-50 rounded-xl">
@@ -451,9 +445,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Class *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Class *</label>
                     {mode === "edit" ? (
                       // In edit mode, show the class as read-only
                       <div>
@@ -476,11 +468,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                           <Input
                             type="text"
-                            value={
-                              showClassDropdown
-                                ? classSearchTerm
-                                : getSelectedClassDisplay()
-                            }
+                            value={showClassDropdown ? classSearchTerm : getSelectedClassDisplay()}
                             onChange={(e) => {
                               setClassSearchTerm(e.target.value);
                               setShowClassDropdown(true);
@@ -490,10 +478,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                               setClassSearchTerm("");
                             }}
                             onBlur={() => {
-                              setTimeout(
-                                () => setShowClassDropdown(false),
-                                150
-                              );
+                              setTimeout(() => setShowClassDropdown(false), 150);
                             }}
                             placeholder={
                               classes.length === 0
@@ -536,9 +521,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                                   <div className="font-medium">{cls.name}</div>
                                   <div className="text-sm text-gray-500">
                                     Grade {cls.gradeLevel}{" "}
-                                    {cls.section
-                                      ? `- Section ${cls.section}`
-                                      : ""}
+                                    {cls.section ? `- Section ${cls.section}` : ""}
                                   </div>
                                 </div>
                               ))

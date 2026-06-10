@@ -103,17 +103,47 @@ describe("getTransfer", () => {
 
 describe("createTransfer", () => {
   it("posts payload and returns transfer", async () => {
-    const payload = { studentId: "s1", targetClassId: "c1", targetAcademicYearId: "y1" };
+    const payload = {
+      studentId: "s1",
+      targetSchoolId: "sch2",
+      targetClassId: "c1",
+      targetAcademicYearId: "y1",
+    };
     const created = { _id: "t2", ...payload, status: "requested" };
     mockPost.mockResolvedValueOnce(okResponse(created));
     await expect(createTransfer(payload)).resolves.toEqual(created);
     expect(mockPost).toHaveBeenCalledWith("/transit/transfers", payload);
   });
 
+  it("posts without targetClassId and targetAcademicYearId (source push — target school assigns class later)", async () => {
+    const payload = { studentId: "s1", targetSchoolId: "sch2", initiatedBy: "source" as const };
+    const created = { _id: "t3", ...payload, status: "requested" };
+    mockPost.mockResolvedValueOnce(okResponse(created));
+    await expect(createTransfer(payload)).resolves.toEqual(created);
+    expect(mockPost).toHaveBeenCalledWith("/transit/transfers", payload);
+  });
+
+  it("includes optional reason when provided", async () => {
+    const payload = { studentId: "s1", targetSchoolId: "sch2", reason: "Family relocation" };
+    mockPost.mockResolvedValueOnce(okResponse({ _id: "t4", ...payload, status: "requested" }));
+    await createTransfer(payload);
+    expect(mockPost).toHaveBeenCalledWith("/transit/transfers", payload);
+  });
+
   it("throws with backend error message", async () => {
-    const payload = { studentId: "s1", targetClassId: "c1", targetAcademicYearId: "y1" };
+    const payload = { studentId: "s1", targetSchoolId: "sch2" };
     mockPost.mockResolvedValueOnce(errorResponse("Student not found", 404));
     await expect(createTransfer(payload)).rejects.toThrow("Student not found");
+  });
+
+  it("throws ConflictException message when student already has an open transfer", async () => {
+    const payload = { studentId: "s1", targetSchoolId: "sch2" };
+    mockPost.mockResolvedValueOnce(
+      errorResponse("Student already has an open transfer request", 409)
+    );
+    await expect(createTransfer(payload)).rejects.toThrow(
+      "Student already has an open transfer request"
+    );
   });
 });
 

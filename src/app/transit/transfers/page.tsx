@@ -4,11 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, ArrowLeftRight, Search } from "lucide-react";
-import {
-  listTransfers,
-  TransferRequest,
-  TransferStatus,
-} from "@/app/services/transit.service";
+import { listTransfers, TransferRequest, TransferStatus } from "@/app/services/transit.service";
 import { toast } from "@/components/CustomToast";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +47,7 @@ function schoolName(s: TransferRequest["sourceSchoolId"]): string {
 }
 
 function className(c: TransferRequest["targetClassId"]): string {
+  if (!c) return "—";
   if (typeof c === "string") return c;
   return `${c.name} (${c.gradeLevel})`;
 }

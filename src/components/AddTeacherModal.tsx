@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { CalendarDays, Check, Clock, UsersRound } from "lucide-react";
-import {
-  registerTeacher,
-  createTeacherProfile,
-} from "../app/services/teacher.service";
+import { registerTeacher, createTeacherProfile } from "../app/services/teacher.service";
 import { getClasses } from "../app/services/student.service";
 import { getSchoolId } from "../app/services/school.service";
 
@@ -17,12 +14,7 @@ interface Class {
   name: string;
 }
 
-const ACADEMIC_QUALIFICATIONS = [
-  "Graduate",
-  "Postgraduate",
-  "Doctorate",
-  "Other",
-] as const;
+const ACADEMIC_QUALIFICATIONS = ["Graduate", "Postgraduate", "Doctorate", "Other"] as const;
 
 const EMPLOYMENT_TYPES = ["Fulltime", "Parttime"] as const;
 
@@ -144,6 +136,7 @@ const AddTeacherModal: React.FC<{
         } else {
           router.push("/users/teachers");
         }
+        onClose();
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "An error occurred. Please try again.";
@@ -154,9 +147,7 @@ const AddTeacherModal: React.FC<{
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -176,10 +167,7 @@ const AddTeacherModal: React.FC<{
     setFormData({ ...formData, [name]: selectedValues });
   };
 
-  const toggleArrayField = (
-    field: "assignedClasses" | "availabilityDays",
-    value: string
-  ) => {
+  const toggleArrayField = (field: "assignedClasses" | "availabilityDays", value: string) => {
     const currentValues = formData[field] as string[];
     const nextValues = currentValues.includes(value)
       ? currentValues.filter((item) => item !== value)
@@ -196,12 +184,7 @@ const AddTeacherModal: React.FC<{
             {/* Login Credentials */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -248,12 +231,7 @@ const AddTeacherModal: React.FC<{
             {/* Personal Information */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -320,9 +298,7 @@ const AddTeacherModal: React.FC<{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gender *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
                   <select
                     name="gender"
                     className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
@@ -362,8 +338,7 @@ const AddTeacherModal: React.FC<{
                     Next: Academic Qualifications
                   </h5>
                   <p className="text-sm text-blue-700">
-                    We'll collect academic background and teaching experience
-                    information.
+                    We'll collect academic background and teaching experience information.
                   </p>
                 </div>
               </div>
@@ -377,12 +352,7 @@ const AddTeacherModal: React.FC<{
             {/* Academic Background */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -473,8 +443,7 @@ const AddTeacherModal: React.FC<{
                     Next: Employment Details
                   </h5>
                   <p className="text-sm text-blue-700">
-                    Final step - employment type, class assignments, and
-                    schedule details.
+                    Final step - employment type, class assignments, and schedule details.
                   </p>
                 </div>
               </div>
@@ -488,12 +457,7 @@ const AddTeacherModal: React.FC<{
             {/* Employment Details */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -553,7 +517,8 @@ const AddTeacherModal: React.FC<{
                       Teaching Assignments
                     </h4>
                     <p className="mt-1 text-sm text-gray-500">
-                      Select the classes this teacher can support. Course and subject links still happen from course setup.
+                      Select the classes this teacher can support. Course and subject links still
+                      happen from course setup.
                     </p>
                   </div>
                   <span className="rounded-full bg-[#003366]/10 px-3 py-1 text-xs font-semibold text-[#003366]">
@@ -564,7 +529,9 @@ const AddTeacherModal: React.FC<{
                 {classes.length > 0 ? (
                   <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                     {classes.map((classItem) => {
-                      const isSelected = (formData.assignedClasses as string[]).includes(classItem._id);
+                      const isSelected = (formData.assignedClasses as string[]).includes(
+                        classItem._id
+                      );
 
                       return (
                         <button
@@ -652,9 +619,7 @@ const AddTeacherModal: React.FC<{
                           <button
                             key={slot}
                             type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, availableTime: slot })
-                            }
+                            onClick={() => setFormData({ ...formData, availableTime: slot })}
                             className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition ${
                               isSelected
                                 ? "border-[#003366] bg-[#EAF2FB] text-[#003366]"
@@ -711,8 +676,8 @@ const AddTeacherModal: React.FC<{
                     Ready to Create Teacher Account
                   </h5>
                   <p className="text-sm text-blue-700">
-                    All required information has been collected. Click "Create
-                    Teacher" to finalize the account setup.
+                    All required information has been collected. Click "Create Teacher" to finalize
+                    the account setup.
                   </p>
                 </div>
               </div>
@@ -754,18 +719,16 @@ const AddTeacherModal: React.FC<{
         }
       }}
     >
-      <div className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300" data-guide="teacher-create-modal">
+      <div
+        className="bg-white h-[90vh] w-full max-w-4xl mx-4 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300"
+        data-guide="teacher-create-modal"
+      >
         {/* Header */}
         <div className="bg-[#003366] p-6 text-white">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="bg-white bg-opacity-20 p-3 rounded-xl">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -788,21 +751,14 @@ const AddTeacherModal: React.FC<{
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Add New Teacher</h2>
-                <p className="text-blue-100 text-sm">
-                  Create a teacher account and profile
-                </p>
+                <p className="text-blue-100 text-sm">Create a teacher account and profile</p>
               </div>
             </div>
             <button
               onClick={onClose}
               className="text-blue-100 hover:text-white p-2 rounded-lg hover:bg-blue-500 transition-colors"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -815,15 +771,18 @@ const AddTeacherModal: React.FC<{
 
           {/* Progress Steps */}
           <div className="mt-6" data-guide="teacher-create-progress">
-            <Tooltip content="Teacher setup has three stages: login account, personal qualifications, then employment and class availability." side="bottom">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-blue-100">
-                Step {currentStep + 1} of 3: {getStepLabel()}
-              </span>
-              <span className="text-sm text-blue-200">
-                {Math.round(((currentStep + 1) / 3) * 100)}% Complete
-              </span>
-            </div>
+            <Tooltip
+              content="Teacher setup has three stages: login account, personal qualifications, then employment and class availability."
+              side="bottom"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-blue-100">
+                  Step {currentStep + 1} of 3: {getStepLabel()}
+                </span>
+                <span className="text-sm text-blue-200">
+                  {Math.round(((currentStep + 1) / 3) * 100)}% Complete
+                </span>
+              </div>
             </Tooltip>
             <div className="bg-blue-500 bg-opacity-30 rounded-full h-2">
               <div
@@ -837,11 +796,10 @@ const AddTeacherModal: React.FC<{
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6" data-guide="teacher-create-fields">
           <div className="mb-5 rounded-2xl border border-[#F4B740]/30 bg-gradient-to-r from-[#FFF8E8] to-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-[#003366]">
-              Teacher setup guide
-            </p>
+            <p className="text-sm font-semibold text-[#003366]">Teacher setup guide</p>
             <p className="mt-1 text-sm leading-6 text-gray-600">
-              Create the account first, then complete profile details so this teacher can be assigned to classes, courses, and messages.
+              Create the account first, then complete profile details so this teacher can be
+              assigned to classes, courses, and messages.
             </p>
           </div>
           {renderStepContent()}
@@ -859,12 +817,7 @@ const AddTeacherModal: React.FC<{
               }`}
               disabled={currentStep === 0}
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -875,54 +828,52 @@ const AddTeacherModal: React.FC<{
               Back
             </button>
 
-            <Tooltip content={currentStep === 2 ? "Finish the teacher profile and make the account available across Talim." : "Save this stage and continue to the next teacher setup step."} side="top">
-            <button
-              onClick={handleSubmit}
-              className="bg-[#003366] text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
+            <Tooltip
+              content={
+                currentStep === 2
+                  ? "Finish the teacher profile and make the account available across Talim."
+                  : "Save this stage and continue to the next teacher setup step."
+              }
+              side="top"
             >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {currentStep === 2 ? "Create Teacher" : "Continue"}
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </>
-              )}
-            </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-[#003366] text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {currentStep === 2 ? "Create Teacher" : "Continue"}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
             </Tooltip>
           </div>
         </div>

@@ -36,8 +36,8 @@ export interface TransferRequest {
   sourceSchoolId: SchoolRef | string;
   targetSchoolId: SchoolRef | string;
   sourceClassId?: ClassRef | string;
-  targetClassId: ClassRef | string;
-  targetAcademicYearId: string;
+  targetClassId?: ClassRef | string;
+  targetAcademicYearId?: string;
   targetTermId?: string;
   status: TransferStatus;
   reason?: string;
@@ -138,8 +138,8 @@ export interface StudentSnapshot {
 export interface CreateTransferPayload {
   studentId: string;
   targetSchoolId?: string;
-  targetClassId: string;
-  targetAcademicYearId: string;
+  targetClassId?: string;
+  targetAcademicYearId?: string;
   targetTermId?: string;
   reason?: string;
   notes?: string;
