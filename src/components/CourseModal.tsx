@@ -168,6 +168,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
         await createCourse(newCourse);
       } else if (mode === "edit" && course) {
         const { subjectId: _omit, ...updatePayload } = newCourse;
+        console.log("[CourseModal] updating course id:", course._id, "payload:", updatePayload);
         await updateCourseService(course._id, updatePayload);
       }
 
