@@ -167,7 +167,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
       if (mode === "add") {
         await createCourse(newCourse);
       } else if (mode === "edit" && course) {
-        await updateCourseService(course._id, newCourse);
+        const { subjectId: _omit, ...updatePayload } = newCourse;
+        await updateCourseService(course._id, updatePayload);
       }
 
       toast.success(`Course ${mode === "add" ? "created" : "updated"} successfully!`);

@@ -133,6 +133,31 @@ export interface RecentAnnouncement {
 
 // ==================== Helpers ====================
 
+const MONGO_ID_RE = /^[a-f0-9]{24}$/i;
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  all_parents: "All Parents",
+  parents: "All Parents",
+  "all parents": "All Parents",
+  all_students: "All Students",
+  students: "All Students",
+  "all students": "All Students",
+  all_teachers: "All Teachers",
+  teachers: "All Teachers",
+  "all teachers": "All Teachers",
+  all: "Everyone",
+  custom: "Custom",
+};
+
+function normalizeAudienceLabel(raw?: string | string[]): string {
+  const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  if (!arr.length) return "All";
+  const resolved = arr
+    .map((item) => (MONGO_ID_RE.test(item) ? null : (AUDIENCE_LABELS[item.toLowerCase()] ?? item)))
+    .filter(Boolean) as string[];
+  return resolved.length ? [...new Set(resolved)].join(", ") : "Custom";
+}
+
 async function safeGet<T>(url: string): Promise<T | null> {
   try {
     const res = await apiClient.get(url);
@@ -160,26 +185,17 @@ function buildMonthlyRevenue(
 
   return Object.entries(byMonth)
     .map(([month, amount]) => ({ month, amount }))
-    .sort(
-      (a, b) =>
-        new Date("1 " + a.month).getTime() - new Date("1 " + b.month).getTime()
-    )
+    .sort((a, b) => new Date("1 " + a.month).getTime() - new Date("1 " + b.month).getTime())
     .slice(-6);
 }
 
 // ==================== Service Functions ====================
 
-export const getSchoolDashboard = async (
-  schoolId: string
-): Promise<SchoolDashboardData> => {
-  const response = await apiClient.get(
-    `${API_BASE_URL}/schools/${schoolId}/dashboard`
-  );
+export const getSchoolDashboard = async (schoolId: string): Promise<SchoolDashboardData> => {
+  const response = await apiClient.get(`${API_BASE_URL}/schools/${schoolId}/dashboard`);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `Failed to fetch dashboard data: ${response.status}`
-    );
+    throw new Error(errorData.message || `Failed to fetch dashboard data: ${response.status}`);
   }
   return response.json();
 };
@@ -201,9 +217,7 @@ export const getDashboardSummary = async (
       success: boolean;
       summary: { availableBalance: number };
     }>("/finance/wallet/summary"),
-    userId
-      ? getUnreadNotificationCount(userId).catch(() => 0)
-      : Promise.resolve(0),
+    userId ? getUnreadNotificationCount(userId).catch(() => 0) : Promise.resolve(0),
   ]);
 
   if (!fees && !wallet) return null;
@@ -229,8 +243,7 @@ export const getDashboardSummary = async (
       trendPercent: 0,
     },
     fees: {
-      collectionRate:
-        totalExpected > 0 ? (paid / totalExpected) * 100 : 0,
+      collectionRate: totalExpected > 0 ? (paid / totalExpected) * 100 : 0,
       collectedAmount: paid,
       expectedAmount: totalExpected,
       trendPercent: 0,
@@ -246,9 +259,7 @@ export const getDashboardSummary = async (
 };
 
 // Derives revenue and fee status from /fees/dashboard/summary and /finance/wallet/transactions.
-export const getFinanceSummary = async (
-  schoolId: string
-): Promise<FinanceSummary | null> => {
+export const getFinanceSummary = async (schoolId: string): Promise<FinanceSummary | null> => {
   const [fees, wallet, txnRes] = await Promise.all([
     safeGet<{
       totalExpectedAmount: number;
@@ -292,15 +303,11 @@ export const getFinanceSummary = async (
 };
 
 // Derives term progress from /terms + /academic-years, and assessment counts from /assessments/school.
-export const getAcademicSummary = async (
-  schoolId: string
-): Promise<AcademicSummary | null> => {
+export const getAcademicSummary = async (schoolId: string): Promise<AcademicSummary | null> => {
   const [terms, years, assessmentRes] = await Promise.all([
     getTerms().catch(() => []),
     getAcademicYears().catch(() => []),
-    assessmentService
-      .getAssessmentsBySchool(1, 200)
-      .catch(() => ({ assessments: [] })),
+    assessmentService.getAssessmentsBySchool(1, 200).catch(() => ({ assessments: [] })),
   ]);
 
   const currentTerm = terms.find((t) => t.isCurrent);
@@ -314,10 +321,7 @@ export const getAcademicSummary = async (
   const totalMs = Math.max(1, end - start);
   const elapsedMs = Math.max(0, Math.min(now - start, totalMs));
   const elapsedPercent = Math.round((elapsedMs / totalMs) * 100);
-  const daysRemaining = Math.max(
-    0,
-    Math.ceil((end - now) / 86400000)
-  );
+  const daysRemaining = Math.max(0, Math.ceil((end - now) / 86400000));
 
   const assessments = assessmentRes?.assessments ?? [];
   const counts = { active: 0, pending: 0, completed: 0, cancelled: 0 };
@@ -341,24 +345,18 @@ export const getAcademicSummary = async (
 };
 
 // Derives pending transfers and leave counts from /transit/dashboard and /leave-requests/school-admin/all.
-export const getPendingActions = async (
-  schoolId: string
-): Promise<PendingActionsData | null> => {
+export const getPendingActions = async (schoolId: string): Promise<PendingActionsData | null> => {
   const [transit, leaveRes] = await Promise.all([
     safeGet<{
       pendingIncoming: number;
       pendingOutgoing: number;
       openPromotionRuns: number;
     }>("/transit/dashboard"),
-    safeGet<{ data: Array<{ status: string }> }>(
-      "/leave-requests/school-admin/all"
-    ),
+    safeGet<{ data: Array<{ status: string }> }>("/leave-requests/school-admin/all"),
   ]);
 
   const leaveData = leaveRes?.data ?? [];
-  const pendingLeave = leaveData.filter(
-    (r) => r.status?.toLowerCase() === "pending"
-  ).length;
+  const pendingLeave = leaveData.filter((r) => r.status?.toLowerCase() === "pending").length;
 
   return {
     transfers: {
@@ -388,13 +386,11 @@ export const getRecentPayments = async (
     amount: t.schoolAmount ?? t.amount ?? 0,
     method: t.paymentChannel ?? t.providerName ?? "Online",
     createdAt: t.paidAt ?? t.createdAt,
-    status: (
-      t.status === "successful"
-        ? "success"
-        : t.status === "pending"
+    status: (t.status === "successful"
+      ? "success"
+      : t.status === "pending"
         ? "pending"
-        : "failed"
-    ) as "success" | "pending" | "failed",
+        : "failed") as "success" | "pending" | "failed",
   }));
 };
 
@@ -417,9 +413,7 @@ export const getRecentAnnouncements = async (
 
   return res.data.map((a) => ({
     title: a.title,
-    audience: Array.isArray(a.targetAudience ?? a.audience)
-      ? (a.targetAudience ?? a.audience).join(", ")
-      : (a.targetAudience ?? a.audience ?? "All"),
+    audience: normalizeAudienceLabel(a.targetAudience ?? a.audience),
     publishedAt: a.publishedAt ?? a.createdAt,
     readRate: typeof a.readRate === "number" ? a.readRate : 0,
   }));
