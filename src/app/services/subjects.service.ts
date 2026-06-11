@@ -1,6 +1,5 @@
 import { API_ENDPOINTS, API_BASE_URL } from "../lib/api/config";
 import { apiClient } from "@/lib/apiClient";
-import { getLocalStorageItem } from "../lib/localStorage";
 
 // Types
 export interface Class {
@@ -45,46 +44,17 @@ export interface Course {
 }
 
 export const getCourses = async (): Promise<Course[]> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(API_ENDPOINTS.GET_COURSES, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.get(API_ENDPOINTS.GET_COURSES);
   if (!response.ok) {
-    throw new Error(`Failed to fetch courses: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to fetch courses: ${response.statusText}`);
   }
-
   const data = await response.json();
-  if (!Array.isArray(data)) {
-    throw new Error("Invalid response format: expected array of courses");
-  }
-
-  return data;
+  return Array.isArray(data) ? data : data.data || [];
 };
 
 export const createCourse = async (courseData: Omit<Course, "_id">): Promise<Course> => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(API_ENDPOINTS.CREATE_COURSE, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(courseData),
-  });
-
+  const response = await apiClient.post(API_ENDPOINTS.CREATE_COURSE, courseData);
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     const msg = Array.isArray(errorData?.message)
@@ -92,97 +62,48 @@ export const createCourse = async (courseData: Omit<Course, "_id">): Promise<Cou
       : errorData?.message || `Failed to create course (${response.status})`;
     throw new Error(msg);
   }
-
-  return await response.json();
+  return response.json();
 };
 
 export const updateCourse = async (
   courseId: string,
   courseData: Partial<Course>
 ): Promise<Course> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_ENDPOINTS.UPDATE_COURSE}/${courseId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(courseData),
-  });
-
+  const response = await apiClient.put(`${API_ENDPOINTS.UPDATE_COURSE}/${courseId}`, courseData);
   if (!response.ok) {
-    throw new Error(`Failed to update course: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to update course: ${response.statusText}`);
   }
-
-  return await response.json();
+  return response.json();
 };
 
 export const deleteCourse = async (courseId: string): Promise<void> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_ENDPOINTS.DELETE_COURSE}/${courseId}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.delete(`${API_ENDPOINTS.DELETE_COURSE}/${courseId}`);
   if (!response.ok) {
-    throw new Error(`Failed to delete course: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to delete course: ${response.statusText}`);
   }
 };
 
 export const getCourseById = async (courseId: string): Promise<Course> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_ENDPOINTS.GET_COURSE_BY_ID}/${courseId}`, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.get(`${API_ENDPOINTS.GET_COURSE_BY_ID}/${courseId}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch course: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to fetch course: ${response.statusText}`);
   }
-
-  return await response.json();
+  return response.json();
 };
 
 export const createSubject = async (payload: { name: string; code: string; schoolId: string }) => {
-  const response = await fetch(API_ENDPOINTS.CREATE_SUBJECT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
+  const response = await apiClient.post(API_ENDPOINTS.CREATE_SUBJECT, payload);
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-
-    // Handle specific error messages from backend
     if (response.status === 409) {
       throw new Error(errorData?.message || "Subject with this code or name already exists");
     }
-
     throw new Error(errorData?.message || "Subject creation failed");
   }
-
-  return response.json(); // Returns the created subject
+  return response.json();
 };
 
 export const getSubjectsBySchool = async (): Promise<any[]> => {
@@ -198,31 +119,15 @@ export const getSubjectsBySchool = async (): Promise<any[]> => {
 };
 
 export const getCoursesBySubject = async (subjectId: string): Promise<Course[]> => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.get(`${API_ENDPOINTS.GET_COURSES_BY_SUBJECT}/${subjectId}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch courses by subject: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.message || `Failed to fetch courses by subject: ${response.statusText}`
+    );
   }
-
   const raw = await response.json();
-  const data = Array.isArray(raw) ? raw : raw?.data || raw?.courses || [];
-
-  if (!Array.isArray(data)) {
-    throw new Error("Expected an array of courses");
-  }
-
-  return data;
+  return Array.isArray(raw) ? raw : raw?.data || raw?.courses || [];
 };
 
 export const getCoursesBySchool = async (): Promise<Course[]> => {
@@ -281,59 +186,25 @@ export const updateSubject = async (
   subjectId: string,
   payload: { name: string; code: string; schoolId: string }
 ): Promise<any> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_BASE_URL}/subjects-courses/subjects/${subjectId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
+  const response = await apiClient.put(
+    `${API_BASE_URL}/subjects-courses/subjects/${subjectId}`,
+    payload
+  );
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-
     if (response.status === 409) {
       throw new Error(errorData?.message || "Subject with this code already exists");
     }
-
     throw new Error(errorData?.message || "Subject update failed");
   }
-
   return response.json();
 };
+
 export const deleteSubject = async (subjectId: string): Promise<void> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  // Call the function to get the URL
-  const url = API_ENDPOINTS.DELETE_SUBJECT(subjectId);
-
-  const response = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.delete(API_ENDPOINTS.DELETE_SUBJECT(subjectId));
   if (!response.ok) {
-    // Try to get error details
-    let errorMessage = "Failed to delete subject";
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorMessage;
-    } catch (e) {
-      // If response is not JSON, use status text
-      errorMessage = `Failed to delete subject: ${response.statusText}`;
-    }
-    throw new Error(errorMessage);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to delete subject: ${response.statusText}`);
   }
 };
 
@@ -342,42 +213,22 @@ export const updateCourseService = async (
   courseId: string,
   courseData: Partial<Course>
 ): Promise<Course> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_BASE_URL}/subjects-courses/courses/${courseId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(courseData),
-  });
-
+  const response = await apiClient.put(
+    `${API_BASE_URL}/subjects-courses/courses/${courseId}`,
+    courseData
+  );
   if (!response.ok) {
-    throw new Error(`Failed to update course: ${response.statusText}`);
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to update course: ${response.statusText}`);
   }
-
-  return await response.json();
+  return response.json();
 };
 
 export const deleteCourseService = async (courseId: string): Promise<void> => {
-  const token = getLocalStorageItem("accessToken");
-  if (!token) {
-    throw new Error("No access token found");
-  }
-
-  const response = await fetch(`${API_BASE_URL}/subjects-courses/courses/${courseId}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+  const response = await apiClient.delete(`${API_BASE_URL}/subjects-courses/courses/${courseId}`);
   if (!response.ok) {
-    throw new Error("Failed to delete course");
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to delete course");
   }
 };
 
