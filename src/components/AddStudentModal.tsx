@@ -53,10 +53,30 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     fetchClasses();
   }, []);
 
+  const getClassSchoolId = (selectedClass?: Class): string | null => {
+    const schoolId = selectedClass?.schoolId;
+    if (typeof schoolId === "string") return schoolId;
+    if (schoolId && typeof schoolId === "object") {
+      return schoolId._id || (schoolId as any).id || null;
+    }
+    return null;
+  };
+
+  const generateRandomPassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      password += charset[randomIndex];
+    }
+    return password;
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const schoolId = getSchoolId();
+      let schoolId = getSchoolId();
 
       if (!schoolId) {
         toast.error("School ID not found. Please log in again.");
@@ -77,41 +97,8 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           return;
         }
 
-        // Helper function to generate random password
-        const generateRandomPassword = () => {
-          const length = 12;
-          const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-          let password = "";
-          for (let i = 0; i < length; i++) {
-            const randomIndex = Math.floor(Math.random() * charset.length);
-            password += charset[randomIndex];
-          }
-          return password;
-        };
-
-        const generatedPassword = generateRandomPassword();
-
-        const registrationData = {
-          email: formData.email,
-          role: "student",
-          schoolId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-          password: generatedPassword,
-        };
-
-        const { userId } = await registerStudent(registrationData);
-        setFormData((prev) => ({ ...prev, password: generatedPassword }));
-        setUserId(userId);
         setCurrentStep(1);
-        toast.success("Student registered successfully!");
       } else {
-        if (!userId) {
-          toast.error("User ID not found. Please try again.");
-          throw new Error("User ID not found");
-        }
-
         // Validate required fields for profile creation
         if (
           !formData.classId ||
@@ -126,8 +113,34 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           return;
         }
 
+        const selectedClass = classes.find((c) => c._id === formData.classId);
+        schoolId = getClassSchoolId(selectedClass) || schoolId;
+
+        const password = formData.password || generateRandomPassword();
+        let studentUserId = userId;
+        if (!studentUserId) {
+          const registrationData = {
+            email: formData.email,
+            role: "student",
+            schoolId,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phoneNumber: formData.phoneNumber,
+            password,
+          };
+
+          const registrationResult = await registerStudent(registrationData);
+          studentUserId = registrationResult.userId;
+          setUserId(studentUserId);
+          setFormData((prev) => ({ ...prev, password }));
+        }
+
+        if (!studentUserId) {
+          throw new Error("Student registration did not return a user ID");
+        }
+
         const profileData = {
-          userId: userId,
+          userId: studentUserId,
           classId: formData.classId,
           gradeLevel: formData.gradeLevel,
           parentContact: {
@@ -136,7 +149,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             email: formData.parentContact.email,
             relationship: formData.parentContact.relationship,
           },
-          password: formData.password, // Include password for onboarding email
+          password, // Include password for onboarding email
         };
 
         await createStudentProfile(profileData);
