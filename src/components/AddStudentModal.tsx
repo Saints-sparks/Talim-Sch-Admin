@@ -80,6 +80,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     if (isBlank(formData.email)) missing.push("student email");
     if (isBlank(formData.firstName)) missing.push("student first name");
     if (isBlank(formData.lastName)) missing.push("student last name");
+    if (isBlank(formData.phoneNumber)) missing.push("student phone number");
     return missing;
   };
 
@@ -311,7 +312,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Phone Number <span className="text-gray-400 text-xs">(Optional)</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -320,6 +321,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
             </div>
@@ -402,7 +404,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Grade Level
+                    Grade Level <span className="text-red-500">*</span>
                   </label>
                   <div
                     className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
