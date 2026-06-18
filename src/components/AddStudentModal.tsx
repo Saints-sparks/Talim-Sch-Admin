@@ -57,7 +57,7 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const schoolId = selectedClass?.schoolId;
     if (typeof schoolId === "string") return schoolId;
     if (schoolId && typeof schoolId === "object") {
-      return schoolId._id || (schoolId as any).id || null;
+      return schoolId._id || (schoolId as { id?: string }).id || null;
     }
     return null;
   };
@@ -71,6 +71,32 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       password += charset[randomIndex];
     }
     return password;
+  };
+
+  const isBlank = (value: string) => value.trim().length === 0;
+
+  const getAccountMissingFields = () => {
+    const missing: string[] = [];
+    if (isBlank(formData.email)) missing.push("student email");
+    if (isBlank(formData.firstName)) missing.push("student first name");
+    if (isBlank(formData.lastName)) missing.push("student last name");
+    return missing;
+  };
+
+  const getProfileMissingFields = () => {
+    const missing: string[] = [];
+    if (isBlank(formData.classId)) missing.push("class");
+    if (isBlank(formData.gradeLevel)) missing.push("grade level");
+    if (isBlank(formData.parentContact.firstName)) missing.push("parent first name");
+    if (isBlank(formData.parentContact.lastName)) missing.push("parent last name");
+    if (isBlank(formData.parentContact.relationship)) missing.push("relationship");
+    if (isBlank(formData.parentContact.phoneNumber)) missing.push("parent phone number");
+    if (isBlank(formData.parentContact.email)) missing.push("parent email");
+    return missing;
+  };
+
+  const showMissingFieldsToast = (missingFields: string[]) => {
+    toast.error(`Please complete: ${missingFields.join(", ")}`);
   };
 
   const handleSubmit = async () => {
@@ -91,25 +117,17 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       }
 
       if (currentStep === 0) {
-        // Validate required fields
-        if (!formData.email || !formData.firstName || !formData.lastName) {
-          toast.error("Please fill in all required fields");
+        const missingFields = getAccountMissingFields();
+        if (missingFields.length > 0) {
+          showMissingFieldsToast(missingFields);
           return;
         }
 
         setCurrentStep(1);
       } else {
-        // Validate required fields for profile creation
-        if (
-          !formData.classId ||
-          !formData.gradeLevel ||
-          !formData.parentContact.firstName ||
-          !formData.parentContact.lastName ||
-          !formData.parentContact.relationship ||
-          !formData.parentContact.phoneNumber ||
-          !formData.parentContact.email
-        ) {
-          toast.error("Please fill in all required fields");
+        const missingFields = getProfileMissingFields();
+        if (missingFields.length > 0) {
+          showMissingFieldsToast(missingFields);
           return;
         }
 
@@ -334,6 +352,9 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         );
 
       case 1:
+        const profileMissingFields = getProfileMissingFields();
+        const isProfileComplete = profileMissingFields.length === 0;
+
         return (
           <div className="space-y-6">
             {/* Academic Information Section */}
@@ -500,26 +521,46 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* Success Info Box */}
-            <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+            {/* Profile Status Box */}
+            <div
+              className={`rounded-lg border p-4 ${
+                isProfileComplete ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100"
+              }`}
+            >
               <div className="flex gap-3">
                 <svg
-                  className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"
+                  className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                    isProfileComplete ? "text-green-600" : "text-amber-600"
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+                  {isProfileComplete ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v3.75m0 3.75h.008v.008H12V16.5zm9-4.5a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  )}
                 </svg>
                 <div>
-                  <p className="text-sm text-green-900 leading-relaxed">
-                    All required information has been collected. Click "Create Student" to finalize
-                    the account setup.
+                  <p
+                    className={`text-sm leading-relaxed ${
+                      isProfileComplete ? "text-green-900" : "text-amber-900"
+                    }`}
+                  >
+                    {isProfileComplete
+                      ? 'All required information has been collected. Click "Create Student" to finalize the account setup.'
+                      : `Still needed: ${profileMissingFields.join(", ")}.`}
                   </p>
                 </div>
               </div>
