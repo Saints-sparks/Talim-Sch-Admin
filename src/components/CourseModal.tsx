@@ -20,9 +20,9 @@ interface CourseForModal {
   title: string;
   description: string;
   courseCode: string;
-  teacherId?: string | { _id: string; userId?: any };
+  teacherId?: string | { _id: string; userId?: string | { _id?: string } };
   subjectId?: string | { _id: string; name?: string; code?: string };
-  classId?: string;
+  classId?: string | { _id?: string };
   schoolId?: string;
 }
 
@@ -81,6 +81,24 @@ const CourseModal: React.FC<CourseModalProps> = ({
     subjectId: subjectId || "",
   });
 
+  const getCourseTeacherId = (teacherId: CourseForModal["teacherId"]) => {
+    if (!teacherId) return "";
+    if (typeof teacherId === "string") return teacherId;
+
+    if (typeof teacherId.userId === "string") return teacherId.userId;
+    return teacherId.userId?._id || teacherId._id || "";
+  };
+
+  const getCourseClassId = (classId: CourseForModal["classId"]) => {
+    if (!classId) return "";
+    return typeof classId === "string" ? classId : classId._id || "";
+  };
+
+  const getTeacherOptionId = (teacher: Teacher) => teacher._id || teacher.userId || "";
+
+  const getTeacherFullName = (teacher: Teacher) =>
+    `${teacher.firstName || ""} ${teacher.lastName || ""}`.trim();
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -94,11 +112,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
           title: course.title,
           description: course.description,
           courseCode: course.courseCode,
-          teacherId:
-            typeof course.teacherId === "string"
-              ? course.teacherId
-              : (course.teacherId as any)?.userId?._id || (course.teacherId as any)?._id || "",
-          classId: course.classId || initialClassId || "",
+          teacherId: getCourseTeacherId(course.teacherId),
+          classId: getCourseClassId(course.classId) || initialClassId || "",
           subjectId:
             typeof course.subjectId === "string"
               ? course.subjectId
@@ -223,12 +238,12 @@ const CourseModal: React.FC<CourseModalProps> = ({
   // Get selected teacher/class display names
   const getSelectedTeacherDisplay = () => {
     if (!newCourse.teacherId) return "";
-    const teacher = teachers.find((t) => t._id === newCourse.teacherId);
+    const teacher = teachers.find(
+      (t) => t._id === newCourse.teacherId || t.userId === newCourse.teacherId
+    );
     if (!teacher) return "";
 
-    const firstName = teacher.firstName || "";
-    const lastName = teacher.lastName || "";
-    return firstName || lastName ? `${firstName} ${lastName}`.trim() : "";
+    return getTeacherFullName(teacher);
   };
 
   const getSelectedClassDisplay = () => {
@@ -396,7 +411,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
                       {showTeacherDropdown && !isLoadingTeachers && teachers.length > 0 && (
                         <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                           <div
-                            onClick={() => {
+                            onMouseDown={(event) => {
+                              event.preventDefault();
                               setNewCourse((prev) => ({
                                 ...prev,
                                 teacherId: "",
@@ -412,10 +428,12 @@ const CourseModal: React.FC<CourseModalProps> = ({
                             filteredTeachers.map((teacher) => (
                               <div
                                 key={teacher._id}
-                                onClick={() => {
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  const teacherId = getTeacherOptionId(teacher);
                                   setNewCourse((prev) => ({
                                     ...prev,
-                                    teacherId: teacher._id,
+                                    teacherId,
                                   }));
                                   setTeacherSearchTerm("");
                                   setShowTeacherDropdown(false);
@@ -423,7 +441,7 @@ const CourseModal: React.FC<CourseModalProps> = ({
                                 className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors"
                               >
                                 <div className="font-medium text-gray-900">
-                                  {teacher.firstName} {teacher.lastName}
+                                  {getTeacherFullName(teacher)}
                                 </div>
                                 <div className="text-sm text-gray-500">{teacher.email}</div>
                               </div>
@@ -494,7 +512,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
                         {showClassDropdown && classes.length > 0 && (
                           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-md max-h-60 overflow-y-auto">
                             <div
-                              onClick={() => {
+                              onMouseDown={(event) => {
+                                event.preventDefault();
                                 setNewCourse((prev) => ({
                                   ...prev,
                                   classId: "",
@@ -510,7 +529,8 @@ const CourseModal: React.FC<CourseModalProps> = ({
                               filteredClasses.map((cls) => (
                                 <div
                                   key={cls._id}
-                                  onClick={() => {
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
                                     setNewCourse((prev) => ({
                                       ...prev,
                                       classId: cls._id,
