@@ -11,7 +11,7 @@ A modern web application built with [Next.js](https://nextjs.org/), featuring se
 4. [Folder Structure](#folder-structure)
 5. [Environment Variables](#environment-variables)
 6. [Scripts](#scripts)
-7. [Deployment](#deployment)
+7. [Deployment](#deployment) 
 8. [Contributing](#contributing)
 9. [License](#license)
 
