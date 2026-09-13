@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { revokeWebPushOnSignOut } from "@/app/hooks/usePushNotifications";
 import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
 import { ApiError } from "@/lib/apiError";
@@ -259,7 +260,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // ✅ FIXED: Logout function - clear localStorage
   const logout = async () => {
     try {
-      if (accessToken) await authService.logout();
+      if (accessToken) {
+        // While the session is still valid: stop this browser getting this admin's push alerts.
+        await revokeWebPushOnSignOut();
+        await authService.logout();
+      }
     } catch {
       // The local session is cleared regardless; a failed server logout only
       // means the refresh token expires on its own.

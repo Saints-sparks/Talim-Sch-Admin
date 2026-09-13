@@ -7,6 +7,8 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import { API_URLS } from "@/app/lib/api/config";
+import { api } from "@/lib/apiClient";
 
 export type OnboardingStepId =
   | "school-profile"
@@ -276,21 +278,8 @@ export const OnboardingProvider: React.FC<{
     persist({ ...state, completedSteps: merged, phase1Completed: true });
     markStoredUserOnboardingComplete();
 
-    // Notify the server — fire-and-forget, localStorage is the fallback
-    try {
-      const token = typeof window !== "undefined"
-        ? localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
-        : null;
-      if (token) {
-        const { API_BASE_URL, API_URLS } = require("@/app/lib/api/config");
-        fetch(`${API_BASE_URL}${API_URLS.AUTH.COMPLETE_ONBOARDING}`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
-      }
-    } catch {
-      // ignore — server flag update is best-effort
-    }
+    // Notify the server — fire-and-forget, localStorage is the fallback.
+    api.patch(API_URLS.AUTH.COMPLETE_ONBOARDING).catch(() => undefined);
   }, [state, persist]);
 
   const dismissSetup = useCallback(() => {

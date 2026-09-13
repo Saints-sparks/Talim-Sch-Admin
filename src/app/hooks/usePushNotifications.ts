@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL } from "@/app/lib/api/config";
+import { api, apiClient } from "@/lib/apiClient";
+import { getErrorMessage } from "@/lib/apiError";
 
-const STORAGE_KEY = "talim:push-subscribed";
+const LEGACY_STORAGE_KEY = "talim:push-subscribed";
 const SW_PATH = "/sw.js";
+const ENDPOINTS = {
+  vapidKey: "/notifications/web-push/vapid-public-key",
+  subscribe: "/notifications/web-push/subscribe",
+  preferences: "/notifications/preferences",
+};
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -17,36 +23,49 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return output;
 }
 
-function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
+function pushSupported(): boolean {
   return (
-    localStorage.getItem("accessToken") ||
-    sessionStorage.getItem("accessToken") ||
-    null
+    typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
   );
 }
 
-async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = getAccessToken();
-  return fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+/** The browser's current push subscription for our service worker, if any. */
+async function currentSubscription(): Promise<PushSubscription | null> {
+  if (!pushSupported()) return null;
+  const registration = await navigator.serviceWorker.getRegistration(SW_PATH);
+  return (await registration?.pushManager.getSubscription()) ?? null;
+}
+
+/** Removes a subscription on the server. `DELETE` with a body, so it goes through the low-level client. */
+function deleteServerSubscription(endpoint: string): Promise<unknown> {
+  return apiClient.json(ENDPOINTS.subscribe, apiClient.bodyConfig("DELETE", { endpoint }, {}));
 }
 
 /** Sync pushEnabled to the backend NotificationPreference — best-effort, never throws. */
 async function syncPushPreference(enabled: boolean): Promise<void> {
   try {
-    await authFetch(`${API_BASE_URL}/notifications/preferences`, {
-      method: "PATCH",
-      body: JSON.stringify({ pushEnabled: enabled }),
-    });
+    await api.patch(ENDPOINTS.preferences, { pushEnabled: enabled });
   } catch {
-    // Non-fatal — subscription state is already persisted by the browser
+    // Non-fatal: the browser subscription is the source of truth for delivery.
+  }
+}
+
+/**
+ * Stops this browser receiving the signed-in admin's push notifications.
+ * Call before signing out, while the session is still valid, so the next
+ * person to use this browser never gets the previous admin's alerts.
+ * Never throws.
+ */
+export async function revokeWebPushOnSignOut(): Promise<void> {
+  try {
+    const subscription = await currentSubscription();
+    if (!subscription) return;
+    await deleteServerSubscription(subscription.endpoint).catch(() => undefined);
+    await subscription.unsubscribe();
+  } catch {
+    // Sign-out must not fail because of push.
+  } finally {
+    if (typeof window !== "undefined") localStorage.removeItem(LEGACY_STORAGE_KEY);
   }
 }
 
@@ -62,6 +81,11 @@ export interface UsePushNotificationsReturn {
   unsubscribe: () => Promise<void>;
 }
 
+/**
+ * Browser push for the signed-in admin: permission, subscription state and
+ * subscribe / unsubscribe. `isSubscribed` reflects the browser's real
+ * subscription, not a flag in storage.
+ */
 export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<PushPermission>("default");
@@ -70,23 +94,13 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window
-    ) {
-      setIsSupported(true);
-      setPermission(Notification.permission as PushPermission);
-      setIsSubscribed(localStorage.getItem(STORAGE_KEY) === "true");
-    }
-  }, []);
-
-  const getVapidKey = useCallback(async (): Promise<string> => {
-    const res = await fetch(`${API_BASE_URL}/notifications/web-push/vapid-public-key`);
-    if (!res.ok) throw new Error("Unable to load push configuration from server");
-    const { publicKey } = await res.json();
-    return publicKey;
+    if (!pushSupported()) return;
+    setIsSupported(true);
+    setPermission(Notification.permission as PushPermission);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    currentSubscription()
+      .then((subscription) => setIsSubscribed(Boolean(subscription) && Notification.permission === "granted"))
+      .catch(() => setIsSubscribed(false));
   }, []);
 
   const getOrRegisterSW = useCallback(async (): Promise<ServiceWorkerRegistration> => {
@@ -114,71 +128,47 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         );
       }
 
-      const [vapidKey, registration] = await Promise.all([
-        getVapidKey(),
+      const [{ publicKey }, registration] = await Promise.all([
+        api.get<{ publicKey: string }>(ENDPOINTS.vapidKey, { skipAuth: true }),
         getOrRegisterSW(),
       ]);
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      const subJson = subscription.toJSON() as {
-        endpoint: string;
-        keys: { p256dh: string; auth: string };
-      };
-
-      const res = await authFetch(`${API_BASE_URL}/notifications/web-push/subscribe`, {
-        method: "POST",
-        body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          keys: subJson.keys,
-          userAgent: navigator.userAgent,
-        }),
+      const subJson = subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+      await api.post(ENDPOINTS.subscribe, {
+        endpoint: subJson.endpoint,
+        keys: subJson.keys,
+        userAgent: navigator.userAgent,
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message || "Failed to save push subscription on server");
-      }
-
-      localStorage.setItem(STORAGE_KEY, "true");
       setIsSubscribed(true);
-
-      // Sync pushEnabled=true to NotificationPreference
       await syncPushPreference(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to enable push notifications");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to enable push notifications"));
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [getVapidKey, getOrRegisterSW]);
+  }, [getOrRegisterSW]);
 
   const unsubscribe = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Sync pushEnabled=false to NotificationPreference before removing subscription
       await syncPushPreference(false);
-
-      const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
-      const subscription = await reg?.pushManager.getSubscription();
-
+      const subscription = await currentSubscription();
       if (subscription) {
-        await authFetch(`${API_BASE_URL}/notifications/web-push/subscribe`, {
-          method: "DELETE",
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        });
+        await deleteServerSubscription(subscription.endpoint);
         await subscription.unsubscribe();
       }
-
-      localStorage.removeItem(STORAGE_KEY);
       setIsSubscribed(false);
-    } catch (err: any) {
-      setError(err.message || "Failed to disable push notifications");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to disable push notifications"));
       throw err;
     } finally {
       setIsLoading(false);

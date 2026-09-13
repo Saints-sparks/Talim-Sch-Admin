@@ -1,5 +1,4 @@
 import { API_ENDPOINTS } from "../lib/api/config";
-import { PerformanceMonitor } from "../lib/performance";
 import { apiClient } from "@/lib/apiClient";
 
 interface User {
@@ -431,21 +430,19 @@ export const studentService = {
 
   async getStudentById(studentId: string): Promise<StudentById> {
     try {
-      return await PerformanceMonitor.measureAsync(`getStudentById-${studentId}`, async () => {
-        const response = await apiClient.get(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`);
+      const response = await apiClient.get(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`);
 
-        if (!response.ok) {
-          // Handle 404 specifically
-          if (response.status === 404) {
-            throw new Error("Student not found");
-          }
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch student details");
+      if (!response.ok) {
+        // Handle 404 specifically
+        if (response.status === 404) {
+          throw new Error("Student not found");
         }
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch student details");
+      }
 
-        const data = await response.json();
-        return data.data[0];
-      });
+      const data = await response.json();
+      return data.data[0];
     } catch (error) {
       if (error instanceof Error && error.name === "TimeoutError") {
         console.error("❌ Student fetch timed out");

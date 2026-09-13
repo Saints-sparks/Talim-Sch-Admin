@@ -6,7 +6,6 @@ import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { studentService, StudentById } from "@/app/services/student.service";
-import { PerformanceMonitor } from "@/app/lib/performance";
 import { apiClient } from "@/lib/apiClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardContent } from "@/components/ui/card";
@@ -57,12 +56,6 @@ const StudentProfile = () => {
         setIsLoading(true);
         setError(null);
 
-        // Log network conditions
-        PerformanceMonitor.logNetworkMetrics();
-
-        // Start overall page timing
-        PerformanceMonitor.startMeasurement("student-page-load");
-
         const studentData = await studentService.getStudentById(studentId);
 
         if (!studentData) {
@@ -70,23 +63,10 @@ const StudentProfile = () => {
         }
 
         setStudent(studentData);
-
-        // End overall timing
-        const totalTime = PerformanceMonitor.endMeasurement("student-page-load");
-
-        // Log performance warning if slow
-        if (totalTime > 2000) {
-          console.warn(
-            `🐌 Student page took ${totalTime.toFixed(2)}ms to load - this is slower than expected`
-          );
-        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch student data";
         setError(errorMessage);
-        console.error("Error fetching student:", err);
 
-        // End timing even on error
-        PerformanceMonitor.endMeasurement("student-page-load");
       } finally {
         setIsLoading(false);
       }
