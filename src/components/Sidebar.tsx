@@ -9,8 +9,7 @@ import { toast } from "@/components/CustomToast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
-import { useWebSocketContext } from "@/context/WebSocketContext";
-import { chatService } from "@/app/services/chat.service";
+import { useChatAlerts } from "@/context/ChatAlertsContext";
 import {
   ChevronLeft,
   ChevronRight,
@@ -62,10 +61,10 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
   const [expandedUsers, setExpandedUsers] = useState(false);
   const [expandedTransit, setExpandedTransit] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { hasPermission, isFullAdmin } = usePermissions();
-  const { onUnreadMessagesUpdate } = useWebSocketContext();
+  // Kept current by the app-wide chat listener, across reconnects and pages.
+  const { unreadTotal: unreadMessageCount } = useChatAlerts();
   const { isMobile, isMobileOpen, setMobileOpen, isCollapsed, toggleCollapse } = useSidebar();
 
   useEffect(() => {
@@ -77,50 +76,6 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
     if (!pathname.startsWith("/transit") && expandedTransit) setExpandedTransit(false);
     if (pathname.startsWith("/transit") && !expandedTransit) setExpandedTransit(true);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!user) {
-      setUnreadMessageCount(0);
-      return;
-    }
-
-    let isActive = true;
-
-    chatService
-      .getUnreadMessageCount()
-      .then((count) => {
-        if (isActive) setUnreadMessageCount(count);
-      })
-      .catch(() => {
-        if (isActive) setUnreadMessageCount(0);
-      });
-
-    const unsubscribe = onUnreadMessagesUpdate((data) => {
-      if (typeof data.unreadCount === "number") {
-        setUnreadMessageCount(data.unreadCount);
-      }
-    });
-
-    const handleLocalUnreadUpdate = (event: Event) => {
-      const unreadCount = (event as CustomEvent<{ unreadCount?: number }>).detail
-        ?.unreadCount;
-
-      if (typeof unreadCount === "number") {
-        setUnreadMessageCount(unreadCount);
-      }
-    };
-
-    window.addEventListener("talim:chat-unread-count", handleLocalUnreadUpdate);
-
-    return () => {
-      isActive = false;
-      window.removeEventListener(
-        "talim:chat-unread-count",
-        handleLocalUnreadUpdate
-      );
-      unsubscribe();
-    };
-  }, [user, onUnreadMessagesUpdate]);
 
   const allMenuItems: MenuItem[] = [
     {

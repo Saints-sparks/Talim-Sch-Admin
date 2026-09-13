@@ -2,6 +2,7 @@
 import { PageIndicatorProvider } from "./context/PageIndicatorContext";
 import { TransitionProvider } from "@/context/TransitionContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
+import { ChatAlertsProvider } from "@/context/ChatAlertsContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { OnboardingProvider } from "@/context/OnboardingContext";
@@ -77,10 +78,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarProvider>
           <PageIndicatorProvider>
             <WebSocketProvider>
-              <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
-              {showSidebar && <AppGuide />}
-              <ToastContainer toasts={toasts} onRemove={removeToast} />
-              <NetworkStatusBanner />
+              <ChatAlertsProvider>
+                <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
+                {showSidebar && <AppGuide />}
+                <ToastContainer toasts={toasts} onRemove={removeToast} />
+                <NetworkStatusBanner />
+              </ChatAlertsProvider>
             </WebSocketProvider>
           </PageIndicatorProvider>
         </SidebarProvider>

@@ -12,10 +12,17 @@ export interface ToastProps {
   title?: string;
   message: string;
   duration?: number;
+  /** Makes the toast clickable (e.g. open the chat it's about). Clicking also closes it. */
+  onClick?: () => void;
   onClose: (id: string) => void;
 }
 
-const Toast: React.FC<ToastProps> = ({ id, type, title, message, duration = 4000, onClose }) => {
+/** Extra options for a toast. */
+export interface ToastOptions {
+  onClick?: () => void;
+}
+
+const Toast: React.FC<ToastProps> = ({ id, type, title, message, duration = 4000, onClick, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
@@ -108,7 +115,30 @@ const Toast: React.FC<ToastProps> = ({ id, type, title, message, duration = 4000
       </div>
 
       {/* Content Section */}
-      <div className="flex-1 min-w-0">
+      <div
+        className={`flex-1 min-w-0 ${onClick ? "cursor-pointer" : ""}`}
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onClick={
+          onClick
+            ? () => {
+                onClick();
+                handleClose();
+              }
+            : undefined
+        }
+        onKeyDown={
+          onClick
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onClick();
+                  handleClose();
+                }
+              }
+            : undefined
+        }
+      >
         {title && (
           <h4 className="text-sm font-semibold text-gray-900 mb-1 leading-tight">
             {title}
@@ -262,12 +292,12 @@ export default Toast;
 
 // Standalone toast object — usable outside React components (services, hooks, etc.)
 export const toast = {
-  success: (message: string, title?: string, duration?: number) =>
-    toastManager.addToast({ type: 'success', message, title, duration }),
-  error: (message: string, title?: string, duration?: number) =>
-    toastManager.addToast({ type: 'error', message, title, duration }),
-  warning: (message: string, title?: string, duration?: number) =>
-    toastManager.addToast({ type: 'warning', message, title, duration }),
-  info: (message: string, title?: string, duration?: number) =>
-    toastManager.addToast({ type: 'info', message, title, duration }),
+  success: (message: string, title?: string, duration?: number, options?: ToastOptions) =>
+    toastManager.addToast({ type: 'success', message, title, duration, ...options }),
+  error: (message: string, title?: string, duration?: number, options?: ToastOptions) =>
+    toastManager.addToast({ type: 'error', message, title, duration, ...options }),
+  warning: (message: string, title?: string, duration?: number, options?: ToastOptions) =>
+    toastManager.addToast({ type: 'warning', message, title, duration, ...options }),
+  info: (message: string, title?: string, duration?: number, options?: ToastOptions) =>
+    toastManager.addToast({ type: 'info', message, title, duration, ...options }),
 };

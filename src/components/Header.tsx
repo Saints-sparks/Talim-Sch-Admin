@@ -9,6 +9,7 @@ import { Calendar } from "./Icons";
 import { ThemeToggle } from "./theme-toggle";
 import { useEffect, useState } from "react";
 import { getUnreadNotificationCount } from "@/app/services/notification.service";
+import { NOTIFICATION_RECEIVED_EVENT } from "@/context/ChatAlertsContext";
 
 export function Header() {
   const { setMobileOpen } = useSidebar();
@@ -24,7 +25,12 @@ export function Header() {
 
     fetchUnread();
     const interval = setInterval(fetchUnread, 30_000);
-    return () => clearInterval(interval);
+    // A socket notification just arrived: refresh the bell now.
+    window.addEventListener(NOTIFICATION_RECEIVED_EVENT, fetchUnread);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATION_RECEIVED_EVENT, fetchUnread);
+    };
   }, [user?.userId]);
 
   // Generate user initials from first and last name

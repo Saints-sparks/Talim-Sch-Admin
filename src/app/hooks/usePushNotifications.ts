@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, apiClient } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
+import { sessionStore } from "@/lib/session";
 
 const LEGACY_STORAGE_KEY = "talim:push-subscribed";
+/** Per-user record of which push endpoint this browser registered for them. */
+const USER_STORAGE_PREFIX = "talim:push-subscribed:";
 const SW_PATH = "/sw.js";
 const ENDPOINTS = {
   vapidKey: "/notifications/web-push/vapid-public-key",
@@ -41,10 +44,77 @@ function deleteServerSubscription(endpoint: string): Promise<unknown> {
   return apiClient.json(ENDPOINTS.subscribe, apiClient.bodyConfig("DELETE", { endpoint }, {}));
 }
 
-/** Sync pushEnabled to the backend NotificationPreference — best-effort, never throws. */
+function storage(): Storage | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function signedInUserId(): string | null {
+  return sessionStore.getUserId();
+}
+
+function rememberEndpoint(userId: string | null, endpoint: string): void {
+  const store = storage();
+  if (!userId || !store) return;
+  // An endpoint belongs to one account at a time.
+  for (let i = store.length - 1; i >= 0; i--) {
+    const key = store.key(i);
+    if (key?.startsWith(USER_STORAGE_PREFIX) && store.getItem(key) === endpoint) store.removeItem(key);
+  }
+  store.setItem(`${USER_STORAGE_PREFIX}${userId}`, endpoint);
+}
+
+function forgetEndpoint(userId: string | null): void {
+  if (userId) storage()?.removeItem(`${USER_STORAGE_PREFIX}${userId}`);
+}
+
+/** The user id another account registered `endpoint` under on this browser, if any. */
+function endpointOwner(endpoint: string): string | null {
+  const store = storage();
+  if (!store) return null;
+  for (let i = 0; i < store.length; i++) {
+    const key = store.key(i);
+    if (key?.startsWith(USER_STORAGE_PREFIX) && store.getItem(key) === endpoint) {
+      return key.slice(USER_STORAGE_PREFIX.length);
+    }
+  }
+  return null;
+}
+
+/**
+ * On sign-in: if this browser's push subscription was registered by a
+ * different account (e.g. their session expired without a sign-out), drop it
+ * so the new user never sees the previous user's alerts. A subscription with
+ * no recorded owner (made before owners were recorded) is adopted.
+ * Never throws.
+ */
+export async function reconcileWebPushForUser(userId: string): Promise<void> {
+  try {
+    const subscription = await currentSubscription();
+    if (!subscription) {
+      forgetEndpoint(userId);
+      return;
+    }
+    const owner = endpointOwner(subscription.endpoint);
+    if (owner === userId) return;
+    if (owner) {
+      forgetEndpoint(owner);
+      await subscription.unsubscribe();
+      return;
+    }
+    rememberEndpoint(userId, subscription.endpoint);
+  } catch {
+    // Push is best-effort.
+  }
+}
+
+/** Sync the browser push switch (`webPushEnabled`, independent of phones) — best-effort, never throws. */
 async function syncPushPreference(enabled: boolean): Promise<void> {
   try {
-    await api.patch(ENDPOINTS.preferences, { pushEnabled: enabled });
+    await api.patch(ENDPOINTS.preferences, { webPushEnabled: enabled });
   } catch {
     // Non-fatal: the browser subscription is the source of truth for delivery.
   }
@@ -65,7 +135,8 @@ export async function revokeWebPushOnSignOut(): Promise<void> {
   } catch {
     // Sign-out must not fail because of push.
   } finally {
-    if (typeof window !== "undefined") localStorage.removeItem(LEGACY_STORAGE_KEY);
+    storage()?.removeItem(LEGACY_STORAGE_KEY);
+    forgetEndpoint(signedInUserId());
   }
 }
 
@@ -98,8 +169,15 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     setIsSupported(true);
     setPermission(Notification.permission as PushPermission);
     localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const userId = signedInUserId();
     currentSubscription()
-      .then((subscription) => setIsSubscribed(Boolean(subscription) && Notification.permission === "granted"))
+      .then((subscription) => {
+        // Only "on" when the browser's subscription is this user's.
+        const owner = subscription ? endpointOwner(subscription.endpoint) : null;
+        const mine = Boolean(subscription) && (owner === null || owner === userId);
+        if (subscription && mine && owner === null) rememberEndpoint(userId, subscription.endpoint);
+        setIsSubscribed(mine && Notification.permission === "granted");
+      })
       .catch(() => setIsSubscribed(false));
   }, []);
 
@@ -145,6 +223,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         userAgent: navigator.userAgent,
       });
 
+      rememberEndpoint(signedInUserId(), subJson.endpoint);
       setIsSubscribed(true);
       await syncPushPreference(true);
     } catch (err) {
@@ -166,6 +245,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         await deleteServerSubscription(subscription.endpoint);
         await subscription.unsubscribe();
       }
+      forgetEndpoint(signedInUserId());
       setIsSubscribed(false);
     } catch (err) {
       setError(getErrorMessage(err, "Failed to disable push notifications"));
