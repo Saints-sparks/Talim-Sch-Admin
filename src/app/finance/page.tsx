@@ -47,6 +47,7 @@ import {
   type WithdrawalSummary,
   type SecurityStatus,
 } from "@/app/services/finance.service";
+import { ApiError, getErrorMessage } from "@/lib/apiError";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
@@ -697,7 +698,7 @@ function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => void }) {
       toast.success("Withdrawal cancelled");
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to cancel");
+      toast.error(getErrorMessage(err, "Failed to cancel"));
     } finally {
       setCancelling(null);
     }
@@ -895,7 +896,7 @@ function PayoutAccountsTab() {
       setForm({ bankName: "", bankCode: "", accountNumber: "", accountName: "" });
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to add account");
+      toast.error(getErrorMessage(err, "Failed to add account"));
     } finally {
       setSaving(false);
     }
@@ -905,10 +906,10 @@ function PayoutAccountsTab() {
     setActionId(id);
     try {
       await verifyBankAccount(id);
-      toast.success("Account verified");
+      toast.success("Account verified with the bank");
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Verification failed");
+      toast.error(getErrorMessage(err, "Verification failed"));
     } finally {
       setActionId(null);
     }
@@ -921,7 +922,7 @@ function PayoutAccountsTab() {
       toast.success("Default account updated");
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed");
+      toast.error(getErrorMessage(err, "Failed"));
     } finally {
       setActionId(null);
     }
@@ -935,7 +936,7 @@ function PayoutAccountsTab() {
       toast.success("Account removed");
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to remove");
+      toast.error(getErrorMessage(err, "Failed to remove"));
     } finally {
       setActionId(null);
     }
@@ -1149,6 +1150,8 @@ function SecurityTab() {
   const [disableToken, setDisableToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showDisable, setShowDisable] = useState(false);
+  const [requireOffCode, setRequireOffCode] = useState("");
+  const [askRequireOffCode, setAskRequireOffCode] = useState(false);
 
   const loadSecurity = useCallback(async () => {
     try {
@@ -1171,7 +1174,7 @@ function SecurityTab() {
       const data = await setup2fa();
       setSetupData(data);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Setup failed");
+      toast.error(getErrorMessage(err, "Setup failed"));
     } finally {
       setSubmitting(false);
     }
@@ -1187,7 +1190,7 @@ function SecurityTab() {
       setTokenInput("");
       loadSecurity();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Invalid token");
+      toast.error(getErrorMessage(err, "Invalid token"));
     } finally {
       setSubmitting(false);
     }
@@ -1203,7 +1206,7 @@ function SecurityTab() {
       setDisableToken("");
       loadSecurity();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Invalid token");
+      toast.error(getErrorMessage(err, "Invalid token"));
     } finally {
       setSubmitting(false);
     }
@@ -1211,12 +1214,23 @@ function SecurityTab() {
 
   const handleToggleRequire = async () => {
     if (!security) return;
+    // Turning the protection off needs a current code, so a stolen session
+    // cannot switch it off and then withdraw without one.
+    if (security.requireTwoFactorForWithdrawals && !askRequireOffCode) {
+      setAskRequireOffCode(true);
+      return;
+    }
     try {
-      await setRequire2faForWithdrawals(!security.requireTwoFactorForWithdrawals);
+      await setRequire2faForWithdrawals(
+        !security.requireTwoFactorForWithdrawals,
+        security.requireTwoFactorForWithdrawals ? requireOffCode : undefined,
+      );
       toast.success("Preference updated");
+      setAskRequireOffCode(false);
+      setRequireOffCode("");
       loadSecurity();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed");
+      toast.error(getErrorMessage(err, "Failed to update the preference"));
     }
   };
 
@@ -1358,6 +1372,45 @@ function SecurityTab() {
               />
             </button>
           </div>
+          {askRequireOffCode && (
+            <form
+              className="mt-4 flex flex-wrap items-end gap-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleToggleRequire();
+              }}
+            >
+              <label className="flex-1 min-w-[180px] text-sm text-gray-600">
+                Enter the code from your authenticator app to turn this off
+                <input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={requireOffCode}
+                  onChange={(e) => setRequireOffCode(e.target.value.replace(/\D/g, ""))}
+                  className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm tracking-widest"
+                  aria-label="Authenticator code"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={requireOffCode.length !== 6}
+                className="px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-bold disabled:opacity-40"
+              >
+                Turn off
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAskRequireOffCode(false);
+                  setRequireOffCode("");
+                }}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm"
+              >
+                Cancel
+              </button>
+            </form>
+          )}
         </div>
       )}
     </div>
@@ -1478,7 +1531,7 @@ function WithdrawFundsModal({
       const res = await initiateWithdrawal({ bankAccountId: accountId, amount: amountNum, note });
       onNext(res.withdrawalDraftId, res.maskedEmail, Math.min(60, res.expiresIn || 60));
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to initiate withdrawal");
+      toast.error(getErrorMessage(err, "Failed to initiate withdrawal"));
     } finally {
       setLoading(false);
     }
@@ -1693,7 +1746,7 @@ function EmailOtpModal({
       const res = await verifyWithdrawalOtp({ withdrawalDraftId: draftId, otp });
       onVerified(res.summary);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Invalid OTP");
+      toast.error(getErrorMessage(err, "Invalid OTP"));
       setOtp("");
     } finally {
       setLoading(false);
@@ -1709,7 +1762,7 @@ function EmailOtpModal({
       setCooldown(60);
       setOtp("");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to resend");
+      toast.error(getErrorMessage(err, "Failed to resend"));
     } finally {
       setResending(false);
     }
@@ -1810,18 +1863,30 @@ function ConfirmWithdrawalModal({
 }) {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+
+  useEffect(() => {
+    getSecurityStatus()
+      .then((status) => setRequires2fa(Boolean(status.requireTwoFactorForWithdrawals)))
+      .catch(() => setRequires2fa(false));
+  }, []);
 
   const handleConfirm = async () => {
     if (!agreed) return;
+    if (requires2fa && twoFactorCode.length !== 6) return;
     setLoading(true);
     try {
       const res = await confirmWithdrawal({
         withdrawalDraftId: summary.withdrawalDraftId,
         confirmationAccepted: true,
+        ...(requires2fa ? { twoFactorCode } : {}),
       });
       onConfirmed(res.withdrawal);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Confirmation failed");
+      // The server also asks for the code if the setting changed meanwhile.
+      if (err instanceof ApiError && err.fieldErrors().twoFactorCode) setRequires2fa(true);
+      toast.error(getErrorMessage(err, "Confirmation failed"));
     } finally {
       setLoading(false);
     }
@@ -1890,6 +1955,24 @@ function ConfirmWithdrawalModal({
             </span>
           </label>
 
+          {requires2fa && (
+            <label className="block text-sm text-gray-600">
+              Authenticator code
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="6-digit code"
+                className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm tracking-widest"
+              />
+              <span className="mt-1 block text-xs text-gray-400">
+                Your school requires two-factor authentication for withdrawals.
+              </span>
+            </label>
+          )}
+
           <div className="flex gap-3 pt-1">
             <button
               onClick={onBack}
@@ -1899,7 +1982,7 @@ function ConfirmWithdrawalModal({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!agreed || loading}
+              disabled={!agreed || loading || (requires2fa && twoFactorCode.length !== 6)}
               className="flex-1 py-3 bg-[#003366] text-white rounded-xl text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {loading ? (

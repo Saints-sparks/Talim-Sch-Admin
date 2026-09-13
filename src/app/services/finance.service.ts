@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+import { ApiError } from "@/lib/apiError";
 
 const BASE = "/finance";
 
@@ -91,9 +92,19 @@ export interface PaginatedResponse<T> {
   pagination: { page: number; limit: number; total: number; pages: number };
 }
 
+/**
+ * Parses a finance response. Failures become `ApiError`s carrying the server's
+ * code, message and field details (e.g. VALIDATION_FAILED on twoFactorCode).
+ */
 async function handleResponse<T>(res: Response): Promise<T> {
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Request failed");
+  const text = await res.text();
+  let data: unknown = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
+  if (!res.ok) throw ApiError.fromResponse(res, data as Parameters<typeof ApiError.fromResponse>[1]);
   return data as T;
 }
 
@@ -216,6 +227,8 @@ export const verifyWithdrawalOtp = async (data: {
 export const confirmWithdrawal = async (data: {
   withdrawalDraftId: string;
   confirmationAccepted: boolean;
+  /** Required when "Require 2FA for withdrawals" is on: the 6-digit authenticator code. */
+  twoFactorCode?: string;
 }): Promise<{
   success: boolean;
   withdrawal: {
@@ -280,7 +293,14 @@ export const disable2fa = async (token: string): Promise<{ success: boolean }> =
   return handleResponse<{ success: boolean }>(res);
 };
 
-export const setRequire2faForWithdrawals = async (require: boolean) => {
-  const res = await apiClient.patch(`${BASE}/security/withdrawals/require-2fa`, { require });
+/**
+ * Turns "Require 2FA for withdrawals" on or off. Turning it OFF needs a current
+ * authenticator code (the server refuses otherwise).
+ *
+ * @param require - New setting.
+ * @param token - 6-digit code; required when turning the requirement off.
+ */
+export const setRequire2faForWithdrawals = async (require: boolean, token?: string) => {
+  const res = await apiClient.patch(`${BASE}/security/withdrawals/require-2fa`, token ? { require, token } : { require });
   return handleResponse(res);
 };
