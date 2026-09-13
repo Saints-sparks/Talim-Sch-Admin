@@ -135,7 +135,8 @@ interface GetTeachersResponse {
 
 interface RegisterTeacherPayload {
   email: string;
-  password: string;
+  /** Omitted: the API generates a temporary password and emails a set-password link. */
+  password?: string;
   role: string;
   schoolId: string;
   firstName: string;

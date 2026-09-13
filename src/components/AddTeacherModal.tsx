@@ -40,7 +40,6 @@ const AddTeacherModal: React.FC<{
   const [formData, setFormData] = useState({
     // Step 0: Registration data
     email: "",
-    password: "defaultPassword", // Consider generating a random temp password
     firstName: "",
     lastName: "",
     phoneNumber: "",
@@ -91,9 +90,10 @@ const AddTeacherModal: React.FC<{
 
       if (currentStep === 0) {
         // First step - register the teacher
+        // No password is sent: the API generates a temporary one and emails the
+        // teacher a set-password link.
         const registrationData = {
           email: formData.email,
-          password: formData.password,
           role: "teacher",
           schoolId,
           firstName: formData.firstName,
@@ -209,20 +209,10 @@ const AddTeacherModal: React.FC<{
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Temporary Password
-                  </label>
-                  <input
-                    type="text"
-                    name="password"
-                    placeholder="defaultPassword"
-                    className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-600 cursor-not-allowed"
-                    value={formData.password}
-                    readOnly
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Teacher will change this on first login
+                <div className="rounded-xl border-2 border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <p className="font-medium">Password</p>
+                  <p className="mt-1 text-xs text-blue-800">
+                    A temporary password is generated automatically and the teacher receives an email to set their own before first login.
                   </p>
                 </div>
               </div>
