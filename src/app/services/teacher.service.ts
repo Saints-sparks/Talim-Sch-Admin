@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+import { api, apiClient } from "@/lib/apiClient";
 
 // Reusing your existing User and Class interfaces
 interface User {
@@ -252,12 +252,10 @@ export const teacherService = {
       // Construct the correct endpoint URL
       const url = `${API_ENDPOINTS.BASE_URL}/teachers/${teacherId}/class-course-assignments`;
 
-      const requestBody = {
-        assignedCourses: assignedCourses,
-        // Include other fields if needed
-        assignedClasses: [], // Add existing classes if you don't want to remove them
-        isFormTeacher: false, // or get this from current teacher data
-      };
+      // Only the courses: the API updates just the fields it is given. Sending
+      // assignedClasses: [] and isFormTeacher: false (as this used to) wiped the
+      // teacher's classes and form-teacher status every time a course was added.
+      const requestBody = { assignedCourses };
 
       const response = await apiClient.patch(url, requestBody);
 
@@ -434,4 +432,80 @@ export const teacherService = {
   //     throw error;
   //   }
   // }
+};
+
+/** Body for `PATCH /teachers/:userId/personal-details` (backend UpdateTeacherPersonalDetailsDto). */
+export interface TeacherPersonalDetailsPayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: "male" | "female" | "other";
+  /** ISO date. */
+  dateOfBirth?: string;
+}
+
+/** Body for `PATCH /teachers/:userId/qualification-details` (UpdateTeacherAcademicDetailsDto). */
+export interface TeacherQualificationsPayload {
+  highestAcademicQualification?: "Undergraduate" | "Graduate" | "Postgraduate" | "Doctorate";
+  yearsOfExperience?: number;
+  specialization?: string;
+}
+
+/** Body for `PUT /teachers/:userId/employment` (UpdateTeacherEmploymentDto). */
+export interface TeacherEmploymentPayload {
+  employmentType?: "Fulltime" | "Parttime";
+  employmentRole?: "Academic" | "NonAcademic";
+}
+
+/** Body for `PATCH /teachers/:userId/availability` (UpdateTeacherAvailabilityDto). */
+export interface TeacherAvailabilityPayload {
+  availabilityDays?: string[];
+  availableTime?: string;
+}
+
+/**
+ * Body for `PATCH /teachers/:userId/class-course-assignments`. Omitted fields are
+ * left unchanged; a provided array REPLACES the teacher's current list, so send
+ * the full intended list. Every id must belong to the school.
+ */
+export interface TeacherAssignmentsPayload {
+  assignedClasses?: string[];
+  assignedCourses?: string[];
+  isFormTeacher?: boolean;
+}
+
+const teacherPath = (userId: string, suffix: string) => `/teachers/${encodeURIComponent(userId)}/${suffix}`;
+
+/** Typed teacher record updates used by the teacher editor. Errors are `ApiError`s. */
+export const teacherUpdates = {
+  /**
+   * @param userId - The teacher's user id.
+   * @param payload - Personal fields to change.
+   */
+  personalDetails: (userId: string, payload: TeacherPersonalDetailsPayload) =>
+    api.patch(teacherPath(userId, "personal-details"), payload),
+  /**
+   * @param userId - The teacher's user id.
+   * @param payload - Qualification fields to change.
+   */
+  qualifications: (userId: string, payload: TeacherQualificationsPayload) =>
+    api.patch(teacherPath(userId, "qualification-details"), payload),
+  /**
+   * @param userId - The teacher's user id.
+   * @param payload - Employment fields to change.
+   */
+  employment: (userId: string, payload: TeacherEmploymentPayload) => api.put(teacherPath(userId, "employment"), payload),
+  /**
+   * @param userId - The teacher's user id.
+   * @param payload - Availability fields to change.
+   */
+  availability: (userId: string, payload: TeacherAvailabilityPayload) =>
+    api.patch(teacherPath(userId, "availability"), payload),
+  /**
+   * @param userId - The teacher's user id.
+   * @param payload - Full intended class/course lists and form-teacher flag.
+   */
+  assignments: (userId: string, payload: TeacherAssignmentsPayload) =>
+    api.patch(teacherPath(userId, "class-course-assignments"), payload),
 };

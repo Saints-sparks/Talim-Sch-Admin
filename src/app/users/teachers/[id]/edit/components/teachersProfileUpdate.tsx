@@ -25,10 +25,15 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import {
   teacherService,
+  teacherUpdates,
   type TeacherById,
+  type TeacherEmploymentPayload,
+  type TeacherQualificationsPayload,
 } from "@/app/services/teacher.service";
+import { getClasses } from "@/app/services/school.service";
+import { getCoursesBySchool } from "@/app/services/subjects.service";
 import { toast } from "@/components/CustomToast";
-import { API_ENDPOINTS, API_BASE_URL } from "@/app/lib/api/config";
+import { getErrorMessage } from "@/lib/apiError";
 import { Loader2 } from "lucide-react";
 
 interface Course {
@@ -82,6 +87,12 @@ export default function TeacherProfileForm() {
   const [teacherUserId, setTeacherUserId] = useState("");
   const [hasTeacherProfile, setHasTeacherProfile] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
+  // Every class/course the teacher currently has. The form edits one of each,
+  // so saves must carry the rest along instead of replacing the whole list.
+  const [existingAssignments, setExistingAssignments] = useState<{ classes: string[]; courses: string[] }>({
+    classes: [],
+    courses: [],
+  });
   const [classes, setClasses] = useState<Class[]>([]);
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -132,6 +143,10 @@ export default function TeacherProfileForm() {
         assignedClass: data.assignedClasses?.[0]?._id || "",
         classTeacherAssignment: "",
       });
+      setExistingAssignments({
+        classes: (data.assignedClasses ?? []).map((c) => c._id).filter(Boolean),
+        courses: (data.assignedCourses ?? []).map((c) => c._id).filter(Boolean),
+      });
     } catch (error) {
       console.error("Error fetching teacher:", error);
       toast.error("Failed to load teacher details");
@@ -139,74 +154,28 @@ export default function TeacherProfileForm() {
     }
   };
 
+  // "Subjects to teach" are courses: assignments store course ids, so the list
+  // must come from the courses endpoint (it used to list subjects, whose ids the
+  // API rejects as course assignments).
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(API_ENDPOINTS.GET_SUBJECTS_BY_SCHOOL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch courses");
-
-      const responseData = await response.json();
-      if (Array.isArray(responseData)) {
-        setCourses(responseData);
-      } else if (responseData.data && Array.isArray(responseData.data)) {
-        setCourses(responseData.data);
-      } else {
-        console.error("Unexpected response structure:", responseData);
-        toast.error("Invalid data format received for courses");
-        setCourses([]);
-      }
+      setCourses((await getCoursesBySchool()) as unknown as Course[]);
     } catch (error) {
-      toast.error("Error loading courses");
-      console.error(error);
+      toast.error(getErrorMessage(error, "Error loading courses"));
       setCourses([]);
     }
   };
 
   const fetchClasses = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_BASE_URL}/classes`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch classes");
-
-      const responseData = await response.json();
-
-      // Handle different response structures
-      let classesData: Class[] = [];
-      if (Array.isArray(responseData)) {
-        classesData = responseData;
-      } else if (responseData.data && Array.isArray(responseData.data)) {
-        classesData = responseData.data;
-      } else if (responseData.classes && Array.isArray(responseData.classes)) {
-        classesData = responseData.classes;
-      } else {
-        console.error(
-          "Unexpected response structure for classes:",
-          responseData
-        );
-        toast.error("Invalid data format received for classes");
-        setClasses([]);
-        return;
-      }
-
-      setClasses(classesData);
+      setClasses((await getClasses()) as unknown as Class[]);
     } catch (error) {
-      toast.error("Error loading classes");
-      console.error("Error fetching classes:", error);
+      toast.error(getErrorMessage(error, "Error loading classes"));
       setClasses([]);
     }
   };
 
-  useEffect(() => {
+    useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       await Promise.all([fetchTeacherData(), fetchCourses(), fetchClasses()]);
@@ -244,49 +213,21 @@ export default function TeacherProfileForm() {
   };
 
   // Separate submit handlers for each tab
+  // Separate submit handlers for each tab
   const handleSubmitPersonal = async (e: FormEvent) => {
     e.preventDefault();
+    if (!teacherId) return;
     setIsSubmittingPersonal(true);
-
     try {
-      if (!teacherId) {
-        throw new Error("Teacher ID is missing");
-      }
-
-      const userId = teacherUserId || teacherId;
-
-      const personalData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-      };
-
-      // Use direct API call to update personal details
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/users/${userId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(personalData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to update personal details"
-        );
-      }
-
+      await teacherUpdates.personalDetails(teacherUserId || teacherId, {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+      });
       toast.success("Personal details updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating personal details:", error);
-      toast.error(error.message || "Failed to update personal details");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update personal details"));
     } finally {
       setIsSubmittingPersonal(false);
     }
@@ -294,41 +235,19 @@ export default function TeacherProfileForm() {
 
   const handleSubmitQualifications = async (e: FormEvent) => {
     e.preventDefault();
+    if (!teacherId) return;
     setIsSubmittingQualifications(true);
-
     try {
-      if (!teacherId) {
-        throw new Error("Teacher ID is missing");
-      }
-
-      const userId = teacherUserId || teacherId;
-
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/qualification-details`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            specialization: formData.specialization,
-            highestAcademicQualification: formData.highestAcademicQualification,
-            yearsOfExperience: Number.parseInt(formData.yearsOfExperience) || 0,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update qualifications");
-      }
-
+      await teacherUpdates.qualifications(teacherUserId || teacherId, {
+        specialization: formData.specialization,
+        highestAcademicQualification:
+          (formData.highestAcademicQualification as TeacherQualificationsPayload["highestAcademicQualification"]) ||
+          undefined,
+        yearsOfExperience: Number.parseInt(formData.yearsOfExperience, 10) || 0,
+      });
       toast.success("Qualifications updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating qualifications:", error);
-      toast.error(error.message || "Failed to update qualifications");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update qualifications"));
     } finally {
       setIsSubmittingQualifications(false);
     }
@@ -336,91 +255,45 @@ export default function TeacherProfileForm() {
 
   const handleSubmitEmployment = async (e: FormEvent) => {
     e.preventDefault();
+    if (!teacherId) return;
     setIsSubmittingEmployment(true);
-
     try {
-      if (!teacherId) {
-        throw new Error("Teacher ID is missing");
-      }
-
-      const userId = teacherUserId || teacherId;
-
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/employment`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            employmentType: formData.employmentType,
-            employmentRole: formData.employmentRole,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to update employment details"
-        );
-      }
-
+      await teacherUpdates.employment(teacherUserId || teacherId, {
+        employmentType: (formData.employmentType as TeacherEmploymentPayload["employmentType"]) || undefined,
+        employmentRole: (formData.employmentRole as TeacherEmploymentPayload["employmentRole"]) || undefined,
+      });
       toast.success("Employment details updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating employment details:", error);
-      toast.error(error.message || "Failed to update employment details");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update employment details"));
     } finally {
       setIsSubmittingEmployment(false);
     }
   };
 
+  /**
+   * Replaces the teacher's FIRST class and course with the selected ones and
+   * keeps every other assignment. (Sending only the selection used to drop all
+   * the teacher's other classes and courses.)
+   */
+  const withPrimary = (current: string[], selected: string) =>
+    selected ? [selected, ...current.filter((id, index) => index !== 0 && id !== selected)] : current.slice(1);
+
   const handleSubmitAssign = async (e: FormEvent) => {
     e.preventDefault();
+    if (!teacherId) return;
     setIsSubmittingAssign(true);
-
     try {
-      if (!teacherId) {
-        throw new Error("Teacher ID is missing");
-      }
-
-      const userId = teacherUserId || teacherId;
-
-      // Use the correct endpoint structure from your controller
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/class-course-assignments`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            assignedClasses: formData.assignedClass
-              ? [formData.assignedClass]
-              : [],
-            assignedCourses: formData.subjectToTeach
-              ? [formData.subjectToTeach]
-              : [],
-            isFormTeacher: formData.isFormTeacher,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update assignments");
-      }
-
+      const assignedClasses = withPrimary(existingAssignments.classes, formData.assignedClass);
+      const assignedCourses = withPrimary(existingAssignments.courses, formData.subjectToTeach);
+      await teacherUpdates.assignments(teacherUserId || teacherId, {
+        assignedClasses,
+        assignedCourses,
+        isFormTeacher: formData.isFormTeacher,
+      });
+      setExistingAssignments({ classes: assignedClasses, courses: assignedCourses });
       toast.success("Class and subject assignment updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating assignment:", error);
-      toast.error(
-        error.message || "Failed to update class and subject assignment"
-      );
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update class and subject assignment"));
     } finally {
       setIsSubmittingAssign(false);
     }
@@ -428,40 +301,16 @@ export default function TeacherProfileForm() {
 
   const handleSubmitAvailability = async (e: FormEvent) => {
     e.preventDefault();
+    if (!teacherId) return;
     setIsSubmittingAvailability(true);
-
     try {
-      if (!teacherId) {
-        throw new Error("Teacher ID is missing");
-      }
-
-      const userId = teacherUserId || teacherId;
-
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}/teachers/${userId}/availability`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            availabilityDays: formData.availabilityDays,
-            availableTime: formData.availableTime,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update availability");
-      }
-
+      await teacherUpdates.availability(teacherUserId || teacherId, {
+        availabilityDays: formData.availabilityDays,
+        availableTime: formData.availableTime,
+      });
       toast.success("Availability updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating availability:", error);
-      toast.error(error.message || "Failed to update availability");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update availability"));
     } finally {
       setIsSubmittingAvailability(false);
     }
