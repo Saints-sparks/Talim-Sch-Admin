@@ -37,13 +37,6 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({
 
     setIsLoading(true);
     try {
-      // Check if token exists
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        toast.error('Please login again');
-        return;
-      }
-
       // Call the updated service method with selected courses
       const teacher = await teacherService.updateTeacherByCourse(teacherId, selectedCourses);
       

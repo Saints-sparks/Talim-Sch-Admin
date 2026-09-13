@@ -1,3 +1,4 @@
+import { sessionStore } from "@/lib/session";
 import { API_ENDPOINTS } from "../lib/api/config";
 
 interface UploadResponse {
@@ -6,10 +7,8 @@ interface UploadResponse {
   error?: string;
 }
 
-const getAuthToken = () => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
-};
+/** The session token wherever it is kept (session-only sign-ins use sessionStorage). */
+const getAuthToken = () => sessionStore.getToken();
 
 const uploadWithProgress = (
   endpoint: string,
