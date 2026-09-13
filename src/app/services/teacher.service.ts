@@ -406,32 +406,6 @@ export const teacherService = {
   async deactivateTeacher(teacherId: string): Promise<Teacher> {
     return this.updateTeacherStatus(teacherId, false);
   },
-
-  // async getTeachersByClass(
-  //   classId: string,
-  //   page: number = 1,
-  //   limit: number = 10
-  // ): Promise<GetTeachersResponse> {
-  //   try {
-  //     const response = await fetch(
-  //       `${API_ENDPOINTS.GET_TEACHERS_BY_CLASS_ID(classId)}?page=${page}&limit=${limit}`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-  //         },
-  //       }
-  //     );
-
-  //     if (!response.ok) {
-  //       const error = await response.json();
-  //       throw new Error(error.message || "Failed to fetch teachers");
-  //     }
-  //     const data: GetTeachersResponse = await response.json();
-  //     return data;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
 };
 
 /** Body for `PATCH /teachers/:userId/personal-details` (backend UpdateTeacherPersonalDetailsDto). */

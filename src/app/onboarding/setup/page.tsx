@@ -43,6 +43,9 @@ import { assessmentService } from "@/app/services/assessment.service";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import AddStudentModal from "@/components/AddStudentModal";
 import treelogo from "../../../../public/img/treelogo.svg";
+import { API_URLS } from "@/app/lib/api/config";
+import { api } from "@/lib/apiClient";
+import { getErrorMessage } from "@/lib/apiError";
 
 // ─── Step icon map ───────────────────────────────────────────────────────────
 const STEP_ICONS: Record<OnboardingStepId, React.ReactNode> = {
@@ -762,25 +765,15 @@ function CreateAnnouncementStep({ onComplete, onSkip }: { onComplete: () => void
     if (!form.title.trim() || !form.content.trim()) { toast.error("Title and content are required."); return; }
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("accessToken") ?? "";
-      const user = JSON.parse(localStorage.getItem("user") ?? "{}");
-      const { API_ENDPOINTS } = await import("@/app/lib/api/config");
-      const res = await fetch(API_ENDPOINTS.CREATE_ANNOUNCEMENT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title: form.title.trim(), content: form.content.trim(), senderId: user.userId }),
+      // The server takes the sender from the session; no senderId from storage.
+      await api.post(API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT, {
+        title: form.title.trim(),
+        content: form.content.trim(),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg = Array.isArray(errData?.message)
-          ? errData.message.join(", ")
-          : errData?.message || "Failed to post announcement";
-        throw new Error(msg);
-      }
       toast.success("Announcement posted!");
       onComplete();
-    } catch {
-      toast.error("Failed to post announcement.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to post announcement."));
     } finally {
       setSubmitting(false);
     }
