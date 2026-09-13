@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useChats } from "@/hooks/useChats";
+import { useChatsContext } from "@/context/ChatsContext";
 import { ChatRoomType } from "@/types/chat.types";
 import {
   Users,
@@ -94,7 +94,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
   const [schoolDetails, setSchoolDetails] = useState<{ id: string; name: string; logo?: string } | null>(null);
 
   const { user } = useAuth();
-  const { createGroupChat } = useChats();
+  const { createGroupChat } = useChatsContext();
 
   // Load school info when modal opens
   useEffect(() => {

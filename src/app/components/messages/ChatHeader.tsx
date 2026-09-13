@@ -77,6 +77,7 @@ interface ChatHeaderProps {
   showBackButton?: boolean; // Whether to show back button (mobile)
   initials?: string; // Add initials prop
   isGroup?: boolean; // Whether this is a group chat
+  roomType?: string; // ChatRoomType of the open room
   chatRoomId?: string; // Chat room ID for adding participants
   onAddParticipants?: () => void; // Callback after adding participants
 }
@@ -92,6 +93,7 @@ export default function ChatHeader({
   showBackButton = true,
   initials,
   isGroup = false,
+  roomType,
   chatRoomId,
   onAddParticipants,
 }: ChatHeaderProps) {
@@ -302,6 +304,7 @@ export default function ChatHeader({
           This is your space to collaborate, share ideas, ask questions, and stay connected.`}
           participants={processedParticipants}
           chatRoomId={chatRoomId}
+          roomType={roomType}
         />
 
         {isGroup && (

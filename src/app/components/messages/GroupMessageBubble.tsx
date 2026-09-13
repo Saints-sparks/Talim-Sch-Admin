@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
+import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import VideoMessage from "./VideoMessage";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
@@ -27,8 +28,12 @@ interface MessageBubbleProps {
     time: string;
     initials?: string;
     attachments?: Attachment[];
+    status?: "pending" | "failed";
+    error?: string;
   };
   index: number;
+  onRetry?: () => void;
+  onDelete?: () => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
   setReplyingMessage: (msg: any) => void;
@@ -40,6 +45,8 @@ export default function GroupMessageBubble({
   openSubMenu,
   toggleSubMenu,
   setReplyingMessage,
+  onRetry,
+  onDelete,
 }: MessageBubbleProps) {
   const isMe = msg.senderType === "self";
   const initials = msg.initials || getUserInitials(msg.sender);
@@ -52,7 +59,13 @@ export default function GroupMessageBubble({
         <AudioMessage
           sender={isMe ? "me" : msg.sender}
           audioUrl={attachment?.url}
-          duration={typeof attachment?.duration === "number" ? attachment.duration : undefined}
+          duration={
+            typeof attachment?.duration === "number"
+              ? attachment.duration
+              : typeof msg.duration === "number"
+                ? msg.duration
+                : undefined
+          }
         />
       );
     }
@@ -69,6 +82,16 @@ export default function GroupMessageBubble({
             <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>
           )}
         </div>
+      );
+    }
+
+    if (msg.type === "file" && attachment && !attachment.url) {
+      // Still uploading.
+      return (
+        <span className="flex items-center gap-2 text-sm">
+          <FileText size={16} className="flex-shrink-0" />
+          <span className="truncate max-w-[160px]">{attachment.name || "File"}</span>
+        </span>
       );
     }
 
@@ -160,7 +183,9 @@ export default function GroupMessageBubble({
             isMe ? "flex-row-reverse" : "flex-row"
           }`}>
             <span>{msg.time}</span>
-            {isMe && (
+            {msg.status ? (
+              <MessageDeliveryStatus status={msg.status} error={msg.error} onRetry={onRetry} onDelete={onDelete} />
+            ) : isMe && (
               <svg width="12" height="12" viewBox="0 0 16 16" className="text-blue-400" fill="currentColor">
                 <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
               </svg>

@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useWebSocketContext } from "@/context/WebSocketContext";
-import { useChatMessages } from "@/hooks/useChatMessages";
 import type { UseChatsReturn } from "@/hooks/useChats";
-import { chatService } from "@/app/services/chat.service";
+import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import GroupMessageBubble from "./GroupMessageBubble";
 import ReplyPreview from "./ReplyPreview";
+import ThreadNotices from "./ThreadNotices";
+import { useChatThread } from "./useChatThread";
+import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import { toast } from "@/components/CustomToast";
 
 interface MsgAttachment {
   url: string;
@@ -23,23 +23,22 @@ interface MsgAttachment {
 }
 
 interface Message {
-  _id?: string;
+  _id: string;
+  clientMessageId?: string;
   sender: string;
-  senderId?: string;
-  senderName?: string;
-  text?: string;
-  content?: string;
-  time?: string;
-  createdAt?: string;
+  senderId: string;
+  text: string;
+  time: string;
+  createdAt: string;
   type: string;
-  senderType: string;
-  avatar?: string;
-  color?: string;
-  initials?: string;
-  replyTo?: string;
-  videoThumbnail?: string;
-  duration?: string;
+  senderType: "self" | "other";
+  avatar: string;
+  color: string;
+  initials: string;
+  duration?: number;
   attachments?: MsgAttachment[];
+  status?: "pending" | "failed";
+  error?: string;
 }
 
 interface GroupChatProps {
@@ -47,7 +46,7 @@ interface GroupChatProps {
   setReplyingMessage: (msg: { sender: string; text: string } | null) => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
-  room?: any;
+  room: DisplayChatRoom;
   onBack?: () => void;
   chats: UseChatsReturn;
 }
@@ -61,51 +60,24 @@ export default function GroupChat({
   onBack,
   chats,
 }: GroupChatProps) {
-  const [messageInput, setMessageInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  // null = not yet checked, true = confirmed member, false = confirmed non-member
-  const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fetchedRoomsRef = useRef(new Set<string>());
-  const participationCheckedRef = useRef(false);
-  // Ref so socket callback always sees the current roomId without stale closure
-  const currentRoomIdRef = useRef<string | undefined>(undefined);
-  const participantAvatarByIdRef = useRef<Map<string, string>>(new Map());
-
   const { user } = useAuth();
   const {
-    isConnected,
-    onChatMessage,
-    joinChatRoom,
-    leaveChatRoom,
-    fetchUnreadCountViaSocket,
-  } = useWebSocketContext();
-  const {
+    currentRoom,
+    currentUserId,
     messages: chatMessages,
-    isLoading,
+    threadStatus,
+    threadError,
     isLoadingMore,
-    hasMoreOlder,
-    error,
-    fetchMessages,
-    loadOlderMessages,
-    refreshMessages,
-    clearMessages,
-    addMessage,
-    updateMessage,
-    removeMessage,
-  } = useChatMessages();
-
-  const { sendMessage, fetchChatRooms } = chats;
-
-  // Get room ID safely
-  const getRoomId = useCallback((): string | undefined => {
-    if (!room) return undefined;
-    return room._id || room.roomId || room.id;
-  }, [room]);
-
-  const roomId = getRoomId();
+    hasMoreMessages,
+    isConnected,
+    loadMoreMessages,
+    retryCurrentRoom,
+    retryMessage,
+    deleteFailedMessage,
+  } = chats;
+  const roomId = room.roomId;
+  const { draft, updateDraft, sendText, sendFile, sendVoice } = useChatThread(chats, roomId);
 
   const getMessageDayKey = useCallback((value?: string) => {
     if (!value) return "";
@@ -135,652 +107,109 @@ export default function GroupChat({
     });
   }, []);
 
-  const extractId = useCallback((value: any): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    if (typeof value === "number") return String(value);
-    if (typeof value === "object") {
-      const direct = value._id || value.id || value.userId;
-      const nestedUser = value.user?._id || value.user?.id || value.user?.userId;
-      const nestedParticipant = value.participant?._id || value.participant?.id || value.participant?.userId;
-      return (direct || nestedUser || nestedParticipant || value?.toString?.() || "") as string;
-    }
-    return String(value);
-  }, []);
+  const currentUserName = useMemo(() => {
+    if (!user) return "";
+    return user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.email || "User";
+  }, [user]);
 
-  // Keep ref in sync so socket callback always has the latest roomId
-  useEffect(() => {
-    currentRoomIdRef.current = roomId;
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isConnected || !roomId || isParticipant !== true) return;
-
-    joinChatRoom(roomId);
-
-    return () => {
-      leaveChatRoom(roomId);
-    };
-  }, [isConnected, roomId, isParticipant, joinChatRoom, leaveChatRoom]);
-
-  // Real-time incoming messages via WebSocket
-  useEffect(() => {
-    if (!isConnected || !roomId) return;
-
-    const currentUserId = user?.userId || (user as any)?._id || '';
-
-    const unsub = onChatMessage((message) => {
-      // Ignore messages for other rooms
-      if (message.roomId !== currentRoomIdRef.current) return;
-      const senderId = extractId(message.senderId);
-      // Skip the sender's own message — it was already added optimistically
-      if (senderId === currentUserId) return;
-
-      // Resolve sender name from participant map when backend omits it
-      const resolvedSenderName =
-        message.senderName || participantNameByIdRef.current.get(senderId) || '';
-
-      addMessage({
-        _id: message._id,
-        senderId,
-        senderName: resolvedSenderName,
-        senderAvatar:
-          (message as any).senderAvatar ||
-          (message as any).userAvatar ||
-          (message as any).avatar ||
-          participantAvatarByIdRef.current.get(senderId),
-        content: message.content,
-        roomId: message.roomId,
-        type: message.type || 'text',
-        duration: message.duration,
-        isRead: false,
-        readBy: message.readBy || [],
-        createdAt: new Date(message.timestamp as any),
-        updatedAt: new Date(message.timestamp as any),
-      } as any);
-
-      // Mark as read since the user is actively viewing this room
-      chatService
-        .markMessageAsRead(message._id)
-        .then(() => fetchChatRooms(true))
-        .catch(console.error);
-    });
-
-    return unsub;
-  }, [isConnected, roomId, onChatMessage, addMessage, extractId, user?.userId, (user as any)?._id, fetchChatRooms]);
-
-  useEffect(() => {
-    if (!roomId || !user || chatMessages.length === 0) return;
-
-    const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
-    let markedAnyMessage = false;
-    chatMessages.forEach((message: any) => {
-      const senderId = extractId(message.senderId);
-      const readBy = Array.isArray(message.readBy)
-        ? message.readBy.map((reader: any) => extractId(reader))
-        : [];
-
-      if (
-        message._id &&
-        senderId !== currentUserId &&
-        !readBy.includes(currentUserId)
-      ) {
-        markedAnyMessage = true;
-        chatService.markMessageAsRead(message._id).catch(console.error);
-      }
-    });
-
-    if (markedAnyMessage) {
-      window.setTimeout(() => fetchUnreadCountViaSocket(currentUserId), 250);
-      window.setTimeout(() => fetchChatRooms(true), 300);
-    }
-  }, [roomId, user, chatMessages, extractId, fetchUnreadCountViaSocket, fetchChatRooms]);
-
-  // Reset participation state when room changes so the check re-runs
-  useEffect(() => {
-    setIsParticipant(null);
-    participationCheckedRef.current = false;
-  }, [roomId]);
-
-  // Run membership check once isParticipant resets to null
-  useEffect(() => {
-    if (!room || !user || isParticipant !== null) return;
-
-    const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
-    if (!currentUserId) {
-      participationCheckedRef.current = true;
-      setIsParticipant(false);
-      return;
-    }
-
-    const verifyMembership = async () => {
-      let participantIds: string[] = [];
-
-      if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
-        participantIds = room.participants
-          .map((p: any) => extractId(p))
-          .filter(Boolean);
-      }
-
-      // Fail-closed: if room payload does not include usable participant IDs,
-      // verify against participants endpoint before allowing any fetch.
-      if (participantIds.length === 0 && roomId) {
-        try {
-          const apiParticipants = await chatService.getChatRoomParticipants(roomId);
-          participantIds = (Array.isArray(apiParticipants) ? apiParticipants : [])
-            .map((p: any) => extractId(p))
-            .filter(Boolean);
-        } catch (verifyError) {
-          console.warn('⚠️ Membership verification failed; blocking room fetch', {
-            roomId,
-            verifyError,
-          });
-          participationCheckedRef.current = true;
-          setIsParticipant(false);
-          return;
-        }
-      }
-
-      const isMember = participantIds.includes(currentUserId);
-      participationCheckedRef.current = true;
-      setIsParticipant(isMember);
-
-      if (!isMember) {
-        console.warn('⚠️ Current user is NOT a participant in this group:', {
-          currentUserId,
-          roomId,
-          participantIds,
-        });
-      } else {
-      }
-    };
-
-    verifyMembership();
-  }, [room, user, isParticipant, roomId]);
-
-  // Debug logging for room and user
-  useEffect(() => {
-    if (room) {
-    }
-  }, [room, roomId, user, isParticipant]);
-
-  // Get user initials from name
-  const getUserInitialsFromName = useCallback((name: string): string => {
-    if (!name) return "?";
-    
-    const parts = name.split(' ').filter(Boolean);
-    if (parts.length === 0) return "?";
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-  }, []);
-
-  // Get current user's display name and initials
-  const currentUserInfo = useMemo(() => {
-    if (!user) return { name: '', initials: '?', id: '' };
-    
-    const fullName = user.firstName && user.lastName 
-      ? `${user.firstName} ${user.lastName}`.trim()
-      : user.email || 'User';
-    
-    return {
-      name: fullName,
-      initials: getUserInitialsFromName(fullName),
-      id: user.userId || user._id || ''
-    };
-  }, [user, getUserInitialsFromName]);
-
-  // Check if message is from current user
-  const isCurrentUser = useCallback((senderId: string): boolean => {
-    const currentUserId = currentUserInfo.id;
-    
-    if (!currentUserId || !senderId) return false;
-    
-    // Handle case where senderId might be an object
-    let extractedSenderId = senderId;
-    if (typeof senderId === 'object' && senderId !== null) {
-      extractedSenderId = (senderId as any)._id || String(senderId);
-    }
-    
-    // Direct ID match
-    return extractedSenderId === currentUserId;
-  }, [currentUserInfo.id]);
-
-  const participantNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    const participants = room?.participants || [];
-
-    participants.forEach((participant: any) => {
-      const participantObj = typeof participant === "object" ? participant : { userId: participant };
-      const participantId =
-        extractId(participantObj?.userId) ||
-        extractId(participantObj?._id) ||
-        extractId(participantObj?.id);
-
-      if (!participantId) return;
-
-      const name = participantObj?.firstName && participantObj?.lastName
-        ? `${participantObj.firstName} ${participantObj.lastName}`.trim()
-        : participantObj?.name || participantObj?.email || "";
-
-      if (name) {
-        map.set(participantId, name);
-      }
-    });
-
+  const participantById = useMemo(() => {
+    const map = new Map<string, DisplayChatRoom["participants"][number]>();
+    room.participants.forEach((p) => p.userId && map.set(p.userId, p));
     return map;
-  }, [room?.participants, extractId]);
+  }, [room.participants]);
 
-  const getAvatarUrl = useCallback((value: any): string => {
-    if (!value || typeof value !== "object") return "";
-    return (
-      value.senderAvatar ||
-      value.userAvatar ||
-      value.avatar ||
-      value.profileImage ||
-      value.user?.userAvatar ||
-      value.user?.avatar ||
-      value.user?.profileImage ||
-      value.participant?.userAvatar ||
-      value.participant?.avatar ||
-      value.participant?.profileImage ||
-      ""
-    );
-  }, []);
+  // Transform messages for UI. Own messages (including ones sent from another
+  // device) are recognised by sender id only.
+  const messages = useMemo<Message[]>(
+    () =>
+      chatMessages.map((msg) => {
+        const isMine = Boolean(currentUserId) && msg.senderId === currentUserId;
+        const participant = participantById.get(msg.senderId);
+        const senderName = isMine ? currentUserName : msg.senderName || participant?.name || "User";
+        return {
+          _id: msg._id,
+          clientMessageId: msg.clientMessageId,
+          sender: senderName,
+          senderId: msg.senderId,
+          text: msg.content,
+          time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          createdAt: new Date(msg.createdAt).toISOString(),
+          type: msg.type || "text",
+          senderType: isMine ? "self" : "other",
+          color: generateColorFromString(senderName || msg.senderId),
+          avatar: msg.senderAvatar || participant?.userAvatar || "",
+          initials: getUserInitials(senderName),
+          duration: msg.duration,
+          attachments: msg.attachments,
+          status: msg.status,
+          error: msg.error,
+        };
+      }),
+    [chatMessages, currentUserId, currentUserName, participantById]
+  );
 
-  const participantAvatarById = useMemo(() => {
-    const map = new Map<string, string>();
-    const participants = room?.participants || [];
-
-    participants.forEach((participant: any) => {
-      const participantObj = typeof participant === "object" ? participant : { userId: participant };
-      const participantId =
-        extractId(participantObj?.userId) ||
-        extractId(participantObj?._id) ||
-        extractId(participantObj?.id);
-      const avatar = getAvatarUrl(participantObj);
-
-      if (participantId && avatar) {
-        map.set(participantId, avatar);
-      }
-    });
-
-    return map;
-  }, [room?.participants, extractId, getAvatarUrl]);
-
-  // Keep a ref so the socket handler always reads the latest map without stale closure
-  const participantNameByIdRef = useRef(participantNameById);
-  useEffect(() => {
-    participantNameByIdRef.current = participantNameById;
-  }, [participantNameById]);
-
-  useEffect(() => {
-    participantAvatarByIdRef.current = participantAvatarById;
-  }, [participantAvatarById]);
-
-  // Get user initials for avatar
-  const getUserAvatarInitials = useCallback((senderId: string, senderName: string): string => {
-    if (isCurrentUser(senderId)) {
-      return currentUserInfo.initials;
-    }
-    return getUserInitialsFromName(senderName);
-  }, [isCurrentUser, currentUserInfo.initials, getUserInitialsFromName]);
-
-  // Fetch messages when room changes — only after participation is verified
-  useEffect(() => {
-    if (!roomId) {
-      clearMessages();
-      fetchedRoomsRef.current.clear();
-      participationCheckedRef.current = false;
-      return;
-    }
-
-    // Block until the participation check completes (null = unchecked)
-    if (isParticipant === null) return;
-
-    // Block if confirmed non-member
-    if (isParticipant === false) {
-      console.warn(`⛔ Blocked fetch: current user is not a participant of room ${roomId}`);
-      return;
-    }
-
-    // Don't refetch if we already have messages for this room
-    if (fetchedRoomsRef.current.has(roomId)) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      fetchMessages(roomId, {
-        replaceExisting: true,
-        force: true,
-      }).finally(() => {
-        fetchedRoomsRef.current.add(roomId);
-      });
-    }, 100);
-
-    return () => clearTimeout(timer);
-  // isParticipant in deps causes this to re-run on null → true/false transition
-  }, [roomId, fetchMessages, clearMessages, isParticipant]);
-
-  // Transform messages for UI
-  const messages = useMemo(() => {
-    if (!chatMessages || chatMessages.length === 0) {
-      return [];
-    }
-
-    return chatMessages.map((msg: any) => {
-      // Extract senderId properly (could be string or object)
-      const senderId =
-        extractId(msg.senderId) ||
-        extractId(msg.sender?._id) ||
-        extractId(msg.sender?.id) ||
-        extractId(msg.sender?.userId);
-      
-      // Get sender name
-      const senderObjectName = msg.sender?.firstName && msg.sender?.lastName
-        ? `${msg.sender.firstName} ${msg.sender.lastName}`.trim()
-        : msg.sender?.name || msg.sender?.email || "";
-
-      let senderName =
-        msg.senderName ||
-        senderObjectName ||
-        participantNameById.get(senderId) ||
-        "User";
-      
-      // Check if this message is from the current user
-      const isMyMessage = isCurrentUser(senderId);
-      
-      // If it's my message, use my name
-      if (isMyMessage) {
-        senderName = currentUserInfo.name;
-      }
-
-      const senderAvatar =
-        getAvatarUrl(msg) ||
-        getAvatarUrl(msg.sender) ||
-        participantAvatarById.get(senderId) ||
-        "";
-      
-      // Get the message content
-      const messageText = msg.content || msg.text || "";
-      
-      return {
-        _id: msg._id,
-        sender: senderName,
-        senderId,
-        text: messageText,
-        content: messageText,
-        time: new Date(msg.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        createdAt: msg.createdAt,
-        type: msg.type || "text",
-        senderType: isMyMessage ? "self" : "other",
-        color: generateColorFromString(senderName || senderId),
-        avatar: senderAvatar,
-        initials: getUserAvatarInitials(senderId, senderName),
-        attachments: (msg as any).attachments,
-      };
-    }).sort((a, b) => 
-      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
-    );
-  }, [chatMessages, extractId, isCurrentUser, currentUserInfo.name, getUserAvatarInitials, participantNameById, participantAvatarById, getAvatarUrl]);
-
-  // Auto scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current && !isLoading && !isLoadingMore && messages.length > 0) {
-      const timeoutId = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages.length, isLoading, isLoadingMore]);
-
-  // Handle sending a new message
-  const handleSendMessage = useCallback(async () => {
-    const trimmedMessage = messageInput.trim();
-    if (!trimmedMessage || !roomId || isSending) return;
-
-    if (isParticipant === false) {
-      toast.error('You are not a participant in this group');
-      return;
-    }
-
-    setIsSending(true);
-
-    const optimisticId = `temp-${Date.now()}`;
-    const optimisticMessage = {
-      _id: optimisticId,
-      senderId: currentUserInfo.id,
-      senderName: currentUserInfo.name || 'You',
-      senderAvatar: user?.userAvatar,
-      content: trimmedMessage,
-      roomId,
-      isRead: false,
-      readBy: [],
-      type: 'text',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    addMessage(optimisticMessage as any);
-    setMessageInput("");
-
-    try {
-      const result = await sendMessage({ chatRoomId: roomId, text: trimmedMessage });
-      if (result) {
-        updateMessage(optimisticId, { ...result, _id: result._id } as any);
-      } else {
-        throw new Error('Failed to send message');
-      }
-    } catch (err) {
-      removeMessage(optimisticId);
-      setMessageInput(trimmedMessage);
-      console.error("❌ Send failed", err);
-      toast.error('Failed to send message. Please try again.');
-    } finally {
-      setIsSending(false);
-    }
-  }, [
-    messageInput,
-    roomId,
-    isSending,
-    sendMessage,
-    isParticipant,
-    currentUserInfo.id,
-    currentUserInfo.name,
-    addMessage,
-    updateMessage,
-    removeMessage,
-  ]);
-
-  const handleSendFile = useCallback(async (file: File) => {
-    if (!roomId || isSending || isParticipant === false) return;
-    setIsSending(true);
-
-    const msgType = file.type.startsWith('image/') ? 'image' : 'file';
-    const optimisticId = `temp-${Date.now()}`;
-    const localUrl = URL.createObjectURL(file);
-    addMessage({
-      _id: optimisticId,
-      senderId: currentUserInfo.id,
-      senderName: currentUserInfo.name || 'You',
-      senderAvatar: user?.userAvatar,
-      content: '',
-      roomId,
-      isRead: false,
-      readBy: [],
-      type: msgType,
-      attachments: [{ url: localUrl, type: msgType, name: file.name }],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
-
-    try {
-      const uploaded = await chatService.uploadChatAttachment(file);
-      const result = await sendMessage({
-        chatRoomId: roomId,
-        text: '',
-        attachments: [{ ...uploaded, type: msgType }],
-      });
-      if (result) {
-        updateMessage(optimisticId, { ...result, _id: result._id } as any);
-      } else {
-        throw new Error('Failed to send');
-      }
-    } catch (err) {
-      removeMessage(optimisticId);
-      console.error('File send failed', err);
-      toast.error('Failed to send file');
-    } finally {
-      setIsSending(false);
-      URL.revokeObjectURL(localUrl);
-    }
-  }, [roomId, isSending, isParticipant, sendMessage, currentUserInfo, addMessage, updateMessage, removeMessage]);
-
-  const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => {
-    if (!roomId || isSending || isParticipant === false) return;
-    setIsSending(true);
-
-    const optimisticId = `temp-${Date.now()}`;
-    addMessage({
-      _id: optimisticId,
-      senderId: currentUserInfo.id,
-      senderName: currentUserInfo.name || 'You',
-      senderAvatar: user?.userAvatar,
-      content: '',
-      roomId,
-      isRead: false,
-      readBy: [],
-      type: 'audio',
-      attachments: [{ url: '', type: 'audio', name: 'Voice note', duration: durationSecs }],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
-
-    try {
-      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
-      const uploaded = await chatService.uploadChatAttachment(file);
-      const result = await sendMessage({
-        chatRoomId: roomId,
-        text: '',
-        attachments: [{ ...uploaded, type: 'audio', duration: durationSecs }],
-      });
-      if (result) {
-        updateMessage(optimisticId, { ...result, _id: result._id } as any);
-      } else {
-        throw new Error('Failed to send');
-      }
-    } catch (err) {
-      removeMessage(optimisticId);
-      console.error('Voice send failed', err);
-      toast.error('Failed to send voice note');
-    } finally {
-      setIsSending(false);
-    }
-  }, [roomId, isSending, isParticipant, sendMessage, currentUserInfo, addMessage, updateMessage, removeMessage]);
-
-  // Handle scroll for pagination
-  const handleScroll = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    if (container.scrollTop < 60 && hasMoreOlder && !isLoadingMore) {
-      loadOlderMessages();
-    }
-  }, [hasMoreOlder, isLoadingMore, loadOlderMessages]);
+  const { onScroll } = useThreadScroll({
+    containerRef: messagesContainerRef,
+    items: messages,
+    canLoadOlder: hasMoreMessages && !isLoadingMore && threadStatus === "ready",
+    loadOlder: loadMoreMessages,
+  });
 
   // Get room name and participants info
   const roomInfo = useMemo(() => {
-    if (!room) {
-      return {
-        name: "Group Chat",
-        participantCount: 0,
-        participantList: []
-      };
-    }
-
-    const participants = room.participants || [];
+    const participants = room.participants;
     const participantCount = participants.length;
-    
+
     // Get first 3 participant names for subtext
     const participantNames = participants
       .slice(0, 3)
-      .map((p: any) => {
-        if (typeof p === 'string') return 'User';
-        return p.firstName && p.lastName 
-          ? `${p.firstName} ${p.lastName}`.trim()
-          : p.name || p.email || 'User';
-      })
-      .join(', ');
+      .map((p) => p.name || "User")
+      .join(", ");
 
     return {
-      name: room.displayName || room.name || "Group Chat",
+      name: room.displayName || "Group Chat",
       participantCount,
-      participantList: participantNames + (participantCount > 3 ? ` and ${participantCount - 3} others` : '')
+      participantList: participantNames + (participantCount > 3 ? ` and ${participantCount - 3} others` : ""),
     };
   }, [room]);
 
   const roomAvatarInitials = useMemo(() => {
-    if (room?.avatarInfo?.type === "initials" && room.avatarInfo.value) {
+    if (room.avatarInfo?.type === "initials" && room.avatarInfo.value) {
       return room.avatarInfo.value;
     }
-
     return getUserInitials(roomInfo.name);
-  }, [room?.avatarInfo, roomInfo.name]);
+  }, [room.avatarInfo, roomInfo.name]);
 
-  // If not a participant, show a message
-  if (roomId && isParticipant === false && !isLoading) {
-    return (
-      <div className="w-full h-full flex flex-col bg-white">
-        <ChatHeader
-          avatar={room?.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
-          name={roomInfo.name}
-          status="Group chat"
-          subtext={roomInfo.participantList}
-          participants={room?.participants || []}
-          currentUserId={currentUserInfo.id}
-          onBack={onBack}
-          showBackButton={!!onBack}
-          initials={roomAvatarInitials}
-        />
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center max-w-md">
-            <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-800 mb-2">Cannot Send Messages</h3>
-            <p className="text-sm text-gray-600">
-              You are not a participant in this group chat. Please contact an administrator to be added.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const showBlockingLoader = threadStatus === "loading" && messages.length === 0;
 
   return (
     <div className="w-full h-full flex flex-col bg-white">
       <ChatHeader
-        avatar={room?.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
+        avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
         name={roomInfo.name}
         status="Group chat"
         subtext={roomInfo.participantList}
-        participants={room?.participants || []}
-        currentUserId={currentUserInfo.id}
+        participants={room.participants}
+        currentUserId={currentUserId}
         onBack={onBack}
         showBackButton={!!onBack}
         initials={roomAvatarInitials}
         isGroup={true}
+        roomType={currentRoom?.type ?? room.roomType}
         chatRoomId={roomId}
-        onAddParticipants={() => {
-          // You can implement this functionality
-        }}
+      />
+
+      <ThreadNotices
+        isConnected={isConnected}
+        threadStatus={threadStatus}
+        threadError={threadError}
+        hasMessages={messages.length > 0}
+        onRetry={retryCurrentRoom}
       />
 
       <div
         ref={messagesContainerRef}
-        onScroll={handleScroll}
+        onScroll={onScroll}
         className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50 space-y-3"
       >
         {/* Loading indicator for more messages */}
@@ -790,28 +219,12 @@ export default function GroupChat({
           </div>
         )}
 
-        {/* Main loading state */}
-        {isLoading ? (
+        {showBlockingLoader ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh]">
             <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-3" />
             <p className="text-gray-600">Loading messages...</p>
           </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={() => roomId && refreshMessages()}
-              className="px-5 py-2 bg-blue-600 text-white rounded-lg"
-            >
-              Retry
-            </button>
-          </div>
-        ) : !roomId ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center text-gray-500">
-            <MessageCircle className="w-20 h-20 text-gray-300 mb-4" />
-            <p className="text-lg">Select a conversation to start chatting</p>
-          </div>
-        ) : messages.length === 0 ? (
+        ) : threadStatus === "error" && messages.length === 0 ? null : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center text-gray-500">
             <MessageCircle className="w-20 h-20 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-800">No messages yet</h3>
@@ -824,7 +237,7 @@ export default function GroupChat({
             const showDateSeparator = idx === 0 || currentDayKey !== prevDayKey;
 
             return (
-              <div key={msg._id || `${idx}-${msg.createdAt}`}>
+              <div key={msg.clientMessageId || msg._id}>
                 {showDateSeparator && (
                   <div className="flex items-center justify-center my-3">
                     <span className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
@@ -833,47 +246,31 @@ export default function GroupChat({
                   </div>
                 )}
                 <GroupMessageBubble
-                  msg={{
-                    ...msg,
-                    senderType: msg.senderType,
-                    initials: msg.initials,
-                    attachments: msg.attachments,
-                  }}
+                  msg={msg}
                   index={idx}
                   openSubMenu={openSubMenu}
                   toggleSubMenu={toggleSubMenu}
                   setReplyingMessage={setReplyingMessage}
+                  onRetry={msg.clientMessageId ? () => retryMessage(msg.clientMessageId!) : undefined}
+                  onDelete={msg.clientMessageId ? () => deleteFailedMessage(msg.clientMessageId!) : undefined}
                 />
               </div>
             );
           })
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {replyingMessage && (
-        <ReplyPreview
-          replyingMessage={replyingMessage}
-          onCancel={() => setReplyingMessage(null)}
-        />
+        <ReplyPreview replyingMessage={replyingMessage} onCancel={() => setReplyingMessage(null)} />
       )}
 
       <MessageInput
-        value={messageInput}
-        onChange={(e) => setMessageInput(e.target.value)}
-        onSend={handleSendMessage}
-        onSendFile={handleSendFile}
-        onSendVoice={handleSendVoice}
-        disabled={!roomId || isParticipant === false || isParticipant === null}
-        isSending={isSending}
-        placeholder={
-          !roomId
-            ? "Select a chat to start messaging"
-            : isParticipant === false
-            ? "You are not a participant in this group"
-            : "Type a message..."
-        }
+        value={draft}
+        onChange={(e) => updateDraft(e.target.value)}
+        onSend={sendText}
+        onSendFile={sendFile}
+        onSendVoice={sendVoice}
+        placeholder={isConnected ? "Type a message..." : "Offline — messages send when you're back"}
       />
     </div>
   );

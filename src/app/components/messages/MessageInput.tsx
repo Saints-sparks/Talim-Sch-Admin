@@ -17,7 +17,8 @@ interface MessageInputProps {
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSend?: () => void;
-  onSendFile?: (file: File) => void;
+  /** Sends a picked file, with whatever was typed as its caption. */
+  onSendFile?: (file: File, caption: string) => void;
   onSendVoice?: (blob: Blob, durationSeconds: number) => void;
   disabled?: boolean;
   isSending?: boolean;
@@ -40,6 +41,11 @@ export default function MessageInput({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  /** Set when the recording must be thrown away instead of sent. */
+  const discardRecordingRef = useRef(false);
+  const onSendVoiceRef = useRef(onSendVoice);
+  onSendVoiceRef.current = onSendVoice;
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -56,7 +62,7 @@ export default function MessageInput({
 
   const handleSend = () => {
     if (selectedFile && onSendFile) {
-      onSendFile(selectedFile);
+      onSendFile(selectedFile, currentMessage);
       setSelectedFile(null);
       return;
     }
@@ -84,16 +90,20 @@ export default function MessageInput({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
+      streamRef.current = stream;
+      discardRecordingRef.current = false;
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
       recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (streamRef.current === stream) streamRef.current = null;
+        if (discardRecordingRef.current) return;
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
-        stream.getTracks().forEach((t) => t.stop());
-        if (onSendVoice) onSendVoice(blob, duration);
+        onSendVoiceRef.current?.(blob, duration);
       };
 
       startTimeRef.current = Date.now();
@@ -110,7 +120,8 @@ export default function MessageInput({
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (discard = false) => {
+    discardRecordingRef.current = discard;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -122,12 +133,16 @@ export default function MessageInput({
     setRecordingSeconds(0);
   };
 
+  // Leaving the chat (unmount / room change) throws the recording away and releases the mic.
   useEffect(() => {
     return () => {
+      discardRecordingRef.current = true;
       if (timerRef.current) clearInterval(timerRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
   }, []);
 
@@ -166,6 +181,15 @@ export default function MessageInput({
             <span className="text-sm text-red-500 ml-auto tabular-nums">
               {formatTime(recordingSeconds)}
             </span>
+            <button
+              type="button"
+              onClick={() => stopRecording(true)}
+              className="p-0.5 rounded hover:bg-red-100"
+              title="Discard recording"
+              aria-label="Discard recording"
+            >
+              <X size={14} className="text-red-500" />
+            </button>
           </div>
         ) : (
           <>
@@ -212,7 +236,7 @@ export default function MessageInput({
             className={`w-8 h-8 p-0 rounded-full flex-shrink-0 ${
               isRecording ? "hover:bg-red-100" : "hover:bg-gray-100"
             }`}
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={isRecording ? () => stopRecording() : startRecording}
             disabled={disabled || isSending}
             title={isRecording ? "Stop recording" : "Record voice note"}
           >

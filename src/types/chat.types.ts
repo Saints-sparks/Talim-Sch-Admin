@@ -35,19 +35,36 @@ export interface Participant {
   firstName?: string;
   lastName?: string;
   email?: string;
-  userAvatar?: string;
+  userAvatar?: string | null;
   role?: string;
+  isOnline?: boolean;
+  isActive?: boolean;
+}
+
+/** A room's latest message as the room list carries it (`RoomView.lastMessage`). */
+export interface ChatRoomLastMessage {
+  _id?: string;
+  senderId: string;
+  senderName: string;
+  type: string;
+  /** "See you tomorrow", "Voice note · 0:12", "Photo", "fees.pdf" */
+  preview: string;
+  /** Deprecated alias of `preview`. */
+  content: string;
+  createdAt: string | Date;
 }
 
 export interface ChatRoom {
   _id: string;
+  /** Deprecated alias of `_id`. */
+  roomId?: string;
   type: ChatRoomType;
   name?: string;
-  participants: string[] | Participant[];
+  participants: Participant[];
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
-  lastMessage?: ChatMessage;
+  lastMessage?: ChatRoomLastMessage;
   lastMessageAt?: Date;
   isActive: boolean;
   classId?: string;
@@ -59,11 +76,17 @@ export interface ChatRoom {
 
 // types/chat.types.ts
 
+/** Local delivery state of a message this browser sent. Absent on stored messages. */
+export type ChatMessageStatus = 'pending' | 'failed';
+
 export interface ChatMessage {
   _id: string;
+  /** Set by the sender; matches a pending bubble to the stored message. */
+  clientMessageId?: string;
   senderId: string;
   senderName: string;
   senderAvatar?: string;
+  /** The message text (canonical `text`, kept under the name the UI reads). */
   content: string;
   roomId: string;
   isRead: boolean;
@@ -73,15 +96,20 @@ export interface ChatMessage {
   attachments?: ChatAttachment[];
   createdAt: Date;
   updatedAt: Date;
+  status?: ChatMessageStatus;
+  /** Why a failed send failed, safe to show. */
+  error?: string;
 }
 
 export interface ChatAttachment {
   url: string;
-  type: string; // 'image' | 'audio' | 'file' | 'video'
+  type: string; // 'image' | 'audio' | 'video' | 'document' | 'file'
   name: string;
   mimeType?: string;
   size?: number;
   duration?: number;
+  width?: number;
+  height?: number;
 }
 
 // DTO for sending messages - MUST match backend's CreateMessageDto
@@ -89,6 +117,8 @@ export interface SendMessageDto {
   chatRoomId: string;
   text: string;
   type?: string;
+  duration?: number;
+  clientMessageId?: string;
   attachments?: ChatAttachment[];
 }
 

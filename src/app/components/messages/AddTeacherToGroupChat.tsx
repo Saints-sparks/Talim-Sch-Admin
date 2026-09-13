@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { teacherService } from "@/app/services/teacher.service";
 import { generateColorFromString } from "@/lib/colorUtils";
-import { useChats } from "@/hooks/useChats";
+import { useChatsContext } from "@/context/ChatsContext";
 
 // Define the interface to match the API response (flat structure)
 interface TeacherWithUser {
@@ -46,7 +46,7 @@ export default function AddTeacherToGroupChatModal({
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addParticipantsToRoom } = useChats();
+  const { addParticipantsToRoom } = useChatsContext();
 
   // Fetch teachers when modal opens
   useEffect(() => {

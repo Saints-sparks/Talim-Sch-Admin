@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useRef, useCallback, useMemo } from "react";
 import type { UseChatsReturn } from "@/hooks/useChats";
+import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageBubble from "./PrivateMessageBubble";
 import ReplyPreview from "./ReplyPreview";
+import ThreadNotices from "./ThreadNotices";
+import { useChatThread } from "./useChatThread";
+import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
-import { chatService } from '@/app/services/chat.service';
-import { toast } from "@/components/CustomToast";
 
 interface MsgAttachment {
   url: string;
@@ -21,23 +22,21 @@ interface MsgAttachment {
 
 // Define the message structure for our UI
 interface Message {
-  _id?: string;
-  id?: string;
+  _id: string;
+  clientMessageId?: string;
   sender: string;
-  senderId?: string;
-  senderName?: string;
-  text?: string;
-  content?: string;
-  time?: string;
-  createdAt?: string;
-  timestamp?: string;
+  senderId: string;
+  text: string;
+  time: string;
+  createdAt: Date;
   type: string;
-  senderType: string;
-  avatar?: string;
-  color?: string;
-  roomId?: string;
-  replyTo?: string;
+  senderType: "self" | "other";
+  avatar: string;
+  color: string;
+  duration?: number;
   attachments?: MsgAttachment[];
+  status?: "pending" | "failed";
+  error?: string;
 }
 
 interface PrivateChatProps {
@@ -45,7 +44,7 @@ interface PrivateChatProps {
   setReplyingMessage: (msg: any) => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
-  room?: any; // The selected chat room
+  room: DisplayChatRoom;
   onBack?: () => void; // Navigation back to chat list
   chats: UseChatsReturn;
 }
@@ -59,392 +58,88 @@ export default function PrivateChat({
   onBack,
   chats,
 }: PrivateChatProps) {
-  const [messageInput, setMessageInput] = useState<string>('');
-  const [isSending, setIsSending] = useState<boolean>(false);
-  
-  // Refs for scroll management
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const selectRoomTimeoutRef = useRef<NodeJS.Timeout>();
-  const selectedRoomRef = useRef<string | null>(null);
-  
-  const { user } = useAuth();
   const {
     currentRoom,
+    currentUserId,
     messages: chatMessages,
-    sendMessage,
-    loadMoreMessages,
-    isLoading,
+    threadStatus,
+    threadError,
     isLoadingMore,
     hasMoreMessages,
-    error,
-    refreshMessages,
-    selectChatRoom
+    isConnected,
+    loadMoreMessages,
+    retryCurrentRoom,
+    retryMessage,
+    deleteFailedMessage,
   } = chats;
+  const { draft, updateDraft, sendText, sendFile, sendVoice } = useChatThread(chats, room.roomId);
 
-  const extractId = useCallback((value: any): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object') {
-      return value._id || value.id || value.userId || '';
-    }
-    return String(value);
-  }, []);
-
-  // Get current user ID
-  const getCurrentUserId = useCallback((): string | undefined => {
-    return user?.userId || user?._id;
-  }, [user]);
-
-  // Check if message is from current user
-  const isCurrentUser = useCallback((senderId: string, senderName: string): boolean => {
-    const currentUserId = getCurrentUserId();
-
-    if (!currentUserId) return false;
-
-    // Direct ID match
-    if (senderId && senderId === currentUserId) {
-      return true;
-    }
-
-    // Name match
-    if (user && user.firstName && user.lastName && senderName) {
-      const currentUserName = `${user.firstName} ${user.lastName}`.trim();
-      if (currentUserName === senderName) return true;
-    }
-
-    // Email match
-    if (user && user.email && senderName === user.email) {
-      return true;
-    }
-
-    return false;
-  }, [user, getCurrentUserId]);
-
-  const participantNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    const participants = room?.participants || [];
-
-    participants.forEach((participant: any) => {
-      const participantObj = typeof participant === 'object' ? participant : { userId: participant };
-      const participantId =
-        extractId(participantObj?.userId) ||
-        extractId(participantObj?._id) ||
-        extractId(participantObj?.id);
-
-      if (!participantId) return;
-
-      const name = participantObj?.firstName && participantObj?.lastName
-        ? `${participantObj.firstName} ${participantObj.lastName}`.trim()
-        : participantObj?.name || participantObj?.email || '';
-
-      if (name) {
-        map.set(participantId, name);
-      }
-    });
-
+  const participantById = useMemo(() => {
+    const map = new Map<string, DisplayChatRoom["participants"][number]>();
+    room.participants.forEach((p) => p.userId && map.set(p.userId, p));
     return map;
-  }, [room?.participants, extractId]);
+  }, [room.participants]);
 
-  const getAvatarUrl = useCallback((value: any): string => {
-    if (!value || typeof value !== 'object') return '';
-    return (
-      value.senderAvatar ||
-      value.userAvatar ||
-      value.avatar ||
-      value.profileImage ||
-      value.user?.userAvatar ||
-      value.user?.avatar ||
-      value.user?.profileImage ||
-      value.participant?.userAvatar ||
-      value.participant?.avatar ||
-      value.participant?.profileImage ||
-      ''
-    );
-  }, []);
-
-  const participantAvatarById = useMemo(() => {
-    const map = new Map<string, string>();
-    const participants = room?.participants || [];
-
-    participants.forEach((participant: any) => {
-      const participantObj = typeof participant === 'object' ? participant : { userId: participant };
-      const participantId =
-        extractId(participantObj?.userId) ||
-        extractId(participantObj?._id) ||
-        extractId(participantObj?.id);
-      const avatar = getAvatarUrl(participantObj);
-
-      if (participantId && avatar) {
-        map.set(participantId, avatar);
-      }
-    });
-
-    return map;
-  }, [room?.participants, extractId, getAvatarUrl]);
-
-const messages = useMemo(() => {
-  if (!chatMessages || chatMessages.length === 0) {
-    return [];
-  }
-
-  return chatMessages
-    .map((msg: any) => {
-      // Extract senderId - it might be an object or a string
-      const senderId =
-        extractId(msg.senderId) ||
-        extractId(msg.sender?._id) ||
-        extractId(msg.sender?.id) ||
-        extractId(msg.sender?.userId) ||
-        extractId(msg.sender);
-      
-      const senderObjectName = msg.sender?.firstName && msg.sender?.lastName
-        ? `${msg.sender.firstName} ${msg.sender.lastName}`.trim()
-        : msg.sender?.name || msg.sender?.email || '';
-
-      let senderName =
-        msg.senderName ||
-        senderObjectName ||
-        participantNameById.get(senderId) ||
-        room?.displayName ||
-        room?.name ||
-        'User';
-      
-
-      // Check if this message is from the logged-in user
-      const isMyMessage = isCurrentUser(senderId, senderName);
-      const senderAvatar =
-        getAvatarUrl(msg) ||
-        getAvatarUrl(msg.sender) ||
-        participantAvatarById.get(senderId) ||
-        '';
-
-      // If it's the current user's message, use their name
-      if (isMyMessage) {
-        senderName = user?.firstName && user?.lastName
-          ? `${user.firstName} ${user.lastName}`.trim()
-          : user?.email || user?._id || 'Me';
-      }
-
-      return {
-        _id: msg._id,
-        sender: senderName,
-        senderId: senderId,
-        text: msg.text || msg.content || '',
-        content: msg.content || msg.text || '',
-        time: new Date(msg.createdAt).toLocaleTimeString([],
-          { hour: '2-digit', minute: '2-digit' }
-        ),
-        createdAt: msg.createdAt,
-        timestamp: msg.createdAt,
-        type: msg.type || 'text',
-        senderType: isMyMessage ? 'self' : 'other',
-        color: isMyMessage ? 'bg-blue-500' : 'bg-gray-500',
-        avatar: senderAvatar,
-        attachments: (msg as any).attachments,
-      };
-    })
-    .sort((a, b) => 
-      new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
-    );
-}, [chatMessages, user, extractId, isCurrentUser, participantNameById, participantAvatarById, getAvatarUrl, room]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current && !isLoadingMore && !isLoading && messages.length > 0) {
-      const timeoutId = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages.length, isLoadingMore, isLoading]);
-
-  // Select room when room prop changes - with debounce to prevent multiple selections
-  useEffect(() => {
-    if (!room?.roomId) return;
-
-    if (currentRoom?._id === room.roomId) {
-      selectedRoomRef.current = room.roomId;
-      return;
-    }
-
-    if (room.roomId !== selectedRoomRef.current) {
-      // Clear any existing timeout
-      if (selectRoomTimeoutRef.current) {
-        clearTimeout(selectRoomTimeoutRef.current);
-      }
-      // Debounce room selection
-      selectRoomTimeoutRef.current = setTimeout(() => {
-        // Pre-check membership before delegating to selectChatRoom
-        if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
-          const currentUserId = extractId(user?.userId || user?._id || (user as any)?.id);
-          if (currentUserId) {
-            const isMember = room.participants.some((p: any) => {
-              const pid = extractId(p?.userId || p?._id || p?.id || p);
-              return pid === currentUserId;
-            });
-            if (!isMember) {
-              console.warn(`⛔ PrivateChat: user ${currentUserId} is not a member of room ${room.roomId}, skipping selection`);
-              return;
-            }
-          }
-        }
-        selectChatRoom(room.roomId);
-        selectedRoomRef.current = room.roomId;
-      }, 100);
-    }
-    // Do NOT reset messages to [] here; let useChats manage message state
-    return () => {
-      if (selectRoomTimeoutRef.current) {
-        clearTimeout(selectRoomTimeoutRef.current);
-      }
-    };
-  }, [room, room?.roomId, currentRoom?._id, selectChatRoom, user, extractId]);
-
-
-// Handle sending a new message
-const handleSendMessage = useCallback(async () => {
-  if (!messageInput.trim() || !currentRoom || isSending) return;
-
-  setIsSending(true);
-  try {
-    await sendMessage({
-      chatRoomId: currentRoom._id,
-      text: messageInput.trim(),
-    });
-    setMessageInput('');
-  } catch (error) {
-    console.error('Error sending message:', error);
-  } finally {
-    setIsSending(false);
-  }
-}, [messageInput, currentRoom, isSending, sendMessage]);
-
-const handleSendFile = useCallback(async (file: File) => {
-  if (!currentRoom || isSending) return;
-  setIsSending(true);
-  try {
-    const uploaded = await chatService.uploadChatAttachment(file);
-    const msgType = file.type.startsWith('image/') ? 'image' : 'file';
-    await sendMessage({
-      chatRoomId: currentRoom._id,
-      text: '',
-      attachments: [{ ...uploaded, type: msgType }],
-    });
-  } catch (err) {
-    console.error('File send failed', err);
-    toast.error('Failed to send file');
-  } finally {
-    setIsSending(false);
-  }
-}, [currentRoom, isSending, sendMessage]);
-
-const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => {
-  if (!currentRoom || isSending) return;
-  setIsSending(true);
-  try {
-    const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
-    const uploaded = await chatService.uploadChatAttachment(file);
-    await sendMessage({
-      chatRoomId: currentRoom._id,
-      text: '',
-      attachments: [{ ...uploaded, type: 'audio', duration: durationSecs }],
-    });
-  } catch (err) {
-    console.error('Voice send failed', err);
-    toast.error('Failed to send voice note');
-  } finally {
-    setIsSending(false);
-  }
-}, [currentRoom, isSending, sendMessage]);
-
-  // Handle load more messages (scroll to top)
-  const handleLoadMore = useCallback(async () => {
-    if (hasMoreMessages && !isLoadingMore && !isLoading) {
-      const scrollContainer = messagesContainerRef.current;
-      const scrollHeight = scrollContainer?.scrollHeight;
-
-      await loadMoreMessages();
-
-      // Restore scroll position after loading
-      if (scrollContainer && scrollHeight) {
-        setTimeout(() => {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight - scrollHeight;
-        }, 0);
-      }
-    }
-  }, [hasMoreMessages, isLoadingMore, isLoading, loadMoreMessages]);
-
-  // Handle scroll to trigger pagination - with throttle
-  const scrollingRef = useRef(false);
-  
-  const handleScroll = useCallback(() => {
-    if (scrollingRef.current) return;
-    
-    scrollingRef.current = true;
-    requestAnimationFrame(() => {
-      const scrollContainer = messagesContainerRef.current;
-      if (
-        scrollContainer &&
-        scrollContainer.scrollTop < 50 &&
-        hasMoreMessages &&
-        !isLoadingMore &&
-        !isLoading
-      ) {
-        handleLoadMore();
-      }
-      scrollingRef.current = false;
-    });
-  }, [hasMoreMessages, isLoadingMore, isLoading, handleLoadMore]);
-
-  // Get the other participant's name and avatar - using useMemo
-  const otherParticipant = useMemo(() => {
-    // For private chat, find the other user in the participants
-    if (room?.participants && Array.isArray(room.participants)) {
-      const currentUserId = getCurrentUserId();
-      const otherUser = room.participants.find(
-        (p: any) => {
-          const participantId = p.userId || p._id || p.id;
-          return participantId !== currentUserId;
-        }
-      );
-      
-      if (otherUser) {
-        const name = otherUser.firstName && otherUser.lastName 
-          ? `${otherUser.firstName} ${otherUser.lastName}`.trim()
-          : otherUser.name || otherUser.email || 'Unknown User';
-          
+  const messages = useMemo<Message[]>(
+    () =>
+      chatMessages.map((msg) => {
+        // Own-message detection is by id only.
+        const isMine = Boolean(currentUserId) && msg.senderId === currentUserId;
+        const participant = participantById.get(msg.senderId);
+        const sender = isMine ? "Me" : msg.senderName || participant?.name || room.displayName || "User";
         return {
-          name,
-          avatar: otherUser.userAvatar || otherUser.avatar || '/icons/direct-message.svg',
-          status: otherUser.isOnline ? 'Online' : 'Offline'
+          _id: msg._id,
+          clientMessageId: msg.clientMessageId,
+          sender,
+          senderId: msg.senderId,
+          text: msg.content,
+          time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          createdAt: msg.createdAt,
+          type: msg.type || "text",
+          senderType: isMine ? "self" : "other",
+          color: isMine ? "bg-blue-500" : "bg-gray-500",
+          avatar: msg.senderAvatar || participant?.userAvatar || "",
+          duration: msg.duration,
+          attachments: msg.attachments,
+          status: msg.status,
+          error: msg.error,
         };
-      }
+      }),
+    [chatMessages, currentUserId, participantById, room.displayName]
+  );
+
+  const { onScroll } = useThreadScroll({
+    containerRef: messagesContainerRef,
+    items: messages,
+    canLoadOlder: hasMoreMessages && !isLoadingMore && threadStatus === "ready",
+    loadOlder: loadMoreMessages,
+  });
+
+  // The other person in this conversation — the participant who isn't me.
+  const otherParticipant = useMemo(() => {
+    const other = room.participants.find((p) => p.userId && p.userId !== currentUserId);
+    if (other) {
+      return {
+        name: other.name || room.displayName || "Unknown User",
+        avatar: other.userAvatar || "/icons/direct-message.svg",
+        status: other.isOnline ? "Online" : "Offline",
+      };
     }
-    
     return {
-      name: room?.displayName || room?.name || 'Private Chat',
-      avatar: '/icons/direct-message.svg',
-      status: ''
+      name: room.displayName || "Private Chat",
+      avatar: "/icons/direct-message.svg",
+      status: "",
     };
-  }, [room, getCurrentUserId]);
+  }, [room, currentUserId]);
 
   // Format date for message grouping
   const formatMessageDate = useCallback((date: Date) => {
     const today = new Date();
     const messageDate = new Date(date);
 
-    const todayMidnight = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const messageMidnight = new Date(
-      messageDate.getFullYear(),
-      messageDate.getMonth(),
-      messageDate.getDate()
-    );
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const messageMidnight = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
     const yesterday = new Date(todayMidnight);
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -454,80 +149,55 @@ const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => 
     if (messageMidnight.getTime() === yesterday.getTime()) {
       return "Yesterday";
     }
-    return messageDate.toLocaleDateString(undefined, { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return messageDate.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   }, []);
 
-  // Group messages by date - using useMemo
+  // Group messages by date (messages are already in order)
   const groupedMessages = useMemo(() => {
-    const grouped: { [key: string]: Message[] } = {};
-
+    const groups: { key: string; messages: Message[] }[] = [];
     messages.forEach((message) => {
-      const messageDate = message.createdAt ? new Date(message.createdAt) : new Date();
-      const dateKey = messageDate.toDateString();
-
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(message);
+      const key = new Date(message.createdAt).toDateString();
+      const last = groups[groups.length - 1];
+      if (last && last.key === key) last.messages.push(message);
+      else groups.push({ key, messages: [message] });
     });
-
-    return grouped;
+    return groups;
   }, [messages]);
 
-  const dateKeys = useMemo(() => {
-    return Object.keys(groupedMessages).sort(
-      (a, b) => new Date(a).getTime() - new Date(b).getTime()
-    );
-  }, [groupedMessages]);
-
-  const [groupParticipants, setGroupParticipants] = useState<any[]>([]);
-
-  // Fetch full participant user objects for group chats
-  useEffect(() => {
-    const fetchParticipants = async () => {
-      if (room && (room.type === 'group' || room.isGroup) && (room._id || room.roomId)) {
-        try {
-          // This endpoint should return full user objects for all participants
-          const participants = await chatService.getChatRoomParticipants(room._id || room.roomId);
-          setGroupParticipants(participants);
-        } catch (err) {
-          console.error('Error fetching group participants:', err);
-          setGroupParticipants([]);
-        }
-      } else {
-        setGroupParticipants([]);
-      }
-    };
-    fetchParticipants();
-  }, [room]);
+  const showBlockingLoader = threadStatus === "loading" && messages.length === 0;
 
   return (
     <div className="w-full h-full flex flex-col relative bg-white">
-<ChatHeader
-  avatar={otherParticipant.avatar}
-  name={otherParticipant.name}
-  subtext={otherParticipant.status}
-  onBack={onBack}
-  showBackButton={true}
-  isGroup={room?.type === 'group' || room?.isGroup || false} // Check if it's a group
-  chatRoomId={room?._id || room?.roomId} // Pass the room ID
-  participants={groupParticipants.length > 0 ? groupParticipants : room?.participants}
-  currentUserId={user?._id || user?.userId}
-  onAddParticipants={() => {
-    // Optional: Refresh the chat after adding parents
-    // You might want to refresh messages or participants here
-  }}
-/>
-      
-      <div 
+      <ChatHeader
+        avatar={otherParticipant.avatar}
+        name={otherParticipant.name}
+        subtext={otherParticipant.status}
+        onBack={onBack}
+        showBackButton={true}
+        isGroup={false}
+        roomType={currentRoom?.type ?? room.roomType}
+        chatRoomId={room.roomId}
+        participants={room.participants}
+        currentUserId={currentUserId}
+      />
+
+      <ThreadNotices
+        isConnected={isConnected}
+        threadStatus={threadStatus}
+        threadError={threadError}
+        hasMessages={messages.length > 0}
+        onRetry={retryCurrentRoom}
+      />
+
+      <div
         className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50"
         ref={messagesContainerRef}
-        onScroll={handleScroll}
+        onScroll={onScroll}
       >
         {/* Loading indicator for more messages */}
         {isLoadingMore && (
@@ -535,98 +205,57 @@ const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => 
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
           </div>
         )}
-        
-        {/* Main loading state */}
-        {isLoading ? (
+
+        {showBlockingLoader ? (
           <div className="flex flex-col items-center justify-center h-48">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
             <p className="text-sm text-gray-500">Loading messages...</p>
           </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-48">
-            <p className="text-sm text-red-500 mb-2">{error}</p>
-            <button 
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
-              onClick={() => refreshMessages()}
-            >
-              Retry
-            </button>
-          </div>
-        ) : !room ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="text-center p-8">
-              <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm text-gray-500">Select a chat to start messaging</p>
-            </div>
-          </div>
-        ) : messages.length === 0 && !isLoading ? (
+        ) : threadStatus === "error" && messages.length === 0 ? null : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48">
             <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-gray-500 mb-2">No messages yet</p>
             <p className="text-xs text-gray-400">Send a message to start the conversation</p>
           </div>
         ) : (
-          dateKeys.map((dateKey) => (
-            <div key={dateKey}>
+          groupedMessages.map((group) => (
+            <div key={group.key}>
               {/* Date divider */}
               <div className="flex justify-center my-4">
                 <div className="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">
-                  {formatMessageDate(new Date(dateKey))}
+                  {formatMessageDate(new Date(group.key))}
                 </div>
               </div>
 
               {/* Messages for this date */}
-              {groupedMessages[dateKey].map((msg, index) => (
+              {group.messages.map((msg, index) => (
                 <MessageBubble
-                  key={msg._id || `${dateKey}-${index}`}
-                  msg={{
-                    sender: msg.sender,
-                    text: msg.text || msg.content || '',
-                    time: msg.time || new Date(msg.createdAt || '').toLocaleTimeString([],
-                      { hour: '2-digit', minute: '2-digit' }
-                    ),
-                    type: msg.type,
-                    senderType: msg.senderType,
-                    avatar: msg.avatar || '',
-                    color: msg.color || 'blue',
-                    attachments: msg.attachments,
-                  }}
+                  key={msg.clientMessageId || msg._id}
+                  msg={msg}
                   index={index}
                   openSubMenu={openSubMenu}
                   toggleSubMenu={toggleSubMenu}
                   setReplyingMessage={setReplyingMessage}
+                  onRetry={msg.clientMessageId ? () => retryMessage(msg.clientMessageId!) : undefined}
+                  onDelete={msg.clientMessageId ? () => deleteFailedMessage(msg.clientMessageId!) : undefined}
                 />
               ))}
             </div>
           ))
         )}
-        
-        {/* Invisible element to scroll to */}
-        <div ref={messagesEndRef} />
       </div>
-      
+
       {replyingMessage && (
-        <ReplyPreview
-          replyingMessage={replyingMessage}
-          onCancel={() => setReplyingMessage(null)}
-        />
+        <ReplyPreview replyingMessage={replyingMessage} onCancel={() => setReplyingMessage(null)} />
       )}
-      
+
       <MessageInput
-        value={messageInput}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessageInput(e.target.value)}
-        onSend={handleSendMessage}
-        onSendFile={handleSendFile}
-        onSendVoice={handleSendVoice}
-        disabled={!room || isLoading}
-        isSending={isSending}
-        placeholder={
-          !room
-            ? "Select a chat to start messaging"
-            : isLoading
-            ? "Loading messages..."
-            : "Type a message..."
-        }
+        value={draft}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateDraft(e.target.value)}
+        onSend={sendText}
+        onSendFile={sendFile}
+        onSendVoice={sendVoice}
+        placeholder={isConnected ? "Type a message..." : "Offline — messages send when you're back"}
       />
     </div>
   );

@@ -23,156 +23,28 @@ import { useState, useEffect, useMemo } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
 import type { UseChatsReturn } from "@/hooks/useChats";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import { ChatRoomType } from "@/types/chat.types";
-
-// Define a local interface that matches what the component needs
-interface DisplayChatRoom {
-  roomId: string;
-  displayName: string;
-  type: "private" | "group";
-  lastMessage?: {
-    content: string;
-    senderId: string;
-    senderName: string;
-    timestamp: Date;
-    type: string;
-  };
-  unreadCount: number;
-  participants: Array<{
-    userId: string;
-    name?: string;
-    role?: string;
-    email?: string;
-    isOnline: boolean;
-  }>;
-  avatarInfo: {
-    type: "image" | "initials";
-    value: string;
-    bgColor?: string;
-  };
-  isOnline?: boolean;
-  updatedAt: Date;
-}
+import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
 
 interface ChatSidebarProps {
-  onSelectChat: (chat: { type: "private" | "group"; room?: any }) => void;
+  onSelectChat: (room: DisplayChatRoom) => void;
+  selectedRoomId: string | null;
   chats: UseChatsReturn;
   className?: string;
 }
 
-export default function ChatSidebar({ onSelectChat, chats, className = "" }: ChatSidebarProps) {
+export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, className = "" }: ChatSidebarProps) {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
   const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [locallyReadRoomIds, setLocallyReadRoomIds] = useState<Set<string>>(() => new Set());
+  const { chatRooms: originalRooms, isRoomsLoading: isLoading, roomsError: error, fetchChatRooms, currentUserId } = chats;
 
-  const { chatRooms: originalRooms, isLoading, error, fetchChatRooms } = chats;
-
-  // Transform original chat rooms to display format
-  const transformedRooms = useMemo(() => {
-    return originalRooms
-      .map((room) => {
-        // Determine if it's a group chat
-        // Map ChatRoomType to DisplayChatRoom type
-        let isGroup = false;
-        let displayType: "private" | "group" = "private";
-        // Any type other than one-to-one is treated as a group
-        if (room.type !== ChatRoomType.ONE_TO_ONE) {
-          isGroup = true;
-          displayType = "group";
-        } else {
-          isGroup = false;
-          displayType = "private";
-        }
-        // Get display name
-        let displayName = room.name || "Chat";
-        let isOnline = false;
-        // For one-to-one chats, find the other participant
-        if (!isGroup && room.participants && Array.isArray(room.participants)) {
-          // room.createdBy is a string, so compare to participant.userId or _id
-          const otherParticipant = room.participants.find((p) => {
-            if (typeof p === "string") return p !== room.createdBy;
-            return p.userId !== room.createdBy && p._id !== room.createdBy;
-          });
-          if (otherParticipant && typeof otherParticipant !== "string") {
-            displayName =
-              (
-                (otherParticipant.firstName || "") +
-                (otherParticipant.lastName ? " " + otherParticipant.lastName : "")
-              ).trim() || "User";
-            // isOnline is not available on Participant, so default to false
-            isOnline = false;
-          }
-        }
-
-        // Generate avatar
-        const avatarInfo = {
-          type: "initials" as const,
-          value: getUserInitials(displayName),
-          bgColor: generateColorFromString(displayName),
-        };
-
-        // Get last message
-        const lastMessage = room.lastMessage
-          ? {
-              content: room.lastMessage.content || "",
-              senderId: room.lastMessage.senderId || "",
-              senderName: room.lastMessage.senderName || "Unknown",
-              timestamp: new Date(room.lastMessage.createdAt),
-              type: "text",
-            }
-          : undefined;
-
-        return {
-          roomId: room._id,
-          displayName,
-          type: displayType,
-          lastMessage,
-          unreadCount:
-            locallyReadRoomIds.has(room._id) && selectedRoomId === room._id
-              ? 0
-              : room.unreadCount || 0,
-          participants:
-            room.participants?.map((p: any) => {
-              if (typeof p === "string") {
-                return {
-                  userId: p,
-                  name: undefined,
-                  role: undefined,
-                  isOnline: false,
-                };
-              } else {
-                const participantId =
-                  p.userId || p._id || p.id || p.user?._id || p.user?.id || p.user?.userId || "";
-                const participantName = (
-                  (p.firstName || p.user?.firstName || "") +
-                  (p.lastName || p.user?.lastName ? " " + (p.lastName || p.user?.lastName) : "")
-                ).trim();
-                return {
-                  userId: participantId,
-                  name:
-                    participantName ||
-                    p.name ||
-                    p.user?.name ||
-                    p.email ||
-                    p.user?.email ||
-                    undefined,
-                  role: p.role || p.user?.role,
-                  isOnline: false, // Participant does not have isActive
-                };
-              }
-            }) || [],
-          avatarInfo,
-          isOnline,
-          updatedAt: new Date(room.updatedAt || room.createdAt),
-        };
-      })
-      .sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
-  }, [originalRooms, locallyReadRoomIds, selectedRoomId]);
+  // Transform chat rooms to display format; the list is already ordered by latest message.
+  const transformedRooms = useMemo(
+    () => originalRooms.map((room) => toDisplayRoom(room, currentUserId)),
+    [originalRooms, currentUserId]
+  );
 
   const totalVisibleUnreadCount = transformedRooms.reduce(
     (sum, room) => sum + (room.unreadCount || 0),
@@ -209,10 +81,7 @@ export default function ChatSidebar({ onSelectChat, chats, className = "" }: Cha
   }, [transformedRooms, filterType, searchTerm]);
 
   const handleSelectChat = (room: DisplayChatRoom) => {
-    setSelectedRoomId(room.roomId);
-    setLocallyReadRoomIds((prev) => new Set(prev).add(room.roomId));
-    chats.selectChatRoom(room.roomId).catch(console.error);
-    onSelectChat({ type: room.type, room });
+    onSelectChat(room);
   };
 
   const handleFilterChange = (newFilter: "all" | "teachers" | "groups") => {
@@ -295,7 +164,7 @@ export default function ChatSidebar({ onSelectChat, chats, className = "" }: Cha
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchChatRooms(true)}
+            onClick={() => fetchChatRooms()}
             className="flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
           >
             <svg
@@ -473,7 +342,7 @@ export default function ChatSidebar({ onSelectChat, chats, className = "" }: Cha
       <CreateGroupModal
         open={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        onSuccess={() => fetchChatRooms(true)}
+        onSuccess={() => fetchChatRooms()}
       />
     </div>
   );

@@ -1,41 +1,85 @@
 // hooks/useChats.ts
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWebSocketContext } from "@/context/WebSocketContext";
+import type { ChatAck, MessagesUpdatePayload } from "@/hooks/useWebSocket";
 import { chatService } from "@/app/services/chat.service";
 import {
   ChatRoom,
   ChatMessage,
-  SendMessageDto,
+  ChatAttachment,
   CreateChatRoomDto,
   CreateGroupChatDto,
   ChatRoomType,
 } from "@/types/chat.types";
 import { toast } from "@/components/CustomToast";
+import {
+  buildPendingMessage,
+  createClientMessageId,
+  idOf,
+  isDelivered,
+  markMessageFailed,
+  markMessagePending,
+  mergeMessages,
+  newestStoredMessageId,
+  normalizeMessage,
+  removeLocalMessage,
+} from "@/lib/chat/messages";
+import {
+  applyRoomActivity,
+  clearRoomUnread,
+  isRoomMember,
+  mergeRoomList,
+  RoomActivity,
+  upsertRoom,
+} from "@/lib/chat/rooms";
+import { openChatRoom } from "@/lib/chat/openRoom";
+
+/** Loading state of the open conversation, separate from the room list. */
+export type ThreadStatus = "idle" | "loading" | "ready" | "error";
+
+/** What the composer hands to {@link UseChatsReturn.sendMessage}. */
+export interface SendMessageInput {
+  roomId?: string;
+  text?: string;
+  file?: File;
+  voice?: { blob: Blob; duration: number };
+}
 
 export interface UseChatsReturn {
-  // State
+  // Room list
   chatRooms: ChatRoom[];
+  isRoomsLoading: boolean;
+  roomsError: string | null;
+
+  // Open conversation
   currentRoom: ChatRoom | null;
+  currentRoomId: string | null;
   messages: ChatMessage[];
-  unreadCount: number;
-  isLoading: boolean;
+  threadStatus: ThreadStatus;
+  threadError: string | null;
   isLoadingMore: boolean;
   hasMoreMessages: boolean;
-  error: string | null;
+  isConnected: boolean;
+  currentUserId: string;
 
   // Chat room operations
-  fetchChatRooms: (force?: boolean) => Promise<ChatRoom[]>;
+  fetchChatRooms: () => Promise<ChatRoom[]>;
   createChatRoom: (data: CreateChatRoomDto) => Promise<ChatRoom | null>;
   createGroupChat: (data: CreateGroupChatDto) => Promise<ChatRoom | null>;
   selectChatRoom: (roomId: string) => Promise<void>;
+  retryCurrentRoom: () => void;
   searchChatRooms: (params: { searchTerm?: string; type?: ChatRoomType }) => Promise<ChatRoom[]>;
 
   // Message operations
-  sendMessage: (data: SendMessageDto) => Promise<ChatMessage | null>;
-  loadMoreMessages: () => Promise<void>;
-  refreshMessages: (force?: boolean) => Promise<void>;
-  markMessageAsRead: (messageId: string) => Promise<void>;
+  /** Adds a pending bubble and sends it. Returns its clientMessageId. */
+  sendMessage: (input: SendMessageInput) => string | null;
+  retryMessage: (clientMessageId: string) => void;
+  deleteFailedMessage: (clientMessageId: string) => void;
+  /** Loads the previous page. Resolves true when older messages were added. */
+  loadMoreMessages: () => Promise<boolean>;
+  getDraft: (roomId: string) => string;
+  setDraft: (roomId: string, text: string) => void;
 
   // Participant operations
   addParticipant: (roomId: string, userId: string) => Promise<void>;
@@ -44,181 +88,179 @@ export interface UseChatsReturn {
 
   // Utility
   resetCurrentRoom: () => void;
-  clearError: () => void;
+  clearRoomsError: () => void;
 }
 
+interface RoomThread {
+  messages: ChatMessage[];
+  hasMore: boolean;
+  nextCursor?: string;
+  /** A first page has been loaded, so the cursors above are meaningful. */
+  loaded: boolean;
+}
+
+interface OutboxEntry {
+  roomId: string;
+  text: string;
+  type: string;
+  file?: File;
+  voice?: { blob: Blob; duration: number };
+  uploaded?: ChatAttachment[];
+  previewUrl?: string;
+}
+
+type PageAck = ChatAck<MessagesUpdatePayload>;
+type SendAck = ChatAck<{ message: unknown; clientMessageId?: string }>;
+
+const EMPTY_THREAD: RoomThread = { messages: [], hasMore: false, loaded: false };
+const JOIN_TIMEOUT_MS = 10_000;
+const SEND_TIMEOUT_MS = 10_000;
+const PAGE_SIZE = 50;
+const MAX_TEXT_LENGTH = 5000;
+const LOAD_ERROR = "Couldn't load this chat";
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object") {
+    const e = err as { message?: unknown };
+    if (typeof e.message === "string" && e.message && !/timed out|Not connected/i.test(e.message)) {
+      return e.message;
+    }
+  }
+  return fallback;
+}
+
+function isVisible(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
+
+/**
+ * The messages page's chat state: the room list, one merged message store
+ * per room, and optimistic sends over the socket. Create it once (in
+ * `MessagesLayout`) and share it through `ChatsProvider`.
+ */
 export const useChats = (): UseChatsReturn => {
   const { user, accessToken, isAuthenticated } = useAuth();
+  const ws = useWebSocketContext();
   const {
     isConnected,
-    joinChatRoom,
+    emitWithAck,
     leaveChatRoom,
+    markMessageAsRead,
+    subscribe,
+    onConnect,
     onChatMessage,
     onChatRoomsUpdate,
-    onUnreadMessagesUpdate,
-  } = useWebSocketContext();
+    onMessagesUpdate,
+    fetchChatRoomsViaSocket,
+  } = ws;
 
-  const normalizeId = useCallback((value: any): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    if (typeof value === "number") return String(value);
-    return value?.toString?.() || "";
-  }, []);
+  const currentUserId = idOf(user?.userId || user?._id);
+  const currentUserName =
+    user?.firstName || user?.lastName ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() : user?.email || "You";
 
-  const getParticipantId = useCallback(
-    (participant: any): string => {
-      if (!participant) return "";
-      if (typeof participant === "string" || typeof participant === "number") {
-        return normalizeId(participant);
-      }
+  // Room list
+  const [chatRooms, setChatRoomsState] = useState<ChatRoom[]>([]);
+  const [isRoomsLoading, setIsRoomsLoading] = useState(false);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
 
-      // Support multiple backend payload shapes
-      const direct = participant.userId || participant._id || participant.id;
-      const nestedUser = participant.user?.userId || participant.user?._id || participant.user?.id;
-      const nestedParticipant =
-        participant.participant?.userId ||
-        participant.participant?._id ||
-        participant.participant?.id;
+  // Threads
+  const [threads, setThreadsState] = useState<Record<string, RoomThread>>({});
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [threadStatus, setThreadStatusState] = useState<ThreadStatus>("idle");
+  const [threadError, setThreadError] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-      return normalizeId(direct || nestedUser || nestedParticipant || participant);
-    },
-    [normalizeId]
-  );
-
-  const getParticipantAvatar = useCallback((participant: any): string | undefined => {
-    if (!participant || typeof participant !== "object") return undefined;
-
-    return (
-      participant.userAvatar ||
-      participant.avatar ||
-      participant.profileImage ||
-      participant.user?.userAvatar ||
-      participant.user?.avatar ||
-      participant.user?.profileImage ||
-      participant.participant?.userAvatar ||
-      participant.participant?.avatar ||
-      participant.participant?.profileImage
-    );
-  }, []);
-
-  // State
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const publishUnreadCount = useCallback((count: number) => {
-    setUnreadCount(count);
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("talim:chat-unread-count", {
-          detail: { unreadCount: count },
-        })
-      );
-    }
-  }, []);
-
-  // Pagination refs
-  const nextCursorRef = useRef<string | undefined>();
+  // Mirrors for socket callbacks and async flows
+  const chatRoomsRef = useRef<ChatRoom[]>([]);
+  const threadsRef = useRef<Record<string, RoomThread>>({});
   const currentRoomIdRef = useRef<string | null>(null);
-  // Ref to access the latest currentRoom inside socket callbacks without stale closure
-  const currentRoomRef = useRef<ChatRoom | null>(null);
+  const threadStatusRef = useRef<ThreadStatus>("idle");
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+  const connectedRef = useRef(isConnected);
+  connectedRef.current = isConnected;
 
-  // Add refs to track last fetch times
-  const lastMessageFetchRef = useRef<number>(0);
-  const lastUnreadFetchRef = useRef<number>(0);
-  const lastRoomsFetchRef = useRef<number>(0);
-  const isMountedRef = useRef<boolean>(true);
+  const selectSeqRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const outboxRef = useRef(new Map<string, OutboxEntry>());
+  const inFlightRef = useRef(new Set<string>());
+  const markedReadRef = useRef(new Set<string>());
+  const draftsRef = useRef(new Map<string, string>());
+  const roomsRefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Minimum time between fetches (in milliseconds)
-  const MESSAGE_FETCH_INTERVAL = 30000; // 30 seconds
-  const UNREAD_FETCH_INTERVAL = 60000; // 60 seconds
-  const ROOMS_FETCH_INTERVAL = 60000; // 60 seconds
-
-  /**
-   * Clear error state
-   */
-  const clearError = useCallback(() => {
-    setError(null);
+  const setChatRooms = useCallback((update: (prev: ChatRoom[]) => ChatRoom[]) => {
+    setChatRoomsState((prev) => {
+      const next = update(prev);
+      chatRoomsRef.current = next;
+      return next;
+    });
   }, []);
 
-  /**
-   * Fetch all chat rooms for the current user (with throttling)
-   */
-  const fetchChatRooms = useCallback(
-    async (force = false): Promise<ChatRoom[]> => {
-      if (!isAuthenticated || !accessToken) {
-        setChatRooms([]);
-        return [];
-      }
+  const updateThread = useCallback((roomId: string, update: (thread: RoomThread) => RoomThread) => {
+    setThreadsState((prev) => {
+      const current = prev[roomId] ?? EMPTY_THREAD;
+      const next = update(current);
+      if (next === current) return prev;
+      const all = { ...prev, [roomId]: next };
+      threadsRef.current = all;
+      return all;
+    });
+  }, []);
 
-      // Throttle requests unless forced
-      const now = Date.now();
-      if (!force && now - lastRoomsFetchRef.current < ROOMS_FETCH_INTERVAL) {
-        return [];
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const rooms = await chatService.getUserChatRooms();
-        const roomsArray = Array.isArray(rooms) ? rooms : [];
-
-        // Only keep rooms where the current user is a participant
-        const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
-        if (!currentUserId) {
-          console.warn("⛔ Blocking room list: current user ID unavailable for membership filter");
-          setChatRooms([]);
-          publishUnreadCount(0);
-          return [];
-        }
-
-        const memberRooms = roomsArray.filter((room) => {
-          if (!room.participants || !Array.isArray(room.participants)) return false;
-          return room.participants.some((p: any) => {
-            const pid = getParticipantId(p);
-            return pid === currentUserId;
-          });
-        });
-
-        const sortedRooms = memberRooms.sort((a, b) => {
-          const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
-          const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
-          return new Date(tsB).getTime() - new Date(tsA).getTime();
-        });
-
-        setChatRooms(sortedRooms);
-        lastRoomsFetchRef.current = now;
-        return sortedRooms;
-      } catch (err: any) {
-        console.error("❌ Error in fetchChatRooms:", err);
-        const errorMessage =
-          err.response?.data?.message || err.message || "Failed to fetch chat rooms";
-        setError(errorMessage);
-        toast.error(errorMessage);
-        setChatRooms([]);
-        return [];
-      } finally {
-        setIsLoading(false);
-      }
+  const mergeInto = useCallback(
+    (roomId: string, incoming: ChatMessage[]) => {
+      if (!incoming.length) return;
+      updateThread(roomId, (t) => {
+        const messages = mergeMessages(t.messages, incoming);
+        return messages === t.messages ? t : { ...t, messages };
+      });
     },
-    [
-      isAuthenticated,
-      accessToken,
-      user?.userId,
-      user?._id,
-      (user as any)?.id,
-      normalizeId,
-      getParticipantId,
-      publishUnreadCount,
-    ]
+    [updateThread]
   );
+
+  const setThreadStatus = useCallback((status: ThreadStatus, error: string | null = null) => {
+    threadStatusRef.current = status;
+    setThreadStatusState(status);
+    setThreadError(error);
+  }, []);
+
+  /** The open room, if the tab is visible — unread counts don't clear while nobody looks. */
+  const viewingRoomId = useCallback(() => (isVisible() ? currentRoomIdRef.current : null), []);
+
+  const clearRoomsError = useCallback(() => setRoomsError(null), []);
+
+  /**
+   * Fetch all chat rooms for the current user
+   */
+  const fetchChatRooms = useCallback(async (): Promise<ChatRoom[]> => {
+    if (!isAuthenticated || !accessToken || !currentUserIdRef.current) return [];
+
+    setIsRoomsLoading(true);
+    setRoomsError(null);
+    try {
+      const rooms = await chatService.getUserChatRooms();
+      const merged = mergeRoomList(rooms, currentUserIdRef.current, viewingRoomId());
+      setChatRooms(() => merged);
+      return merged;
+    } catch (err) {
+      console.error("❌ Error in fetchChatRooms:", err);
+      // Keep the list we have; the sidebar shows the error with Retry.
+      setRoomsError(errorMessage(err, "Failed to fetch chat rooms"));
+      return chatRoomsRef.current;
+    } finally {
+      setIsRoomsLoading(false);
+    }
+  }, [isAuthenticated, accessToken, setChatRooms, viewingRoomId]);
+
+  /** Asks the server for the room list (a room we don't know about had activity). */
+  const scheduleRoomsRefetch = useCallback(() => {
+    if (roomsRefetchTimerRef.current) return;
+    roomsRefetchTimerRef.current = setTimeout(() => {
+      roomsRefetchTimerRef.current = null;
+      if (connectedRef.current) fetchChatRoomsViaSocket();
+      else void fetchChatRooms();
+    }, 500);
+  }, [fetchChatRoomsViaSocket, fetchChatRooms]);
 
   /**
    * Create a new chat room
@@ -229,29 +271,21 @@ export const useChats = (): UseChatsReturn => {
         toast.error("You must be logged in to create a chat room");
         return null;
       }
-
-      setIsLoading(true);
-      setError(null);
-
       try {
         const newRoom = await chatService.createChatRoom(data);
-        setChatRooms((prev) => [newRoom, ...prev]);
+        setChatRooms((prev) => upsertRoom(prev, newRoom));
         toast.success("Chat room created successfully");
         return newRoom;
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || "Failed to create chat room";
-        setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to create chat room"));
         return null;
-      } finally {
-        setIsLoading(false);
       }
     },
-    [isAuthenticated, accessToken]
+    [isAuthenticated, accessToken, setChatRooms]
   );
 
   /**
-   * Create a group chat room
+   * Create a group chat room. The modal shows the success toast.
    */
   const createGroupChat = useCallback(
     async (data: CreateGroupChatDto): Promise<ChatRoom | null> => {
@@ -259,377 +293,371 @@ export const useChats = (): UseChatsReturn => {
         toast.error("You must be logged in to create a group chat");
         return null;
       }
-
-      setIsLoading(true);
-      setError(null);
-
       try {
         const newRoom = await chatService.createGroupChat(data);
-        setChatRooms((prev) => [newRoom, ...prev]);
-        toast.success("Group chat created successfully");
+        setChatRooms((prev) => upsertRoom(prev, newRoom));
         return newRoom;
       } catch (err: any) {
         console.error("❌ Error in createGroupChat:", err);
-
-        let errorMessage = "Failed to create group chat";
-        if (err.response?.data?.message) {
-          errorMessage = err.response.data.message;
-        } else if (typeof err?.message === "string" && err.message.startsWith("HTTP")) {
-          errorMessage = err.message;
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-
-        setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to create group chat"));
         return null;
-      } finally {
-        setIsLoading(false);
       }
     },
-    [isAuthenticated, accessToken]
+    [isAuthenticated, accessToken, setChatRooms]
+  );
+
+  /** Fetches what arrived after `cursor` (oldest first), a page at a time. */
+  const backfillAfter = useCallback(
+    async (roomId: string, cursor: string) => {
+      let next: string | undefined = cursor;
+      for (let page = 0; page < 5 && next; page++) {
+        const ack: PageAck = await emitWithAck<PageAck>(
+          "fetch-messages",
+          { roomId, cursor: next, direction: "after", limit: 100 },
+          JOIN_TIMEOUT_MS
+        );
+        if (!ack?.ok) return;
+        mergeInto(
+          roomId,
+          ack.messages.map((m: unknown) => normalizeMessage(m, roomId))
+        );
+        next = ack.hasMore ? ack.prevCursor : undefined;
+      }
+    },
+    [emitWithAck, mergeInto]
   );
 
   /**
-   * Select a chat room and load its messages
+   * Joins the open room over the socket. `chat-room-joined` fills the thread;
+   * a reconnect also backfills from the newest message we already had.
+   */
+  const joinRoom = useCallback(
+    async (roomId: string) => {
+      const newestKnown = newestStoredMessageId(threadsRef.current[roomId]?.messages ?? []);
+      try {
+        const ack = await emitWithAck<ChatAck>("join-chat-room", { roomId }, JOIN_TIMEOUT_MS);
+        if (currentRoomIdRef.current !== roomId) {
+          // Switched away while joining: make sure this socket isn't left in the room.
+          if (ack?.ok) leaveChatRoom(roomId);
+          return;
+        }
+        if (!ack?.ok) {
+          // Refused for an expired token: the socket refreshes it and reconnects, and we join again then.
+          if (ack?.error?.code === "UNAUTHENTICATED") return;
+          setThreadStatus("error", ack?.error?.code === "NOT_FOUND" ? "Chat room not found" : LOAD_ERROR);
+          return;
+        }
+        setThreadStatus("ready");
+        if (newestKnown) await backfillAfter(roomId, newestKnown).catch(() => undefined);
+      } catch {
+        if (currentRoomIdRef.current !== roomId) return;
+        setThreadStatus("error", LOAD_ERROR);
+      }
+    },
+    [emitWithAck, backfillAfter, leaveChatRoom, setThreadStatus]
+  );
+
+  /** REST history, used while the socket is down so a chat never opens blank. */
+  const loadHistoryOverRest = useCallback(
+    async (roomId: string, seq: number) => {
+      try {
+        const page = await chatService.getChatRoomMessagesWithCursor(roomId, PAGE_SIZE);
+        if (selectSeqRef.current !== seq || currentRoomIdRef.current !== roomId) return;
+        updateThread(roomId, (t) => ({
+          messages: mergeMessages(t.messages, page.messages),
+          hasMore: t.loaded ? t.hasMore : page.hasMore,
+          nextCursor: t.loaded ? t.nextCursor : page.nextCursor,
+          loaded: true,
+        }));
+        setThreadStatus("ready");
+      } catch (err) {
+        if (selectSeqRef.current !== seq || currentRoomIdRef.current !== roomId) return;
+        console.error("❌ Error loading messages:", err);
+        setThreadStatus("error", LOAD_ERROR);
+      }
+    },
+    [updateThread, setThreadStatus]
+  );
+
+  /**
+   * Opens a chat room: leaves the previous one, joins this one, and shows
+   * its messages. Responses for a room that is no longer open are ignored.
    */
   const selectChatRoom = useCallback(
     async (roomId: string) => {
-      if (!isAuthenticated || !accessToken) {
-        toast.error("You must be logged in to view messages");
-        return;
-      }
+      if (!isAuthenticated || !accessToken || !roomId) return;
+      if (currentRoomIdRef.current === roomId && threadStatusRef.current !== "error") return;
 
-      const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
-      if (!currentUserId) {
-        toast.error("Unable to verify chat membership for current user");
-        setError("Access denied: unable to verify current user");
-        return;
-      }
+      const seq = ++selectSeqRef.current;
+      const previous = currentRoomIdRef.current;
+      if (previous && previous !== roomId) leaveChatRoom(previous);
 
-      // Find room in existing list; if not found, force-fetch and use the returned array
-      // (avoids stale-closure: chatRooms state won't update synchronously inside this callback)
-      const room = chatRooms.find((r) => r._id === roomId);
-      let resolvedRoom = room || null;
-      if (!room) {
-        const freshRooms = await fetchChatRooms(true);
-        const refreshedRoom = freshRooms.find((r) => r._id === roomId);
-        if (!refreshedRoom) {
-          setError("Chat room not found");
-          return;
-        }
-        resolvedRoom = refreshedRoom;
-      }
-
-      // Verify the current user is a participant — use resolvedRoom (not a stale second lookup)
-      let participantIds: string[] = [];
-      if (
-        resolvedRoom?.participants &&
-        Array.isArray(resolvedRoom.participants) &&
-        resolvedRoom.participants.length > 0
-      ) {
-        participantIds = resolvedRoom.participants
-          .map((p: any) => getParticipantId(p))
-          .filter(Boolean);
-      }
-
-      // Fail-closed: if local room payload lacks participant IDs, verify via server endpoint
-      if (participantIds.length === 0) {
-        try {
-          const apiParticipants = await chatService.getChatRoomParticipants(roomId);
-          participantIds = (Array.isArray(apiParticipants) ? apiParticipants : [])
-            .map((p: any) => getParticipantId(p))
-            .filter(Boolean);
-        } catch (verifyError) {
-          console.warn(
-            `⛔ Blocked fetch: could not verify participants for room ${roomId}`,
-            verifyError
-          );
-          toast.error("Unable to verify chat membership");
-          setError("Access denied: unable to verify chat membership");
-          return;
-        }
-      }
-
-      const isMember = participantIds.includes(currentUserId);
-      if (!isMember) {
-        console.warn(`⛔ Blocked fetch: user ${currentUserId} is not a member of room ${roomId}`);
-        toast.error("You are not a member of this chat room");
-        setError("Access denied: you are not a member of this chat room");
-        return;
-      }
-
-      // Leave the previous room on the socket before switching
-      if (currentRoomIdRef.current && currentRoomIdRef.current !== roomId) {
-        leaveChatRoom(currentRoomIdRef.current);
-      }
-
-      // Set current room only after membership is verified
-      if (resolvedRoom) {
-        setCurrentRoom(resolvedRoom);
-      }
-
-      // Join the new room so the socket receives live chat-message events for it
-      joinChatRoom(roomId);
       currentRoomIdRef.current = roomId;
-      setIsLoading(true);
-      setError(null);
-      setMessages([]);
-      nextCursorRef.current = undefined;
-      setHasMoreMessages(true);
+      openChatRoom.set(roomId);
+      setCurrentRoomId(roomId);
+      setIsLoadingMore(false);
+      loadingMoreRef.current = false;
+      setThreadStatus(threadsRef.current[roomId]?.loaded ? "ready" : "loading");
 
-      try {
-        const response = await chatService.getChatRoomMessagesWithCursor(roomId, 50);
-        setMessages(response.messages);
-        setHasMoreMessages(response.hasMore);
-        nextCursorRef.current = response.nextCursor;
-        lastMessageFetchRef.current = Date.now();
+      let room = chatRoomsRef.current.find((r) => r._id === roomId);
+      if (!room) {
+        const rooms = await fetchChatRooms();
+        if (selectSeqRef.current !== seq) return;
+        room = rooms.find((r) => r._id === roomId);
+        if (!room) {
+          setThreadStatus("error", "Chat room not found");
+          return;
+        }
+      }
+      if (room.participants.length > 0 && !isRoomMember(room, currentUserIdRef.current)) {
+        setThreadStatus("error", "You are not a member of this chat room");
+        return;
+      }
 
-        // Mark all messages as read
-        response.messages.forEach((msg) => {
-          const senderId = normalizeId((msg as any).senderId);
-          if (msg._id && senderId !== currentUserId) {
-            chatService.markMessageAsRead(msg._id).catch(console.error);
-          }
-        });
-
-        // Update unread count for this room
-        setChatRooms((prev) => prev.map((r) => (r._id === roomId ? { ...r, unreadCount: 0 } : r)));
-        chatService
-          .getUnreadMessageCount()
-          .then((count) => {
-            if (isMountedRef.current) publishUnreadCount(count);
-          })
-          .catch(console.error);
-      } catch (err: any) {
-        console.error("❌ Error loading messages in selectChatRoom:", err);
-        const errorMessage =
-          err.response?.data?.message || err.message || "Failed to load messages";
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
+      if (connectedRef.current) {
+        await joinRoom(roomId);
+      } else {
+        // Joined on connect (see the onConnect effect).
+        await loadHistoryOverRest(roomId, seq);
       }
     },
-    [
-      isAuthenticated,
-      accessToken,
-      chatRooms,
-      fetchChatRooms,
-      joinChatRoom,
-      leaveChatRoom,
-      user?.userId,
-      user?._id,
-      (user as any)?.id,
-      normalizeId,
-      getParticipantId,
-      publishUnreadCount,
-    ]
+    [isAuthenticated, accessToken, leaveChatRoom, fetchChatRooms, joinRoom, loadHistoryOverRest, setThreadStatus]
+  );
+
+  const retryCurrentRoom = useCallback(() => {
+    const roomId = currentRoomIdRef.current;
+    if (!roomId) return;
+    setThreadStatus(threadsRef.current[roomId]?.loaded ? "ready" : "loading");
+    if (connectedRef.current) void joinRoom(roomId);
+    else void loadHistoryOverRest(roomId, selectSeqRef.current);
+  }, [joinRoom, loadHistoryOverRest, setThreadStatus]);
+
+  /**
+   * Leaves the open room (back / unmount). Its unread count grows again from
+   * here on; the cached messages stay for a quick reopen.
+   */
+  const resetCurrentRoom = useCallback(() => {
+    const roomId = currentRoomIdRef.current;
+    if (roomId) leaveChatRoom(roomId);
+    selectSeqRef.current++;
+    currentRoomIdRef.current = null;
+    openChatRoom.set(null);
+    setCurrentRoomId(null);
+    setIsLoadingMore(false);
+    loadingMoreRef.current = false;
+    setThreadStatus("idle");
+  }, [leaveChatRoom, setThreadStatus]);
+
+  // ─── Sending ────────────────────────────────────────────────────────────────
+
+  const failSend = useCallback(
+    (roomId: string, clientMessageId: string, err: unknown) => {
+      if (isDelivered(threadsRef.current[roomId]?.messages ?? [], clientMessageId)) {
+        outboxRef.current.delete(clientMessageId);
+        return;
+      }
+      const message = errorMessage(err, "Message not sent. Check your connection and try again.");
+      updateThread(roomId, (t) => {
+        const messages = markMessageFailed(t.messages, clientMessageId, message);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+      toast.error(message);
+    },
+    [updateThread]
+  );
+
+  /** Uploads (if needed) and sends one queued message. Offline: stays pending. */
+  const flushMessage = useCallback(
+    async (clientMessageId: string) => {
+      const entry = outboxRef.current.get(clientMessageId);
+      if (!entry || inFlightRef.current.has(clientMessageId) || !connectedRef.current) return;
+      inFlightRef.current.add(clientMessageId);
+      try {
+        if ((entry.file || entry.voice) && !entry.uploaded) {
+          const file =
+            entry.file ??
+            new File([entry.voice!.blob], `voice-${Date.now()}.webm`, {
+              type: entry.voice!.blob.type || "audio/webm",
+            });
+          const uploaded = await chatService.uploadChatAttachment(file);
+          entry.uploaded = [
+            entry.voice
+              ? { ...uploaded, type: "audio", duration: uploaded.duration ?? entry.voice.duration }
+              : uploaded,
+          ];
+        }
+
+        const payload = {
+          roomId: entry.roomId,
+          text: entry.text,
+          type: entry.type,
+          clientMessageId,
+          ...(entry.uploaded ? { attachments: entry.uploaded } : {}),
+          ...(entry.voice ? { duration: entry.voice.duration } : {}),
+        };
+        const ack = await emitWithAck<SendAck>("send-chat-message", payload, SEND_TIMEOUT_MS);
+        // Refused for an expired token: stays pending and is sent again after the socket reconnects.
+        if (!ack?.ok && ack?.error?.code === "UNAUTHENTICATED") return;
+        if (!ack?.ok) throw new Error(ack?.error?.message || "Message not sent");
+
+        mergeInto(entry.roomId, [normalizeMessage(ack.message, entry.roomId)]);
+        outboxRef.current.delete(clientMessageId);
+        if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+      } catch (err) {
+        failSend(entry.roomId, clientMessageId, err);
+      } finally {
+        inFlightRef.current.delete(clientMessageId);
+      }
+    },
+    [emitWithAck, mergeInto, failSend]
   );
 
   const sendMessage = useCallback(
-    async (data: SendMessageDto): Promise<ChatMessage | null> => {
-      const targetRoomId = data.chatRoomId || currentRoom?._id;
-
-      if (!isAuthenticated || !accessToken || !targetRoomId) {
-        console.error("❌ Cannot send message - missing requirements:", {
-          isAuthenticated,
-          hasAccessToken: !!accessToken,
-          hasCurrentRoom: !!currentRoom,
-          currentRoomId: currentRoom?._id,
-          dataChatRoomId: data.chatRoomId,
-        });
-        toast.error("Cannot send message");
+    (input: SendMessageInput): string | null => {
+      const roomId = input.roomId ?? currentRoomIdRef.current;
+      const text = (input.text ?? "").trim();
+      if (!roomId || (!text && !input.file && !input.voice)) return null;
+      if (text.length > MAX_TEXT_LENGTH) {
+        toast.error("Messages can be up to 5,000 characters.");
         return null;
       }
 
-      // Backend expects 'chatRoomId' and 'text'
-      const messageData: SendMessageDto = {
-        chatRoomId: targetRoomId,
-        text: data.text || "", // Backend expects 'text'
-        attachments: data.attachments || [],
-      };
+      const clientMessageId = createClientMessageId();
+      let type = "text";
+      let attachments: ChatAttachment[] = [];
+      let previewUrl: string | undefined;
 
-
-      // Require either text or attachments
-      const hasText = !!messageData.text?.trim();
-      const hasAttachments = (messageData.attachments?.length ?? 0) > 0;
-      if (!hasText && !hasAttachments) {
-        console.warn("⚠️ Attempted to send empty message");
-        toast.error("Cannot send empty message");
-        return null;
+      if (input.file) {
+        const isImage = input.file.type.startsWith("image/");
+        type = isImage ? "image" : "file";
+        previewUrl = isImage ? URL.createObjectURL(input.file) : undefined;
+        attachments = [
+          {
+            url: previewUrl ?? "",
+            type: isImage ? "image" : "file",
+            name: input.file.name,
+            mimeType: input.file.type,
+            size: input.file.size,
+          },
+        ];
+      } else if (input.voice) {
+        type = "voice";
+        attachments = [{ url: "", type: "audio", name: "Voice note", duration: input.voice.duration }];
       }
 
-      // Get current user info
-      const currentUserId = user?.userId || user?._id || "";
-      const currentUserName =
-        user?.firstName && user?.lastName
-          ? `${user.firstName} ${user.lastName}`.trim()
-          : user?.email || "You";
-
-      const msgType = hasAttachments ? messageData.attachments![0].type || "file" : "text";
-
-      // Create optimistic message that matches the backend response format
-      const optimisticMessage: ChatMessage = {
-        _id: `temp-${Date.now()}`,
-        senderId: currentUserId,
-        senderName: currentUserName,
-        senderAvatar: user?.userAvatar,
-        content: messageData.text,
-        roomId: targetRoomId,
-        isRead: false,
-        readBy: [],
-        type: msgType,
-        attachments: messageData.attachments,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-
-      // Optimistically add message to UI
-      setMessages((prev) => [...prev, optimisticMessage]);
-
-      try {
-        const newMessage = await chatService.sendMessage(messageData);
-
-
-        // Replace optimistic message with real one
-        setMessages((prev) =>
-          prev.map((msg) => (msg._id === optimisticMessage._id ? newMessage : msg))
-        );
-
-        // Update last message in chat rooms list
-        setChatRooms((prev) =>
-          prev.map((room) =>
-            room._id === targetRoomId
-              ? {
-                  ...room,
-                  lastMessage: newMessage,
-                  lastMessageAt: newMessage.createdAt,
-                }
-              : room
-          )
-        );
-
-        // Reset last fetch time so next interval will fetch new messages
-        lastMessageFetchRef.current = 0;
-
-        return newMessage;
-      } catch (err: any) {
-        // Remove optimistic message on error
-        setMessages((prev) => prev.filter((msg) => msg._id !== optimisticMessage._id));
-
-        console.error("❌ Error sending message:", err);
-
-        const errorMessage = err.response?.data?.message || err.message || "Failed to send message";
-
-        toast.error(errorMessage);
-        return null;
-      }
+      outboxRef.current.set(clientMessageId, {
+        roomId,
+        text,
+        type,
+        file: input.file,
+        voice: input.voice,
+        previewUrl,
+      });
+      mergeInto(roomId, [
+        buildPendingMessage({
+          clientMessageId,
+          roomId,
+          senderId: currentUserIdRef.current,
+          senderName: currentUserName,
+          senderAvatar: user?.userAvatar,
+          text,
+          type,
+          attachments,
+          duration: input.voice?.duration,
+        }),
+      ]);
+      void flushMessage(clientMessageId);
+      return clientMessageId;
     },
-    [isAuthenticated, accessToken, currentRoom, user]
+    [mergeInto, flushMessage, currentUserName, user?.userAvatar]
   );
 
-  const loadMoreMessages = useCallback(async () => {
-    if (!currentRoom || !hasMoreMessages || isLoadingMore || !nextCursorRef.current) return;
+  const retryMessage = useCallback(
+    (clientMessageId: string) => {
+      const entry = outboxRef.current.get(clientMessageId);
+      if (!entry) return;
+      updateThread(entry.roomId, (t) => {
+        const messages = markMessagePending(t.messages, clientMessageId);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+      void flushMessage(clientMessageId);
+    },
+    [updateThread, flushMessage]
+  );
 
+  const deleteFailedMessage = useCallback(
+    (clientMessageId: string) => {
+      const entry = outboxRef.current.get(clientMessageId);
+      if (!entry || inFlightRef.current.has(clientMessageId)) return;
+      outboxRef.current.delete(clientMessageId);
+      if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+      updateThread(entry.roomId, (t) => {
+        const messages = removeLocalMessage(t.messages, clientMessageId);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+    },
+    [updateThread]
+  );
+
+  /** Sends everything still pending (typed while offline). */
+  const flushOutbox = useCallback(() => {
+    for (const [clientMessageId, entry] of outboxRef.current) {
+      const bubble = threadsRef.current[entry.roomId]?.messages.find((m) => m.clientMessageId === clientMessageId);
+      if (bubble?.status === "pending") void flushMessage(clientMessageId);
+    }
+  }, [flushMessage]);
+
+  // ─── Paging ─────────────────────────────────────────────────────────────────
+
+  const loadMoreMessages = useCallback(async (): Promise<boolean> => {
+    const roomId = currentRoomIdRef.current;
+    const thread = roomId ? threadsRef.current[roomId] : undefined;
+    if (!roomId || !thread?.hasMore || !thread.nextCursor || loadingMoreRef.current) return false;
+
+    loadingMoreRef.current = true;
     setIsLoadingMore(true);
-
     try {
-      const response = await chatService.getChatRoomMessagesWithCursor(
-        currentRoom._id,
-        50,
-        nextCursorRef.current,
-        "before"
-      );
-
-      setMessages((prev) => [...response.messages, ...prev]);
-      setHasMoreMessages(response.hasMore);
-      nextCursorRef.current = response.nextCursor;
-    } catch (err: any) {
+      let page: { messages: ChatMessage[]; hasMore: boolean; nextCursor?: string };
+      if (connectedRef.current) {
+        const ack = await emitWithAck<PageAck>(
+          "fetch-messages",
+          { roomId, cursor: thread.nextCursor, direction: "before", limit: PAGE_SIZE },
+          JOIN_TIMEOUT_MS
+        );
+        if (!ack?.ok) throw new Error(ack?.error?.message);
+        page = {
+          messages: ack.messages.map((m) => normalizeMessage(m, roomId)),
+          hasMore: ack.hasMore,
+          nextCursor: ack.nextCursor,
+        };
+      } else {
+        page = await chatService.getChatRoomMessagesWithCursor(roomId, PAGE_SIZE, thread.nextCursor, "before");
+      }
+      if (currentRoomIdRef.current !== roomId) return false;
+      updateThread(roomId, (t) => ({
+        ...t,
+        messages: mergeMessages(t.messages, page.messages),
+        hasMore: page.hasMore && Boolean(page.nextCursor),
+        nextCursor: page.nextCursor ?? t.nextCursor,
+      }));
+      return page.messages.length > 0;
+    } catch (err) {
       console.error("Error loading more messages:", err);
+      return false;
     } finally {
+      loadingMoreRef.current = false;
       setIsLoadingMore(false);
     }
-  }, [currentRoom, hasMoreMessages, isLoadingMore]);
+  }, [emitWithAck, updateThread]);
 
-  /**
-   * Refresh current room messages (with throttling)
-   */
-  const refreshMessages = useCallback(
-    async (force = false) => {
-      if (!currentRoom || !isMountedRef.current) return;
+  const getDraft = useCallback((roomId: string) => draftsRef.current.get(roomId) ?? "", []);
+  const setDraft = useCallback((roomId: string, text: string) => {
+    if (text) draftsRef.current.set(roomId, text);
+    else draftsRef.current.delete(roomId);
+  }, []);
 
-      // Throttle requests unless forced
-      const now = Date.now();
-      if (!force && now - lastMessageFetchRef.current < MESSAGE_FETCH_INTERVAL) {
-        return;
-      }
+  // ─── Participants ───────────────────────────────────────────────────────────
 
-      try {
-        const response = await chatService.getChatRoomMessagesWithCursor(
-          currentRoom._id,
-          50,
-          undefined,
-          "before"
-        );
-
-        if (isMountedRef.current) {
-          setMessages(response.messages);
-          setHasMoreMessages(response.hasMore);
-          nextCursorRef.current = response.nextCursor;
-          lastMessageFetchRef.current = now;
-        }
-      } catch (err) {
-        console.error("Error refreshing messages:", err);
-      }
-    },
-    [currentRoom]
-  );
-
-  // hooks/useChats.ts - Updated markMessageAsRead function
-
-  // hooks/useChats.ts - Updated markMessageAsRead function
-
-  /**
-   * Mark a message as read
-   */
-  const markMessageAsRead = useCallback(
-    async (messageId: string) => {
-      if (!isAuthenticated || !accessToken) return;
-
-      try {
-        await chatService.markMessageAsRead(messageId);
-
-        // Get current user ID
-        const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
-
-        if (!currentUserId) return;
-
-        // Update local state - add current user ID to readBy array
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === messageId
-              ? {
-                  ...msg,
-                  // If readBy is string[] (array of user IDs)
-                  readBy: Array.from(
-                    new Set([
-                      ...(msg.readBy || []).map((reader: any) => normalizeId(reader)),
-                      currentUserId,
-                    ])
-                  ),
-                }
-              : msg
-          )
-        );
-
-      } catch (err) {
-        console.error("Error marking message as read:", err);
-      }
-    },
-    [isAuthenticated, accessToken, user?.userId, user?._id, (user as any)?.id, normalizeId]
-  );
   /**
    * Add participant to a chat room
    */
@@ -639,20 +667,15 @@ export const useChats = (): UseChatsReturn => {
         toast.error("You must be logged in to add participants");
         return;
       }
-
       try {
         const updatedRoom = await chatService.addParticipant(roomId, userId);
-        setChatRooms((prev) => prev.map((room) => (room._id === roomId ? updatedRoom : room)));
-        if (currentRoom?._id === roomId) {
-          setCurrentRoom(updatedRoom);
-        }
+        setChatRooms((prev) => upsertRoom(prev, updatedRoom));
         toast.success("Participant added successfully");
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || "Failed to add participant";
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to add participant"));
       }
     },
-    [isAuthenticated, accessToken, currentRoom]
+    [isAuthenticated, accessToken, setChatRooms]
   );
 
   const addParticipantsToRoom = useCallback(
@@ -661,42 +684,21 @@ export const useChats = (): UseChatsReturn => {
         toast.error("You must be logged in to add participants");
         return;
       }
-
       if (!userIds || userIds.length === 0) {
         toast.error("No participants selected");
         return;
       }
-
-      setIsLoading(true);
-      setError(null);
-
       try {
-        // You'll need to add this method to your chatService
         const updatedRoom = await chatService.addParticipantsToRoom(roomId, userIds);
-
-        // Update chat rooms list
-        setChatRooms((prev) => prev.map((room) => (room._id === roomId ? updatedRoom : room)));
-
-        // Update current room if it's the one being modified
-        if (currentRoom?._id === roomId) {
-          setCurrentRoom(updatedRoom);
-        }
-
-        toast.success(
-          `${userIds.length} parent${userIds.length !== 1 ? "s" : ""} added successfully`
-        );
+        if (updatedRoom?._id) setChatRooms((prev) => upsertRoom(prev, updatedRoom));
+        toast.success(`${userIds.length} participant${userIds.length !== 1 ? "s" : ""} added successfully`);
       } catch (err: any) {
         console.error("Error adding participants:", err);
-        const errorMessage =
-          err.response?.data?.message || err.message || "Failed to add participants";
-        setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to add participants"));
         throw err; // Re-throw so the modal can handle it
-      } finally {
-        setIsLoading(false);
       }
     },
-    [isAuthenticated, accessToken, currentRoom]
+    [isAuthenticated, accessToken, setChatRooms]
   );
 
   /**
@@ -708,20 +710,15 @@ export const useChats = (): UseChatsReturn => {
         toast.error("You must be logged in to remove participants");
         return;
       }
-
       try {
         const updatedRoom = await chatService.removeParticipant(roomId, userId);
-        setChatRooms((prev) => prev.map((room) => (room._id === roomId ? updatedRoom : room)));
-        if (currentRoom?._id === roomId) {
-          setCurrentRoom(updatedRoom);
-        }
+        setChatRooms((prev) => upsertRoom(prev, updatedRoom));
         toast.success("Participant removed successfully");
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || "Failed to remove participant";
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to remove participant"));
       }
     },
-    [isAuthenticated, accessToken, currentRoom]
+    [isAuthenticated, accessToken, setChatRooms]
   );
 
   /**
@@ -730,279 +727,233 @@ export const useChats = (): UseChatsReturn => {
   const searchChatRooms = useCallback(
     async (params: { searchTerm?: string; type?: ChatRoomType }): Promise<ChatRoom[]> => {
       if (!isAuthenticated || !accessToken) return [];
-
       try {
         return await chatService.searchChatRooms(params);
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || "Failed to search chat rooms";
-        toast.error(errorMessage);
+        toast.error(errorMessage(err, "Failed to search chat rooms"));
         return [];
       }
     },
     [isAuthenticated, accessToken]
   );
 
-  /**
-   * Reset current room
-   */
-  const resetCurrentRoom = useCallback(() => {
-    if (currentRoomIdRef.current) {
-      leaveChatRoom(currentRoomIdRef.current);
+  // ─── Effects ────────────────────────────────────────────────────────────────
+
+  // Initial room list on sign-in
+  useEffect(() => {
+    if (isAuthenticated && accessToken && currentUserId) {
+      void fetchChatRooms();
+    } else {
+      setChatRooms(() => []);
     }
-    setCurrentRoom(null);
-    setMessages([]);
-    nextCursorRef.current = undefined;
-    setHasMoreMessages(true);
-    currentRoomIdRef.current = null;
-    lastMessageFetchRef.current = 0;
+    // Only when the signed-in user changes; later updates arrive over the socket.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, currentUserId]);
+
+  // Leave the room when the messages page goes away
+  useEffect(() => {
+    const outbox = outboxRef.current;
+    const timer = roomsRefetchTimerRef;
+    return () => {
+      const roomId = currentRoomIdRef.current;
+      if (roomId) leaveChatRoom(roomId);
+      currentRoomIdRef.current = null;
+      openChatRoom.set(null);
+      for (const entry of outbox.values()) {
+        if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+      }
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, [leaveChatRoom]);
 
-  /**
-   * Fetch unread message count (with throttling)
-   */
-  const fetchUnreadCount = useCallback(
-    async (force = false) => {
-      if (!isAuthenticated || !accessToken) {
-        publishUnreadCount(0);
-        return;
-      }
-
-      // Throttle requests unless forced
-      const now = Date.now();
-      if (!force && now - lastUnreadFetchRef.current < UNREAD_FETCH_INTERVAL) {
-        return;
-      }
-
-      try {
-        const count = await chatService.getUnreadMessageCount();
-        if (isMountedRef.current) {
-          publishUnreadCount(count);
-          lastUnreadFetchRef.current = now;
-        }
-      } catch (err) {
-        console.error("Error fetching unread count:", err);
-      }
-    },
-    [isAuthenticated, accessToken, publishUnreadCount]
+  // Every (re)connect: rejoin + backfill the open room, then refresh the list, then send what's pending
+  useEffect(
+    () =>
+      onConnect(() => {
+        const roomId = currentRoomIdRef.current;
+        const afterJoin = () => {
+          fetchChatRoomsViaSocket();
+          flushOutbox();
+        };
+        if (roomId) void joinRoom(roomId).finally(afterJoin);
+        else afterJoin();
+      }),
+    [onConnect, joinRoom, fetchChatRoomsViaSocket, flushOutbox]
   );
 
-  // Initial fetch on mount and auth change
+  // Live events
   useEffect(() => {
-    isMountedRef.current = true;
-
-    if (isAuthenticated && accessToken) {
-      fetchChatRooms(true);
-      fetchUnreadCount(true);
-    } else {
-      setChatRooms([]);
-      setCurrentRoom(null);
-      setMessages([]);
-      publishUnreadCount(0);
-    }
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [isAuthenticated, accessToken, fetchChatRooms, fetchUnreadCount, publishUnreadCount]);
-
-  // Keep currentRoomRef in sync so socket callbacks always see the latest room
-  useEffect(() => {
-    currentRoomRef.current = currentRoom;
-  }, [currentRoom]);
-
-  // Subscribe to real-time socket events while connected
-  useEffect(() => {
-    if (!isConnected || !isAuthenticated) return;
-
-    const unsubMessage = onChatMessage((message) => {
-      const activeRoom = currentRoomRef.current;
-
-      // Append incoming message to the open conversation (skip if already present)
-      if (activeRoom && message.roomId === activeRoom._id) {
-        // Resolve sender name from participants when the backend omits it
-        let resolvedSenderName = message.senderName;
-        const messageSenderId = normalizeId(message.senderId);
-        if (!resolvedSenderName && activeRoom.participants) {
-          const participant = (activeRoom.participants as any[]).find((p: any) => {
-            const pid = getParticipantId(p);
-            return pid === messageSenderId;
-          });
-          if (participant && typeof participant === "object") {
-            resolvedSenderName =
-              participant.firstName && participant.lastName
-                ? `${participant.firstName} ${participant.lastName}`.trim()
-                : participant.name || participant.email || "";
-          }
-        }
-        let resolvedSenderAvatar =
-          (message as any).senderAvatar || (message as any).userAvatar || (message as any).avatar;
-        if (!resolvedSenderAvatar && activeRoom.participants) {
-          const participant = (activeRoom.participants as any[]).find((p: any) => {
-            const pid = getParticipantId(p);
-            return pid === messageSenderId;
-          });
-          resolvedSenderAvatar = getParticipantAvatar(participant);
-        }
-
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === message._id)) return prev;
-          return [
-            ...prev,
-            {
-              _id: message._id,
-              senderId: message.senderId,
-              senderName: resolvedSenderName || message.senderName,
-              senderAvatar: resolvedSenderAvatar,
-              content: message.content,
-              roomId: message.roomId,
-              type: message.type,
-              duration: message.duration,
-              isRead: false,
-              readBy: message.readBy || [],
-              createdAt: new Date(message.timestamp),
-              updatedAt: new Date(message.timestamp),
-            } as any,
-          ];
-        });
-
-        // Mark as read — user is actively viewing this room
-        const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
-        if (messageSenderId !== currentUserId) {
-          chatService
-            .markMessageAsRead(message._id)
-            .then(() => chatService.getUnreadMessageCount())
-            .then((count) => {
-              if (isMountedRef.current) publishUnreadCount(count);
-            })
-            .catch(console.error);
-        }
+    const unsubJoined = subscribe("chat-room-joined", (data: any) => {
+      const roomId = idOf(data?.roomId);
+      if (!roomId || roomId !== currentRoomIdRef.current) return;
+      const messages = (Array.isArray(data.messages) ? data.messages : []).map((m: unknown) =>
+        normalizeMessage(m, roomId)
+      );
+      updateThread(roomId, (t) => ({
+        messages: mergeMessages(t.messages, messages),
+        hasMore: t.loaded ? t.hasMore : Boolean(data.hasMore),
+        nextCursor: t.loaded ? t.nextCursor : data.nextCursor,
+        loaded: true,
+      }));
+      if (data.room) {
+        const view = data.room;
+        setChatRooms((prev) =>
+          prev.some((r) => r._id === roomId)
+            ? prev
+            : mergeRoomList([view, ...prev], currentUserIdRef.current, viewingRoomId())
+        );
       }
-
-      // Update sidebar: refresh last-message preview and bump unread count
-      setChatRooms((prev) => {
-        const updated = prev.map((room) => {
-          if (room._id !== message.roomId) return room;
-          const isCurrentRoom = activeRoom?._id === message.roomId;
-          return {
-            ...room,
-            lastMessage: {
-              content: message.content,
-              createdAt: new Date(message.timestamp),
-              updatedAt: new Date(message.timestamp),
-            } as any,
-            lastMessageAt: message.timestamp,
-            unreadCount: isCurrentRoom ? 0 : (room.unreadCount ?? 0) + 1,
-          };
-        });
-        return updated.sort((a, b) => {
-          const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
-          const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
-          return new Date(tsB as any).getTime() - new Date(tsA as any).getTime();
-        });
-      });
+      setThreadStatus("ready");
     });
 
-    // Full room list refresh (triggered after a message is sent by any participant)
-    const unsubRooms = onChatRoomsUpdate((data) => {
-      if (!Array.isArray(data.rooms)) return;
-      const currentUserId = normalizeId(user?.userId || user?._id || (user as any)?.id);
-      if (!currentUserId) return;
-      const activeRoom = currentRoomRef.current;
-      const memberRooms = data.rooms
-        .filter((room) => {
-          if (!Array.isArray(room.participants)) return false;
-          return room.participants.some((p: any) => getParticipantId(p) === currentUserId);
-        })
-        .map((room) => (activeRoom?._id === room._id ? { ...room, unreadCount: 0 } : room));
-
-      setChatRooms(
-        memberRooms.sort((a, b) => {
-          const tsA = a.lastMessageAt ?? a.lastMessage?.createdAt ?? a.updatedAt ?? 0;
-          const tsB = b.lastMessageAt ?? b.lastMessage?.createdAt ?? b.updatedAt ?? 0;
-          return new Date(tsB as any).getTime() - new Date(tsA as any).getTime();
-        })
+    const unsubPage = onMessagesUpdate((data) => {
+      const roomId = idOf(data?.roomId);
+      if (!roomId || roomId !== currentRoomIdRef.current || !Array.isArray(data.messages)) return;
+      mergeInto(
+        roomId,
+        data.messages.map((m) => normalizeMessage(m, roomId))
       );
     });
 
-    // Global unread badge update (triggered after mark-as-read or new message)
-    const unsubUnread = onUnreadMessagesUpdate((data) => {
-      if (typeof data.unreadCount === "number") {
-        publishUnreadCount(data.unreadCount);
+    const unsubMessage = onChatMessage((raw) => {
+      const message = normalizeMessage(raw);
+      // Only the open room is joined; anything else is stale.
+      if (!message._id || message.roomId !== currentRoomIdRef.current) return;
+      mergeInto(message.roomId, [message]);
+    });
+
+    const unsubActivity = subscribe("chat-room-activity", (activity: RoomActivity) => {
+      const roomId = idOf(activity?.roomId);
+      if (!roomId) return;
+      if (!chatRoomsRef.current.some((r) => r._id === roomId)) {
+        scheduleRoomsRefetch();
+        return;
+      }
+      setChatRooms(
+        (prev) =>
+          applyRoomActivity(prev, activity, {
+            currentUserId: currentUserIdRef.current,
+            viewingRoomId: viewingRoomId(),
+          }).rooms
+      );
+    });
+
+    const unsubRooms = onChatRoomsUpdate((data) => {
+      if (!Array.isArray(data?.rooms) || !currentUserIdRef.current) return;
+      setChatRooms(() => mergeRoomList(data.rooms, currentUserIdRef.current, viewingRoomId()));
+      setRoomsError(null);
+    });
+
+    const unsubError = subscribe("error", (data: any) => {
+      if (data?.code === "UNAUTHENTICATED") return; // handled by the socket's token refresh
+      const clientMessageId = typeof data?.clientMessageId === "string" ? data.clientMessageId : "";
+      if (clientMessageId) {
+        // The ack settles sends in flight; this covers anything else.
+        const entry = outboxRef.current.get(clientMessageId);
+        if (entry && !inFlightRef.current.has(clientMessageId)) failSend(entry.roomId, clientMessageId, data);
+        return;
+      }
+      const roomId = idOf(data?.roomId);
+      if (roomId && roomId === currentRoomIdRef.current && threadStatusRef.current === "loading") {
+        setThreadStatus("error", data?.code === "NOT_FOUND" ? "Chat room not found" : LOAD_ERROR);
       }
     });
 
     return () => {
+      unsubJoined();
+      unsubPage();
       unsubMessage();
+      unsubActivity();
       unsubRooms();
-      unsubUnread();
+      unsubError();
     };
   }, [
-    isConnected,
-    isAuthenticated,
+    subscribe,
+    onMessagesUpdate,
     onChatMessage,
     onChatRoomsUpdate,
-    onUnreadMessagesUpdate,
-    publishUnreadCount,
-    normalizeId,
-    getParticipantId,
-    getParticipantAvatar,
-    user?.userId,
-    user?._id,
+    updateThread,
+    mergeInto,
+    setChatRooms,
+    setThreadStatus,
+    scheduleRoomsRefetch,
+    viewingRoomId,
+    failSend,
   ]);
 
-  // Polling fallback — only active while the WebSocket is disconnected
+  const messages = useMemo(
+    () => (currentRoomId ? threads[currentRoomId]?.messages ?? [] : []),
+    [threads, currentRoomId]
+  );
+
+  // Mark what's on screen as read — only while the tab is visible
   useEffect(() => {
-    if (!isAuthenticated || !accessToken || isConnected) return;
+    const roomId = currentRoomId;
+    if (!roomId || !isConnected || !currentUserId) return;
 
-    const pollingInterval = setInterval(() => {
-      if (!isMountedRef.current) return;
-      fetchUnreadCount();
-      fetchChatRooms();
-      if (currentRoom) refreshMessages();
-    }, MESSAGE_FETCH_INTERVAL);
+    const markVisible = () => {
+      if (!isVisible() || currentRoomIdRef.current !== roomId) return;
+      for (const message of threadsRef.current[roomId]?.messages ?? []) {
+        if (
+          message.status ||
+          !message._id ||
+          message.senderId === currentUserId ||
+          message.readBy.includes(currentUserId) ||
+          markedReadRef.current.has(message._id)
+        ) {
+          continue;
+        }
+        markedReadRef.current.add(message._id);
+        markMessageAsRead(message._id);
+      }
+      setChatRooms((prev) => clearRoomUnread(prev, roomId));
+    };
 
-    return () => clearInterval(pollingInterval);
-  }, [
-    isAuthenticated,
-    accessToken,
-    isConnected,
-    currentRoom,
-    fetchChatRooms,
-    fetchUnreadCount,
-    refreshMessages,
-  ]);
+    markVisible();
+    document.addEventListener("visibilitychange", markVisible);
+    return () => document.removeEventListener("visibilitychange", markVisible);
+  }, [currentRoomId, messages, isConnected, currentUserId, markMessageAsRead, setChatRooms]);
+
+  const currentRoom = useMemo(
+    () => (currentRoomId ? chatRooms.find((r) => r._id === currentRoomId) ?? null : null),
+    [chatRooms, currentRoomId]
+  );
+  const currentThread = currentRoomId ? threads[currentRoomId] : undefined;
 
   return {
-    // State
     chatRooms,
-    currentRoom,
-    messages,
-    unreadCount,
-    isLoading,
-    isLoadingMore,
-    hasMoreMessages,
-    error,
+    isRoomsLoading,
+    roomsError,
 
-    // Chat room operations
+    currentRoom,
+    currentRoomId,
+    messages,
+    threadStatus,
+    threadError,
+    isLoadingMore,
+    hasMoreMessages: Boolean(currentThread?.hasMore && currentThread.nextCursor),
+    isConnected,
+    currentUserId,
+
     fetchChatRooms,
     createChatRoom,
     createGroupChat,
     selectChatRoom,
+    retryCurrentRoom,
     searchChatRooms,
 
-    // Message operations
     sendMessage,
+    retryMessage,
+    deleteFailedMessage,
     loadMoreMessages,
-    refreshMessages,
-    markMessageAsRead,
+    getDraft,
+    setDraft,
 
-    // Participant operations
     addParticipant,
+    addParticipantsToRoom,
     removeParticipant,
-    addParticipantsToRoom, // Add this line
 
-    // Utility
     resetCurrentRoom,
-    clearError,
+    clearRoomsError,
   };
 };

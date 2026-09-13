@@ -47,6 +47,14 @@ class ApiClient {
     this.accessToken = token;
   }
 
+  /**
+   * The access token requests are sent with right now. Updated synchronously
+   * by a refresh, so the socket handshake can read it straight after one.
+   */
+  getAccessToken(): string | null {
+    return this.getStoredAccessToken();
+  }
+
   private getStoredAccessToken(): string | null {
     if (typeof window === "undefined") return null;
     return this.accessToken || localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");

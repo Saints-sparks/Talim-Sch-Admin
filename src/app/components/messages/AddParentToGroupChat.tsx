@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { parentService } from "@/app/services/parent.service";
 import { generateColorFromString } from "@/lib/colorUtils";
-import { useChats } from "@/hooks/useChats";
+import { useChatsContext } from "@/context/ChatsContext";
 
 // Define the interface to match the API response
 interface ApiParent {
@@ -57,7 +57,7 @@ export default function AddParentToGroupChatModal({
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addParticipantsToRoom } = useChats();
+  const { addParticipantsToRoom } = useChatsContext();
 
   // Fetch parents when modal opens
   useEffect(() => {

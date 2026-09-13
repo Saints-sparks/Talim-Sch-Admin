@@ -24,7 +24,8 @@ import Links from "./Links";
 import Documents from "./Document";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
-import { useChats } from "@/hooks/useChats";
+import { useChatsContext } from "@/context/ChatsContext";
+import { ChatRoomType } from "@/types/chat.types";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 // Update menuItems - add Teachers
@@ -57,6 +58,7 @@ interface GroupInfoModalProps {
   description: string;
   participants?: Participant[]; // Real participants data
   chatRoomId?: string; // Add chatRoomId prop
+  roomType?: string;
   schoolName?: string;
 }
 
@@ -68,6 +70,7 @@ export default function GroupInfoModal({
   description,
   participants = [],
   chatRoomId,
+  roomType,
   schoolName = "",
 }: GroupInfoModalProps) {
   const [selectedMenu, setSelectedMenu] = useState("");
@@ -76,7 +79,9 @@ export default function GroupInfoModal({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentParticipants, setCurrentParticipants] = useState<Participant[]>(participants);
 
-  const { fetchChatRooms } = useChats();
+  const { fetchChatRooms } = useChatsContext();
+  // Adding people turns a direct message into a group; not offered in 1:1 chats.
+  const canAddMembers = Boolean(chatRoomId) && roomType !== ChatRoomType.ONE_TO_ONE;
 
   // Update participants when prop changes
   useEffect(() => {
@@ -89,7 +94,7 @@ export default function GroupInfoModal({
     setIsRefreshing(true);
     try {
       // Refresh chat rooms to get updated participant list
-      await fetchChatRooms(true);
+      await fetchChatRooms();
     } catch (error) {
       console.error("Error refreshing after adding participants:", error);
     } finally {
@@ -173,7 +178,7 @@ export default function GroupInfoModal({
                 </div>
 
                 {/* Add Participants Buttons - Only show for group chats and when chatRoomId is provided */}
-                {chatRoomId && (
+                {canAddMembers && (
                   <div className="mt-4 space-y-2">
                     <Button
                       onClick={() => setIsAddParentModalOpen(true)}
@@ -271,11 +276,14 @@ export default function GroupInfoModal({
 
             {/* Render section components */}
             {selectedMenu === "Parents" && (
-              <Parents chatRoomId={chatRoomId} onAddParentSuccess={handleAddParticipantsSuccess} />
+              <Parents
+                chatRoomId={canAddMembers ? chatRoomId : undefined}
+                onAddParentSuccess={handleAddParticipantsSuccess}
+              />
             )}
             {selectedMenu === "Teachers" && (
               <Teachers
-                chatRoomId={chatRoomId}
+                chatRoomId={canAddMembers ? chatRoomId : undefined}
                 onAddTeacherSuccess={handleAddParticipantsSuccess}
               />
             )}
@@ -288,7 +296,7 @@ export default function GroupInfoModal({
       </div>
 
       {/* Add Parent Modal */}
-      {chatRoomId && (
+      {canAddMembers && chatRoomId && (
         <AddParentToGroupChatModal
           isOpen={isAddParentModalOpen}
           onClose={() => setIsAddParentModalOpen(false)}
@@ -298,7 +306,7 @@ export default function GroupInfoModal({
       )}
 
       {/* Add Teacher Modal */}
-      {chatRoomId && (
+      {canAddMembers && chatRoomId && (
         <AddTeacherToGroupChatModal
           isOpen={isAddTeacherModalOpen}
           onClose={() => setIsAddTeacherModalOpen(false)}

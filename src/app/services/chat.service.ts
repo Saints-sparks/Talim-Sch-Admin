@@ -11,17 +11,14 @@ import {
   CursorMessagesResponse,
   SearchChatRoomsParams
 } from '@/types/chat.types';
+import { normalizeMessage } from '@/lib/chat/messages';
+import { normalizeRoom } from '@/lib/chat/rooms';
 
 class ChatService {
   private readonly baseUrl = '/chat';
 
   private normalizeRoomPayload(payload: any): ChatRoom {
-    const room = payload?.data || payload?.chatRoom || payload?.room || payload?.result || payload;
-    return {
-      ...room,
-      _id: room?._id || room?.id || room?.roomId,
-      participants: room?.participants || [],
-    } as ChatRoom;
+    return normalizeRoom(payload?.result ?? payload);
   }
 
   private async extractErrorMessage(response: Response): Promise<string> {
@@ -44,45 +41,7 @@ class ChatService {
 
   private normalizeMessagePayload(payload: any, fallbackRoomId?: string): ChatMessage {
     const message = payload?.message || payload?.data || payload?.result || payload;
-    const sender = message?.senderId || message?.sender || {};
-    const senderId =
-      typeof sender === 'object' && sender !== null
-        ? sender._id || sender.id || sender.userId || ''
-        : sender || message?.senderId || '';
-    const senderName =
-      message?.senderName ||
-      (sender?.firstName || sender?.lastName
-        ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim()
-        : sender?.name || sender?.email || 'Unknown');
-    const senderAvatar =
-      message?.senderAvatar ||
-      message?.userAvatar ||
-      message?.avatar ||
-      sender?.userAvatar ||
-      sender?.avatar;
-    const createdAt = message?.createdAt || message?.timestamp || new Date();
-    const updatedAt = message?.updatedAt || message?.timestamp || createdAt;
-
-    return {
-      _id: message?._id || message?.id,
-      senderId: String(senderId),
-      senderName,
-      senderAvatar,
-      content: message?.content || message?.text || '',
-      roomId:
-        message?.roomId ||
-        message?.chatRoomId?._id ||
-        message?.chatRoomId ||
-        fallbackRoomId ||
-        '',
-      isRead: message?.isRead || false,
-      readBy: message?.readBy || [],
-      type: message?.type || 'text',
-      duration: message?.duration,
-      attachments: message?.attachments,
-      createdAt: new Date(createdAt),
-      updatedAt: new Date(updatedAt),
-    };
+    return normalizeMessage(message, fallbackRoomId);
   }
 
   private normalizeCursorMessagesPayload(
@@ -220,7 +179,7 @@ class ChatService {
 
       const result = JSON.parse(text);
       const rooms = Array.isArray(result) ? result : [];
-      return rooms;
+      return rooms.map((room) => normalizeRoom(room));
     } catch (error) {
       console.error('❌ Error fetching user chat rooms:', error);
       throw error;
@@ -568,7 +527,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const updatedRoom = await response.json();
-      return updatedRoom;
+      return this.normalizeRoomPayload(updatedRoom);
     } catch (error) {
       console.error('❌ Error adding participant:', error);
       throw error;
@@ -593,7 +552,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const updatedRoom = await response.json();
-      return updatedRoom;
+      return this.normalizeRoomPayload(updatedRoom);
     } catch (error) {
       console.error('❌ Error removing participant:', error);
       throw error;
@@ -620,7 +579,7 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
       throw new Error(error.message || 'Failed to add participants');
     }
 
-    return await response.json();
+    return this.normalizeRoomPayload(await response.json());
   } catch (error) {
     console.error('Error in addParticipantsToRoom:', error);
     throw error;
@@ -653,6 +612,10 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
       mimeType: data.mimeType || file.type,
       size: data.size || file.size,
       type: data.type || (file.type.startsWith('image/') ? 'image' : file.type.startsWith('audio/') ? 'audio' : 'file'),
+      // Kept so bubbles can reserve space and voice notes show their length.
+      width: typeof data.width === 'number' ? data.width : undefined,
+      height: typeof data.height === 'number' ? data.height : undefined,
+      duration: typeof data.duration === 'number' ? data.duration : undefined,
     };
   }
 }

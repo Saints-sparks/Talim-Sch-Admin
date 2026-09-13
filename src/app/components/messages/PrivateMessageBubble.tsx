@@ -3,6 +3,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCheck, Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
+import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 interface Attachment {
@@ -26,8 +27,12 @@ interface MessageBubbleProps {
     time: string;
     initials?: string;
     attachments?: Attachment[];
+    status?: "pending" | "failed";
+    error?: string;
   };
   index: number;
+  onRetry?: () => void;
+  onDelete?: () => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
   setReplyingMessage: (msg: any) => void;
@@ -39,6 +44,8 @@ export default function MessageBubble({
   openSubMenu,
   toggleSubMenu,
   setReplyingMessage,
+  onRetry,
+  onDelete,
 }: MessageBubbleProps) {
   const isCurrentUser = msg.senderType === "self" || msg.senderType === "me";
   const initials = msg.initials || getUserInitials(msg.sender);
@@ -51,7 +58,13 @@ export default function MessageBubble({
         <AudioMessage
           sender={isCurrentUser ? "me" : msg.sender}
           audioUrl={attachment?.url}
-          duration={typeof attachment?.duration === "number" ? attachment.duration : undefined}
+          duration={
+            typeof attachment?.duration === "number"
+              ? attachment.duration
+              : typeof msg.duration === "number"
+                ? msg.duration
+                : undefined
+          }
         />
       );
     }
@@ -66,6 +79,16 @@ export default function MessageBubble({
           />
           {msg.text && <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>}
         </div>
+      );
+    }
+
+    if (msg.type === "file" && attachment && !attachment.url) {
+      // Still uploading.
+      return (
+        <span className="flex items-center gap-2 text-sm">
+          <FileText size={16} className="flex-shrink-0" />
+          <span className="truncate max-w-[160px]">{attachment.name || "File"}</span>
+        </span>
       );
     }
 
@@ -143,7 +166,11 @@ export default function MessageBubble({
             }`}
           >
             <span>{msg.time}</span>
-            {isCurrentUser && <CheckCheck size={12} className="text-blue-400" />}
+            {msg.status ? (
+              <MessageDeliveryStatus status={msg.status} error={msg.error} onRetry={onRetry} onDelete={onDelete} />
+            ) : (
+              isCurrentUser && <CheckCheck size={12} className="text-blue-400" />
+            )}
           </div>
         </div>
       </div>
