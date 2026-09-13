@@ -25,6 +25,7 @@ import {
   type AdminSummary,
   type PaymentProvider,
 } from "@/app/services/payments.service";
+import { getErrorMessage } from "@/lib/apiError";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -619,7 +620,7 @@ function ManualPaymentModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to record payment");
+      toast.error(getErrorMessage(err, "Failed to record payment"));
     } finally {
       setLoading(false);
     }

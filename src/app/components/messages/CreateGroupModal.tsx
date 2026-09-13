@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { getClasses, getCoursesBySchool } from "@/app/services/subjects.service";
+import { getErrorMessage } from "@/lib/apiError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -198,11 +199,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
         onSuccess?.();
       }
     } catch (err: any) {
-      const msg =
-        Array.isArray(err?.response?.data?.message)
-          ? err.response.data.message.join(", ")
-          : err?.response?.data?.message || err?.message || "Failed to create group";
-      toast.error(msg);
+      toast.error(getErrorMessage(err, "Failed to create group"));
     } finally {
       setSubmitting(false);
     }
