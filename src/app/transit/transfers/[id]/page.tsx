@@ -24,6 +24,7 @@ import {
   TransferStatus,
 } from "@/app/services/transit.service";
 import { toast } from "@/components/CustomToast";
+import { sessionStore } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<TransferStatus, string> = {
@@ -139,6 +140,21 @@ export default function TransferDetailPage() {
 
   const currentStep = getStepIndex(transfer.status);
   const isTerminal = ["accepted", "rejected", "cancelled"].includes(transfer.status);
+  // Which side of the transfer this admin's school is on. The API enforces the
+  // same order: the source school releases the student before the target
+  // school can approve and accept.
+  const mySchool = sessionStore.getSchoolId();
+  const idOf = (ref: unknown) =>
+    typeof ref === "string" ? ref : ((ref as { _id?: string } | null)?._id ?? "");
+  const isSource = !!mySchool && idOf(transfer.sourceSchoolId) === mySchool;
+  const isTarget = !!mySchool && idOf(transfer.targetSchoolId) === mySchool;
+  const canSourceApprove = isSource && transfer.status === "requested";
+  const canTargetApprove = isTarget && transfer.status === "source_approved";
+  const canAccept = isTarget && transfer.status === "target_approved";
+  const canReject = isTarget && ["requested", "source_approved", "target_approved"].includes(transfer.status);
+  const canCancel = isSource && ["requested", "source_approved"].includes(transfer.status);
+  const waitingOnOtherSchool =
+    (isTarget && transfer.status === "requested") || (isSource && transfer.status === "source_approved");
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -310,7 +326,15 @@ export default function TransferDetailPage() {
           <h2 className="text-sm font-semibold text-[#030E18] mb-4">Actions</h2>
 
           <div className="flex flex-wrap gap-3">
-            {transfer.status === "requested" && (
+            {waitingOnOtherSchool && (
+              <p className="w-full text-sm text-[#929292]">
+                {isTarget
+                  ? "Waiting for the current school to release this student."
+                  : "Released. Waiting for the receiving school to approve."}
+              </p>
+            )}
+
+            {canSourceApprove && (
               <button
                 disabled={!!actionLoading}
                 onClick={() => runAction("Source Approved", () => sourceApproveTransfer(transfer._id))}
@@ -320,7 +344,7 @@ export default function TransferDetailPage() {
               </button>
             )}
 
-            {(transfer.status === "requested" || transfer.status === "source_approved") && (
+            {canTargetApprove && (
               <button
                 disabled={!!actionLoading}
                 onClick={() => runAction("Target Approved", () => targetApproveTransfer(transfer._id))}
@@ -330,7 +354,7 @@ export default function TransferDetailPage() {
               </button>
             )}
 
-            {transfer.status === "target_approved" && (
+            {canAccept && (
               <button
                 disabled={!!actionLoading}
                 onClick={() => runAction("Accepted", () => acceptTransfer(transfer._id))}
@@ -340,8 +364,8 @@ export default function TransferDetailPage() {
               </button>
             )}
 
-            {/* Reject */}
-            {!showRejectInput ? (
+            {/* Reject (receiving school) */}
+            {!canReject ? null : !showRejectInput ? (
               <button
                 disabled={!!actionLoading}
                 onClick={() => setShowRejectInput(true)}
@@ -376,8 +400,8 @@ export default function TransferDetailPage() {
               </div>
             )}
 
-            {/* Cancel */}
-            {!showCancelInput ? (
+            {/* Cancel (current school) */}
+            {!canCancel ? null : !showCancelInput ? (
               <button
                 disabled={!!actionLoading}
                 onClick={() => setShowCancelInput(true)}
