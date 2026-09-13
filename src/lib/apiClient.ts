@@ -5,9 +5,18 @@ import { ApiError } from "./apiError";
 export interface RequestConfig extends RequestInit {
   /** Abort after this many milliseconds. Default 30 000. */
   timeoutMs?: number;
+  /**
+   * Send without the bearer token and never attempt a token refresh. Use for
+   * public auth calls (login, refresh, password reset): a 401 there means
+   * "wrong credentials", not "session expired".
+   */
+  skipAuth?: boolean;
   /** Internal: set once a request has been retried after a token refresh. */
   _retry?: boolean;
 }
+
+/** Route the app sends a user to while their password must be replaced. */
+export const SET_PASSWORD_ROUTE = "/set-password";
 
 type ErrorListener = (error: ApiError) => void;
 
@@ -105,12 +114,13 @@ class ApiClient {
   }
 
   private withAuth(config: RequestConfig): RequestConfig {
+    config.credentials = "include";
+    if (config.skipAuth) return config;
     const token = this.getStoredAccessToken();
     if (token) {
       if (!this.accessToken) this.accessToken = token;
-      config.headers = { ...(config.headers as Record<string, string>), Authorization: `Bearer ${token}` };
+      config.headers = { Authorization: `Bearer ${token}`, ...(config.headers as Record<string, string>) };
     }
-    config.credentials = "include";
     return config;
   }
 
@@ -160,7 +170,7 @@ class ApiClient {
     const fullUrl = this.buildUrl(url);
     let response = await this.doFetch(fullUrl, this.withAuth(config));
 
-    if (response.status === 401 && !config._retry) {
+    if (response.status === 401 && !config._retry && !config.skipAuth) {
       try {
         await this.handleRefresh();
       } catch (refreshError) {
@@ -195,6 +205,13 @@ class ApiClient {
     if (!response.ok) {
       const error = ApiError.fromResponse(response, body as Parameters<typeof ApiError.fromResponse>[1]);
       this.emitError(error);
+      if (
+        error.code === "PASSWORD_CHANGE_REQUIRED" &&
+        typeof window !== "undefined" &&
+        window.location.pathname !== SET_PASSWORD_ROUTE
+      ) {
+        window.location.assign(SET_PASSWORD_ROUTE);
+      }
       throw error;
     }
     return body as T;

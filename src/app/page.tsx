@@ -6,6 +6,7 @@ import { Eye, EyeOff, ShieldAlert, AlertCircle, Loader2 } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { resolvePostLoginRoute } from "@/lib/postLoginRoute";
 import ModernLoader from "@/components/ModernLoader";
 import treelogo from "../../public/img/treelogo.svg";
 import loginImage from "../../public/img/Education-rafiki 1.svg";
@@ -14,36 +15,6 @@ type LoginError =
   | { kind: "access_denied"; message: string }
   | { kind: "invalid_credentials" }
   | { kind: "unknown"; message: string };
-
-const getSchoolIdFromUser = (userData: any): string | null => {
-  if (!userData?.schoolId) return null;
-  return typeof userData.schoolId === "string"
-    ? userData.schoolId
-    : userData.schoolId?._id ?? userData.schoolId?.id ?? null;
-};
-
-const hasPhase1ProfileData = (userData: any) => {
-  const hasAdminName = Boolean(userData?.firstName?.trim?.() && userData?.lastName?.trim?.());
-  const hasSchool = Boolean(
-    getSchoolIdFromUser(userData) ||
-      userData?.schoolName?.trim?.() ||
-      userData?.schoolId?.name?.trim?.()
-  );
-
-  return hasAdminName && hasSchool;
-};
-
-const hasLocalPhase1Completion = (schoolId: string | null) => {
-  if (!schoolId) return false;
-
-  try {
-    const onboardingRaw = localStorage.getItem(`onboarding_${schoolId}`);
-    const onboardingState = onboardingRaw ? JSON.parse(onboardingRaw) : null;
-    return onboardingState?.phase1Completed === true;
-  } catch {
-    return false;
-  }
-};
 
 export default function SignIn() {
   const router = useRouter();
@@ -64,18 +35,10 @@ export default function SignIn() {
     try {
       const success = await login(email, password, keepSignedIn);
       if (success) {
-        // Server flag (from introspect) is authoritative; fall back to localStorage
-        const userRaw = localStorage.getItem("user");
-        const userData = userRaw ? JSON.parse(userRaw) : null;
-
-        if (userData?.onboardingCompleted) {
-          router.push("/dashboard");
-        } else {
-          const schoolId = getSchoolIdFromUser(userData);
-          const phase1Done =
-            hasLocalPhase1Completion(schoolId) || hasPhase1ProfileData(userData);
-          router.push(phase1Done ? "/onboarding/setup" : "/onboarding");
-        }
+        // The introspected user decides: temporary password → set it first.
+        const userRaw = localStorage.getItem("user") ?? sessionStorage.getItem("user");
+        const userData = userRaw ? JSON.parse(userRaw) : {};
+        router.push(resolvePostLoginRoute(userData));
       }
     } catch (err: any) {
       const msg: string = err.message || "";

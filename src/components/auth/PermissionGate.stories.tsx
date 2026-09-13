@@ -121,6 +121,7 @@ const subAdminBlockedAuth = {
   refreshToken: async () => true,
   setAccessToken: () => {},
   updateUser: () => {},
+  changePassword: async () => {},
 };
 
 export const SubAdminBlocked: Story = {

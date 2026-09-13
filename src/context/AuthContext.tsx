@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
-import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
+import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
+import { ApiError } from "@/lib/apiError";
 import { apiClient } from "@/lib/apiClient";
 import { sessionStore } from "@/lib/session";
 
@@ -33,6 +34,8 @@ interface User {
   permissions?: string[];
   /** Convenience flag set by introspect */
   isSubAdmin?: boolean;
+  /** True while the account still has a temporary password; the API refuses other calls until it is replaced. */
+  mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
@@ -51,6 +54,11 @@ interface AuthContextType {
   refreshToken: () => Promise<boolean>;
   setAccessToken: (token: string | null) => void;
   updateUser: (partial: Partial<User>) => void;
+  /**
+   * Replaces the signed-in user's password (including a temporary one) and
+   * adopts the new session the server returns.
+   */
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -126,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         sessionStorage.setItem("accessToken", token);
         localStorage.removeItem("accessToken");
       }
-      introspectToken(token);
+      introspectToken(token).catch(() => undefined);
     } else {
       clearSession();
     }
@@ -143,46 +151,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStore.set(user as Parameters<typeof sessionStore.set>[0], accessToken);
   }, [user, accessToken]);
 
-  // Introspect token to get user info using access token
-  const introspectToken = async (token: string, redirectOnFailure = true) => {
+  /**
+   * Loads the user behind `token` and stores it. Rejects tokens that are
+   * inactive or belong to a role this portal does not serve.
+   *
+   * @param token - Access token to introspect.
+   * @param redirectOnFailure - Clear the session and go to sign-in on failure.
+   */
+  const introspectToken = async (token: string, redirectOnFailure = true): Promise<User> => {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (!ADMIN_PORTAL_ROLES.includes(data.user?.role as AdminPortalRole)) {
-          throw new Error("Access denied for this portal");
-        }
-
-        setUser(data.user);
-
-        const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
-        if (keepSignedIn) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-          sessionStorage.removeItem("user");
-        } else {
-          sessionStorage.setItem("user", JSON.stringify(data.user));
-          localStorage.removeItem("user");
-        }
-
-        // Trigger auth event for WebSocket
-        window.dispatchEvent(
-          new CustomEvent("auth-changed", {
-            detail: { type: "login", user: data.user },
-          })
-        );
-      } else {
-        throw new Error("Token introspection failed");
+      const data = await authService.introspectToken(token);
+      if (!data.active || !data.user) throw new Error("Token introspection failed");
+      const introspected = data.user as unknown as User;
+      if (!ADMIN_PORTAL_ROLES.includes(introspected.role as AdminPortalRole)) {
+        throw new Error("Access denied for this portal");
       }
+
+      setUser(introspected);
+
+      const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
+      if (keepSignedIn) {
+        localStorage.setItem("user", JSON.stringify(introspected));
+        sessionStorage.removeItem("user");
+      } else {
+        sessionStorage.setItem("user", JSON.stringify(introspected));
+        localStorage.removeItem("user");
+      }
+
+      // Trigger auth event for WebSocket
+      window.dispatchEvent(new CustomEvent("auth-changed", { detail: { type: "login", user: introspected } }));
+      return introspected;
     } catch (error) {
-      console.error("Error introspecting token:", error);
       if (redirectOnFailure) {
         clearSession(true);
       }
@@ -190,79 +189,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login function — includes RBAC: only school_admin role is permitted
+    /**
+   * Signs in and admits only school admins and sub-admins.
+   *
+   * @param email - Account email.
+   * @param password - Password (or the temporary password).
+   * @param keepSignedIn - Persist the session beyond this browser session.
+   * @throws Error with a user-facing message on wrong credentials or wrong role.
+   */
   const login = async (email: string, password: string, keepSignedIn = true): Promise<boolean> => {
+    let accessToken: string;
     try {
-      // Step 1: Authenticate
-      const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGIN}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          password,
-          rememberMe: keepSignedIn,
-          deviceToken: "123456",
-          platform: "web",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        const msg = errorData.message || "Login failed";
-        // Make credential errors descriptive
-        if (response.status === 401) {
-          throw new Error(
-            "Incorrect email or password. Please check your credentials and try again."
-          );
-        }
-        throw new Error(msg);
+      ({ access_token: accessToken } = await authService.login({ email, password, rememberMe: keepSignedIn }));
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.code === "UNAUTHENTICATED")) {
+        throw new Error("Incorrect email or password. Please check your credentials and try again.");
       }
-
-      const data = await response.json();
-      const { access_token } = data;
-
-      // Step 2: Introspect token to retrieve user role before storing anything
-      const introResponse = await fetch(`${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access_token}`,
-        },
-        credentials: "include",
-      });
-
-      if (!introResponse.ok) {
-        throw new Error("Could not verify your account. Please try again.");
-      }
-
-      const introData = await introResponse.json();
-      const userData = introData.user;
-
-      // Step 3: RBAC check — only school_admin and school_sub_admin may access this portal
-      if (!ADMIN_PORTAL_ROLES.includes(userData.role as AdminPortalRole)) {
-        const friendlyRole = userData.role.replace(/_/g, " ");
-        throw new Error(
-          `Access denied. This portal is for school administrators only. ` +
-            `Your account is registered as "${friendlyRole}". ` +
-            `Please use the correct Talim app for your role.`
-        );
-      }
-
-      // Step 4: Role is valid — persist session
-      persistSession(access_token, userData, keepSignedIn);
-      window.dispatchEvent(
-        new CustomEvent("auth-changed", { detail: { type: "login", user: userData } })
-      );
-
-      return true;
-    } catch (error: unknown) {
-      console.error("Login error:", error);
       throw error;
     }
+
+    // Introspect before storing anything, so a wrong-role account never gets a session here.
+    let introspection;
+    try {
+      introspection = await authService.introspectToken(accessToken);
+    } catch {
+      throw new Error("Could not verify your account. Please try again.");
+    }
+    const userData = introspection.user as unknown as User | undefined;
+    if (!introspection.active || !userData) {
+      throw new Error("Could not verify your account. Please try again.");
+    }
+
+    if (!ADMIN_PORTAL_ROLES.includes(userData.role as AdminPortalRole)) {
+      const friendlyRole = userData.role.replace(/_/g, " ");
+      throw new Error(
+        `Access denied. This portal is for school administrators only. ` +
+          `Your account is registered as "${friendlyRole}". ` +
+          `Please use the correct Talim app for your role.`
+      );
+    }
+
+    persistSession(accessToken, userData, keepSignedIn);
+    window.dispatchEvent(new CustomEvent("auth-changed", { detail: { type: "login", user: userData } }));
+    return true;
   };
 
-  // Refresh token function
+    // Refresh token function
   const refreshToken = async (): Promise<boolean> => {
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
@@ -270,22 +242,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     refreshPromiseRef.current = (async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}${API_URLS.AUTH.REFRESH}`, {
-          method: "POST",
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const { access_token } = data;
-          setAccessToken(access_token);
-          return true;
-        } else {
-          clearSession(true);
-          return false;
-        }
-      } catch (error) {
-        console.error("Refresh token error:", error);
+        const { access_token } = await authService.refresh();
+        setAccessToken(access_token);
+        return true;
+      } catch {
         clearSession(true);
         return false;
       } finally {
@@ -293,23 +253,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     })();
 
-    return refreshPromiseRef.current;
+        return refreshPromiseRef.current;
   };
 
   // ✅ FIXED: Logout function - clear localStorage
   const logout = async () => {
     try {
-      await fetch(`${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`, {
-        method: "POST",
-        credentials: "include",
-        headers: accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          : {},
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
+      if (accessToken) await authService.logout();
+    } catch {
+      // The local session is cleared regardless; a failed server logout only
+      // means the refresh token expires on its own.
     } finally {
       // Clear everything
       clearSession();
@@ -370,8 +323,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
+      } catch {
+        // Fall through to the signed-out state.
       } finally {
         setIsLoading(false);
       }
@@ -405,6 +358,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [user]
   );
 
+  const changePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    const { access_token } = await authService.changePassword(currentPassword, newPassword, confirmPassword);
+    // Adopt the rotated session and reload the user, which clears mustChangePassword.
+    setAccessTokenState(access_token);
+    apiClient.setAccessToken(access_token);
+    const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
+    (keepSignedIn ? localStorage : sessionStorage).setItem("accessToken", access_token);
+    await introspectToken(access_token, false);
+  };
+
   const updateUser = (partial: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
@@ -427,6 +390,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshToken,
     setAccessToken,
     updateUser,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

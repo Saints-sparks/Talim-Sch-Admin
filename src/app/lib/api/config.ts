@@ -18,6 +18,7 @@ export const API_URLS = {
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     FORGOT_PASSWORD: "/auth/forgot-password",
+    VERIFY_RESET_CODE: "/auth/verify-reset-code",
     RESET_PASSWORD: "/auth/reset-password",
     CHANGE_PASSWORD: "/auth/change-password",
     GET_PROFILE: "/auth/profile/:userId",

@@ -1,16 +1,19 @@
-import { API_ENDPOINTS } from "../lib/api/config";
-import { getLocalStorageItem } from "../utils/localStorage";
+import { API_URLS } from "../lib/api/config";
+import { api } from "@/lib/apiClient";
 
 export interface LoginCredentials {
   email: string;
   password: string;
+  /** Keep the refresh cookie beyond the browser session. */
+  rememberMe?: boolean;
+  /** Push token for this browser, when push is enabled. Omit otherwise. */
   deviceToken?: string;
   platform?: string;
 }
 
+/** `POST /auth/login` body. The refresh token is set as an httpOnly cookie, never returned. */
 export interface LoginResponse {
   access_token: string;
-  refresh_token: string;
 }
 
 export interface User {
@@ -23,21 +26,29 @@ export interface User {
   phoneNumber: string;
   isActive: boolean;
   isEmailVerified: boolean;
+  /** True while the account still has a temporary password. */
+  mustChangePassword?: boolean;
+  onboardingCompleted?: boolean;
+  permissions?: string[];
 }
 
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT" | "SCHOOL_ADMIN";
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 
+/**
+ * Body for `PUT /auth/profile/update`. Mirrors the backend `UpdateProfileDto`
+ * exactly — the API rejects any other field. Email and password are not
+ * editable here; passwords change through {@link authService.changePassword}.
+ */
 export interface UpdateUserProfilePayload {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  dateOfBirth?: string; // ISO date string
+  /** ISO date string. */
+  dateOfBirth?: string;
   gender?: "male" | "female" | "other";
+  /** Hosted image URL; an empty string removes the avatar. */
   userAvatar?: string;
-  isActive?: boolean;
-  isEmailVerified?: boolean;
-  isTwoFactorEnabled?: boolean;
 }
 
 export interface UserProfile {
@@ -80,224 +91,120 @@ export interface UserProfile {
   updatedAt: Date;
 }
 
+/** `POST /auth/introspect` body. `active: false` (with no user) for an invalid token. */
 export interface TokenIntrospectResponse {
   active: boolean;
-  exp: number;
-  iat: number;
-  user: User;
+  exp?: number;
+  iat?: number;
+  user?: User;
 }
 
+/** `POST /auth/change-password` body: a fresh access token (refresh cookie is rotated too). */
+export interface ChangePasswordResponse {
+  access_token: string;
+  message: string;
+}
+
+/**
+ * Authentication and account calls for the School Admin portal. Every method
+ * goes through the shared API client, so failures are `ApiError`s with a
+ * stable `code`, a user-safe `message` and field-level `details`.
+ */
 export const authService = {
-  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    try {
-      const response = await fetch(`${API_ENDPOINTS.LOGIN}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          ...credentials,
-          deviceToken: credentials.deviceToken || "web",
-          platform: credentials.platform || "web",
-        }),
-      });
+  /**
+   * Signs in. Public call: no bearer token is sent and a 401 is reported as
+   * wrong credentials instead of triggering a session refresh.
+   *
+   * @param credentials - Email, password and optional device fields.
+   * @returns The access token.
+   */
+  login: (credentials: LoginCredentials): Promise<LoginResponse> =>
+    api.post<LoginResponse>(API_URLS.AUTH.LOGIN, { platform: "web", ...credentials }, { skipAuth: true }),
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to login");
-      }
+  /**
+   * Resolves an access token to its user.
+   *
+   * @param token - The access token to inspect (sent as the bearer token).
+   * @returns The introspection result; `active` is false for an invalid token.
+   */
+  introspectToken: (token: string): Promise<TokenIntrospectResponse> =>
+    api.post<TokenIntrospectResponse>(API_URLS.AUTH.INTROSPECT, undefined, {
+      skipAuth: true,
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
-  },
+  /**
+   * Exchanges the httpOnly refresh cookie for a new access token.
+   *
+   * @returns The new access token.
+   */
+  refresh: (): Promise<LoginResponse> =>
+    api.post<LoginResponse>(API_URLS.AUTH.REFRESH, undefined, { skipAuth: true }),
 
-  introspectToken: async (token: string): Promise<TokenIntrospectResponse> => {
-    try {
-      const response = await fetch(`${API_ENDPOINTS.INTROSPECT}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ token }),
-      });
+  /**
+   * Emails a 6-digit reset code. Resolves with the same message whether or
+   * not the email is registered.
+   *
+   * @param email - Account email.
+   */
+  forgotPassword: (email: string): Promise<{ message: string }> =>
+    api.post<{ message: string }>(API_URLS.AUTH.FORGOT_PASSWORD, { email }, { skipAuth: true }),
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to validate token");
-      }
+  /**
+   * Checks a reset code before asking for a new password. Wrong codes count
+   * towards the server's attempt limit.
+   *
+   * @param email - Account email.
+   * @param token - The 6-digit code from the email.
+   */
+  verifyResetCode: (email: string, token: string): Promise<{ valid: boolean; message?: string }> =>
+    api.post<{ valid: boolean; message?: string }>(API_URLS.AUTH.VERIFY_RESET_CODE, { email, token }, { skipAuth: true }),
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Token introspection error:", error);
-      throw error;
-    }
-  },
+  /**
+   * Sets a new password with a reset code.
+   *
+   * @param email - Account email.
+   * @param token - The 6-digit code from the email.
+   * @param newPassword - Must satisfy the password policy.
+   */
+  resetPassword: (email: string, token: string, newPassword: string): Promise<{ message: string }> =>
+    api.post<{ message: string }>(API_URLS.AUTH.RESET_PASSWORD, { email, token, newPassword }, { skipAuth: true }),
 
-  forgotPassword: async (email: string): Promise<{ message: string }> => {
-    try {
-      const response = await fetch(`${API_ENDPOINTS.FORGOT_PASSWORD}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+  /**
+   * Changes the signed-in user's password (also replaces a temporary one).
+   * The server rotates the session and returns a new access token.
+   *
+   * @param currentPassword - Current (or temporary) password.
+   * @param newPassword - Must satisfy the password policy.
+   * @param confirmPassword - Must equal `newPassword`.
+   */
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string): Promise<ChangePasswordResponse> =>
+    api.post<ChangePasswordResponse>(API_URLS.AUTH.CHANGE_PASSWORD, { currentPassword, newPassword, confirmPassword }),
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to send reset code");
-      }
+  /** Ends the session on the server and clears the refresh cookie. */
+  logout: (): Promise<unknown> => api.post(API_URLS.AUTH.LOGOUT),
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      throw error;
-    }
-  },
+  /**
+   * Loads the signed-in user's full profile.
+   *
+   * @param userId - The user's id.
+   */
+  getUserProfile: (userId: string): Promise<UserProfile> =>
+    api.get<UserProfile>(API_URLS.AUTH.GET_PROFILE.replace(":userId", encodeURIComponent(userId))),
 
-  resetPassword: async (
-    email: string,
-    token: string,
-    newPassword: string
-  ): Promise<{ message: string }> => {
-    try {
-      const response = await fetch(`${API_ENDPOINTS.RESET_PASSWORD}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ email, token, newPassword }),
-      });
+  /**
+   * Updates personal details of the signed-in user.
+   *
+   * @param payload - Only the fields in {@link UpdateUserProfilePayload}.
+   */
+  updateUserProfile: (payload: UpdateUserProfilePayload): Promise<UserProfile> =>
+    api.put<UserProfile>(API_URLS.AUTH.UPDATE_PROFILE, payload),
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reset password");
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Reset password error:", error);
-      throw error;
-    }
-  },
-
-  async logout() {
-    const rawCookies = typeof document !== "undefined" ? document.cookie : "";
-    const cookieMap = Object.fromEntries(
-      rawCookies
-        .split("; ")
-        .filter(Boolean)
-        .map((c) => {
-          const eq = c.indexOf("=");
-          return [c.slice(0, eq), c.slice(eq + 1)];
-        })
-    );
-    const accessToken = cookieMap.access_token;
-
-    if (!accessToken) {
-      throw new Error("No access token found");
-    }
-
-    try {
-      const response = await fetch(`${API_ENDPOINTS.LOGOUT}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          accept: "*/*",
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-
-      // Expire auth cookies
-      if (typeof document !== "undefined") {
-        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      }
-
-      // Clear localStorage
-      localStorage.removeItem("user");
-
-      return await response.json();
-    } catch (error) {
-      console.error("Logout error:", error);
-      throw error;
-    }
-  },
-
-  getUserProfile: async (userId: string): Promise<UserProfile> => {
-    try {
-      const token = getLocalStorageItem("accessToken");
-      if (!token) {
-        throw new Error("No access token found");
-      }
-
-      const response = await fetch(API_ENDPOINTS.GET_USER_PROFILE(userId), {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Failed to fetch user profile: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Get user profile error:", error);
-      throw error;
-    }
-  },
-
-  updateUserProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => {
-    try {
-      const token = getLocalStorageItem("accessToken");
-      if (!token) {
-        throw new Error("No access token found");
-      }
-
-
-      const response = await fetch(API_ENDPOINTS.UPDATE_USER_PROFILE, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Failed to update user profile: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Update user profile error:", error);
-      throw error;
-    }
-  },
+  /**
+   * Saves a hosted avatar URL, or removes the avatar with an empty string.
+   *
+   * @param avatarUrl - Hosted image URL or `""`.
+   */
+  updateAvatarUrl: (avatarUrl: string): Promise<{ userAvatar: string }> =>
+    api.put<{ userAvatar: string }>(API_URLS.AUTH.UPDATE_AVATAR, { avatarUrl }),
 };

@@ -11,9 +11,6 @@ import {
   Camera,
   Save,
   X,
-  Eye,
-  EyeOff,
-  AlertCircle,
   Building,
   Globe,
   Key,
@@ -23,6 +20,8 @@ import {
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import Image from "next/image";
+import Link from "next/link";
+import { getErrorMessage } from "@/lib/apiError";
 import { getSchoolDashboard, type SchoolDashboardData } from "../services/dashboard.service";
 import { getSchoolId, updateSchool, type UpdateSchoolPayload } from "../services/school.service";
 import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
@@ -52,10 +51,6 @@ interface FormData {
 
 export default function Profile() {
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -161,14 +156,7 @@ export default function Profile() {
     } else {
       if (!formData.adminFirstName.trim()) return "First name is required";
       if (!formData.adminLastName.trim()) return "Last name is required";
-      if (!formData.adminEmail.trim()) return "Email is required";
       if (!formData.adminPhone.trim()) return "Phone number is required";
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.adminEmail.trim())) return "Please enter a valid email address";
-      if (password || confirmPassword) {
-        if (password.length < 8) return "Password must be at least 8 characters";
-        if (password !== confirmPassword) return "Passwords do not match";
-      }
     }
     return null;
   };
@@ -281,10 +269,8 @@ export default function Profile() {
           phoneNumber: formData.adminPhone.trim(),
         };
         if (formData.adminAvatar) adminPayload.userAvatar = formData.adminAvatar;
-        // @ts-ignore
-        if (formData.adminEmail) adminPayload.email = formData.adminEmail.trim().toLowerCase();
-        // @ts-ignore
-        if (password && password.length >= 8) adminPayload.password = password;
+        // Email and password are not editable here: the API accepts only
+        // personal details, and passwords change under Settings → Security.
 
         await authService.updateUserProfile(adminPayload);
       }
@@ -293,11 +279,8 @@ export default function Profile() {
         section === "school" ? "School information updated!" : "Administrator details updated!"
       );
       setEditingSection(null);
-      setPassword("");
-      setConfirmPassword("");
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
+      toast.error(getErrorMessage(error, "Failed to update profile"));
     } finally {
       setIsSubmitting(false);
     }
@@ -305,8 +288,6 @@ export default function Profile() {
 
   const handleCancel = () => {
     setEditingSection(null);
-    setPassword("");
-    setConfirmPassword("");
   };
 
   // ─── Derived helpers ──────────────────────────────────────────────────────────
@@ -595,7 +576,7 @@ export default function Profile() {
                 value={formData.adminEmail}
                 name="adminEmail"
                 type="email"
-                editing={isEditingAdmin}
+                editing={false}
                 placeholder="Email address"
               />
               <Field
@@ -609,68 +590,17 @@ export default function Profile() {
               />
             </div>
 
-            {/* Password section — only shown when editing */}
             {isEditingAdmin && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="mt-6 pt-6 border-t border-gray-100 space-y-4"
-              >
-                <Tooltip
-                  content="Passwords must be at least 8 characters. You'll be logged out of all other devices when changed."
-                  side="top"
-                >
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <Key className="w-4 h-4 text-[#003366]" />
-                    Change Password <span className="font-normal text-gray-400">(optional)</span>
-                  </h3>
-                </Tooltip>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="New password"
-                      className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm password"
-                      className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-amber-700">
-                    Leave password fields empty if you don't want to change your password. Minimum 8
-                    characters.
-                  </p>
-                </div>
-              </motion.div>
+              <div className="mt-6 flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <Key className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#003366] dark:text-blue-300" aria-hidden />
+                <p className="text-xs text-gray-600 dark:text-slate-300">
+                  Your sign-in email can&apos;t be changed here. To change your password, go to{" "}
+                  <Link href="/settings" className="font-medium text-[#003366] underline dark:text-blue-300">
+                    Settings → Security
+                  </Link>
+                  .
+                </p>
+              </div>
             )}
 
             {isEditingAdmin && <SaveBar section="admin" />}

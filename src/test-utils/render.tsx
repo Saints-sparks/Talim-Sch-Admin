@@ -40,6 +40,7 @@ function makeMockAuthValue(user = mockAdmin) {
     refreshToken: jest.fn().mockResolvedValue(true),
     setAccessToken: jest.fn(),
     updateUser: jest.fn(),
+    changePassword: jest.fn(),
   };
 }
 

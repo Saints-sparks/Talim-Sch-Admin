@@ -6,6 +6,9 @@ import { EyeIcon, EyeSlashIcon, ArrowLeftIcon } from '@heroicons/react/24/outlin
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/CustomToast';
 import { authService } from '../services/auth.service';
+import PasswordRequirements from '@/components/auth/PasswordRequirements';
+import { getErrorMessage } from '@/lib/apiError';
+import { isPasswordValid } from '@/lib/passwordPolicy';
 import treelogo from '../../../public/img/treelogo.svg';
 import loginImage from '../../../public/img/Education-rafiki 1.svg';
 
@@ -36,11 +39,11 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      const response = await authService.forgotPassword(email);
-      toast.success('Reset code sent to your email!');
+      await authService.forgotPassword(email);
+      toast.success('If that email has an account, a reset code is on its way.');
       setCurrentStep('otp');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to send reset code. Please try again.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to send reset code. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -57,11 +60,13 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      // Just validate OTP format for now, actual validation will be done in password reset
-      toast.success('OTP verified successfully!');
+      // Check the code with the server now, so a wrong code is caught before
+      // the user chooses a password (wrong codes count towards the limit).
+      await authService.verifyResetCode(email, otp);
+      toast.success('Code verified');
       setCurrentStep('newPassword');
     } catch (error) {
-      toast.error('Invalid OTP. Please try again.');
+      toast.error(getErrorMessage(error, 'That code is invalid or has expired. Request a new one.'));
     } finally {
       setLoading(false);
     }
@@ -70,8 +75,8 @@ export default function ForgotPassword() {
   const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!newPassword || newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (!isPasswordValid(newPassword)) {
+      toast.error('Choose a password that meets every requirement below');
       return;
     }
 
@@ -83,7 +88,7 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      const response = await authService.resetPassword(email, otp, newPassword);
+      await authService.resetPassword(email, otp, newPassword);
       
       // Show success modal
       setShowSuccessModal(true);
@@ -95,8 +100,8 @@ export default function ForgotPassword() {
           router.push('/');
         }, 500);
       }, 3000);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to reset password. Please try again.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to reset password. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -251,6 +256,7 @@ export default function ForgotPassword() {
             <EyeIcon className="h-5 w-5" />
           )}
         </button>
+        <PasswordRequirements password={newPassword} id="newPassword-rules" />
       </div>
 
       <div className="relative">

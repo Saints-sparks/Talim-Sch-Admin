@@ -15,6 +15,7 @@ import { useOnboardingSync } from "@/hooks/useOnboardingSync";
 import AppGuide from "@/components/onboarding/AppGuide";
 import NetworkStatusBanner from "@/components/NetworkStatusBanner";
 import { QueryProvider } from "@/providers/query-provider";
+import PasswordChangeGate from "@/components/auth/PasswordChangeGate";
 
 const SYNC_THROTTLE_MS = 60_000; // re-check at most once per minute
 
@@ -53,6 +54,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     "/onboarding",
     "/onboarding/setup",
     "/forgot-password",
+    "/set-password",
   ];
   const showSidebar = !noSidebarRoutes.includes(pathname);
 
@@ -70,6 +72,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       isAuthLoading={isLoading}
     >
       <OnboardingSyncEffect />
+      <PasswordChangeGate />
       <TransitionProvider>
         <SidebarProvider>
           <PageIndicatorProvider>

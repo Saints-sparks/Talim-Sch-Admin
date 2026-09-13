@@ -1,156 +1,153 @@
 /** @jest-environment jsdom */
 import { authService } from "@/app/services/auth.service";
+import { ApiError } from "@/lib/apiError";
 
-// auth.service uses fetch directly (not apiClient)
+// auth.service goes through the shared API client, which calls fetch.
 global.fetch = jest.fn();
 const mockFetch = global.fetch as jest.Mock;
 
-// Stub document.cookie — authService reads and writes cookies on logout
-Object.defineProperty(document, "cookie", {
-  get: () => "access_token=tok123",
-  set: jest.fn(), // logout clears cookies by writing expiry; silently accept
-  configurable: true,
-});
-
-// Provide localStorage stub for the Node test environment
-Object.defineProperty(global, "localStorage", {
-  value: { removeItem: jest.fn(), getItem: jest.fn(), setItem: jest.fn(), clear: jest.fn() },
-  writable: true,
-});
-
-// Mock localStorage helpers used by getUserProfile / updateUserProfile
-jest.mock("@/app/utils/localStorage", () => ({
-  getLocalStorageItem: jest.fn(() => "access_token_value"),
-}));
-
-function ok(body: unknown) {
-  return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
+function respond(status: number, body: unknown) {
+  return Promise.resolve({
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => null },
+    text: () => Promise.resolve(body === undefined ? "" : JSON.stringify(body)),
+  });
 }
-function err(message: string, status = 400) {
-  return Promise.resolve({ ok: false, status, json: () => Promise.resolve({ message }) });
-}
+const lastCall = () => {
+  const [url, options] = mockFetch.mock.calls[mockFetch.mock.calls.length - 1];
+  return { url: String(url), options, body: options.body ? JSON.parse(options.body) : undefined };
+};
 
-beforeEach(() => jest.clearAllMocks());
-
-// ─── login ────────────────────────────────────────────────────────────────────
+beforeEach(() => {
+  mockFetch.mockReset();
+  localStorage.clear();
+  sessionStorage.clear();
+  localStorage.setItem("accessToken", "stored-token");
+});
 
 describe("authService.login", () => {
-  it("posts credentials and returns tokens", async () => {
-    const tokens = { access_token: "abc", refresh_token: "xyz" };
-    mockFetch.mockReturnValueOnce(ok(tokens));
-    await expect(authService.login({ email: "a@b.com", password: "pass" })).resolves.toEqual(
-      tokens
-    );
-    const [, options] = mockFetch.mock.calls[0];
-    expect(options.method).toBe("POST");
-    const body = JSON.parse(options.body);
-    expect(body.email).toBe("a@b.com");
-    expect(body.deviceToken).toBe("web");
-    expect(body.platform).toBe("web");
-  });
-
-  it("uses provided deviceToken and platform", async () => {
-    mockFetch.mockReturnValueOnce(ok({ access_token: "a", refresh_token: "b" }));
-    await authService.login({
-      email: "a@b.com",
-      password: "p",
-      deviceToken: "mobile123",
-      platform: "ios",
+  it("posts credentials without the stored bearer token and returns the access token", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { access_token: "abc" }));
+    await expect(authService.login({ email: "a@b.com", password: "pass", rememberMe: true })).resolves.toEqual({
+      access_token: "abc",
     });
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.deviceToken).toBe("mobile123");
-    expect(body.platform).toBe("ios");
+    const { url, options, body } = lastCall();
+    expect(url).toMatch(/\/auth\/login$/);
+    expect(options.method).toBe("POST");
+    expect(options.credentials).toBe("include");
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(body).toEqual({ platform: "web", email: "a@b.com", password: "pass", rememberMe: true });
   });
 
-  it("throws with server message on failure", async () => {
-    mockFetch.mockReturnValueOnce(err("Invalid credentials", 401));
-    await expect(authService.login({ email: "x@y.com", password: "wrong" })).rejects.toThrow(
-      "Invalid credentials"
+  it("does not invent a device token", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { access_token: "abc" }));
+    await authService.login({ email: "a@b.com", password: "p" });
+    expect(lastCall().body.deviceToken).toBeUndefined();
+  });
+
+  it("reports wrong credentials as an ApiError without attempting a token refresh", async () => {
+    mockFetch.mockReturnValueOnce(
+      respond(401, { error: { code: "UNAUTHENTICATED", message: "Invalid credentials" } }),
     );
+    const error = await authService.login({ email: "x@y.com", password: "wrong" }).catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: "UNAUTHENTICATED", message: "Invalid credentials" });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
-
-// ─── introspectToken ─────────────────────────────────────────────────────────
 
 describe("authService.introspectToken", () => {
-  it("posts token and returns introspect result", async () => {
-    const result = {
-      active: true,
-      exp: 9999,
-      iat: 1000,
-      user: {
-        userId: "u1",
-        email: "a@b.com",
-        firstName: "A",
-        lastName: "B",
-        role: "ADMIN",
-        schoolId: "sc1",
-        phoneNumber: "",
-        isActive: true,
-        isEmailVerified: true,
-      },
-    };
-    mockFetch.mockReturnValueOnce(ok(result));
+  it("sends the given token as the bearer, not the stored one", async () => {
+    const result = { active: true, user: { userId: "u1", email: "a@b.com", role: "school_admin" } };
+    mockFetch.mockReturnValueOnce(respond(200, result));
     await expect(authService.introspectToken("tok")).resolves.toEqual(result);
-    const [, options] = mockFetch.mock.calls[0];
-    expect(options.headers.Authorization).toBe("Bearer tok");
-  });
-
-  it("throws when token is invalid", async () => {
-    mockFetch.mockReturnValueOnce(err("Invalid token", 401));
-    await expect(authService.introspectToken("bad")).rejects.toThrow("Invalid token");
+    expect(lastCall().options.headers.Authorization).toBe("Bearer tok");
   });
 });
 
-// ─── forgotPassword ───────────────────────────────────────────────────────────
+describe("password reset", () => {
+  it("forgotPassword posts the email", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { message: "sent" }));
+    await authService.forgotPassword("a@b.com");
+    expect(lastCall().url).toMatch(/\/auth\/forgot-password$/);
+    expect(lastCall().body).toEqual({ email: "a@b.com" });
+  });
 
-describe("authService.forgotPassword", () => {
-  it("posts email and returns message", async () => {
-    mockFetch.mockReturnValueOnce(ok({ message: "Reset code sent" }));
-    await expect(authService.forgotPassword("a@b.com")).resolves.toEqual({
-      message: "Reset code sent",
+  it("verifyResetCode checks the code with the server", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { valid: true }));
+    await expect(authService.verifyResetCode("a@b.com", "123456")).resolves.toEqual({ valid: true });
+    expect(lastCall().url).toMatch(/\/auth\/verify-reset-code$/);
+    expect(lastCall().body).toEqual({ email: "a@b.com", token: "123456" });
+  });
+
+  it("verifyResetCode surfaces an invalid code as an ApiError", async () => {
+    mockFetch.mockReturnValueOnce(respond(400, { error: { code: "BAD_REQUEST", message: "Invalid or expired code" } }));
+    await expect(authService.verifyResetCode("a@b.com", "000000")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Invalid or expired code",
     });
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.email).toBe("a@b.com");
   });
 
-  it("throws on failure", async () => {
-    mockFetch.mockReturnValueOnce(err("Email not found", 404));
-    await expect(authService.forgotPassword("ghost@x.com")).rejects.toThrow("Email not found");
-  });
-});
-
-// ─── resetPassword ────────────────────────────────────────────────────────────
-
-describe("authService.resetPassword", () => {
-  it("posts email, token and new password", async () => {
-    mockFetch.mockReturnValueOnce(ok({ message: "Password reset" }));
-    await authService.resetPassword("a@b.com", "reset123", "newPass!");
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.email).toBe("a@b.com");
-    expect(body.token).toBe("reset123");
-    expect(body.newPassword).toBe("newPass!");
-  });
-
-  it("throws when reset token is expired", async () => {
-    mockFetch.mockReturnValueOnce(err("Token expired", 410));
-    await expect(authService.resetPassword("a@b.com", "old", "p")).rejects.toThrow("Token expired");
+  it("resetPassword posts email, token and new password", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { message: "ok" }));
+    await authService.resetPassword("a@b.com", "123456", "N3w-Passw0rd!");
+    expect(lastCall().body).toEqual({ email: "a@b.com", token: "123456", newPassword: "N3w-Passw0rd!" });
   });
 });
 
-// ─── logout ───────────────────────────────────────────────────────────────────
+describe("authService.changePassword", () => {
+  it("posts all three fields with the session token and returns the new access token", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { access_token: "fresh", message: "changed" }));
+    await expect(authService.changePassword("Temp#1234", "N3w-Passw0rd!", "N3w-Passw0rd!")).resolves.toEqual({
+      access_token: "fresh",
+      message: "changed",
+    });
+    const { url, options, body } = lastCall();
+    expect(url).toMatch(/\/auth\/change-password$/);
+    expect(options.headers.Authorization).toBe("Bearer stored-token");
+    expect(body).toEqual({ currentPassword: "Temp#1234", newPassword: "N3w-Passw0rd!", confirmPassword: "N3w-Passw0rd!" });
+  });
+
+  it("maps field errors from the server", async () => {
+    mockFetch.mockReturnValueOnce(
+      respond(400, {
+        error: {
+          code: "VALIDATION_FAILED",
+          message: "Some fields need attention.",
+          details: [{ field: "currentPassword", reason: "Current password is incorrect" }],
+        },
+      }),
+    );
+    const error = (await authService.changePassword("bad", "N3w-Passw0rd!", "N3w-Passw0rd!").catch((e) => e)) as ApiError;
+    expect(error.fieldErrors()).toEqual({ currentPassword: "Current password is incorrect" });
+  });
+});
+
+describe("profile", () => {
+  it("updateUserProfile sends only the payload it is given", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { firstName: "Ada" }));
+    await authService.updateUserProfile({ firstName: "Ada", userAvatar: "https://cdn.x.com/a.png" });
+    const { url, options, body } = lastCall();
+    expect(url).toMatch(/\/auth\/profile\/update$/);
+    expect(options.method).toBe("PUT");
+    expect(body).toEqual({ firstName: "Ada", userAvatar: "https://cdn.x.com/a.png" });
+  });
+
+  it("getUserProfile encodes the user id into the path", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { userId: "u 1" }));
+    await authService.getUserProfile("u 1");
+    expect(lastCall().url).toMatch(/\/auth\/profile\/u%201$/);
+  });
+});
 
 describe("authService.logout", () => {
-  it("posts to logout endpoint with Bearer token from cookie", async () => {
-    mockFetch.mockReturnValueOnce(ok({ message: "Logged out" }));
+  it("posts to the logout endpoint with the session token", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { message: "Logged out" }));
     await authService.logout();
-    const [, options] = mockFetch.mock.calls[0];
+    const { url, options } = lastCall();
+    expect(url).toMatch(/\/auth\/logout$/);
     expect(options.method).toBe("POST");
-    expect(options.headers.Authorization).toBe("Bearer tok123");
-  });
-
-  it("throws when logout request fails", async () => {
-    mockFetch.mockReturnValueOnce(err("Logout failed", 500));
-    await expect(authService.logout()).rejects.toThrow("Logout failed");
+    expect(options.headers.Authorization).toBe("Bearer stored-token");
   });
 });
