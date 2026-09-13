@@ -278,7 +278,6 @@ export const teacherService = {
       }
 
       const data = await response.json();
-      console.log("Teacher courses updated:", data);
 
       return data;
     } catch (error) {

@@ -23,12 +23,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     const userId = user?.userId;
 
-    console.log("🔍 WebSocket connection effect triggered:", {
-      isAuthenticated,
-      userId,
-      isConnected: webSocket.isConnected,
-      connectionStatus: webSocket.connectionStatus,
-    });
 
     if (
       isAuthenticated &&
@@ -37,10 +31,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       !webSocket.isConnected &&
       webSocket.connectionStatus !== "connecting"
     ) {
-      console.log("🔌 Auto-connecting WebSocket for user:", userId);
       webSocket.connect(userId);
     } else if (!isAuthenticated && webSocket.isConnected) {
-      console.log("🔌 Auto-disconnecting WebSocket - user not authenticated");
       webSocket.disconnect();
     }
   }, [isAuthenticated, accessToken, user?.userId, webSocket, authLoading]);

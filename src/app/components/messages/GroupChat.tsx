@@ -292,7 +292,6 @@ export default function GroupChat({
           participantIds,
         });
       } else {
-        console.log('✅ Current user is a participant in this group');
       }
     };
 
@@ -302,13 +301,6 @@ export default function GroupChat({
   // Debug logging for room and user
   useEffect(() => {
     if (room) {
-      console.log('📋 GroupChat - Room data:', {
-        roomId,
-        roomName: room.name,
-        participants: room.participants?.length,
-        currentUser: user?.userId || user?._id,
-        isParticipant
-      });
     }
   }, [room, roomId, user, isParticipant]);
 
@@ -454,12 +446,10 @@ export default function GroupChat({
 
     // Don't refetch if we already have messages for this room
     if (fetchedRoomsRef.current.has(roomId)) {
-      console.log(`Already fetched room ${roomId}, skipping`);
       return;
     }
 
     const timer = setTimeout(() => {
-      console.log(`Initial fetch → room ${roomId}`);
       fetchMessages(roomId, {
         replaceExisting: true,
         force: true,
@@ -698,7 +688,6 @@ export default function GroupChat({
     if (!container) return;
 
     if (container.scrollTop < 60 && hasMoreOlder && !isLoadingMore) {
-      console.log('📜 Loading older messages...');
       loadOlderMessages();
     }
   }, [hasMoreOlder, isLoadingMore, loadOlderMessages]);
@@ -785,7 +774,6 @@ export default function GroupChat({
         isGroup={true}
         chatRoomId={roomId}
         onAddParticipants={() => {
-          console.log('Add parents to group');
           // You can implement this functionality
         }}
       />

@@ -90,7 +90,6 @@ export default function GroupInfoModal({
     try {
       // Refresh chat rooms to get updated participant list
       await fetchChatRooms(true);
-      console.log("Participants added successfully");
     } catch (error) {
       console.error("Error refreshing after adding participants:", error);
     } finally {

@@ -48,7 +48,6 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({
       const teacher = await teacherService.updateTeacherByCourse(teacherId, selectedCourses);
       
       // If we reach here, it means the update was successful
-      console.log('Update successful:', teacher);
 
       // Call the onAddCourses callback with selected course IDs
       onAddCourses(selectedCourses);

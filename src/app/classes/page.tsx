@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   FiEdit,
-  FiTrash,
   FiChevronLeft,
   FiChevronRight,
   FiBook,
@@ -262,18 +261,6 @@ export default function Classes() {
                                     aria-label={`Edit ${classItem.name || "class"}`}
                                   >
                                     <FiEdit className="w-4 h-4 text-white" />
-                                  </button>
-                                </Tooltip>
-                                <Tooltip
-                                  content="Remove this class record when it is no longer needed."
-                                  side="top"
-                                >
-                                  <button
-                                    onClick={() => console.log("delete")}
-                                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition"
-                                    aria-label={`Delete ${classItem.name || "class"}`}
-                                  >
-                                    <FiTrash className="w-4 h-4 text-white" />
                                   </button>
                                 </Tooltip>
                               </div>

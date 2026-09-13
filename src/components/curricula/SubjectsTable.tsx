@@ -38,20 +38,15 @@ const SubjectsTable: React.FC<SubjectsTableProps> = ({
 
   const toggleExpand = async (subjectId: string) => {
     const isCurrentlyExpanded = expandedSubjectId === subjectId;
-    console.log(subjectId);
 
     if (!isCurrentlyExpanded) {
-      console.log(isCurrentlyExpanded);
 
       if (!subjectCourses[subjectId]) {
-        console.log(subjectCourses[subjectId]);
 
         setLoading(subjectId);
         try {
-          console.log("Fetching courses for subject:", subjectId);
 
           const courses = await getCoursesBySubject(subjectId);
-          console.log(courses);
 
           setSubjectCourses((prev) => ({ ...prev, [subjectId]: courses }));
         } catch (err) {

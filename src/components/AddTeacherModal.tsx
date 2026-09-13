@@ -73,7 +73,6 @@ const AddTeacherModal: React.FC<{
         const classes = await getClasses();
         setClasses(classes);
       } catch (error) {
-        console.log("Error fetching classes:", error);
         toast.error("Failed to load classes");
       }
     };

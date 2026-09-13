@@ -72,7 +72,6 @@ const AddCourse: React.FC = () => {
     }
 
     try {
-      console.log("Request Data:", JSON.stringify(formData, null, 2));
 
       const response = await fetch(`${baseUrl}/subjects-courses/courses`, {
         method: "POST",
@@ -90,14 +89,12 @@ const AddCourse: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("Response Data:", data);
 
       toast.success("Course created successfully");
 
       setButtonLoader(false);
       resetForm();
     } catch (error: any) {
-      console.log("Error: " + error);
       setButtonLoader(false);
       const errorMessage =
         error.message || "Something went wrong. Please try again.";

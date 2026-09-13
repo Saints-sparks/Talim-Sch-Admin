@@ -3,6 +3,7 @@
 import Sidebar from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
+import RouteGuard from "@/components/RouteGuard";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 
@@ -30,7 +31,9 @@ export default function LayoutShell({ children, showSidebar }: LayoutShellProps)
 
         {/* <SchoolAdminNavbar user="Jessica" title="School Admin" /> */}
         <main className="flex-1 overflow-y-auto bg-[#F2F2F2] dark:bg-slate-950">
-          <PageTransition key={pathname}>{children}</PageTransition>
+          <PageTransition key={pathname}>
+            {showSidebar ? <RouteGuard>{children}</RouteGuard> : children}
+          </PageTransition>
         </main>
       </motion.div>
     </div>

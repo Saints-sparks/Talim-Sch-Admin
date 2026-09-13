@@ -275,7 +275,6 @@ export const authService = {
         throw new Error("No access token found");
       }
 
-      console.log("Updating user profile with payload:", payload);
 
       const response = await fetch(API_ENDPOINTS.UPDATE_USER_PROFILE, {
         method: "PUT",
@@ -295,7 +294,6 @@ export const authService = {
       }
 
       const data = await response.json();
-      console.log("User profile updated successfully:", data);
       return data;
     } catch (error) {
       console.error("Update user profile error:", error);

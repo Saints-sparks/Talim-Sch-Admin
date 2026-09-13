@@ -119,7 +119,6 @@ export default function AddTeacherToGroupChatModal({
       const participantIds = Array.from(selectedTeachers);
 
       // Log the participantIds being sent to the backend
-      console.log("🚀 Sending teacher participantIds to backend:", participantIds);
 
       // Validate that all IDs are 24-character hex strings
       const objectIdPattern = /^[0-9a-fA-F]{24}$/;

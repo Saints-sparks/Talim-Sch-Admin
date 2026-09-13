@@ -7,7 +7,6 @@ export const WebSocketStatus: React.FC = () => {
   const { connectionStatus, isConnected, reconnect } = useWebSocketContext();
 
   // Debug the WebSocket status component state
-  console.log('🔍 WebSocketStatus component state:', { connectionStatus, isConnected });
 
   const getStatusIcon = () => {
     switch (connectionStatus) {

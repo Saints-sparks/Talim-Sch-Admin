@@ -160,7 +160,6 @@ export const useChats = (): UseChatsReturn => {
       // Throttle requests unless forced
       const now = Date.now();
       if (!force && now - lastRoomsFetchRef.current < ROOMS_FETCH_INTERVAL) {
-        console.log("⏱️ Skipping chat rooms fetch - too soon");
         return [];
       }
 
@@ -451,7 +450,6 @@ export const useChats = (): UseChatsReturn => {
         attachments: data.attachments || [],
       };
 
-      console.log("📤 Sending message with data:", JSON.stringify(messageData, null, 2));
 
       // Require either text or attachments
       const hasText = !!messageData.text?.trim();
@@ -487,7 +485,6 @@ export const useChats = (): UseChatsReturn => {
         updatedAt: new Date(),
       };
 
-      console.log("📝 Optimistic message:", optimisticMessage);
 
       // Optimistically add message to UI
       setMessages((prev) => [...prev, optimisticMessage]);
@@ -495,7 +492,6 @@ export const useChats = (): UseChatsReturn => {
       try {
         const newMessage = await chatService.sendMessage(messageData);
 
-        console.log("✅ Message sent successfully:", newMessage);
 
         // Replace optimistic message with real one
         setMessages((prev) =>
@@ -567,7 +563,6 @@ export const useChats = (): UseChatsReturn => {
       // Throttle requests unless forced
       const now = Date.now();
       if (!force && now - lastMessageFetchRef.current < MESSAGE_FETCH_INTERVAL) {
-        console.log("⏱️ Skipping message refresh - too soon");
         return;
       }
 
@@ -629,7 +624,6 @@ export const useChats = (): UseChatsReturn => {
           )
         );
 
-        console.log(`✅ Message ${messageId} marked as read by user ${currentUserId}`);
       } catch (err) {
         console.error("Error marking message as read:", err);
       }

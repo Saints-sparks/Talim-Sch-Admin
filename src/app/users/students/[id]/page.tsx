@@ -46,7 +46,6 @@ const StudentProfile = () => {
         setError(null);
 
         const student = await studentService.getStudentById(studentId);
-        console.log("API Response:", student);
 
         if (!student) {
           throw new Error("No student data found");

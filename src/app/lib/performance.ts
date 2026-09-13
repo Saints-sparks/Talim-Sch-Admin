@@ -15,7 +15,6 @@ export class PerformanceMonitor {
     }
 
     const duration = performance.now() - startTime;
-    console.log(`⏱️ ${name}: ${duration.toFixed(2)}ms`);
 
     // Remove the measurement to prevent memory leaks
     this.measurements.delete(name);
@@ -40,11 +39,6 @@ export class PerformanceMonitor {
   static logNetworkMetrics(): void {
     if ("connection" in navigator) {
       const connection = (navigator as any).connection;
-      console.log("🌐 Network Info:", {
-        effectiveType: connection.effectiveType,
-        downlink: connection.downlink,
-        rtt: connection.rtt,
-      });
     }
   }
 }
@@ -76,7 +70,6 @@ export const performantFetch = async (
     if (duration > 1000) {
       console.warn(`🐌 Slow API request (${duration.toFixed(2)}ms):`, url);
     } else {
-      console.log(`⚡ API request (${duration.toFixed(2)}ms):`, url);
     }
 
     return response;
@@ -100,15 +93,9 @@ export const checkConnectionHealth = async (): Promise<boolean> => {
     const endTime = performance.now();
 
     const isHealthy = response.ok && endTime - startTime < 1000;
-    console.log(
-      `🔍 Connection health: ${isHealthy ? "Good" : "Poor"} (${(
-        endTime - startTime
-      ).toFixed(2)}ms)`
-    );
 
     return isHealthy;
   } catch {
-    console.log("🔍 Connection health: Poor (failed)");
     return false;
   }
 };

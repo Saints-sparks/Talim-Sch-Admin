@@ -1,3 +1,4 @@
+import { sessionStore } from "@/lib/session";
 import { API_ENDPOINTS } from "../lib/api/config";
 import { getLocalStorageItem } from "../utils/localStorage";
 
@@ -70,83 +71,25 @@ export const getClasses = async (): Promise<Class[]> => {
   return data;
 };
 
-export const getSchoolId = (): string | null => {
-  const extractSchoolId = (schoolId: any): string | null => {
-    if (typeof schoolId === "string" && /^[0-9a-fA-F]{24}$/.test(schoolId)) {
-      return schoolId;
-    }
-
-    if (schoolId && typeof schoolId === "object") {
-      if (typeof schoolId._id === "string") return schoolId._id;
-      if (typeof schoolId.id === "string") return schoolId.id;
-    }
-
-    return null;
-  };
-
-  const token = getLocalStorageItem("accessToken");
-  if (typeof token === "string" && token.includes(".")) {
-    try {
-      const encodedPayload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-      const paddedPayload = encodedPayload.padEnd(
-        encodedPayload.length + ((4 - (encodedPayload.length % 4)) % 4),
-        "="
-      );
-      const payload = JSON.parse(atob(paddedPayload));
-      const tokenSchoolId = extractSchoolId(payload.schoolId);
-      if (tokenSchoolId) return tokenSchoolId;
-    } catch (error) {
-      console.warn("Failed to extract schoolId from token:", error);
-    }
-  }
-
-  const user: any = getLocalStorageItem("user");
-
-  // Return null if no user data or user is undefined
-  if (!user || user === null || user === undefined) {
-    console.warn("No user data found in storage");
-    return null;
-  }
-
-  try {
-    // Check if user is a JWT token string instead of parsed user object
-    if (typeof user === "string" && user.startsWith("eyJ")) {
-      console.error(
-        "User data appears to be a JWT token instead of user object. This suggests a storage issue."
-      );
-      return null;
-    }
-
-    // Log the original schoolId
-    console.log("Original user data:", user);
-    console.log("Original schoolId:", user.schoolId);
-
-    const storedSchoolId = extractSchoolId(user.schoolId);
-    if (storedSchoolId) return storedSchoolId;
-
-    console.error("Invalid schoolId format:", user.schoolId);
-    return null;
-  } catch (error) {
-    console.error("Failed to extract schoolId:", error);
-    return null;
-  }
-};
+/**
+ * The signed-in user's school id, from the session store (the introspected
+ * user), or `null` when signed out. Kept as a named export because ~15
+ * services call it; new code should prefer `sessionStore.getSchoolId()`.
+ */
+export const getSchoolId = (): string | null => sessionStore.getSchoolId();
 
 export const updateSchool = async (
   schoolId: string,
   payload: UpdateSchoolPayload
 ): Promise<UpdateSchoolResponse> => {
-  console.log("=== updateSchool function called ===");
 
   const token = getLocalStorageItem("accessToken");
-  console.log("Token from getLocalStorageItem:", token);
 
   if (!token) {
     throw new Error("No access token found");
   }
 
   const url = API_ENDPOINTS.UPDATE_SCHOOL(schoolId);
-  console.log("Making request to URL:", url);
 
   try {
     const response = await fetch(url, {
@@ -159,13 +102,9 @@ export const updateSchool = async (
       body: JSON.stringify(payload),
     });
 
-    console.log("Response status:", response.status);
-    console.log("Response ok:", response.ok);
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
 
     // Get the raw response text first
     const responseText = await response.text();
-    console.log("Raw response text:", responseText);
 
     if (!response.ok) {
       // Handle error responses

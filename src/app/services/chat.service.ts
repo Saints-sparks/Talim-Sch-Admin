@@ -121,11 +121,9 @@ class ChatService {
    */
   async createChatRoom(data: CreateChatRoomDto): Promise<ChatRoom> {
     try {
-      console.log('📤 Creating chat room with data:', JSON.stringify(data, null, 2));
       
       const response = await apiClient.post(`${this.baseUrl}/rooms`, data);
       
-      console.log('📥 Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await this.extractErrorMessage(response);
@@ -138,7 +136,6 @@ class ChatService {
       if (!result?._id) {
         throw new Error('Invalid chat room response: missing room id');
       }
-      console.log('✅ Chat room created successfully:', result);
       return result;
     } catch (error) {
       console.error('❌ Error creating chat room:', error);
@@ -152,11 +149,9 @@ class ChatService {
    */
   async createGroupChat(data: CreateGroupChatDto): Promise<ChatRoom> {
     try {
-      console.log('📤 Creating group chat with data:', JSON.stringify(data, null, 2));
       
       const response = await apiClient.post(`${this.baseUrl}/groups`, data);
       
-      console.log('📥 Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await this.extractErrorMessage(response);
@@ -165,7 +160,6 @@ class ChatService {
       }
 
       const text = await response.text();
-      console.log('📥 Raw response:', text);
 
       if (!text) {
         throw new Error('Empty response from server');
@@ -183,7 +177,6 @@ class ChatService {
         throw new Error('Invalid group response: missing room id');
       }
 
-      console.log('✅ Group created successfully:', result);
       return result;
     } catch (error) {
       console.error('❌ Error creating group chat:', error);
@@ -197,13 +190,11 @@ class ChatService {
    */
   async getUserChatRooms(): Promise<ChatRoom[]> {
     try {
-      console.log('📤 Fetching user chat rooms');
 
       let response = await apiClient.get(`${this.baseUrl}/rooms?_ts=${Date.now()}`, {
         cache: 'no-store',
       });
 
-      console.log('📥 Response status:', response.status);
 
       // Some environments still return 304; retry with cache-buster to force fresh body.
       if (response.status === 304) {
@@ -211,11 +202,9 @@ class ChatService {
         response = await apiClient.get(`${this.baseUrl}/rooms?${cacheBuster}`, {
           cache: 'no-store',
         });
-        console.log('📥 Retried rooms fetch status:', response.status);
       }
 
       if (response.status === 204) {
-        console.log('📥 No chat rooms found');
         return [];
       }
 
@@ -226,13 +215,11 @@ class ChatService {
 
       const text = await response.text();
       if (!text) {
-        console.log('📥 Empty rooms response body');
         return [];
       }
 
       const result = JSON.parse(text);
       const rooms = Array.isArray(result) ? result : [];
-      console.log(`📥 Fetched ${rooms.length} chat rooms`);
       return rooms;
     } catch (error) {
       console.error('❌ Error fetching user chat rooms:', error);
@@ -251,7 +238,6 @@ class ChatService {
       if (params.type) queryParams.append('type', params.type);
       
       const url = `${this.baseUrl}/rooms/search?${queryParams.toString()}`;
-      console.log('📤 Searching chat rooms:', url);
       
       const response = await apiClient.get(url);
       
@@ -261,7 +247,6 @@ class ChatService {
       }
       
       const result = await response.json();
-      console.log(`📥 Found ${result.length} chat rooms`);
       return result;
     } catch (error) {
       console.error('❌ Error searching chat rooms:', error);
@@ -280,7 +265,6 @@ class ChatService {
   ): Promise<MessagesResponse> {
     try {
       const url = `${this.baseUrl}/rooms/${roomId}/messages?page=${page}&limit=${limit}`;
-      console.log('📤 Fetching messages:', url);
       
       const response = await apiClient.get(url);
       
@@ -290,7 +274,6 @@ class ChatService {
       }
       
       const result = await response.json();
-      console.log(`📥 Fetched ${result.messages?.length || 0} messages`);
       return result;
     } catch (error) {
       console.error('❌ Error fetching chat room messages:', error);
@@ -329,12 +312,10 @@ class ChatService {
     const cacheKey = this.generateCacheKey(roomId, limit, cursor, direction);
     const now = Date.now();
     
-    console.log(`📋 Request for ${cacheKey}`);
 
     // Check if there's a cached response that's less than 10 seconds old
     const cached = this.cachedResponses.get(cacheKey);
     if (cached && (now - cached.timestamp) < this.DEBOUNCE_DELAY) {
-      console.log(`✅ Returning cached response for ${cacheKey} (${Math.round((now - cached.timestamp)/1000)}s old)`);
       return cached.data;
     }
 
@@ -343,7 +324,6 @@ class ChatService {
 
     // If there's already a pending request for this key, return that promise
     if (this.pendingRequests.has(cacheKey)) {
-      console.log(`⏳ Request already in progress for ${cacheKey}, returning existing promise`);
       return this.pendingRequests.get(cacheKey)!;
     }
 
@@ -354,13 +334,11 @@ class ChatService {
     // If we've made a request within the last 10 seconds, wait until 10 seconds have passed
     if (timeSinceLastRequest < this.DEBOUNCE_DELAY && lastRequest > 0) {
       const waitTime = this.DEBOUNCE_DELAY - timeSinceLastRequest;
-      console.log(`⏱️ Debouncing: Last request was ${Math.round(timeSinceLastRequest/1000)}s ago, waiting ${Math.round(waitTime/1000)}s`);
 
       // Create a delayed promise
       const delayedPromise = new Promise<CursorMessagesResponse>((resolve, reject) => {
         const timeout = setTimeout(async () => {
           try {
-            console.log(`🔄 Executing debounced request for ${cacheKey}`);
             const result = await this.executeMessagesRequest(roomId, limit, cursor, direction, cacheKey);
             this.pendingRequests.delete(cacheKey);
             this.lastRequestTime.set(cacheKey, Date.now());
@@ -388,7 +366,6 @@ class ChatService {
     }
 
     // No recent request, execute immediately
-    console.log(`🚀 Executing immediate request for ${cacheKey}`);
     const requestPromise = this.executeMessagesRequest(roomId, limit, cursor, direction, cacheKey);
     this.pendingRequests.set(cacheKey, requestPromise);
     
@@ -425,7 +402,6 @@ class ChatService {
       if (cursor) queryParams.append('cursor', cursor);
       
       const url = `${this.baseUrl}/rooms/${roomId}/messages/cursor?${queryParams.toString()}`;
-      console.log(`📡 Making API request to: ${url}`);
       
       const response = await apiClient.get(url);
       
@@ -436,9 +412,6 @@ class ChatService {
       
       const data = await response.json();
       const normalized = this.normalizeCursorMessagesPayload(data, roomId);
-      console.log(
-        `✅ Request successful for ${cacheKey}, messages: ${normalized.messages.length}, hasMore: ${normalized.hasMore}`
-      );
       return normalized;
     } catch (error) {
       console.error(`❌ Error in executeMessagesRequest for ${cacheKey}:`, error);
@@ -449,15 +422,12 @@ class ChatService {
 // services/chatServices.ts - Updated sendMessage transformation
 
 async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
-  console.log('📤 ChatService.sendMessage - Data:', JSON.stringify(data, null, 2));
   
   try {
     const url = `${this.baseUrl}/messages`;
-    console.log('📤 Sending to URL:', url);
     
     const response = await apiClient.post(url, data);
     
-    console.log('📥 Response status:', response.status);
     
     if (!response.ok) {
       let errorText = '';
@@ -472,14 +442,12 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
     }
     
     const responseData = await response.json();
-    console.log('✅ Raw response data:', responseData);
 
     const transformedMessage = this.normalizeMessagePayload(
       responseData,
       data.chatRoomId
     );
     
-    console.log('✅ Transformed message:', transformedMessage);
     
     // Clear cache for this room
     this.clearRoomCache(data.chatRoomId);
@@ -495,7 +463,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    * Clear cache for a specific room
    */
   private clearRoomCache(roomId: string): void {
-    console.log(`🧹 Clearing cache for room ${roomId}`);
     
     // Clear all cached responses that start with this roomId
     for (const key of this.cachedResponses.keys()) {
@@ -525,7 +492,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    */
   async markMessageAsRead(messageId: string): Promise<void> {
     try {
-      console.log(`📤 Marking message ${messageId} as read`);
       
       const response = await apiClient.patch(`${this.baseUrl}/messages/${messageId}/read`, {});
       
@@ -534,7 +500,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      console.log(`✅ Message ${messageId} marked as read`);
     } catch (error) {
       console.error('❌ Error marking message as read:', error);
       throw error;
@@ -547,7 +512,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    */
   async getUnreadMessageCount(): Promise<number> {
     try {
-      console.log('📤 Fetching unread message count');
       
       const response = await apiClient.get(`${this.baseUrl}/messages/unread/count`);
       
@@ -557,7 +521,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const count = await response.json();
-      console.log(`📥 Unread count: ${count}`);
       return count;
     } catch (error) {
       console.error('❌ Error fetching unread message count:', error);
@@ -571,7 +534,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    */
   async getChatRoomParticipants(roomId: string): Promise<string[]> {
     try {
-      console.log(`📤 Fetching participants for room ${roomId}`);
       
       const response = await apiClient.get(`${this.baseUrl}/rooms/${roomId}/participants`);
       
@@ -581,7 +543,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const participants = await response.json();
-      console.log(`📥 Found ${participants.length} participants`);
       return participants;
     } catch (error) {
       console.error('❌ Error fetching chat room participants:', error);
@@ -595,7 +556,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    */
   async addParticipant(roomId: string, userId: string): Promise<ChatRoom> {
     try {
-      console.log(`📤 Adding participant ${userId} to room ${roomId}`);
       
       const response = await apiClient.post(
         `${this.baseUrl}/rooms/${roomId}/participants/${userId}`,
@@ -608,7 +568,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const updatedRoom = await response.json();
-      console.log('✅ Participant added successfully:', updatedRoom);
       return updatedRoom;
     } catch (error) {
       console.error('❌ Error adding participant:', error);
@@ -622,7 +581,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
    */
   async removeParticipant(roomId: string, userId: string): Promise<ChatRoom> {
     try {
-      console.log(`📤 Removing participant ${userId} from room ${roomId}`);
       
       const response = await apiClient.patch(
         `${this.baseUrl}/rooms/${roomId}/participants/${userId}/remove`,
@@ -635,7 +593,6 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
       const updatedRoom = await response.json();
-      console.log('✅ Participant removed successfully:', updatedRoom);
       return updatedRoom;
     } catch (error) {
       console.error('❌ Error removing participant:', error);

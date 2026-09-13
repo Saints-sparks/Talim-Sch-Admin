@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { API_BASE_URL, API_URLS } from "@/app/lib/api/config";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
+import { sessionStore } from "@/lib/session";
 
 /** All roles allowed to access the school admin portal */
 const ADMIN_PORTAL_ROLES = ["school_admin", "school_sub_admin"] as const;
@@ -135,6 +136,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     apiClient.initialize(accessToken, refreshToken);
   }, [accessToken]);
+
+  // Mirror the session into the store that services and the API client read
+  // from, so there is exactly one source of user / school context.
+  useEffect(() => {
+    sessionStore.set(user as Parameters<typeof sessionStore.set>[0], accessToken);
+  }, [user, accessToken]);
 
   // Introspect token to get user info using access token
   const introspectToken = async (token: string, redirectOnFailure = true) => {

@@ -127,15 +127,9 @@ export const useWebSocket = (): WebSocketContextType => {
     isInCooldownRef.current = true;
     lastRetryTimeRef.current = Date.now();
 
-    console.log(
-      `🚫 WebSocket connection failed ${MAX_RETRY_ATTEMPTS} times. Entering cooldown for 1 minute.`
-    );
     toast.error("Connection failed multiple times. Will retry in 1 minute.");
 
     cooldownTimeoutRef.current = setTimeout(() => {
-      console.log(
-        "✅ WebSocket cooldown period ended. Retries are now allowed."
-      );
       resetRetryLogic();
     }, COOLDOWN_DURATION);
   }, []);
@@ -146,9 +140,6 @@ export const useWebSocket = (): WebSocketContextType => {
       const remainingTime = Math.ceil(
         (COOLDOWN_DURATION - (Date.now() - lastRetryTimeRef.current)) / 1000
       );
-      console.log(
-        `🚫 WebSocket in cooldown. ${remainingTime} seconds remaining.`
-      );
       return false;
     }
     return retryCountRef.current < MAX_RETRY_ATTEMPTS;
@@ -156,10 +147,6 @@ export const useWebSocket = (): WebSocketContextType => {
 
   // Debug state changes
   useEffect(() => {
-    console.log("🔍 WebSocket state changed:", {
-      isConnected,
-      connectionStatus,
-    });
   }, [isConnected, connectionStatus]);
 
   // Connect to WebSocket with debouncing and retry logic
@@ -167,9 +154,6 @@ export const useWebSocket = (): WebSocketContextType => {
     (userId: string) => {
       // Check if we can attempt connection
       if (!canAttemptConnection()) {
-        console.log(
-          "🚫 Cannot attempt WebSocket connection: either in cooldown or max retries exceeded"
-        );
         return;
       }
 
@@ -184,17 +168,11 @@ export const useWebSocket = (): WebSocketContextType => {
         userIdRef.current === userId &&
         (socketRef.current?.connected || connectionStatus === "connecting")
       ) {
-        console.log(
-          "WebSocket already connected/connecting for this user, skipping connection attempt"
-        );
         return;
       }
 
       // Prevent multiple connection attempts while connecting
       if (connectionStatus === "connecting") {
-        console.log(
-          "WebSocket connection in progress, skipping duplicate attempt"
-        );
         return;
       }
 
@@ -202,20 +180,10 @@ export const useWebSocket = (): WebSocketContextType => {
       connectionAttemptRef.current = setTimeout(() => {
         // Disconnect existing connection if different user
         if (socketRef.current && userIdRef.current !== userId) {
-          console.log(
-            "Disconnecting existing WebSocket connection for different user"
-          );
           socketRef.current.disconnect();
           socketRef.current = null;
         }
 
-        console.log("🔌 Attempting to connect to WebSocket...", {
-          url: WEBSOCKET_URL,
-          userId,
-          attempt: retryCountRef.current + 1,
-          maxAttempts: MAX_RETRY_ATTEMPTS,
-          env: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
-        });
 
         setConnectionStatus("connecting");
         userIdRef.current = userId;
@@ -235,10 +203,6 @@ export const useWebSocket = (): WebSocketContextType => {
 
           // Connection successful
           socket.on("connect", () => {
-            console.log("🔌 WebSocket connected:", socket.id);
-            console.log(
-              "🔌 Setting state: isConnected=true, connectionStatus=connected"
-            );
             setIsConnected(true);
             setConnectionStatus("connected");
 
@@ -276,7 +240,6 @@ export const useWebSocket = (): WebSocketContextType => {
 
           // Disconnection
           socket.on("disconnect", (reason) => {
-            console.log("🔌 WebSocket disconnected:", reason);
             setIsConnected(false);
             setConnectionStatus("disconnected");
 
@@ -295,13 +258,9 @@ export const useWebSocket = (): WebSocketContextType => {
                 canAttemptConnection()
               ) {
                 reconnectTimeoutRef.current = setTimeout(() => {
-                  console.log("🔄 Attempting to reconnect...");
                   reconnect();
                 }, 3000);
               } else if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
-                console.log(
-                  "🚫 Max reconnection attempts reached, entering cooldown"
-                );
                 startCooldown();
               }
             }
@@ -354,7 +313,6 @@ export const useWebSocket = (): WebSocketContextType => {
     // Reset retry logic when manually disconnecting
     resetRetryLogic();
 
-    console.log("🔌 WebSocket manually disconnected");
   }, [resetRetryLogic]);
 
   // Reconnect to WebSocket
@@ -371,7 +329,6 @@ export const useWebSocket = (): WebSocketContextType => {
   const joinChatRoom = useCallback((roomId: string) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit("join-chat-room", { roomId });
-      console.log(`📨 Joined chat room: ${roomId}`);
     } else {
       toast.error("Not connected to chat service");
     }
@@ -380,7 +337,6 @@ export const useWebSocket = (): WebSocketContextType => {
   const leaveChatRoom = useCallback((roomId: string) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit("leave-chat-room", { roomId });
-      console.log(`📨 Left chat room: ${roomId}`);
     }
   }, []);
 
@@ -390,7 +346,6 @@ export const useWebSocket = (): WebSocketContextType => {
     ) => {
       if (socketRef.current?.connected) {
         socketRef.current.emit("send-chat-message", message);
-        console.log(`📨 Sent message to room: ${message.roomId}`);
       } else {
         toast.error("Not connected to chat service");
       }
@@ -498,7 +453,6 @@ export const useWebSocket = (): WebSocketContextType => {
       return;
     }
     socketRef.current.emit("fetch-chat-rooms", userId ? { userId } : {});
-    console.log("📨 Emitted fetch-chat-rooms via socket");
   }, []);
 
   const fetchUnreadCountViaSocket = useCallback((userId?: string) => {
@@ -507,7 +461,6 @@ export const useWebSocket = (): WebSocketContextType => {
       return;
     }
     socketRef.current.emit("fetch-unread-count", userId ? { userId } : {});
-    console.log("📨 Emitted fetch-unread-count via socket");
   }, []);
 
   // Cleanup on unmount

@@ -163,7 +163,6 @@ const fetchMessages = useCallback(async (
   // Add trace to see what's calling this
   console.group(`🔍 Fetch triggered for room ${roomId}`);
   console.trace('Call stack:');
-  console.log('Options:', { roomId, ...options });
   console.groupEnd();
 
   if (!isAuthenticated || !accessToken) {
@@ -173,7 +172,6 @@ const fetchMessages = useCallback(async (
     // Check if there's already a pending request for this exact params
     const requestKey = getRequestKey(roomId, options);
     if (inFlightRequestsRef.current.has(requestKey)) {
-      console.log(`⏳ Request already in flight for ${requestKey}`);
       try {
         await inFlightRequestsRef.current.get(requestKey);
       } catch (error) {
@@ -184,7 +182,6 @@ const fetchMessages = useCallback(async (
 
     // Check if there's a pending fetch for this room (any request)
     if (pendingFetchRef.current.get(roomId)) {
-      console.log(`⏳ Fetch already in progress for room ${roomId}`);
       return;
     }
 
@@ -255,7 +252,6 @@ const fetchMessages = useCallback(async (
 
       } catch (err: any) {
         if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
-          console.log('Request was cancelled');
           return;
         }
 

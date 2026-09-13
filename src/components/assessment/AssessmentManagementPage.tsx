@@ -287,7 +287,6 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({ ter
   // Handle view assessment (navigate to assessment details)
   const handleViewAssessment = (assessment: Assessment) => {
     // TODO: Navigate to assessment details page
-    console.log("View assessment:", assessment);
   };
 
   if (loading) return <AssessmentSkeleton />;

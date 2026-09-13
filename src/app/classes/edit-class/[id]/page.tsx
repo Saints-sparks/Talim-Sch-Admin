@@ -270,7 +270,6 @@ const EditClass: React.FC = () => {
         classId,
         selectedTeacher._id
       );
-      console.log("Teacher assignment result:", assignmentResult);
 
       // Refresh class details to show updated teacher
       const updatedData = await getClass(classId);

@@ -42,7 +42,6 @@ const StudentPage: React.FC = () => {
           currentPage,
           9
         );
-        console.log(response.data);
         setStudents(response.data);
       } else {
         const response = await studentService.getStudents(currentPage, 9);

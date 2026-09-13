@@ -210,8 +210,6 @@ const messages = useMemo(() => {
         room?.name ||
         'User';
       
-      console.log('📨 Message - Raw senderId:', msg.senderId, 'Extracted senderId:', senderId, 'Sender Name:', senderName);
-      console.log('👤 Current user - _id:', user?._id, 'userId:', user?.userId);
 
       // Check if this message is from the logged-in user
       const isMyMessage = isCurrentUser(senderId, senderName);
@@ -226,7 +224,6 @@ const messages = useMemo(() => {
         senderName = user?.firstName && user?.lastName
           ? `${user.firstName} ${user.lastName}`.trim()
           : user?.email || user?._id || 'Me';
-        console.log('✅ This is my message, setting senderName to:', senderName);
       }
 
       return {
@@ -293,7 +290,6 @@ const messages = useMemo(() => {
             }
           }
         }
-        console.log(`📥 Selecting room: ${room.roomId}`);
         selectChatRoom(room.roomId);
         selectedRoomRef.current = room.roomId;
       }, 100);
@@ -366,7 +362,6 @@ const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => 
   // Handle load more messages (scroll to top)
   const handleLoadMore = useCallback(async () => {
     if (hasMoreMessages && !isLoadingMore && !isLoading) {
-      console.log('📜 Loading more messages...');
       const scrollContainer = messagesContainerRef.current;
       const scrollHeight = scrollContainer?.scrollHeight;
 
@@ -525,7 +520,6 @@ const handleSendVoice = useCallback(async (blob: Blob, durationSecs: number) => 
   currentUserId={user?._id || user?.userId}
   onAddParticipants={() => {
     // Optional: Refresh the chat after adding parents
-    console.log('Parents added, refreshing...');
     // You might want to refresh messages or participants here
   }}
 />

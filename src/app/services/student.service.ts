@@ -253,7 +253,6 @@ interface CreateStudentProfilePayload {
 }
 
 export const registerStudent = async (payload: RegisterStudentPayload) => {
-  console.log("Registering student with payload:", payload);
 
   const response = await apiClient.post(API_ENDPOINTS.REGISTER, payload);
 
@@ -266,12 +265,10 @@ export const registerStudent = async (payload: RegisterStudentPayload) => {
   }
 
   const result = await response.json();
-  console.log("Registration successful:", result);
   return result;
 };
 
 export const createStudentProfile = async (payload: CreateStudentProfilePayload) => {
-  console.log("Creating student profile with payload:", payload);
 
   const response = await apiClient.post(API_ENDPOINTS.CREATE_STUDENT, payload);
 
@@ -284,7 +281,6 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
   }
 
   const result = await response.json();
-  console.log("Profile creation successful:", result);
   return result;
 };
 
@@ -345,12 +341,10 @@ export const updateCoursesInClass = async (classId: string, courseIds: string[])
 
 export const getClass = async (classId: string) => {
   try {
-    console.log("🔍 Attempting direct fetch for class:", classId);
     const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASS}/${classId}`);
 
     if (response.ok) {
       const data = await response.json();
-      console.log("✅ Direct fetch successful");
       return data;
     }
 
@@ -362,7 +356,6 @@ export const getClass = async (classId: string) => {
   }
 
   // Fallback: Get all classes and find the one we need
-  console.log("📋 Falling back to list endpoint...");
   try {
     const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
 
@@ -371,7 +364,6 @@ export const getClass = async (classId: string) => {
     }
 
     const allClasses = await response.json();
-    console.log("📋 Retrieved", allClasses.length, "classes from list");
 
     const foundClass = allClasses.find((c: any) => c._id === classId);
 
@@ -379,7 +371,6 @@ export const getClass = async (classId: string) => {
       throw new Error(`Class with ID ${classId} not found`);
     }
 
-    console.log("✅ Found class from list endpoint");
     return foundClass;
   } catch (fallbackError) {
     console.error("❌ Fallback also failed:", fallbackError);
@@ -453,10 +444,6 @@ export const studentService = {
         }
 
         const data = await response.json();
-        console.log("Student data received:", {
-          id: studentId,
-          hasData: !!data,
-        });
         return data.data[0];
       });
     } catch (error) {
