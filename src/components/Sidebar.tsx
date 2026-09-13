@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { useWebSocketContext } from "@/context/WebSocketContext";
-import { chatService } from "@/services/chatServices";
+import { chatService } from "@/app/services/chat.service";
 import {
   ChevronLeft,
   ChevronRight,

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { GraduationCap, Loader2, Search } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
 import { PermissionSelector } from "./PermissionSelector";
-import { subAdminService, PromoteTeacherDto, SubAdmin } from "@/services/subAdminService";
+import { subAdminService, PromoteTeacherDto, SubAdmin } from "@/app/services/sub-admin.service";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 import { API_ENDPOINTS } from "@/app/lib/api/config";

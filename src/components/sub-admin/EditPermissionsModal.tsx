@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
 import { PermissionSelector } from "./PermissionSelector";
-import { subAdminService, SubAdmin } from "@/services/subAdminService";
+import { subAdminService, SubAdmin } from "@/app/services/sub-admin.service";
 import { toast } from "@/components/CustomToast";
 
 interface EditPermissionsModalProps {

@@ -1,7 +1,6 @@
 "use client";
 import { getCoursesBySubject } from "@/app/services/subjects.service";
 import React, { useState } from "react";
-// import { getCoursesBySubject } from "@/services/courseService"; // adjust path as needed
 
 interface Course {
   _id: string;

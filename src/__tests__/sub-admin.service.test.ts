@@ -18,7 +18,7 @@ jest.mock("@/lib/apiClient", () => ({
   },
 }));
 
-import { subAdminService } from "@/services/subAdminService";
+import { subAdminService } from "@/app/services/sub-admin.service";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

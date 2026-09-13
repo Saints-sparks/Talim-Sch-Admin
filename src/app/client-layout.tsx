@@ -13,6 +13,8 @@ import LayoutShell from "@/components/LayoutShell";
 import { ToastContainer, useToast } from "@/components/CustomToast";
 import { useOnboardingSync } from "@/hooks/useOnboardingSync";
 import AppGuide from "@/components/onboarding/AppGuide";
+import NetworkStatusBanner from "@/components/NetworkStatusBanner";
+import { QueryProvider } from "@/providers/query-provider";
 
 const SYNC_THROTTLE_MS = 60_000; // re-check at most once per minute
 
@@ -48,8 +50,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   const noSidebarRoutes = [
     "/",
-    "/account-section-1",
-    "/account-section-2",
     "/onboarding",
     "/onboarding/setup",
     "/forgot-password",
@@ -77,6 +77,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
               <LayoutShell showSidebar={showSidebar}>{children}</LayoutShell>
               {showSidebar && <AppGuide />}
               <ToastContainer toasts={toasts} onRemove={removeToast} />
+              <NetworkStatusBanner />
             </WebSocketProvider>
           </PageIndicatorProvider>
         </SidebarProvider>
@@ -92,9 +93,11 @@ export default function ClientLayout({
 }) {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <AppShell>{children}</AppShell>
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
+      </QueryProvider>
     </ThemeProvider>
   );
 }

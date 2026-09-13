@@ -8,7 +8,7 @@ import MessageInput from "./MessageInput";
 import MessageBubble from "./PrivateMessageBubble";
 import ReplyPreview from "./ReplyPreview";
 import { Loader2, MessageCircle } from "lucide-react";
-import { chatService } from '@/services/chatServices';
+import { chatService } from '@/app/services/chat.service';
 import { toast } from "@/components/CustomToast";
 
 interface MsgAttachment {

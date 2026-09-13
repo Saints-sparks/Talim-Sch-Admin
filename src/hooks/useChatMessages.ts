@@ -1,7 +1,7 @@
 // hooks/useChatMessages.ts
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { chatService } from '@/services/chatServices';
+import { chatService } from '@/app/services/chat.service';
 import { ChatMessage } from '@/types/chat.types';
 import { toast } from "@/components/CustomToast";
 

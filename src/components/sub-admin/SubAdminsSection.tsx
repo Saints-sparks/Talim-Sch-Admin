@@ -15,7 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { subAdminService, SubAdmin } from "@/services/subAdminService";
+import { subAdminService, SubAdmin } from "@/app/services/sub-admin.service";
 import { CreateSubAdminModal } from "./CreateSubAdminModal";
 import { PromoteTeacherModal } from "./PromoteTeacherModal";
 import { EditPermissionsModal } from "./EditPermissionsModal";

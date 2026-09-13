@@ -8,7 +8,7 @@ import {
   subAdminService,
   CreateSubAdminDto,
   SubAdmin,
-} from "@/services/subAdminService";
+} from "@/app/services/sub-admin.service";
 import { toast } from "@/components/CustomToast";
 
 interface CreateSubAdminModalProps {

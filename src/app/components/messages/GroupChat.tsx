@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWebSocketContext } from "@/context/WebSocketContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import type { UseChatsReturn } from "@/hooks/useChats";
-import { chatService } from "@/services/chatServices";
+import { chatService } from "@/app/services/chat.service";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import GroupMessageBubble from "./GroupMessageBubble";
