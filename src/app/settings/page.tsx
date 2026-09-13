@@ -84,7 +84,9 @@ import {
   SchoolProfile,
   PrimaryContact,
 } from "@/app/services/school-settings.service";
-import { API_BASE_URL } from "@/app/lib/api/config";
+import { uploadToCloudinary } from "@/app/utils/cloudinary";
+import { api } from "@/lib/apiClient";
+import { getErrorMessage } from "@/lib/apiError";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -466,14 +468,8 @@ function SchoolProfileSection() {
     }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "presetOne");
-      const res = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
+      const logoUrl = await uploadToCloudinary(file);
+      const data = { secure_url: logoUrl };
       if (data.secure_url) {
         await updateSchoolProfile({ logo: data.secure_url });
         setSchool((prev) => (prev ? { ...prev, logo: data.secure_url } : prev));
@@ -698,15 +694,10 @@ function AdminAccountSection() {
 
     // Always fetch fresh profile from the backend so the UI is never stale
     try {
-      const token = localStorage.getItem("accessToken");
       const cached = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = cached.userId || cached._id;
-      if (!token || !userId) return;
-      const res = await fetch(`${API_BASE_URL}/auth/profile/${userId}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      });
-      if (!res.ok) return;
-      const fresh = await res.json();
+      if (!userId) return;
+      const fresh = await authService.getUserProfile(userId);
       const merged = { ...cached, ...fresh };
       localStorage.setItem("user", JSON.stringify(merged));
       setProfile(merged);
@@ -727,8 +718,8 @@ function AdminAccountSection() {
       setProfile(updated);
       setEditing(false);
       toast.success("Profile updated successfully");
-    } catch {
-      toast.error("Failed to update profile");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update profile"));
     } finally {
       setSaving(false);
     }
@@ -747,32 +738,16 @@ function AdminAccountSection() {
     }
     setUploadingAvatar(true);
     try {
-      // Upload to Cloudinary
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("upload_preset", "presetOne");
-      const res = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
-      if (!data.secure_url) throw new Error("Upload failed");
-
-      // Save to backend
-      const token = localStorage.getItem("accessToken");
-      const backendRes = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ avatarUrl: data.secure_url }),
-      });
-      if (!backendRes.ok) throw new Error("Failed to save avatar");
+      const avatarUrl = await uploadToCloudinary(file);
+      await authService.updateAvatarUrl(avatarUrl);
+      const data = { secure_url: avatarUrl };
 
       const updated = { ...profile, userAvatar: data.secure_url };
       localStorage.setItem("user", JSON.stringify(updated));
       setProfile(updated);
       toast.success("Profile picture updated");
-    } catch {
-      toast.error("Failed to update profile picture");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update profile picture"));
     } finally {
       setUploadingAvatar(false);
     }
@@ -1762,14 +1737,7 @@ function FeesReceiptsSection() {
     }
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("upload_preset", "presetOne");
-      const r = await fetch("https://api.cloudinary.com/v1_1/ddbs7m7nt/image/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const data = await r.json();
+      const data = { secure_url: await uploadToCloudinary(file) };
       if (data.secure_url) {
         await updateReceiptSettings({ signatureUrl: data.secure_url });
         setSettings((s) => (s ? { ...s, signatureUrl: data.secure_url } : s));
@@ -2620,17 +2588,6 @@ const ADMIN_NOTIF_DEFAULTS: AdminNotifPrefs = {
   quietHoursEnd: "07:00",
 };
 
-function authFetchJson(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("accessToken");
-  return fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-}
 
 function NotificationsSection() {
   const [prefs, setPrefs] = useState<AdminNotifPrefs>(ADMIN_NOTIF_DEFAULTS);
@@ -2639,10 +2596,9 @@ function NotificationsSection() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    authFetchJson("/notifications/preferences")
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+    api
+      .get<Partial<AdminNotifPrefs>>("/notifications/preferences")
+      .then((data) => {
         if (data && typeof data === "object") {
           setPrefs((prev) => ({ ...prev, ...data }));
         }
@@ -2660,14 +2616,10 @@ function NotificationsSection() {
     setPrefs((p) => ({ ...p, [field]: value }));
     setSaving((s) => ({ ...s, [field]: true }));
     try {
-      const res = await authFetchJson("/notifications/preferences", {
-        method: "PATCH",
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch {
+      await api.patch("/notifications/preferences", { [field]: value });
+    } catch (error) {
       setPrefs((p) => ({ ...p, [field]: prev }));
-      toast.error("Failed to save preference. Please try again.");
+      toast.error(getErrorMessage(error, "Failed to save preference. Please try again."));
     } finally {
       setSaving((s) => ({ ...s, [field]: false }));
     }
@@ -2817,15 +2769,10 @@ function SecuritySection() {
     // Fetch fresh profile from backend
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
         const cached = JSON.parse(localStorage.getItem("user") || "{}");
         const userId = cached.userId || cached._id;
-        if (!token || !userId) return;
-        const res = await fetch(`${API_BASE_URL}/auth/profile/${userId}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        });
-        if (!res.ok) return;
-        const fresh = await res.json();
+        if (!userId) return;
+        const fresh = await authService.getUserProfile(userId);
         const merged = { ...cached, ...fresh };
         localStorage.setItem("user", JSON.stringify(merged));
         setProfile(merged);
