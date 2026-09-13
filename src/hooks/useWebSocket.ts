@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { sessionStore } from "@/lib/session";
 import { toast } from "@/components/CustomToast";
 import { API_BASE_URL } from "@/app/lib/api/config";
 
@@ -192,7 +193,10 @@ export const useWebSocket = (): WebSocketContextType => {
         retryCountRef.current += 1;
 
         try {
+          // The server authenticates the socket with the access token. The callback runs
+          // on every connect and reconnect, so a refreshed token is always used.
           const socket = io(WEBSOCKET_URL, {
+            auth: (cb) => cb({ token: sessionStore.getToken() }),
             query: { userId },
             transports: ["websocket", "polling"],
             timeout: 20000,

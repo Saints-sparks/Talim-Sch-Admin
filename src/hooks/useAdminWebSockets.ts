@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { sessionStore } from "@/lib/session";
 import { toast } from "@/components/CustomToast";
 import { API_BASE_URL } from "@/app/lib/api/config";
 
@@ -220,12 +221,11 @@ export const useAdminWebSocket = (): AdminWebSocketContextType => {
     schoolIdRef.current = schoolId || null;
 
     try {
+      // The server authenticates the socket with the access token. The callback runs
+      // on every connect and reconnect, so a refreshed token is always used.
       const socket = io(WEBSOCKET_URL, {
-        query: { 
-          userId, 
-          role: 'admin',
-          schoolId: schoolId || '' 
-        },
+        auth: (cb) => cb({ token: sessionStore.getToken() }),
+        query: { userId },
         transports: ["websocket", "polling"],
         timeout: 20000,
         reconnection: true,
