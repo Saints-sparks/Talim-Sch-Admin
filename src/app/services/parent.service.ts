@@ -128,7 +128,6 @@ export const parentService = {
     const url = `${API_ENDPOINTS.GET_PARENT(schoolId)}${
         query.toString() ? `?${query.toString()}` : ""
       }`;
-    console.info("[Parents] Fetching parents dashboard", url);
 
     const response = await apiClient.get(url);
     if (!response.ok) {

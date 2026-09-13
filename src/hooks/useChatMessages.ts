@@ -160,10 +160,6 @@ const fetchMessages = useCallback(async (
   roomId: string,
   options: FetchMessagesOptions = {}
 ): Promise<void> => {
-  // Add trace to see what's calling this
-  console.group(`🔍 Fetch triggered for room ${roomId}`);
-  console.trace('Call stack:');
-  console.groupEnd();
 
   if (!isAuthenticated || !accessToken) {
     setError('You must be logged in to fetch messages');
