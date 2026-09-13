@@ -47,7 +47,7 @@ interface MenuItem {
   hasDropdown?: boolean;
   expanded?: boolean;
   onClick?: (e: React.MouseEvent) => void;
-  subItems?: { path: string; label: string; tooltip: string; permission?: string }[];
+  subItems?: { path: string; label: string; tooltip: string; permission?: string; fullAdminOnly?: boolean }[];
   /** Permission required to see this item. Full admins always see everything. */
   permission?: string;
 }
@@ -218,17 +218,17 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
         setExpandedUsers(!expandedUsers);
       },
       subItems: [
-        { path: "/users/students", label: "Students", tooltip: "Student Directory" },
-        { path: "/users/teachers", label: "Teachers", tooltip: "Teacher Directory" },
-        { path: "/users/parents", label: "Parents", tooltip: "Parent Directory" },
+        { path: "/users/students", label: "Students", tooltip: "Student Directory", permission: Permission.MANAGE_STUDENTS },
+        { path: "/users/teachers", label: "Teachers", tooltip: "Teacher Directory", permission: Permission.MANAGE_TEACHERS },
+        { path: "/users/parents", label: "Parents", tooltip: "Parent Directory", permission: Permission.MANAGE_PARENTS },
         {
           path: "/users/sub-admins",
           label: "Sub-Admins",
           tooltip: "Sub-Admin Management",
           permission: Permission.MANAGE_SUB_ADMINS,
+          fullAdminOnly: true,
         },
       ],
-      permission: Permission.MANAGE_STUDENTS,
     },
     {
       path: "/announcements",
@@ -289,8 +289,12 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
 
   // Filter items based on the current user's permissions.
   // Full school_admin always sees everything (hasPermission always returns true).
-  const menuItems = allMenuItems.filter(
-    (item) => !item.permission || hasPermission(item.permission)
+  const canSee = (entry: { permission?: string; fullAdminOnly?: boolean }) =>
+    (!entry.fullAdminOnly || isFullAdmin) && (!entry.permission || hasPermission(entry.permission));
+  // A group shows when the user can open at least one of its pages (the Users
+  // group used to require manage:students even for a teachers-only sub-admin).
+  const menuItems = allMenuItems.filter((item) =>
+    item.subItems?.length ? item.subItems.some(canSee) : canSee(item)
   );
 
   const handleLinkClick = (itemPath?: string) => {
@@ -529,9 +533,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25, ease: "easeInOut" }}
                 >
-                  {item.subItems.filter(
-                    (sub) => !sub.permission || hasPermission(sub.permission)
-                  ).map((subItem, subIndex) => (
+                  {item.subItems.filter(canSee).map((subItem, subIndex) => (
                     <motion.div
                       key={subItem.path}
                       initial={{ opacity: 0, x: -10 }}

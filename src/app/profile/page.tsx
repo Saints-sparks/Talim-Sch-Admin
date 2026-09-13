@@ -13,14 +13,13 @@ import {
   X,
   Building,
   Globe,
-  Key,
   Shield,
   Pencil,
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import Image from "next/image";
-import Link from "next/link";
+import ChangePasswordCard from "@/components/auth/ChangePasswordCard";
 import { getErrorMessage } from "@/lib/apiError";
 import { getSchoolDashboard, type SchoolDashboardData } from "../services/dashboard.service";
 import { getSchoolId, updateSchool, type UpdateSchoolPayload } from "../services/school.service";
@@ -590,18 +589,12 @@ export default function Profile() {
               />
             </div>
 
-            {isEditingAdmin && (
-              <div className="mt-6 flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <Key className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#003366] dark:text-blue-300" aria-hidden />
-                <p className="text-xs text-gray-600 dark:text-slate-300">
-                  Your sign-in email can&apos;t be changed here. To change your password, go to{" "}
-                  <Link href="/settings" className="font-medium text-[#003366] underline dark:text-blue-300">
-                    Settings → Security
-                  </Link>
-                  .
-                </p>
-              </div>
-            )}
+            <p className="mt-4 text-xs text-gray-500 dark:text-slate-400">
+              Your sign-in email can&apos;t be changed here.
+            </p>
+            <div className="mt-6 border-t border-gray-100 pt-6 dark:border-slate-700">
+              <ChangePasswordCard />
+            </div>
 
             {isEditingAdmin && <SaveBar section="admin" />}
           </div>

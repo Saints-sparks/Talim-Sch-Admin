@@ -38,3 +38,15 @@ export function requiredPermissionFor(pathname: string): PermissionValue | null 
   }
   return null;
 }
+
+/** Routes only the primary school admin may open, whatever a sub-admin's permissions. */
+const FULL_ADMIN_ONLY = ["/users/sub-admins"];
+
+/**
+ * True when `pathname` is reserved for the primary school admin.
+ *
+ * @param pathname - The route being opened.
+ */
+export function isFullAdminOnly(pathname: string): boolean {
+  return FULL_ADMIN_ONLY.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}

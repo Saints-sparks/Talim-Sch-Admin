@@ -236,3 +236,18 @@ describe("sidebar permission filtering", () => {
     expect(visible.map((i) => i.label)).toEqual(["Dashboard"]);
   });
 });
+
+describe("route gating", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { isFullAdminOnly, requiredPermissionFor } = require("@/lib/routePermissions");
+  it("reserves sub-admin management for the primary admin", () => {
+    expect(isFullAdminOnly("/users/sub-admins")).toBe(true);
+    expect(isFullAdminOnly("/users/sub-admins/abc")).toBe(true);
+    expect(isFullAdminOnly("/users/teachers")).toBe(false);
+  });
+  it("keeps per-page permissions for the users pages", () => {
+    expect(requiredPermissionFor("/users/teachers/123/edit")).toBe("manage:teachers");
+    expect(requiredPermissionFor("/users/parents")).toBe("manage:parents");
+    expect(requiredPermissionFor("/profile")).toBeNull();
+  });
+});

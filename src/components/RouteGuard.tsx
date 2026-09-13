@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { requiredPermissionFor } from "@/lib/routePermissions";
+import { isFullAdminOnly, requiredPermissionFor } from "@/lib/routePermissions";
 import AccessDeniedPage from "@/app/access-denied/page";
 import Loading from "@/app/loading";
 
@@ -17,7 +17,7 @@ import Loading from "@/app/loading";
 export default function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading, hasPermission } = useAuth();
+  const { user, isLoading, hasPermission, isFullAdmin } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) router.replace("/");
@@ -25,6 +25,9 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
 
   if (isLoading || !user) return <Loading />;
 
+  // Managing sub-admins is reserved for the primary school admin (the API
+  // refuses sub-admins even when they hold manage:sub_admins).
+  if (isFullAdminOnly(pathname) && !isFullAdmin) return <AccessDeniedPage />;
   const required = requiredPermissionFor(pathname);
   if (required && !hasPermission(required)) return <AccessDeniedPage />;
 
