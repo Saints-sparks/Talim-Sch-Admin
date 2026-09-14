@@ -1,12 +1,10 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
-import AudioMessage from "./AudioMessage";
+import { AttachmentGrid } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
-import VideoMessage from "./VideoMessage";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 interface Attachment {
@@ -14,7 +12,11 @@ interface Attachment {
   type: string;
   name: string;
   mimeType?: string;
+  size?: number;
+  width?: number;
+  height?: number;
   duration?: number;
+  playbackUrl?: string;
 }
 
 interface MessageBubbleProps {
@@ -25,13 +27,14 @@ interface MessageBubbleProps {
     color: string;
     type: string;
     text?: string;
-    videoThumbnail?: string;
     duration?: string | number;
     time: string;
     initials?: string;
     attachments?: Attachment[];
     status?: "pending" | "failed";
     error?: string;
+    /** Local upload progress per attachment while sending. */
+    uploadProgress?: number[];
     /** Tick state, for my own messages. */
     deliveryState?: DeliveryState;
     /** "Read by N" — set only on my latest message. */
@@ -57,82 +60,23 @@ export default function GroupMessageBubble({
   const isMe = msg.senderType === "self";
   const initials = msg.initials || getUserInitials(msg.sender);
   const bgColor = msg.color || generateColorFromString(msg.sender);
-  const attachment = msg.attachments?.[0];
 
   const renderContent = () => {
-    if (msg.type === "audio" || msg.type === "voice") {
-      return (
-        <AudioMessage
-          sender={isMe ? "me" : msg.sender}
-          audioUrl={attachment?.url}
-          duration={
-            typeof attachment?.duration === "number"
-              ? attachment.duration
-              : typeof msg.duration === "number"
-                ? msg.duration
-                : undefined
-          }
-        />
-      );
-    }
-
-    if (msg.type === "image" && attachment?.url) {
-      return (
-        <div>
-          <img
-            src={attachment.url}
-            alt={attachment.name || "Image"}
-            className="rounded-lg max-w-[220px] max-h-[220px] object-cover"
-          />
-          {msg.text && (
-            <p className="text-sm leading-relaxed break-words mt-1">{msg.text}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (msg.type === "file" && attachment && !attachment.url) {
-      // Still uploading.
-      return (
-        <span className="flex items-center gap-2 text-sm">
-          <FileText size={16} className="flex-shrink-0" />
-          <span className="truncate max-w-[160px]">{attachment.name || "File"}</span>
-        </span>
-      );
-    }
-
-    if (msg.type === "file" && attachment?.url) {
-      return (
-        <a
-          href={attachment.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          download={attachment.name}
-          className={`flex items-center gap-2 text-sm underline-offset-2 hover:underline ${
-            isMe ? "text-white" : "text-blue-600"
-          }`}
-        >
-          <FileText size={16} className="flex-shrink-0" />
-          <span className="truncate max-w-[160px]">{attachment.name || "File"}</span>
-          <Download size={14} className="flex-shrink-0 ml-auto" />
-        </a>
-      );
-    }
-
-    if (msg.type === "video") {
-      return (
-        <VideoMessage
-          videoThumbnail={msg.videoThumbnail || ""}
-          videoDuration={typeof msg.duration === "string" ? msg.duration : ""}
-          messageText={msg.text || ""}
-        />
-      );
-    }
-
+    const hasAttachments = Boolean(msg.attachments?.length);
     return (
-      <p className="text-sm sm:text-base leading-relaxed break-words">
-        {msg.text}
-      </p>
+      <div className="flex flex-col gap-1.5">
+        {hasAttachments && (
+          <AttachmentGrid
+            attachments={msg.attachments ?? []}
+            tone={isMe ? "inverted" : "default"}
+            pending={Boolean(msg.status)}
+            progress={msg.status === "pending" ? msg.uploadProgress : undefined}
+          />
+        )}
+        {msg.text && (
+          <p className="text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
+        )}
+      </div>
     );
   };
 

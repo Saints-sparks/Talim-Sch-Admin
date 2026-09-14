@@ -18,10 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Parents from "./Parents";
 import Teachers from "./Teachers"; // Import the new Teachers component
-import Images from "./Images";
-import Videos from "./Videos";
-import Links from "./Links";
-import Documents from "./Document";
+import SharedMedia from "./SharedMedia";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { useChatsContext } from "@/context/ChatsContext";
@@ -79,7 +76,9 @@ export default function GroupInfoModal({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentParticipants, setCurrentParticipants] = useState<Participant[]>(participants);
 
-  const { fetchChatRooms } = useChatsContext();
+  const { fetchChatRooms, messages, currentRoomId } = useChatsContext();
+  // Shared media comes from this conversation's loaded messages.
+  const roomMessages = chatRoomId && currentRoomId === chatRoomId ? messages : [];
   // Adding people turns a direct message into a group; not offered in 1:1 chats.
   const canAddMembers = Boolean(chatRoomId) && roomType !== ChatRoomType.ONE_TO_ONE;
 
@@ -287,10 +286,10 @@ export default function GroupInfoModal({
                 onAddTeacherSuccess={handleAddParticipantsSuccess}
               />
             )}
-            {selectedMenu === "Images" && <Images />}
-            {selectedMenu === "Videos" && <Videos />}
-            {selectedMenu === "Links" && <Links />}
-            {selectedMenu === "Documents" && <Documents />}
+            {(selectedMenu === "Images" ||
+              selectedMenu === "Videos" ||
+              selectedMenu === "Links" ||
+              selectedMenu === "Documents") && <SharedMedia section={selectedMenu} messages={roomMessages} />}
           </div>
         </div>
       </div>

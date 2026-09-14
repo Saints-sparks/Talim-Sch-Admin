@@ -3,6 +3,7 @@
 import { useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import type { UseChatsReturn } from "@/hooks/useChats";
+import type { ChatAttachment } from "@/types/chat.types";
 import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -20,13 +21,7 @@ import {
   type DeliveryState,
 } from "@/lib/chat/readReceipts";
 
-interface MsgAttachment {
-  url: string;
-  type: string;
-  name: string;
-  mimeType?: string;
-  duration?: number;
-}
+type MsgAttachment = ChatAttachment;
 
 interface Message {
   _id: string;
@@ -45,6 +40,7 @@ interface Message {
   attachments?: MsgAttachment[];
   status?: "pending" | "failed";
   error?: string;
+  uploadProgress?: number[];
   deliveryState?: DeliveryState;
   readByCount?: number;
 }
@@ -85,7 +81,7 @@ export default function GroupChat({
     deleteFailedMessage,
   } = chats;
   const roomId = room.roomId;
-  const { draft, updateDraft, sendText, sendFile, sendVoice } = useChatThread(chats, roomId);
+  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(chats, roomId);
 
   const getMessageDayKey = useCallback((value?: string) => {
     if (!value) return "";
@@ -151,6 +147,7 @@ export default function GroupChat({
           attachments: msg.attachments,
           status: msg.status,
           error: msg.error,
+          uploadProgress: msg.uploadProgress,
           deliveryState: isMine ? deliveryState(msg) : undefined,
           readByCount: isMine && msg._id === latestOwnId ? readByCount(msg) : undefined,
         };
@@ -277,7 +274,7 @@ export default function GroupChat({
         value={draft}
         onChange={(e) => updateDraft(e.target.value)}
         onSend={sendText}
-        onSendFile={sendFile}
+        onSendFiles={sendFiles}
         onSendVoice={sendVoice}
         placeholder={isConnected ? "Type a message..." : "Offline — messages send when you're back"}
       />

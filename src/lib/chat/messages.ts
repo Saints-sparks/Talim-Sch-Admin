@@ -77,6 +77,7 @@ export function normalizeAttachment(raw: unknown): ChatAttachment | null {
     duration: toNumber(a.duration),
     width: toNumber(a.width),
     height: toNumber(a.height),
+    ...(typeof a.playbackUrl === "string" && a.playbackUrl ? { playbackUrl: a.playbackUrl } : {}),
   };
 }
 

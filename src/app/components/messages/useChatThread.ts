@@ -26,21 +26,24 @@ export function useChatThread(chats: UseChatsReturn, roomId: string | undefined)
     if (sendMessage({ roomId, text: draft })) updateDraft("");
   }, [roomId, draft, sendMessage, updateDraft]);
 
-  const sendFile = useCallback(
-    (file: File, caption: string) => {
-      if (!roomId) return;
-      if (sendMessage({ roomId, file, text: caption })) updateDraft("");
+  /** Sends picked files with whatever was typed as their caption. Returns false if nothing was sent. */
+  const sendFiles = useCallback(
+    (files: File[], caption: string) => {
+      if (!roomId || files.length === 0) return false;
+      if (!sendMessage({ roomId, files, text: caption })) return false;
+      updateDraft("");
+      return true;
     },
     [roomId, sendMessage, updateDraft]
   );
 
   const sendVoice = useCallback(
-    (blob: Blob, duration: number) => {
+    (file: File, duration: number) => {
       if (!roomId) return;
-      sendMessage({ roomId, voice: { blob, duration } });
+      sendMessage({ roomId, voice: { file, duration } });
     },
     [roomId, sendMessage]
   );
 
-  return { draft, updateDraft, sendText, sendFile, sendVoice };
+  return { draft, updateDraft, sendText, sendFiles, sendVoice };
 }

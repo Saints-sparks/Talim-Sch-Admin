@@ -34,6 +34,16 @@ import {
   upsertRoom,
 } from "@/lib/chat/rooms";
 import { openChatRoom } from "@/lib/chat/openRoom";
+import {
+  fileKind,
+  messageTypeFor,
+  useAttachmentUpload,
+  validateFile,
+  MAX_FILES_PER_MESSAGE,
+  type AttachmentKind,
+  type ChatUploadFn,
+  type UploadItem,
+} from "@/components/chat-kit";
 import { applyMessagesRead, nextReadMarker, type ReadEvent, type ReadMarker } from "@/lib/chat/readReceipts";
 
 /** Loading state of the open conversation, separate from the room list. */
@@ -42,9 +52,12 @@ export type ThreadStatus = "idle" | "loading" | "ready" | "error";
 /** What the composer hands to {@link UseChatsReturn.sendMessage}. */
 export interface SendMessageInput {
   roomId?: string;
+  /** The message text, or the caption of the files. */
   text?: string;
-  file?: File;
-  voice?: { blob: Blob; duration: number };
+  /** Up to 10 files, already validated by the composer. */
+  files?: File[];
+  /** A recorded voice note (`useVoiceRecorder`). */
+  voice?: { file: File; duration: number };
 }
 
 export interface UseChatsReturn {
@@ -104,11 +117,21 @@ interface OutboxEntry {
   roomId: string;
   text: string;
   type: string;
-  file?: File;
-  voice?: { blob: Blob; duration: number };
-  uploaded?: ChatAttachment[];
-  previewUrl?: string;
+  /** Files to upload; each keeps its uploaded attachment so a retry skips it. */
+  items: UploadItem[];
+  /** Voice note length, seconds. */
+  duration?: number;
+  /** Local object URLs of the pending bubble's previews. */
+  previewUrls: string[];
 }
+
+function revokePreviews(entry: OutboxEntry) {
+  for (const url of entry.previewUrls) URL.revokeObjectURL(url);
+  entry.previewUrls = [];
+}
+
+/** The app's upload helper, in the shape the chat kit expects. */
+const uploadChatFile: ChatUploadFn = (file) => chatService.uploadChatAttachment(file);
 
 type PageAck = ChatAck<MessagesUpdatePayload>;
 type SendAck = ChatAck<{ message: unknown; clientMessageId?: string }>;
@@ -191,6 +214,7 @@ export const useChats = (): UseChatsReturn => {
   const readMarkersRef = useRef(new Map<string, ReadMarker>());
   const draftsRef = useRef(new Map<string, string>());
   const roomsRefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { upload: uploadFiles } = useAttachmentUpload(uploadChatFile);
 
   const setChatRooms = useCallback((update: (prev: ChatRoom[]) => ChatRoom[]) => {
     setChatRoomsState((prev) => {
@@ -470,34 +494,45 @@ export const useChats = (): UseChatsReturn => {
     [updateThread]
   );
 
-  /** Uploads (if needed) and sends one queued message. Offline: stays pending. */
+  /** Records upload progress on the pending bubble. */
+  const setUploadProgress = useCallback(
+    (roomId: string, clientMessageId: string, index: number, fraction: number) => {
+      updateThread(roomId, (t) => {
+        let changed = false;
+        const messages = t.messages.map((m) => {
+          if (m.clientMessageId !== clientMessageId || m.status !== "pending") return m;
+          const progress = [...(m.uploadProgress ?? [])];
+          if (progress[index] === fraction) return m;
+          progress[index] = fraction;
+          changed = true;
+          return { ...m, uploadProgress: progress };
+        });
+        return changed ? { ...t, messages } : t;
+      });
+    },
+    [updateThread]
+  );
+
+  /** Uploads (what isn't uploaded yet) and sends one queued message. Offline: stays pending. */
   const flushMessage = useCallback(
     async (clientMessageId: string) => {
       const entry = outboxRef.current.get(clientMessageId);
       if (!entry || inFlightRef.current.has(clientMessageId) || !connectedRef.current) return;
       inFlightRef.current.add(clientMessageId);
       try {
-        if ((entry.file || entry.voice) && !entry.uploaded) {
-          const file =
-            entry.file ??
-            new File([entry.voice!.blob], `voice-${Date.now()}.webm`, {
-              type: entry.voice!.blob.type || "audio/webm",
-            });
-          const uploaded = await chatService.uploadChatAttachment(file);
-          entry.uploaded = [
-            entry.voice
-              ? { ...uploaded, type: "audio", duration: uploaded.duration ?? entry.voice.duration }
-              : uploaded,
-          ];
-        }
+        const attachments = entry.items.length
+          ? await uploadFiles(entry.items, {
+              onProgress: (index, fraction) => setUploadProgress(entry.roomId, clientMessageId, index, fraction),
+            })
+          : [];
 
         const payload = {
           roomId: entry.roomId,
           text: entry.text,
           type: entry.type,
           clientMessageId,
-          ...(entry.uploaded ? { attachments: entry.uploaded } : {}),
-          ...(entry.voice ? { duration: entry.voice.duration } : {}),
+          ...(attachments.length ? { attachments } : {}),
+          ...(entry.type === "voice" && entry.duration !== undefined ? { duration: entry.duration } : {}),
         };
         const ack = await emitWithAck<SendAck>("send-chat-message", payload, SEND_TIMEOUT_MS);
         // Refused for an expired token: stays pending and is sent again after the socket reconnects.
@@ -506,69 +541,83 @@ export const useChats = (): UseChatsReturn => {
 
         mergeInto(entry.roomId, [normalizeMessage(ack.message, entry.roomId)]);
         outboxRef.current.delete(clientMessageId);
-        if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+        revokePreviews(entry);
       } catch (err) {
         failSend(entry.roomId, clientMessageId, err);
       } finally {
         inFlightRef.current.delete(clientMessageId);
       }
     },
-    [emitWithAck, mergeInto, failSend]
+    [emitWithAck, mergeInto, failSend, uploadFiles, setUploadProgress]
   );
 
   const sendMessage = useCallback(
     (input: SendMessageInput): string | null => {
       const roomId = input.roomId ?? currentRoomIdRef.current;
       const text = (input.text ?? "").trim();
-      if (!roomId || (!text && !input.file && !input.voice)) return null;
+      const files = input.voice ? [input.voice.file] : input.files ?? [];
+      if (!roomId || (!text && files.length === 0)) return null;
       if (text.length > MAX_TEXT_LENGTH) {
         toast.error("Messages can be up to 5,000 characters.");
         return null;
       }
+      if (files.length > MAX_FILES_PER_MESSAGE) {
+        toast.error(`You can attach up to ${MAX_FILES_PER_MESSAGE} files`);
+        return null;
+      }
+      const invalid = input.voice ? null : files.map(validateFile).find(Boolean);
+      if (invalid) {
+        toast.error(invalid);
+        return null;
+      }
 
       const clientMessageId = createClientMessageId();
-      let type = "text";
-      let attachments: ChatAttachment[] = [];
-      let previewUrl: string | undefined;
+      const kinds: AttachmentKind[] = files.map((file) => (input.voice ? "audio" : fileKind(file)));
+      const type = messageTypeFor(kinds, Boolean(input.voice));
+      const duration = input.voice?.duration;
+      const previewUrls: string[] = [];
 
-      if (input.file) {
-        const isImage = input.file.type.startsWith("image/");
-        type = isImage ? "image" : "file";
-        previewUrl = isImage ? URL.createObjectURL(input.file) : undefined;
-        attachments = [
-          {
-            url: previewUrl ?? "",
-            type: isImage ? "image" : "file",
-            name: input.file.name,
-            mimeType: input.file.type,
-            size: input.file.size,
-          },
-        ];
-      } else if (input.voice) {
-        type = "voice";
-        attachments = [{ url: "", type: "audio", name: "Voice note", duration: input.voice.duration }];
-      }
+      // The pending bubble shows local previews until the stored message replaces it.
+      const attachments: ChatAttachment[] = files.map((file, i) => {
+        const kind = kinds[i];
+        let url = "";
+        if (kind === "image" || kind === "video" || kind === "audio") {
+          url = URL.createObjectURL(file);
+          previewUrls.push(url);
+        }
+        return {
+          url,
+          type: kind,
+          name: file.name,
+          mimeType: file.type,
+          size: file.size,
+          ...(kind === "audio" && duration !== undefined ? { duration } : {}),
+        };
+      });
 
       outboxRef.current.set(clientMessageId, {
         roomId,
         text,
         type,
-        file: input.file,
-        voice: input.voice,
-        previewUrl,
+        items: files.map((file, i) => ({ file, kind: input.voice ? "audio" : kinds[i], duration })),
+        duration,
+        previewUrls,
       });
       mergeInto(roomId, [
-        buildPendingMessage({
-          clientMessageId,
-          roomId,
-          senderId: currentUserIdRef.current,
-          senderName: currentUserName,
-          senderAvatar: user?.userAvatar,
-          text,
-          type,
-          attachments,
-          duration: input.voice?.duration,
-        }),
+        {
+          ...buildPendingMessage({
+            clientMessageId,
+            roomId,
+            senderId: currentUserIdRef.current,
+            senderName: currentUserName,
+            senderAvatar: user?.userAvatar,
+            text,
+            type,
+            attachments,
+            duration,
+          }),
+          uploadProgress: files.length ? files.map(() => 0) : undefined,
+        },
       ]);
       void flushMessage(clientMessageId);
       return clientMessageId;
@@ -594,7 +643,7 @@ export const useChats = (): UseChatsReturn => {
       const entry = outboxRef.current.get(clientMessageId);
       if (!entry || inFlightRef.current.has(clientMessageId)) return;
       outboxRef.current.delete(clientMessageId);
-      if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+      revokePreviews(entry);
       updateThread(entry.roomId, (t) => {
         const messages = removeLocalMessage(t.messages, clientMessageId);
         return messages === t.messages ? t : { ...t, messages };
@@ -763,9 +812,7 @@ export const useChats = (): UseChatsReturn => {
       if (roomId) leaveChatRoom(roomId);
       currentRoomIdRef.current = null;
       openChatRoom.set(null);
-      for (const entry of outbox.values()) {
-        if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
-      }
+      for (const entry of outbox.values()) revokePreviews(entry);
       if (timer.current) clearTimeout(timer.current);
     };
   }, [leaveChatRoom]);

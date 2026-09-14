@@ -99,6 +99,19 @@ describe("normalizeMessage", () => {
     expect(m.clientMessageId).toBe("c-1");
     expect(m.attachments?.[0]).toMatchObject({ width: 800, height: 600 });
   });
+
+  it("keeps an audio attachment's playbackUrl", () => {
+    const m = normalizeMessage(
+      view({
+        type: "voice",
+        duration: 9,
+        attachments: [
+          { url: "https://res.cloudinary.com/n.webm", type: "audio", playbackUrl: "https://res.cloudinary.com/n.mp3" },
+        ],
+      })
+    );
+    expect(m.attachments?.[0]).toMatchObject({ playbackUrl: "https://res.cloudinary.com/n.mp3", duration: 9 });
+  });
 });
 
 describe("mergeMessages", () => {

@@ -2,6 +2,7 @@
 
 import { useRef, useCallback, useMemo } from "react";
 import type { UseChatsReturn } from "@/hooks/useChats";
+import type { ChatAttachment } from "@/types/chat.types";
 import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -13,13 +14,7 @@ import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
 import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
-interface MsgAttachment {
-  url: string;
-  type: string;
-  name: string;
-  mimeType?: string;
-  duration?: number;
-}
+type MsgAttachment = ChatAttachment;
 
 // Define the message structure for our UI
 interface Message {
@@ -38,6 +33,7 @@ interface Message {
   attachments?: MsgAttachment[];
   status?: "pending" | "failed";
   error?: string;
+  uploadProgress?: number[];
   deliveryState?: DeliveryState;
 }
 
@@ -75,7 +71,7 @@ export default function PrivateChat({
     retryMessage,
     deleteFailedMessage,
   } = chats;
-  const { draft, updateDraft, sendText, sendFile, sendVoice } = useChatThread(chats, room.roomId);
+  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(chats, room.roomId);
 
   const participantById = useMemo(() => {
     const map = new Map<string, DisplayChatRoom["participants"][number]>();
@@ -111,6 +107,7 @@ export default function PrivateChat({
           attachments: msg.attachments,
           status: msg.status,
           error: msg.error,
+          uploadProgress: msg.uploadProgress,
           deliveryState: isMine ? deliveryState(msg, otherUserId) : undefined,
         };
       }),
@@ -261,7 +258,7 @@ export default function PrivateChat({
         value={draft}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateDraft(e.target.value)}
         onSend={sendText}
-        onSendFile={sendFile}
+        onSendFiles={sendFiles}
         onSendVoice={sendVoice}
         placeholder={isConnected ? "Type a message..." : "Offline — messages send when you're back"}
       />

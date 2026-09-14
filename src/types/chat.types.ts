@@ -99,6 +99,8 @@ export interface ChatMessage {
   status?: ChatMessageStatus;
   /** Why a failed send failed, safe to show. */
   error?: string;
+  /** Local only: upload progress (0–1) per attachment while sending. */
+  uploadProgress?: number[];
 }
 
 export interface ChatAttachment {
@@ -110,6 +112,8 @@ export interface ChatAttachment {
   duration?: number;
   width?: number;
   height?: number;
+  /** Audio only: MP3 rendition to play when present. */
+  playbackUrl?: string;
 }
 
 // DTO for sending messages - MUST match backend's CreateMessageDto
