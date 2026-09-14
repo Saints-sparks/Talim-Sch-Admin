@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChatsContext } from "@/context/ChatsContext";
-import { ChatRoomType } from "@/types/chat.types";
+import { ChatRoomType, type ChatRoom } from "@/types/chat.types";
 import {
   Users,
   GraduationCap,
@@ -32,7 +32,7 @@ interface GroupTypeOption {
 interface CreateGroupModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (room: ChatRoom) => void;
 }
 
 // ─── Group type definitions ───────────────────────────────────────────────────
@@ -194,9 +194,10 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
           course: "Subject group",
           custom: "Group",
         };
-        toast.success(`${labels[selectedKind!]} created successfully!`);
+        // An existing class / course group was opened instead of creating a duplicate.
+        toast.success(newGroup.reused ? "Opened the existing group" : `${labels[selectedKind!]} created successfully!`);
         onClose();
-        onSuccess?.();
+        onSuccess?.(newGroup);
       }
     } catch (err: any) {
       toast.error(getErrorMessage(err, "Failed to create group"));

@@ -52,9 +52,13 @@ export interface DisplayChatRoom {
   };
   isOnline?: boolean;
   updatedAt: Date;
+  /** Groups only. */
+  description?: string;
+  avatarUrl?: string;
+  createdBy?: string;
 }
 
-function normalizeParticipant(raw: unknown): Participant {
+export function normalizeParticipant(raw: unknown): Participant {
   if (typeof raw === "string" || typeof raw === "number") {
     const id = String(raw);
     return { _id: id, userId: id };
@@ -111,6 +115,8 @@ export function normalizeRoom(raw: unknown): ChatRoom {
     type: room.type || ChatRoomType.ONE_TO_ONE,
     participants: (Array.isArray(room.participants) ? room.participants : []).map(normalizeParticipant),
     createdBy: idOf(room.createdBy),
+    description: typeof room.description === "string" && room.description ? room.description : undefined,
+    avatarUrl: typeof room.avatarUrl === "string" && room.avatarUrl ? room.avatarUrl : undefined,
     lastMessage: normalizeLastMessage(room.lastMessage),
     unreadCount: Number(room.unreadCount) || 0,
   } as ChatRoom;
@@ -150,11 +156,115 @@ export function mergeRoomList(rawRooms: unknown[], currentUserId: string, viewin
   return sortRooms(rooms);
 }
 
-/** Inserts or replaces one room (after create / add participant), keeping the order. */
+function hasProfile(p: Participant): boolean {
+  return Boolean(p.firstName || p.lastName || p.email);
+}
+
+/**
+ * Inserts or replaces one room (after create / add participant / edit), keeping the order.
+ * Some endpoints return participants as bare ids; the profiles we already
+ * have are kept for those (`participants-changed` brings fresh ones).
+ */
 export function upsertRoom(rooms: ChatRoom[], room: ChatRoom): ChatRoom[] {
-  const exists = rooms.some((r) => r._id === room._id);
-  const next = exists ? rooms.map((r) => (r._id === room._id ? { ...r, ...room } : r)) : [room, ...rooms];
-  return sortRooms(next);
+  const existing = rooms.find((r) => r._id === room._id);
+  if (!existing) return sortRooms([room, ...rooms]);
+  const known = new Map(existing.participants.map((p) => [p.userId, p]));
+  const participants = room.participants.map((p) => (hasProfile(p) ? p : known.get(p.userId) ?? p));
+  const merged: ChatRoom = {
+    ...existing,
+    ...room,
+    participants,
+    // A mutation response has no per-user fields; keep ours.
+    unreadCount: existing.unreadCount,
+    lastMessage: room.lastMessage ?? existing.lastMessage,
+  };
+  return sortRooms(rooms.map((r) => (r._id === room._id ? merged : r)));
+}
+
+/** Drops a room from the list (I left or was removed). */
+export function removeRoom(rooms: ChatRoom[], roomId: string): ChatRoom[] {
+  const next = rooms.filter((r) => r._id !== roomId);
+  return next.length === rooms.length ? rooms : next;
+}
+
+/** `room-updated` payload. `null` / `''` clear description and picture. */
+export interface RoomUpdatedEvent {
+  roomId: string;
+  name?: string;
+  description?: string | null;
+  avatarUrl?: string | null;
+  updatedBy?: string;
+}
+
+/** Applies `room-updated` to the list (name, description, picture). */
+export function applyRoomUpdated(rooms: ChatRoom[], event: RoomUpdatedEvent): ChatRoom[] {
+  const roomId = idOf(event?.roomId);
+  if (!roomId || !rooms.some((r) => r._id === roomId)) return rooms;
+  return rooms.map((r) => {
+    if (r._id !== roomId) return r;
+    const next: ChatRoom = { ...r };
+    if (typeof event.name === "string" && event.name) next.name = event.name;
+    if ("description" in event) next.description = event.description || undefined;
+    if ("avatarUrl" in event) next.avatarUrl = event.avatarUrl || undefined;
+    return next;
+  });
+}
+
+/** `participants-changed` payload. */
+export interface ParticipantsChangedEvent {
+  roomId: string;
+  added?: string[];
+  removed?: string[];
+  by?: string;
+  participants?: unknown[];
+}
+
+/**
+ * Applies `participants-changed`. When I'm among `removed`, the room is
+ * dropped and `removedMe` is set (leave it if open, tell the user).
+ *
+ * @returns `known: false` when the room isn't in the list (fetch the list if I was added).
+ */
+export function applyParticipantsChanged(
+  rooms: ChatRoom[],
+  event: ParticipantsChangedEvent,
+  currentUserId: string
+): { rooms: ChatRoom[]; removedMe: boolean; room?: ChatRoom; known: boolean } {
+  const roomId = idOf(event?.roomId);
+  const room = rooms.find((r) => r._id === roomId);
+  const removed = (event?.removed ?? []).map(idOf);
+  const removedMe = Boolean(currentUserId) && removed.includes(currentUserId);
+  if (!roomId) return { rooms, removedMe: false, known: false };
+  if (removedMe) return { rooms: removeRoom(rooms, roomId), removedMe: true, room, known: Boolean(room) };
+  if (!room || !Array.isArray(event.participants)) return { rooms, removedMe: false, room, known: Boolean(room) };
+  const participants = event.participants.map(normalizeParticipant).filter((p) => p.userId);
+  return {
+    rooms: rooms.map((r) => (r._id === roomId ? { ...r, participants } : r)),
+    removedMe: false,
+    room,
+    known: true,
+  };
+}
+
+/** Roles that can manage any group they're in (the server has the final say). */
+export const GROUP_MANAGER_ROLES = ["teacher", "school_admin", "school_sub_admin", "admin"];
+
+/** Rooms whose members may leave on their own. */
+export const LEAVABLE_ROOM_TYPES: string[] = [ChatRoomType.CUSTOM_GROUP, ChatRoomType.PARENT_GROUP];
+
+/** Whether to show group controls: never for direct messages; managers by role, or the creator. */
+export function canManageRoom(
+  room: Pick<ChatRoom, "type" | "createdBy"> | null | undefined,
+  user: { id: string; role?: string | null }
+): boolean {
+  if (!room || room.type === ChatRoomType.ONE_TO_ONE) return false;
+  if (user.role && GROUP_MANAGER_ROLES.includes(user.role)) return true;
+  return Boolean(user.id) && idOf(room.createdBy) === user.id;
+}
+
+/** Whether "Leave group" is offered. */
+export function canLeaveRoom(room: Pick<ChatRoom, "type"> | null | undefined): boolean {
+  return Boolean(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
 }
 
 /**
@@ -264,12 +374,18 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
       userAvatar: p.userAvatar,
       isOnline: Boolean(p.isOnline),
     })),
-    avatarInfo: {
-      type: "initials",
-      value: getUserInitials(displayName),
-      bgColor: generateColorFromString(displayName),
-    },
+    avatarInfo:
+      isGroup && room.avatarUrl
+        ? { type: "image", value: room.avatarUrl, bgColor: generateColorFromString(displayName) }
+        : {
+            type: "initials",
+            value: getUserInitials(displayName),
+            bgColor: generateColorFromString(displayName),
+          },
     isOnline,
     updatedAt: new Date(roomActivityTime(room) || Date.now()),
+    description: isGroup ? room.description : undefined,
+    avatarUrl: isGroup ? room.avatarUrl : undefined,
+    createdBy: room.createdBy || undefined,
   };
 }

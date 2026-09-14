@@ -26,6 +26,7 @@ export enum ChatRoomType {
   COURSE_GROUP = 'course_group',
   ONE_TO_ONE = 'one_to_one',
   ADMIN_PARENT_GROUP = 'admin_parent_group',
+  PARENT_GROUP = 'parent_group',
   CUSTOM_GROUP = 'custom_group',
 }
 
@@ -60,6 +61,14 @@ export interface ChatRoom {
   roomId?: string;
   type: ChatRoomType;
   name?: string;
+  /** Groups only. */
+  description?: string;
+  /** Groups only: picture uploaded with POST /upload/chat-attachment. */
+  avatarUrl?: string;
+  /** When the current user last read this room. */
+  lastReadAt?: string;
+  /** `POST /chat/groups` only: an existing class / course group was opened instead. */
+  reused?: boolean;
   participants: Participant[];
   createdBy: string;
   createdAt: Date;

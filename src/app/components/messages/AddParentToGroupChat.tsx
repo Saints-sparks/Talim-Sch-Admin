@@ -1,7 +1,7 @@
 // components/chat/AddParentToGroupChat.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,18 @@ export default function AddParentToGroupChatModal({
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addParticipantsToRoom } = useChatsContext();
+  const { addParticipantsToRoom, chatRooms } = useChatsContext();
+
+  // People already in the group aren't offered again.
+  const memberIds = useMemo(
+    () => new Set((chatRooms.find((r) => r._id === chatRoomId)?.participants ?? []).map((p) => p.userId)),
+    [chatRooms, chatRoomId]
+  );
+  const available = useMemo(
+    () => parents.filter((item) => !memberIds.has(item.userId?._id ?? "")),
+    [parents, memberIds]
+  );
+  const alreadyInGroup = parents.length - available.length;
 
   // Fetch parents when modal opens
   useEffect(() => {
@@ -68,9 +79,9 @@ export default function AddParentToGroupChatModal({
 
   // Filter parents based on search term
   useEffect(() => {
-    if (searchTerm.trim() && parents.length > 0) {
+    if (searchTerm.trim() && available.length > 0) {
       const term = searchTerm.toLowerCase().trim();
-      const filtered = parents.filter((parent) => {
+      const filtered = available.filter((parent) => {
         const firstName = parent.userId?.firstName || "";
         const lastName = parent.userId?.lastName || "";
         const email = parent.userId?.email || "";
@@ -84,9 +95,9 @@ export default function AddParentToGroupChatModal({
       });
       setFilteredParents(filtered);
     } else {
-      setFilteredParents(parents);
+      setFilteredParents(available);
     }
-  }, [searchTerm, parents]);
+  }, [searchTerm, available]);
 
   const fetchParents = async () => {
     setIsLoading(true);
@@ -96,7 +107,6 @@ export default function AddParentToGroupChatModal({
       const parentsData = await parentService.getParentsBySchoolId();
       // Data is already in the correct format
       setParents(parentsData as ParentWithUser[]);
-      setFilteredParents(parentsData as ParentWithUser[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch parents");
       console.error("Error fetching parents:", err);
@@ -262,7 +272,11 @@ export default function AddParentToGroupChatModal({
           ) : filteredParents.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                {searchTerm ? "No parents found matching your search" : "No parents available"}
+                {searchTerm
+                  ? "No parents found matching your search"
+                  : alreadyInGroup > 0
+                    ? "Everyone is already in this group"
+                    : "No parents available"}
               </p>
             </div>
           ) : (

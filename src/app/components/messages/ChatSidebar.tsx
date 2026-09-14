@@ -24,6 +24,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
 import type { UseChatsReturn } from "@/hooks/useChats";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
+import { getUserInitials } from "@/lib/colorUtils";
 
 interface ChatSidebarProps {
   onSelectChat: (room: DisplayChatRoom) => void;
@@ -265,7 +266,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
                         className="text-white font-medium text-sm"
                         style={{ backgroundColor: room.avatarInfo.bgColor }}
                       >
-                        {room.avatarInfo.value}
+                        {getUserInitials(room.displayName)}
                       </AvatarFallback>
                     </Avatar>
                   ) : (
@@ -342,7 +343,11 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
       <CreateGroupModal
         open={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        onSuccess={() => fetchChatRooms()}
+        onSuccess={(room) => {
+          void fetchChatRooms();
+          // A reused class / course group is opened straight away.
+          if (room?.reused) onSelectChat(toDisplayRoom(room, currentUserId));
+        }}
       />
     </div>
   );

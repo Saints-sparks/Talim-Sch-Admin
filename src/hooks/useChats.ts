@@ -26,12 +26,17 @@ import {
   removeLocalMessage,
 } from "@/lib/chat/messages";
 import {
+  applyParticipantsChanged,
   applyRoomActivity,
+  applyRoomUpdated,
   clearRoomUnread,
   isRoomMember,
   mergeRoomList,
+  removeRoom,
   RoomActivity,
   upsertRoom,
+  type ParticipantsChangedEvent,
+  type RoomUpdatedEvent,
 } from "@/lib/chat/rooms";
 import { openChatRoom } from "@/lib/chat/openRoom";
 import {
@@ -98,7 +103,19 @@ export interface UseChatsReturn {
   // Participant operations
   addParticipant: (roomId: string, userId: string) => Promise<void>;
   addParticipantsToRoom: (roomId: string, userIds: string[]) => Promise<void>;
-  removeParticipant: (roomId: string, userId: string) => Promise<void>;
+  /** Removes a member (shows the server's message on failure). Resolves true on success. */
+  removeParticipant: (roomId: string, userId: string) => Promise<boolean>;
+  /** Removes me from a group. Resolves true on success. */
+  leaveRoom: (roomId: string) => Promise<boolean>;
+
+  // Group details
+  /** PATCH /chat/rooms/:id. Rejects with the server's message (e.g. 403). */
+  updateRoomDetails: (
+    roomId: string,
+    patch: { name?: string; description?: string | null; avatarUrl?: string | null }
+  ) => Promise<ChatRoom>;
+  /** Set when I left or was removed from a room, so the page can go back to the list. */
+  removedRoom: { roomId: string; at: number } | null;
 
   // Utility
   resetCurrentRoom: () => void;
@@ -195,6 +212,7 @@ export const useChats = (): UseChatsReturn => {
   const [threadStatus, setThreadStatusState] = useState<ThreadStatus>("idle");
   const [threadError, setThreadError] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [removedRoom, setRemovedRoom] = useState<{ roomId: string; at: number } | null>(null);
 
   // Mirrors for socket callbacks and async flows
   const chatRoomsRef = useRef<ChatRoom[]>([]);
@@ -476,6 +494,27 @@ export const useChats = (): UseChatsReturn => {
     setThreadStatus("idle");
   }, [leaveChatRoom, setThreadStatus]);
 
+  /**
+   * Forgets a room I'm no longer in: drops it from the list and its cached
+   * thread, leaves it if it's open, and tells the page to go back.
+   */
+  const dropRoom = useCallback(
+    (roomId: string) => {
+      setChatRooms((prev) => removeRoom(prev, roomId));
+      setThreadsState((prev) => {
+        if (!prev[roomId]) return prev;
+        const next = { ...prev };
+        delete next[roomId];
+        threadsRef.current = next;
+        return next;
+      });
+      readMarkersRef.current.delete(roomId);
+      if (currentRoomIdRef.current === roomId) resetCurrentRoom();
+      setRemovedRoom({ roomId, at: Date.now() });
+    },
+    [setChatRooms, resetCurrentRoom]
+  );
+
   // ─── Sending ────────────────────────────────────────────────────────────────
 
   const failSend = useCallback(
@@ -755,23 +794,51 @@ export const useChats = (): UseChatsReturn => {
   );
 
   /**
-   * Remove participant from a chat room
+   * Remove a member from a group. Removing myself is leaving.
    */
   const removeParticipant = useCallback(
-    async (roomId: string, userId: string) => {
+    async (roomId: string, userId: string): Promise<boolean> => {
       if (!isAuthenticated || !accessToken) {
         toast.error("You must be logged in to remove participants");
-        return;
+        return false;
       }
+      const leaving = userId === currentUserIdRef.current;
+      const roomName = chatRoomsRef.current.find((r) => r._id === roomId)?.name || "the group";
       try {
-        const updatedRoom = await chatService.removeParticipant(roomId, userId);
-        setChatRooms((prev) => upsertRoom(prev, updatedRoom));
-        toast.success("Participant removed successfully");
-      } catch (err: any) {
-        toast.error(errorMessage(err, "Failed to remove participant"));
+        await chatService.removeParticipant(roomId, userId);
+        if (leaving) {
+          dropRoom(roomId);
+          toast.success(`You left ${roomName}`);
+        } else {
+          // participants-changed brings the fresh member list; don't wait for it.
+          setChatRooms((prev) =>
+            prev.map((r) =>
+              r._id === roomId ? { ...r, participants: r.participants.filter((p) => p.userId !== userId) } : r
+            )
+          );
+          toast.success("Member removed");
+        }
+        return true;
+      } catch (err) {
+        toast.error(errorMessage(err, leaving ? "Couldn't leave the group" : "Couldn't remove this member"));
+        return false;
       }
     },
-    [isAuthenticated, accessToken, setChatRooms]
+    [isAuthenticated, accessToken, setChatRooms, dropRoom]
+  );
+
+  const leaveRoom = useCallback(
+    (roomId: string) => removeParticipant(roomId, currentUserIdRef.current),
+    [removeParticipant]
+  );
+
+  const updateRoomDetails = useCallback(
+    async (roomId: string, patch: { name?: string; description?: string | null; avatarUrl?: string | null }) => {
+      const room = await chatService.updateRoomDetails(roomId, patch);
+      if (room?._id) setChatRooms((prev) => upsertRoom(prev, room));
+      return room;
+    },
+    [setChatRooms]
   );
 
   /**
@@ -911,6 +978,32 @@ export const useChats = (): UseChatsReturn => {
       if (roomId) setChatRooms((prev) => clearRoomUnread(prev, roomId));
     });
 
+    // A group's name / description / picture changed.
+    const unsubRoomUpdated = subscribe("room-updated", (data: RoomUpdatedEvent) => {
+      setChatRooms((prev) => applyRoomUpdated(prev, data));
+    });
+
+    // Members were added or removed; I may be one of them.
+    const unsubParticipants = subscribe("participants-changed", (data: ParticipantsChangedEvent) => {
+      const roomId = idOf(data?.roomId);
+      if (!roomId) return;
+      const result = applyParticipantsChanged(chatRoomsRef.current, data, currentUserIdRef.current);
+      if (result.removedMe) {
+        // Leaving from this device already dropped the room.
+        if (!result.known) return;
+        dropRoom(roomId);
+        if (idOf(data.by) !== currentUserIdRef.current) {
+          toast.error(`You were removed from ${result.room?.name || "a group"}`);
+        }
+        return;
+      }
+      if (!result.known) {
+        if ((data.added ?? []).map(idOf).includes(currentUserIdRef.current)) scheduleRoomsRefetch();
+        return;
+      }
+      setChatRooms((prev) => applyParticipantsChanged(prev, data, currentUserIdRef.current).rooms);
+    });
+
     const unsubError = subscribe("error", (data: any) => {
       if (data?.code === "UNAUTHENTICATED") return; // handled by the socket's token refresh
       const clientMessageId = typeof data?.clientMessageId === "string" ? data.clientMessageId : "";
@@ -934,6 +1027,8 @@ export const useChats = (): UseChatsReturn => {
       unsubRooms();
       unsubMessagesRead();
       unsubRoomRead();
+      unsubRoomUpdated();
+      unsubParticipants();
       unsubError();
     };
   }, [
@@ -948,6 +1043,7 @@ export const useChats = (): UseChatsReturn => {
     scheduleRoomsRefetch,
     viewingRoomId,
     failSend,
+    dropRoom,
   ]);
 
   const messages = useMemo(
@@ -1027,6 +1123,9 @@ export const useChats = (): UseChatsReturn => {
     addParticipant,
     addParticipantsToRoom,
     removeParticipant,
+    leaveRoom,
+    updateRoomDetails,
+    removedRoom,
 
     resetCurrentRoom,
     clearRoomsError,

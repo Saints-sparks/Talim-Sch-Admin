@@ -1,5 +1,6 @@
 // services/chatServices.ts
 import { apiClient } from '@/lib/apiClient';
+import { ApiError } from '@/lib/apiError';
 import {
   ChatRoom,
   ChatMessage,
@@ -37,6 +38,21 @@ class ChatService {
     } catch {
       return `HTTP ${response.status}`;
     }
+  }
+
+  /** The server's error as an `ApiError` whose message is safe to show (validation reasons joined). */
+  private async toApiError(response: Response): Promise<ApiError> {
+    let body: Parameters<typeof ApiError.fromResponse>[1] = null;
+    try {
+      body = await response.json();
+    } catch {
+      // No JSON body.
+    }
+    const error = ApiError.fromResponse(response, body);
+    if (error.code === 'VALIDATION_FAILED' && error.details.length > 0) {
+      return new ApiError(error.code, error.details.map((d) => d.reason).join('. '), error.status, error.details);
+    }
+    return error;
   }
 
   private normalizeMessagePayload(payload: any, fallbackRoomId?: string): ChatMessage {
@@ -535,28 +551,34 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
   }
 
   /**
-   * Remove participant from a chat room
+   * Remove a participant (or leave, with your own id). The error message is the server's, safe to show.
    * PATCH /chat/rooms/{roomId}/participants/{userId}/remove
    */
   async removeParticipant(roomId: string, userId: string): Promise<ChatRoom> {
-    try {
-      
-      const response = await apiClient.patch(
-        `${this.baseUrl}/rooms/${roomId}/participants/${userId}/remove`,
-        {}
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      const updatedRoom = await response.json();
-      return this.normalizeRoomPayload(updatedRoom);
-    } catch (error) {
-      console.error('❌ Error removing participant:', error);
-      throw error;
+    const response = await apiClient.patch(
+      `${this.baseUrl}/rooms/${roomId}/participants/${userId}/remove`,
+      {}
+    );
+    if (!response.ok) {
+      throw await this.toApiError(response);
     }
+    return this.normalizeRoomPayload(await response.json());
+  }
+
+  /**
+   * Update a group's name (1–80), description (≤ 500) or picture. `null` / `''`
+   * clears description and picture. The error message is the server's, safe to show.
+   * PATCH /chat/rooms/{roomId}
+   */
+  async updateRoomDetails(
+    roomId: string,
+    patch: { name?: string; description?: string | null; avatarUrl?: string | null }
+  ): Promise<ChatRoom> {
+    const response = await apiClient.patch(`${this.baseUrl}/rooms/${roomId}`, patch);
+    if (!response.ok) {
+      throw await this.toApiError(response);
+    }
+    return this.normalizeRoomPayload(await response.json());
   }
 
 

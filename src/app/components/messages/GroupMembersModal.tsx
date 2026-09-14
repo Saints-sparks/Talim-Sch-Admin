@@ -3,6 +3,8 @@
 import { X, Circle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { useChatsContext } from "@/context/ChatsContext";
+import GroupMemberList from "./GroupMemberList";
 
 interface Participant {
   id: string;
@@ -21,6 +23,9 @@ interface GroupMembersModalProps {
   groupName: string;
   participants: Participant[];
   currentUserId?: string;
+  /** With a room from the list, members are live and managers can remove them. */
+  chatRoomId?: string;
+  canManage?: boolean;
 }
 
 function getDisplayName(participant: Participant): string {
@@ -36,8 +41,12 @@ export default function GroupMembersModal({
   groupName,
   participants,
   currentUserId,
+  chatRoomId,
+  canManage = false,
 }: GroupMembersModalProps) {
+  const { chatRooms } = useChatsContext();
   if (!isOpen) return null;
+  const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
 
   const sortedParticipants = [...participants].sort((a, b) =>
     getDisplayName(a).localeCompare(getDisplayName(b))
@@ -49,7 +58,9 @@ export default function GroupMembersModal({
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div>
             <h3 className="text-base font-semibold text-gray-900">{groupName} Members</h3>
-            <p className="text-xs text-gray-500">{sortedParticipants.length} total member(s)</p>
+            <p className="text-xs text-gray-500">
+              {room ? room.participants.length : sortedParticipants.length} total member(s)
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -61,7 +72,9 @@ export default function GroupMembersModal({
         </div>
 
         <div className="overflow-y-auto p-3 sm:p-4 space-y-2 max-h-[calc(80vh-72px)]">
-          {sortedParticipants.length === 0 ? (
+          {room ? (
+            <GroupMemberList room={room} currentUserId={currentUserId ?? ""} canManage={canManage} />
+          ) : sortedParticipants.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
               No members found for this group.
             </div>

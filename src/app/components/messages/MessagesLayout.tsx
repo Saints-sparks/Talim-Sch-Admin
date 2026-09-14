@@ -71,7 +71,15 @@ export default function MessagesLayout({
     if (roomParam) router.replace("/messages", { scroll: false });
   }, [resetCurrentRoom, router, roomParam, setReplyingMessage]);
 
-  // Deep link: /messages?room=<id> opens that room, on load and whenever the query changes.
+  // I left or was removed from the room on screen: back to the list.
+  const removedRoom = chats.removedRoom;
+  useEffect(() => {
+    if (removedRoom && removedRoom.roomId === selectedRoomIdRef.current) handleBackToChats();
+    // Only when a room is dropped.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [removedRoom]);
+
+    // Deep link: /messages?room=<id> opens that room, on load and whenever the query changes.
   useEffect(() => {
     if (handledRoomParamRef.current === roomParam) return;
     handledRoomParamRef.current = roomParam;

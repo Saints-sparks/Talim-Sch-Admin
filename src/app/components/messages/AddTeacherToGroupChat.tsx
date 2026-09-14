@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,18 @@ export default function AddTeacherToGroupChatModal({
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addParticipantsToRoom } = useChatsContext();
+  const { addParticipantsToRoom, chatRooms } = useChatsContext();
+
+  // People already in the group aren't offered again.
+  const memberIds = useMemo(
+    () => new Set((chatRooms.find((r) => r._id === chatRoomId)?.participants ?? []).map((p) => p.userId)),
+    [chatRooms, chatRoomId]
+  );
+  const available = useMemo(
+    () => teachers.filter((item) => !memberIds.has(item._id)),
+    [teachers, memberIds]
+  );
+  const alreadyInGroup = teachers.length - available.length;
 
   // Fetch teachers when modal opens
   useEffect(() => {
@@ -57,9 +68,9 @@ export default function AddTeacherToGroupChatModal({
 
   // Filter teachers based on search term
   useEffect(() => {
-    if (searchTerm.trim() && teachers.length > 0) {
+    if (searchTerm.trim() && available.length > 0) {
       const term = searchTerm.toLowerCase().trim();
-      const filtered = teachers.filter((teacher) => {
+      const filtered = available.filter((teacher) => {
         const firstName = teacher.firstName || "";
         const lastName = teacher.lastName || "";
         const email = teacher.email || "";
@@ -78,9 +89,9 @@ export default function AddTeacherToGroupChatModal({
       });
       setFilteredTeachers(filtered);
     } else {
-      setFilteredTeachers(teachers);
+      setFilteredTeachers(available);
     }
-  }, [searchTerm, teachers]);
+  }, [searchTerm, available]);
 
   const fetchTeachers = async () => {
     setIsLoading(true);
@@ -90,7 +101,6 @@ export default function AddTeacherToGroupChatModal({
       const teachersData = await teacherService.getAllTeachers();
       // Data is already in the flat format
       setTeachers(teachersData as TeacherWithUser[]);
-      setFilteredTeachers(teachersData as TeacherWithUser[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teachers");
       console.error("Error fetching teachers:", err);
@@ -243,7 +253,11 @@ export default function AddTeacherToGroupChatModal({
           ) : filteredTeachers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                {searchTerm ? "No teachers found matching your search" : "No teachers available"}
+                {searchTerm
+                  ? "No teachers found matching your search"
+                  : alreadyInGroup > 0
+                    ? "Everyone is already in this group"
+                    : "No teachers available"}
               </p>
             </div>
           ) : (

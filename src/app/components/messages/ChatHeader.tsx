@@ -17,6 +17,10 @@ import GroupMembersModal from "./GroupMembersModal";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { useAuth } from "@/context/AuthContext";
+import { useChatsContext } from "@/context/ChatsContext";
+import { canManageRoom } from "@/lib/chat/rooms";
+import { ChatRoomType } from "@/types/chat.types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +107,16 @@ export default function ChatHeader({
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
   const [isAddTeacherModalOpen, setIsAddTeacherModalOpen] = useState(false);
+  const { user } = useAuth();
+  const { chatRooms } = useChatsContext();
+  const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
+  // Group controls: managers only, never in direct messages (the server has the final say).
+  const canManage =
+    isGroup &&
+    canManageRoom(room ?? { type: (roomType as ChatRoomType) || ChatRoomType.CUSTOM_GROUP, createdBy: "" }, {
+      id: currentUserId ?? "",
+      role: user?.role,
+    });
 
   // Process participants to get clean data
   const processedParticipants = processParticipants(participants, currentUserId);
@@ -197,7 +211,7 @@ export default function ChatHeader({
           ) : (
             <>
               {/* Add Participants Button - Show directly for group chats on desktop */}
-              {isGroup && chatRoomId && (
+              {canManage && chatRoomId && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -260,20 +274,24 @@ export default function ChatHeader({
                         <Users className="mr-2 h-4 w-4" />
                         <span>View Members</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setIsAddParentModalOpen(true)}
-                        className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Add Parents</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setIsAddTeacherModalOpen(true)}
-                        className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Add Teachers</span>
-                      </DropdownMenuItem>
+                      {canManage && (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => setIsAddParentModalOpen(true)}
+                            className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            <span>Add Parents</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setIsAddTeacherModalOpen(true)}
+                            className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            <span>Add Teachers</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </>
                   )}
                   <DropdownMenuItem className="cursor-pointer">
@@ -300,9 +318,6 @@ export default function ChatHeader({
           onClose={() => setIsModalOpen(false)}
           avatar={avatar}
           name={name}
-          description={`Welcome to the Group! \n
-          This is your space to collaborate, share ideas, ask questions, and stay connected.`}
-          participants={processedParticipants}
           chatRoomId={chatRoomId}
           roomType={roomType}
         />
@@ -314,11 +329,13 @@ export default function ChatHeader({
             groupName={name}
             participants={processedParticipants}
             currentUserId={currentUserId}
+            chatRoomId={chatRoomId}
+            canManage={canManage}
           />
         )}
 
         {/* Add Parent Modal */}
-        {isGroup && chatRoomId && (
+        {canManage && chatRoomId && (
           <AddParentToGroupChatModal
             isOpen={isAddParentModalOpen}
             onClose={() => setIsAddParentModalOpen(false)}
@@ -328,7 +345,7 @@ export default function ChatHeader({
         )}
 
         {/* Add Teacher Modal */}
-        {isGroup && chatRoomId && (
+        {canManage && chatRoomId && (
           <AddTeacherToGroupChatModal
             isOpen={isAddTeacherModalOpen}
             onClose={() => setIsAddTeacherModalOpen(false)}
