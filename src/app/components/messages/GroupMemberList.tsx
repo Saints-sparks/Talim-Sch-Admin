@@ -48,12 +48,11 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
   const confirm = async () => {
     if (!pending) return;
     setBusy(true);
-    const ok =
-      pending.kind === "leave"
-        ? await leaveRoom(room._id)
-        : await removeParticipant(room._id, pending.member.userId);
+    // Success and failure both close the dialog; the toast says which.
+    if (pending.kind === "leave") await leaveRoom(room._id);
+    else await removeParticipant(room._id, pending.member.userId);
     setBusy(false);
-    if (ok || pending.kind === "remove") setPending(null);
+    setPending(null);
   };
 
   const groupName = room.name || "this group";
