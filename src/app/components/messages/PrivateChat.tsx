@@ -11,6 +11,7 @@ import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
+import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
 interface MsgAttachment {
   url: string;
@@ -37,6 +38,7 @@ interface Message {
   attachments?: MsgAttachment[];
   status?: "pending" | "failed";
   error?: string;
+  deliveryState?: DeliveryState;
 }
 
 interface PrivateChatProps {
@@ -81,6 +83,11 @@ export default function PrivateChat({
     return map;
   }, [room.participants]);
 
+  const otherUserId = useMemo(
+    () => room.participants.find((p) => p.userId && p.userId !== currentUserId)?.userId,
+    [room.participants, currentUserId]
+  );
+
   const messages = useMemo<Message[]>(
     () =>
       chatMessages.map((msg) => {
@@ -104,9 +111,10 @@ export default function PrivateChat({
           attachments: msg.attachments,
           status: msg.status,
           error: msg.error,
+          deliveryState: isMine ? deliveryState(msg, otherUserId) : undefined,
         };
       }),
-    [chatMessages, currentUserId, participantById, room.displayName]
+    [chatMessages, currentUserId, participantById, room.displayName, otherUserId]
   );
 
   const { onScroll } = useThreadScroll({

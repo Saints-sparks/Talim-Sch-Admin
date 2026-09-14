@@ -74,7 +74,6 @@ export interface WebSocketContextType {
   // Chat functions
   joinChatRoom: (roomId: string) => void;
   leaveChatRoom: (roomId: string) => void;
-  markMessageAsRead: (messageId: string) => void;
 
   // Event listeners
   onConnect: (callback: () => void) => () => void;
@@ -269,7 +268,6 @@ export const useWebSocket = ({ enabled, userId, refreshToken }: UseWebSocketOpti
   // Chat functions
   const joinChatRoom = useCallback((roomId: string) => void emit("join-chat-room", { roomId }), [emit]);
   const leaveChatRoom = useCallback((roomId: string) => void emit("leave-chat-room", { roomId }), [emit]);
-  const markMessageAsRead = useCallback((messageId: string) => void emit("mark-message-read", { messageId }), [emit]);
 
   // Event listeners
   const onConnect = useCallback((callback: () => void) => subscribe("connect", callback), [subscribe]);
@@ -308,7 +306,6 @@ export const useWebSocket = ({ enabled, userId, refreshToken }: UseWebSocketOpti
     emitWithAck,
     joinChatRoom,
     leaveChatRoom,
-    markMessageAsRead,
     onConnect,
     onChatMessage,
     onNotification,

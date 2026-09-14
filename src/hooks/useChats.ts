@@ -34,6 +34,7 @@ import {
   upsertRoom,
 } from "@/lib/chat/rooms";
 import { openChatRoom } from "@/lib/chat/openRoom";
+import { applyMessagesRead, nextReadMarker, type ReadEvent, type ReadMarker } from "@/lib/chat/readReceipts";
 
 /** Loading state of the open conversation, separate from the room list. */
 export type ThreadStatus = "idle" | "loading" | "ready" | "error";
@@ -115,6 +116,7 @@ type SendAck = ChatAck<{ message: unknown; clientMessageId?: string }>;
 const EMPTY_THREAD: RoomThread = { messages: [], hasMore: false, loaded: false };
 const JOIN_TIMEOUT_MS = 10_000;
 const SEND_TIMEOUT_MS = 10_000;
+const READ_TIMEOUT_MS = 10_000;
 const PAGE_SIZE = 50;
 const MAX_TEXT_LENGTH = 5000;
 const LOAD_ERROR = "Couldn't load this chat";
@@ -129,8 +131,10 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-function isVisible(): boolean {
-  return typeof document === "undefined" || document.visibilityState === "visible";
+/** The page is on screen and focused — only then does the open room count as read. */
+function isViewing(): boolean {
+  if (typeof document === "undefined") return true;
+  return document.visibilityState === "visible" && (typeof document.hasFocus !== "function" || document.hasFocus());
 }
 
 /**
@@ -145,7 +149,6 @@ export const useChats = (): UseChatsReturn => {
     isConnected,
     emitWithAck,
     leaveChatRoom,
-    markMessageAsRead,
     subscribe,
     onConnect,
     onChatMessage,
@@ -184,7 +187,8 @@ export const useChats = (): UseChatsReturn => {
   const loadingMoreRef = useRef(false);
   const outboxRef = useRef(new Map<string, OutboxEntry>());
   const inFlightRef = useRef(new Set<string>());
-  const markedReadRef = useRef(new Set<string>());
+  /** The last `mark-room-read` sent per room, so a position is never sent twice. */
+  const readMarkersRef = useRef(new Map<string, ReadMarker>());
   const draftsRef = useRef(new Map<string, string>());
   const roomsRefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -224,8 +228,8 @@ export const useChats = (): UseChatsReturn => {
     setThreadError(error);
   }, []);
 
-  /** The open room, if the tab is visible — unread counts don't clear while nobody looks. */
-  const viewingRoomId = useCallback(() => (isVisible() ? currentRoomIdRef.current : null), []);
+  /** The open room, if the tab is visible and focused — unread counts don't clear while nobody looks. */
+  const viewingRoomId = useCallback(() => (isViewing() ? currentRoomIdRef.current : null), []);
 
   const clearRoomsError = useCallback(() => setRoomsError(null), []);
 
@@ -844,6 +848,22 @@ export const useChats = (): UseChatsReturn => {
       setRoomsError(null);
     });
 
+    // Another member read up to a message (they share read receipts).
+    const unsubMessagesRead = subscribe("messages-read", (data: ReadEvent) => {
+      const roomId = idOf(data?.roomId);
+      if (!roomId || !threadsRef.current[roomId]) return;
+      updateThread(roomId, (t) => {
+        const messages = applyMessagesRead(t.messages, data);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+    });
+
+    // I read a room on another device.
+    const unsubRoomRead = subscribe("room-read", (data: ReadEvent) => {
+      const roomId = idOf(data?.roomId);
+      if (roomId) setChatRooms((prev) => clearRoomUnread(prev, roomId));
+    });
+
     const unsubError = subscribe("error", (data: any) => {
       if (data?.code === "UNAUTHENTICATED") return; // handled by the socket's token refresh
       const clientMessageId = typeof data?.clientMessageId === "string" ? data.clientMessageId : "";
@@ -865,6 +885,8 @@ export const useChats = (): UseChatsReturn => {
       unsubMessage();
       unsubActivity();
       unsubRooms();
+      unsubMessagesRead();
+      unsubRoomRead();
       unsubError();
     };
   }, [
@@ -886,33 +908,39 @@ export const useChats = (): UseChatsReturn => {
     [threads, currentRoomId]
   );
 
-  // Mark what's on screen as read — only while the tab is visible
+  // Mark the room read up to the newest message from someone else — once per
+  // position, and only while the page is visible and focused.
   useEffect(() => {
     const roomId = currentRoomId;
     if (!roomId || !isConnected || !currentUserId) return;
 
-    const markVisible = () => {
-      if (!isVisible() || currentRoomIdRef.current !== roomId) return;
-      for (const message of threadsRef.current[roomId]?.messages ?? []) {
-        if (
-          message.status ||
-          !message._id ||
-          message.senderId === currentUserId ||
-          message.readBy.includes(currentUserId) ||
-          markedReadRef.current.has(message._id)
-        ) {
-          continue;
-        }
-        markedReadRef.current.add(message._id);
-        markMessageAsRead(message._id);
-      }
+    const markRead = () => {
+      if (!isViewing() || currentRoomIdRef.current !== roomId) return;
       setChatRooms((prev) => clearRoomUnread(prev, roomId));
+      const previous = readMarkersRef.current.get(roomId);
+      const marker = nextReadMarker(threadsRef.current[roomId]?.messages ?? [], currentUserId, previous);
+      if (!marker) return;
+      readMarkersRef.current.set(roomId, marker);
+      emitWithAck<ChatAck>("mark-room-read", { roomId, upToMessageId: marker.messageId }, READ_TIMEOUT_MS)
+        .then((ack) => {
+          if (!ack?.ok) throw new Error(ack?.error?.message);
+        })
+        .catch(() => {
+          // Not acknowledged: allow this position to be sent again next time.
+          if (readMarkersRef.current.get(roomId) !== marker) return;
+          if (previous) readMarkersRef.current.set(roomId, previous);
+          else readMarkersRef.current.delete(roomId);
+        });
     };
 
-    markVisible();
-    document.addEventListener("visibilitychange", markVisible);
-    return () => document.removeEventListener("visibilitychange", markVisible);
-  }, [currentRoomId, messages, isConnected, currentUserId, markMessageAsRead, setChatRooms]);
+    markRead();
+    document.addEventListener("visibilitychange", markRead);
+    window.addEventListener("focus", markRead);
+    return () => {
+      document.removeEventListener("visibilitychange", markRead);
+      window.removeEventListener("focus", markRead);
+    };
+  }, [currentRoomId, messages, isConnected, currentUserId, emitWithAck, setChatRooms]);
 
   const currentRoom = useMemo(
     () => (currentRoomId ? chatRooms.find((r) => r._id === currentRoomId) ?? null : null),

@@ -1,9 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCheck, Download, FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
+import MessageTicks from "./MessageTicks";
+import type { DeliveryState } from "@/lib/chat/readReceipts";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 interface Attachment {
@@ -29,6 +31,8 @@ interface MessageBubbleProps {
     attachments?: Attachment[];
     status?: "pending" | "failed";
     error?: string;
+    /** Tick state, for my own messages. */
+    deliveryState?: DeliveryState;
   };
   index: number;
   onRetry?: () => void;
@@ -169,7 +173,7 @@ export default function MessageBubble({
             {msg.status ? (
               <MessageDeliveryStatus status={msg.status} error={msg.error} onRetry={onRetry} onDelete={onDelete} />
             ) : (
-              isCurrentUser && <CheckCheck size={12} className="text-blue-400" />
+              isCurrentUser && <MessageTicks state={msg.deliveryState} />
             )}
           </div>
         </div>

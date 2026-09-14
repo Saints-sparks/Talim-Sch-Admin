@@ -4,6 +4,8 @@ import { Download, FileText } from "lucide-react";
 import MessageOptionsDropdown from "./MessageDropDown";
 import AudioMessage from "./AudioMessage";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
+import MessageTicks from "./MessageTicks";
+import type { DeliveryState } from "@/lib/chat/readReceipts";
 import VideoMessage from "./VideoMessage";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
@@ -30,6 +32,10 @@ interface MessageBubbleProps {
     attachments?: Attachment[];
     status?: "pending" | "failed";
     error?: string;
+    /** Tick state, for my own messages. */
+    deliveryState?: DeliveryState;
+    /** "Read by N" — set only on my latest message. */
+    readByCount?: number;
   };
   index: number;
   onRetry?: () => void;
@@ -185,10 +191,15 @@ export default function GroupMessageBubble({
             <span>{msg.time}</span>
             {msg.status ? (
               <MessageDeliveryStatus status={msg.status} error={msg.error} onRetry={onRetry} onDelete={onDelete} />
-            ) : isMe && (
-              <svg width="12" height="12" viewBox="0 0 16 16" className="text-blue-400" fill="currentColor">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-              </svg>
+            ) : (
+              isMe && (
+                <>
+                  <MessageTicks state={msg.deliveryState} />
+                  {typeof msg.readByCount === "number" && msg.readByCount > 0 && (
+                    <span className="text-gray-400">Read by {msg.readByCount}</span>
+                  )}
+                </>
+              )
             )}
           </div>
         </div>

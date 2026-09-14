@@ -13,6 +13,12 @@ import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import {
+  deliveryState,
+  latestOwnStoredMessageId,
+  readByCount,
+  type DeliveryState,
+} from "@/lib/chat/readReceipts";
 
 interface MsgAttachment {
   url: string;
@@ -39,6 +45,8 @@ interface Message {
   attachments?: MsgAttachment[];
   status?: "pending" | "failed";
   error?: string;
+  deliveryState?: DeliveryState;
+  readByCount?: number;
 }
 
 interface GroupChatProps {
@@ -120,9 +128,9 @@ export default function GroupChat({
 
   // Transform messages for UI. Own messages (including ones sent from another
   // device) are recognised by sender id only.
-  const messages = useMemo<Message[]>(
-    () =>
-      chatMessages.map((msg) => {
+  const messages = useMemo<Message[]>(() => {
+    const latestOwnId = latestOwnStoredMessageId(chatMessages, currentUserId);
+    return chatMessages.map((msg) => {
         const isMine = Boolean(currentUserId) && msg.senderId === currentUserId;
         const participant = participantById.get(msg.senderId);
         const senderName = isMine ? currentUserName : msg.senderName || participant?.name || "User";
@@ -143,10 +151,11 @@ export default function GroupChat({
           attachments: msg.attachments,
           status: msg.status,
           error: msg.error,
+          deliveryState: isMine ? deliveryState(msg) : undefined,
+          readByCount: isMine && msg._id === latestOwnId ? readByCount(msg) : undefined,
         };
-      }),
-    [chatMessages, currentUserId, currentUserName, participantById]
-  );
+    });
+  }, [chatMessages, currentUserId, currentUserName, participantById]);
 
   const { onScroll } = useThreadScroll({
     containerRef: messagesContainerRef,
