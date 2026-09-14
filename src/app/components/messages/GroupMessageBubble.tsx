@@ -70,6 +70,7 @@ export default function GroupMessageBubble({
             attachments={msg.attachments ?? []}
             tone={isMe ? "inverted" : "default"}
             pending={Boolean(msg.status)}
+            failed={msg.status === "failed"}
             progress={msg.status === "pending" ? msg.uploadProgress : undefined}
           />
         )}

@@ -68,6 +68,7 @@ export default function MessageBubble({
             attachments={msg.attachments ?? []}
             tone={isCurrentUser ? "inverted" : "default"}
             pending={Boolean(msg.status)}
+            failed={msg.status === "failed"}
             progress={msg.status === "pending" ? msg.uploadProgress : undefined}
           />
         )}

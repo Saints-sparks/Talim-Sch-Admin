@@ -26,6 +26,15 @@ describe("VoicePlayer", () => {
     expect(screen.getByText("0:12")).toBeTruthy();
   });
 
+  it("shows a spinner while sending and a static warning once the send failed", () => {
+    const { container, rerender } = render(<VoicePlayer duration={3} pending />);
+    expect(container.querySelector(".animate-spin")).toBeTruthy();
+
+    rerender(<VoicePlayer duration={3} pending failed />);
+    expect(container.querySelector(".animate-spin")).toBeNull();
+    expect((screen.getByRole("button", { name: "Play voice note" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("shows an error and resets when play() is rejected", async () => {
     playSpy = jest
       .spyOn(window.HTMLMediaElement.prototype, "play")
