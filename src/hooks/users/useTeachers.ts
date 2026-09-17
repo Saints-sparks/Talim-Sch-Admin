@@ -21,11 +21,17 @@ import {
   createTeacherProfile,
   registerTeacher,
   teacherService,
+  teacherUpdates,
   type CreateTeacherProfilePayload,
   type GetTeachersResponse,
   type RegisterTeacherPayload,
   type Teacher,
+  type TeacherAssignmentsPayload,
+  type TeacherAvailabilityPayload,
   type TeacherById,
+  type TeacherEmploymentPayload,
+  type TeacherPersonalDetailsPayload,
+  type TeacherQualificationsPayload,
 } from "@/app/services/teacher.service";
 
 /** Which slice of the teacher roster a list query wants. */
@@ -119,6 +125,54 @@ export function useUpdateTeacherStatus(): UseMutationResult<Teacher, Error, Upda
   return useMutation({
     mutationFn: ({ userId, isActive }: UpdateTeacherStatusInput) =>
       teacherService.updateTeacherStatus(userId, isActive),
+    onSuccess: (_data, { userId }) => {
+      client.invalidateQueries({ queryKey: queryKeys.teachers.detail(schoolId ?? "none", userId) });
+      client.invalidateQueries({ queryKey: queryKeys.teachers.all });
+    },
+  });
+}
+
+/** The parts of a teacher record, each written by its own endpoint. */
+export type TeacherSection =
+  | "personal"
+  | "qualifications"
+  | "employment"
+  | "assignments"
+  | "availability";
+
+/** One section of a teacher's record and the body to write to it. */
+export type SaveTeacherSectionInput =
+  | { userId: string; section: "personal"; payload: TeacherPersonalDetailsPayload }
+  | { userId: string; section: "qualifications"; payload: TeacherQualificationsPayload }
+  | { userId: string; section: "employment"; payload: TeacherEmploymentPayload }
+  | { userId: string; section: "assignments"; payload: TeacherAssignmentsPayload }
+  | { userId: string; section: "availability"; payload: TeacherAvailabilityPayload };
+
+/**
+ * Saves one section of a teacher's record. The editor has a separate Update
+ * button per tab because the API splits the record across five endpoints.
+ *
+ * @returns Mutation that writes the given section and refreshes the profile.
+ */
+export function useSaveTeacherSection(): UseMutationResult<unknown, Error, SaveTeacherSectionInput> {
+  const client = useQueryClient();
+  const schoolId = useSchoolId();
+
+  return useMutation({
+    mutationFn: (input: SaveTeacherSectionInput) => {
+      switch (input.section) {
+        case "personal":
+          return teacherUpdates.personalDetails(input.userId, input.payload);
+        case "qualifications":
+          return teacherUpdates.qualifications(input.userId, input.payload);
+        case "employment":
+          return teacherUpdates.employment(input.userId, input.payload);
+        case "assignments":
+          return teacherUpdates.assignments(input.userId, input.payload);
+        case "availability":
+          return teacherUpdates.availability(input.userId, input.payload);
+      }
+    },
     onSuccess: (_data, { userId }) => {
       client.invalidateQueries({ queryKey: queryKeys.teachers.detail(schoolId ?? "none", userId) });
       client.invalidateQueries({ queryKey: queryKeys.teachers.all });
