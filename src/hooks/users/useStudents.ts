@@ -18,6 +18,7 @@ import { queryKeys, staleTimes } from "@/lib/queryKeys";
 import { useSchoolId } from "@/hooks/useSchoolId";
 import {
   createStudentProfile,
+  getStudentAttendanceKpis,
   registerStudent,
   studentService,
   updateStudent,
@@ -25,6 +26,7 @@ import {
   type CreateStudentProfilePayload,
   type GetStudentsResponse,
   type RegisterStudentPayload,
+  type StudentAttendanceKpis,
   type StudentById,
   type UpdateStudentPayload,
 } from "@/app/services/student.service";
@@ -77,6 +79,29 @@ export function useStudent(studentId: string | undefined): UseQueryResult<Studen
     queryFn: () => studentService.getStudentById(studentId as string),
     enabled: Boolean(schoolId && studentId),
     staleTime: staleTimes.list,
+  });
+}
+
+/**
+ * A student's attendance totals, fetched only once the attendance tab is open.
+ *
+ * @param studentId - The student to report on.
+ * @param enabled - False until the tab is selected, so the profile page does not
+ *   pay for attendance nobody asked for.
+ * @returns Query result holding the attendance figures.
+ */
+export function useStudentAttendance(
+  studentId: string | undefined,
+  enabled: boolean,
+): UseQueryResult<StudentAttendanceKpis> {
+  const schoolId = useSchoolId();
+
+  return useQuery({
+    queryKey: [...queryKeys.students.detail(schoolId ?? "none", studentId ?? "none"), "attendance"],
+    queryFn: () => getStudentAttendanceKpis(studentId as string),
+    enabled: Boolean(enabled && schoolId && studentId),
+    staleTime: staleTimes.list,
+    retry: false,
   });
 }
 

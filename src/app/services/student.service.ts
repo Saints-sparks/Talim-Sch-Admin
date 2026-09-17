@@ -421,6 +421,29 @@ export const deleteClass = async (classId: string): Promise<void> => {
   await api.delete(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}`);
 };
 
+/** Attendance figures for one student over a term or date range. */
+export interface StudentAttendanceKpis {
+  attendanceRate: number;
+  totalDays: number;
+  presentDays: number;
+  absentDays: number;
+  lateDays: number;
+  excusedDays: number;
+  dateRange: { startDate: string; endDate: string };
+  classInfo: { id: string; name: string };
+  termInfo?: { id: string; name: string };
+}
+
+/**
+ * Attendance totals for one student, for the profile's attendance tab.
+ *
+ * @param studentId - The student to report on.
+ * @returns The attendance figures for the current term.
+ * @throws `ApiError` — `NOT_FOUND` when the student has no attendance records.
+ */
+export const getStudentAttendanceKpis = async (studentId: string): Promise<StudentAttendanceKpis> =>
+  api.get<StudentAttendanceKpis>(`${API_ENDPOINTS.BASE_URL}/attendance/student/${encodeURIComponent(studentId)}/kpis`);
+
 /**
  * Activates or deactivates a student.
  *
