@@ -1,9 +1,20 @@
-import { apiClient } from "@/lib/apiClient";
+/**
+ * School Settings API (`/settings`).
+ *
+ * Every call goes through the typed `api` facade, so a failure arrives as an
+ * `ApiError` with a stable `code`, a user-safe `message` and field details —
+ * the settings sections branch on those rather than on raw responses.
+ *
+ * The school is taken from the bearer token by the backend; nothing here
+ * passes a school id.
+ */
+import { api } from "@/lib/apiClient";
 
 const BASE = "/settings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** One named contact person for the school, as stored on the school document. */
 export interface PrimaryContact {
   name: string;
   phone: string;
@@ -11,6 +22,7 @@ export interface PrimaryContact {
   role: string;
 }
 
+/** The school record shown in Settings → School Profile. */
 export interface SchoolProfile {
   _id: string;
   name: string;
@@ -23,6 +35,22 @@ export interface SchoolProfile {
   primaryContacts?: PrimaryContact[];
 }
 
+/**
+ * Fields `PATCH /settings/school-profile` accepts.
+ * Mirrors `UpdateSchoolProfileDto` in talimBE-V2; name, email and prefix are
+ * not editable by the school.
+ */
+export interface UpdateSchoolProfileDto {
+  /** Max 500 characters. */
+  physicalAddress?: string;
+  /** Hosted image URL. */
+  logo?: string;
+  contactPhone?: string;
+  website?: string;
+  primaryContacts?: PrimaryContact[];
+}
+
+/** Receipt appearance and parent-facing options. */
 export interface ReceiptSettings {
   schoolId: string;
   signatureUrl: string;
@@ -35,6 +63,23 @@ export interface ReceiptSettings {
   footerNote: string;
 }
 
+/**
+ * Fields `PATCH /settings/receipt` accepts.
+ * Mirrors `UpdateReceiptSettingsDto` in talimBE-V2.
+ */
+export interface UpdateReceiptSettingsDto {
+  showSchoolLogo?: boolean;
+  allowParentDownload?: boolean;
+  showQrVerification?: boolean;
+  showAuthorizedSignature?: boolean;
+  /** Max 250 characters. */
+  footerNote?: string;
+  signatureName?: string;
+  signatureTitle?: string;
+  signatureUrl?: string;
+}
+
+/** Withdrawal safeguards for the school wallet. */
 export interface FinanceSettings {
   schoolId: string;
   requireEmailOtpForWithdrawals: boolean;
@@ -42,88 +87,127 @@ export interface FinanceSettings {
   defaultBankAccountId: string | null;
 }
 
-async function handle<T>(res: Response): Promise<T> {
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Request failed");
-  return data as T;
+/**
+ * Fields `PATCH /settings/finance` accepts.
+ * Mirrors `UpdateFinanceSettingsDto` in talimBE-V2.
+ */
+export interface UpdateFinanceSettingsDto {
+  requireEmailOtpForWithdrawals?: boolean;
+  /** Must be 0 or greater. */
+  minimumWithdrawalAmount?: number;
+  /** A bank account id (Mongo ObjectId). */
+  defaultBankAccountId?: string;
+}
+
+/** The datasets Settings → Data & System can export. */
+export type ExportType = "students" | "staff" | "fees";
+
+/** One CSV row: every column is already stringified by the backend. */
+export type ExportRow = Record<string, string>;
+
+/** Body of `GET /settings/data/export/:type`. */
+export interface ExportResult {
+  success: boolean;
+  type: string;
+  data: ExportRow[];
+  count: number;
+  /** Present when the dataset is empty by design (e.g. fees). */
+  message?: string;
 }
 
 // ─── School Profile ───────────────────────────────────────────────────────────
 
-export const getSchoolProfile = async (): Promise<{ success: boolean; school: SchoolProfile }> => {
-  const res = await apiClient.get(`${BASE}/school-profile`);
-  return handle(res);
-};
+/**
+ * Loads the school record behind Settings → School Profile.
+ *
+ * @returns The school profile.
+ * @throws `ApiError` when the request fails.
+ */
+export const getSchoolProfile = async (): Promise<{ success: boolean; school: SchoolProfile }> =>
+  api.get<{ success: boolean; school: SchoolProfile }>(`${BASE}/school-profile`);
 
+/**
+ * Updates the editable parts of the school profile.
+ *
+ * @param dto - Only the fields being changed.
+ * @returns The saved school profile.
+ * @throws `ApiError` — `VALIDATION_FAILED` when a field breaks the DTO rules.
+ */
 export const updateSchoolProfile = async (
-  dto: Partial<Pick<SchoolProfile, "logo" | "physicalAddress" | "primaryContacts">>
-): Promise<{ success: boolean; school: SchoolProfile }> => {
-  const res = await apiClient.patch(`${BASE}/school-profile`, dto);
-  return handle(res);
-};
+  dto: UpdateSchoolProfileDto
+): Promise<{ success: boolean; school: SchoolProfile }> =>
+  api.patch<{ success: boolean; school: SchoolProfile }>(`${BASE}/school-profile`, dto);
 
 // ─── Receipt Settings ─────────────────────────────────────────────────────────
 
-export const getReceiptSettings = async (): Promise<{ success: boolean; settings: ReceiptSettings }> => {
-  const res = await apiClient.get(`${BASE}/receipt`);
-  return handle(res);
-};
+/**
+ * Loads the receipt settings, creating the defaults server-side on first read.
+ *
+ * @returns The receipt settings.
+ * @throws `ApiError` when the request fails.
+ */
+export const getReceiptSettings = async (): Promise<{ success: boolean; settings: ReceiptSettings }> =>
+  api.get<{ success: boolean; settings: ReceiptSettings }>(`${BASE}/receipt`);
 
+/**
+ * Saves receipt settings.
+ *
+ * @param dto - Only the fields being changed.
+ * @returns The saved receipt settings.
+ * @throws `ApiError` — `VALIDATION_FAILED` when a field breaks the DTO rules.
+ */
 export const updateReceiptSettings = async (
-  dto: Partial<ReceiptSettings>
-): Promise<{ success: boolean; settings: ReceiptSettings }> => {
-  const res = await apiClient.patch(`${BASE}/receipt`, dto);
-  return handle(res);
-};
+  dto: UpdateReceiptSettingsDto
+): Promise<{ success: boolean; settings: ReceiptSettings }> =>
+  api.patch<{ success: boolean; settings: ReceiptSettings }>(`${BASE}/receipt`, dto);
 
 // ─── Finance Settings ─────────────────────────────────────────────────────────
 
-export const getFinanceSettings = async (): Promise<{ success: boolean; settings: FinanceSettings }> => {
-  const res = await apiClient.get(`${BASE}/finance`);
-  return handle(res);
-};
+/**
+ * Loads the withdrawal safeguards for this school.
+ *
+ * @returns The finance settings.
+ * @throws `ApiError` when the request fails.
+ */
+export const getFinanceSettings = async (): Promise<{ success: boolean; settings: FinanceSettings }> =>
+  api.get<{ success: boolean; settings: FinanceSettings }>(`${BASE}/finance`);
 
+/**
+ * Saves the withdrawal safeguards.
+ *
+ * @param dto - Only the fields being changed.
+ * @returns The saved finance settings.
+ * @throws `ApiError` — `VALIDATION_FAILED` when a field breaks the DTO rules.
+ */
 export const updateFinanceSettings = async (
-  dto: Partial<FinanceSettings>
-): Promise<{ success: boolean; settings: FinanceSettings }> => {
-  const res = await apiClient.patch(`${BASE}/finance`, dto);
-  return handle(res);
-};
-
-// ─── Security ─────────────────────────────────────────────────────────────────
-
-export const changeSettingsPassword = async (dto: {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}): Promise<{ success: boolean; message: string }> => {
-  const res = await apiClient.post(`${BASE}/security/change-password`, dto);
-  return handle(res);
-};
+  dto: UpdateFinanceSettingsDto
+): Promise<{ success: boolean; settings: FinanceSettings }> =>
+  api.patch<{ success: boolean; settings: FinanceSettings }>(`${BASE}/finance`, dto);
 
 // ─── Data Export ──────────────────────────────────────────────────────────────
 
-export type ExportType = "students" | "staff" | "fees";
+/**
+ * Fetches one export dataset as rows ready for CSV.
+ *
+ * @param type - Which dataset to export.
+ * @returns The rows, their count, and a `message` when the dataset is empty by design.
+ * @throws `ApiError` when the request fails.
+ */
+export const fetchExportData = async (type: ExportType): Promise<ExportResult> =>
+  api.get<ExportResult>(`${BASE}/data/export/${type}`);
 
-export interface ExportRow {
-  [key: string]: string;
-}
-
-export const fetchExportData = async (
-  type: ExportType
-): Promise<{ success: boolean; type: string; data: ExportRow[]; count: number; message?: string }> => {
-  const res = await apiClient.get(`${BASE}/data/export/${type}`);
-  return handle(res);
-};
-
-export const downloadAsCsv = (rows: ExportRow[], filename: string) => {
+/**
+ * Turns export rows into a CSV file and saves it in the browser.
+ *
+ * @param rows - Rows to write; the first row's keys become the header.
+ * @param filename - Name to save the file under.
+ */
+export const downloadAsCsv = (rows: ExportRow[], filename: string): void => {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);
   const csvLines = [
     headers.join(","),
-    ...rows.map((r) =>
-      headers.map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(",")
-    ),
+    ...rows.map((r) => headers.map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(",")),
   ];
   const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

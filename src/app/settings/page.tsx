@@ -4,18 +4,11 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  School,
   UserCog,
-  Calendar,
   BookOpen,
-  BarChart2,
   Receipt,
-  Wallet,
   MessageSquare,
   Bell,
-  Shield,
-  Database,
-  Palette,
   Sun,
   Moon,
   Monitor,
@@ -23,8 +16,6 @@ import {
   Plus,
   X,
   Check,
-  Eye,
-  EyeOff,
   Pencil,
   Trash2,
   Upload,
@@ -39,14 +30,9 @@ import {
   Building2,
   Users,
   FileText,
-  Camera,
-  MapPin,
-  Phone,
-  User,
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { useTheme, Theme } from "@/providers/theme-provider";
-import { useAuth } from "@/context/AuthContext";
 import { SubAdminsSection } from "@/components/sub-admin/SubAdminsSection";
 import {
   AcademicYearResponse,
@@ -74,907 +60,37 @@ import {
   updateReceiptSettings,
   getFinanceSettings,
   updateFinanceSettings,
-  changeSettingsPassword,
-  getSchoolProfile,
-  updateSchoolProfile,
   fetchExportData,
   downloadAsCsv,
   ReceiptSettings,
   FinanceSettings,
-  SchoolProfile,
-  PrimaryContact,
 } from "@/app/services/school-settings.service";
+import {
+  Card,
+  CardHeader,
+  InputField,
+  ModalShell,
+  OutlineBtn,
+  PrimaryBtn,
+  SectionHeader,
+  StatusBadge,
+  ToggleRow,
+} from "@/components/settings/ui";
+import { SchoolProfileSection } from "@/components/settings/SchoolProfileSection";
+import { AdminAccountSection } from "@/components/settings/AdminAccountSection";
+import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
 import { uploadToCloudinary } from "@/app/utils/cloudinary";
 import { api } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
+import {
+  visibleSections,
+  type SectionId,
+  type SettingsSectionProps,
+} from "@/components/settings/sections";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/lib/permissions";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Section =
-  | "school-profile"
-  | "admin-account"
-  | "academic-setup"
-  | "classes-curriculum"
-  | "assessment-settings"
-  | "fees-receipts"
-  | "payments-finance"
-  | "communication"
-  | "notifications"
-  | "security"
-  | "data-system"
-  | "appearance"
-  | "sub-admins";
-
-const SECTIONS: {
-  id: Section;
-  label: string;
-  desc: string;
-  icon: React.ElementType;
-}[] = [
-  {
-    id: "school-profile",
-    label: "School Profile",
-    desc: "School information and branding",
-    icon: School,
-  },
-  {
-    id: "admin-account",
-    label: "Admin Profile",
-    desc: "Personal information & preferences",
-    icon: UserCog,
-  },
-  {
-    id: "academic-setup",
-    label: "Academic Setup",
-    desc: "Academic year, terms and grading periods",
-    icon: Calendar,
-  },
-  {
-    id: "classes-curriculum",
-    label: "Classes & Curriculum",
-    desc: "Class levels, subjects and curriculum",
-    icon: BookOpen,
-  },
-  {
-    id: "assessment-settings",
-    label: "Assessment Settings",
-    desc: "Grading rules and assessment preferences",
-    icon: BarChart2,
-  },
-  {
-    id: "fees-receipts",
-    label: "Fees & Receipts",
-    desc: "Fee categories, invoices and receipt design",
-    icon: Receipt,
-  },
-  {
-    id: "payments-finance",
-    label: "Payments & Finance",
-    desc: "Wallet, withdrawals and payout settings",
-    icon: Wallet,
-  },
-  {
-    id: "communication",
-    label: "Communication",
-    desc: "Email, SMS and messaging preferences",
-    icon: MessageSquare,
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    desc: "Notification preferences and alerts",
-    icon: Bell,
-  },
-  { id: "security", label: "Security", desc: "Password, OTP and access security", icon: Shield },
-  {
-    id: "data-system",
-    label: "Data & System",
-    desc: "Backups, exports and system info",
-    icon: Database,
-  },
-  { id: "appearance", label: "Appearance", desc: "Theme and display preferences", icon: Palette },
-  { id: "sub-admins", label: "Sub-Admins", desc: "Delegate admin responsibilities", icon: Users },
-];
-
-// ─── Shared UI atoms ──────────────────────────────────────────────────────────
-
-function SectionHeader({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="mb-6">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">{title}</h2>
-      <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{desc}</p>
-    </div>
-  );
-}
-
-function Card({
-  children,
-  className = "",
-  onClick,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}) {
-  return (
-    <div
-      className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 ${className}`}
-      onClick={onClick}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CardHeader({ title, action }: { title: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
-      <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{title}</h3>
-      {action}
-    </div>
-  );
-}
-
-function ToggleRow({
-  label,
-  desc,
-  checked,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  desc?: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-slate-700 last:border-0">
-      <div>
-        <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{label}</p>
-        {desc && <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{desc}</p>}
-      </div>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-          checked ? "bg-[#003366]" : "bg-gray-200"
-        }`}
-      >
-        <span
-          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-            checked ? "translate-x-4.5" : "translate-x-0.5"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg">
-        <span className="text-sm text-gray-700 dark:text-slate-300 flex-1">{value || "—"}</span>
-        <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-      </div>
-    </div>
-  );
-}
-
-function InputField({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required={required}
-        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none transition"
-      />
-    </div>
-  );
-}
-
-function PrimaryBtn({
-  children,
-  onClick,
-  disabled,
-  loading,
-  type = "button",
-  className = "",
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  loading?: boolean;
-  type?: "button" | "submit";
-  className?: string;
-}) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`inline-flex items-center gap-2 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-    >
-      {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-      {children}
-    </button>
-  );
-}
-
-function OutlineBtn({
-  children,
-  onClick,
-  disabled,
-  className = "",
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition disabled:opacity-50 ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    active: "bg-green-50 text-green-700 border-green-200",
-    current: "bg-blue-50 text-blue-700 border-blue-200",
-    completed: "bg-gray-100 text-gray-600 border-gray-200",
-    upcoming: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  };
-  const key = status.toLowerCase();
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${map[key] || "bg-gray-100 text-gray-600 border-gray-200"}`}
-    >
-      {status}
-    </span>
-  );
-}
-
-function ModalShell({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-700">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ─── School Profile Section ───────────────────────────────────────────────────
-
-function SchoolProfileSection() {
-  const [school, setSchool] = useState<SchoolProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    physicalAddress: "",
-    contactName: "",
-    contactPhone: "",
-    contactRole: "",
-  });
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    loadSchool();
-  }, []);
-
-  const loadSchool = async () => {
-    setLoading(true);
-    try {
-      const res = await getSchoolProfile();
-      setSchool(res.school);
-      const contact = res.school.primaryContacts?.[0];
-      setForm({
-        physicalAddress: res.school.physicalAddress || "",
-        contactName: contact?.name || "",
-        contactPhone: contact?.phone || "",
-        contactRole: contact?.role || "",
-      });
-    } catch {
-      // Fall back to localStorage
-      try {
-        const raw = localStorage.getItem("user");
-        if (raw) {
-          const data = JSON.parse(raw);
-          const s = data.schoolId || {};
-          setSchool(s);
-          setForm({
-            physicalAddress: s.physicalAddress || "",
-            contactName: "",
-            contactPhone: "",
-            contactRole: "",
-          });
-        }
-      } catch {}
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      toast.error("Only PNG or JPG files are allowed");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("File size must be under 2MB");
-      return;
-    }
-    setUploading(true);
-    try {
-      const logoUrl = await uploadToCloudinary(file);
-      const data = { secure_url: logoUrl };
-      if (data.secure_url) {
-        await updateSchoolProfile({ logo: data.secure_url });
-        setSchool((prev) => (prev ? { ...prev, logo: data.secure_url } : prev));
-        // Update localStorage too
-        try {
-          const raw = localStorage.getItem("user");
-          if (raw) {
-            const user = JSON.parse(raw);
-            if (user.schoolId) user.schoolId.logo = data.secure_url;
-            localStorage.setItem("user", JSON.stringify(user));
-          }
-        } catch {}
-        toast.success("School logo updated successfully");
-      }
-    } catch {
-      toast.error("Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const contacts: PrimaryContact[] = form.contactName
-        ? [
-            {
-              name: form.contactName,
-              phone: form.contactPhone,
-              email: school?.email || "",
-              role: form.contactRole || "Principal",
-            },
-          ]
-        : school?.primaryContacts || [];
-
-      const res = await updateSchoolProfile({
-        physicalAddress: form.physicalAddress,
-        primaryContacts: contacts,
-      });
-      setSchool(res.school);
-      setEditing(false);
-      toast.success("School profile updated");
-    } catch {
-      toast.error("Failed to update school profile");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-5">
-        <SectionHeader title="School Profile" desc="School information and branding" />
-        <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
-        <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />
-      </div>
-    );
-  }
-
-  const contact = school?.primaryContacts?.[0];
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="School Profile" desc="School information and branding" />
-
-      {/* School Logo */}
-      <Card>
-        <CardHeader title="School Logo" />
-        <div className="p-5 flex items-center gap-5">
-          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
-            {school?.logo ? (
-              <img src={school.logo} alt="School logo" className="w-full h-full object-contain" />
-            ) : (
-              <School className="w-8 h-8 text-gray-300" />
-            )}
-          </div>
-          <div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={handleLogoUpload}
-            />
-            <OutlineBtn onClick={() => fileRef.current?.click()} disabled={uploading}>
-              <Upload className="w-4 h-4" />
-              {uploading ? "Uploading…" : "Change Logo"}
-            </OutlineBtn>
-            <p className="text-xs text-gray-500 mt-1.5">PNG, JPG — max 2MB</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* School Information */}
-      <Card>
-        <CardHeader
-          title="School Information"
-          action={
-            editing ? (
-              <div className="flex gap-2">
-                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>
-                  Cancel
-                </OutlineBtn>
-                <PrimaryBtn onClick={handleSave} loading={saving}>
-                  Save Changes
-                </PrimaryBtn>
-              </div>
-            ) : (
-              <OutlineBtn onClick={() => setEditing(true)}>
-                <Pencil className="w-3.5 h-3.5" /> Edit
-              </OutlineBtn>
-            )
-          }
-        />
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ReadOnlyField label="School Name" value={school?.name || ""} />
-            <ReadOnlyField label="School Email" value={school?.email || ""} />
-            <ReadOnlyField label="School Code" value={school?.schoolPrefix || ""} />
-            <ReadOnlyField label="Status" value={school?.active ? "Active" : "Inactive"} />
-          </div>
-
-          {editing ? (
-            <div className="space-y-4 pt-2 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Editable Fields
-              </p>
-              <InputField
-                label="Physical Address"
-                value={form.physicalAddress}
-                onChange={(v) => setForm({ ...form, physicalAddress: v })}
-                placeholder="e.g. 123 Education Lane, Lagos"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField
-                  label="Primary Contact Name"
-                  value={form.contactName}
-                  onChange={(v) => setForm({ ...form, contactName: v })}
-                  placeholder="e.g. Mrs. Amaka Obi"
-                />
-                <InputField
-                  label="Contact Phone"
-                  value={form.contactPhone}
-                  onChange={(v) => setForm({ ...form, contactPhone: v })}
-                  placeholder="e.g. +234 800 000 0000"
-                />
-                <InputField
-                  label="Contact Role"
-                  value={form.contactRole}
-                  onChange={(v) => setForm({ ...form, contactRole: v })}
-                  placeholder="e.g. Principal"
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-start gap-2 pt-2">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700 dark:text-slate-300">
-                  {school?.physicalAddress || "—"}
-                </span>
-              </div>
-              {contact && (
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-gray-400" />
-                    {contact.name} ({contact.role})
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                    {contact.phone}
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700">
-              School name, email and code are managed by Talim support. Contact{" "}
-              <a href="mailto:support@mytalim.com" className="underline font-medium">
-                support@mytalim.com
-              </a>{" "}
-              to request changes.
-            </p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ─── Admin Account Section ────────────────────────────────────────────────────
-
-function AdminAccountSection() {
-  const [profile, setProfile] = useState<any>(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ firstName: "", lastName: "", phoneNumber: "" });
-  const [saving, setSaving] = useState(false);
-  const [showPwModal, setShowPwModal] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const avatarRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    try {
-      const user = localStorage.getItem("user");
-      if (user) {
-        const data = JSON.parse(user);
-        setProfile(data);
-        setForm({
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          phoneNumber: data.phoneNumber || "",
-        });
-      }
-    } catch {}
-
-    // Always fetch fresh profile from the backend so the UI is never stale
-    try {
-      const cached = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = cached.userId || cached._id;
-      if (!userId) return;
-      const fresh = await authService.getUserProfile(userId);
-      const merged = { ...cached, ...fresh };
-      localStorage.setItem("user", JSON.stringify(merged));
-      setProfile(merged);
-      setForm({
-        firstName: merged.firstName || "",
-        lastName: merged.lastName || "",
-        phoneNumber: merged.phoneNumber || "",
-      });
-    } catch {}
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await authService.updateUserProfile(form);
-      const updated = { ...profile, ...form };
-      localStorage.setItem("user", JSON.stringify(updated));
-      setProfile(updated);
-      setEditing(false);
-      toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update profile"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      toast.error("Only PNG or JPG files are allowed");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("File size must be under 2MB");
-      return;
-    }
-    setUploadingAvatar(true);
-    try {
-      const avatarUrl = await uploadToCloudinary(file);
-      await authService.updateAvatarUrl(avatarUrl);
-      const data = { secure_url: avatarUrl };
-
-      const updated = { ...profile, userAvatar: data.secure_url };
-      localStorage.setItem("user", JSON.stringify(updated));
-      setProfile(updated);
-      toast.success("Profile picture updated");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update profile picture"));
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
-
-  const initials = `${profile?.firstName?.[0] || ""}${profile?.lastName?.[0] || ""}`.toUpperCase();
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Admin Profile" desc="Manage your personal profile and preferences" />
-
-      {/* Avatar */}
-      <Card>
-        <CardHeader title="Profile Picture" />
-        <div className="p-5 flex items-center gap-5">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full border-2 border-gray-200 flex items-center justify-center bg-[#EBF0F7] overflow-hidden">
-              {profile?.userAvatar ? (
-                <img src={profile.userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xl font-bold text-[#003366]">{initials || "A"}</span>
-              )}
-            </div>
-            {uploadingAvatar && (
-              <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-white animate-spin" />
-              </div>
-            )}
-          </div>
-          <div>
-            <input
-              ref={avatarRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={handleAvatarUpload}
-            />
-            <OutlineBtn onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}>
-              <Camera className="w-4 h-4" />
-              {uploadingAvatar ? "Uploading…" : "Change Picture"}
-            </OutlineBtn>
-            <p className="text-xs text-gray-500 mt-1.5">PNG, JPG — max 2MB</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Profile Information */}
-      <Card>
-        <CardHeader
-          title="Profile Information"
-          action={
-            editing ? (
-              <div className="flex gap-2">
-                <OutlineBtn onClick={() => setEditing(false)} disabled={saving}>
-                  Cancel
-                </OutlineBtn>
-                <PrimaryBtn onClick={handleSave} loading={saving}>
-                  Save Changes
-                </PrimaryBtn>
-              </div>
-            ) : (
-              <OutlineBtn onClick={() => setEditing(true)}>
-                <Pencil className="w-3.5 h-3.5" /> Edit
-              </OutlineBtn>
-            )
-          }
-        />
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {editing ? (
-              <>
-                <InputField
-                  label="First Name"
-                  value={form.firstName}
-                  onChange={(v) => setForm({ ...form, firstName: v })}
-                  required
-                />
-                <InputField
-                  label="Last Name"
-                  value={form.lastName}
-                  onChange={(v) => setForm({ ...form, lastName: v })}
-                  required
-                />
-                <InputField
-                  label="Phone Number"
-                  value={form.phoneNumber}
-                  onChange={(v) => setForm({ ...form, phoneNumber: v })}
-                />
-                <ReadOnlyField label="Email" value={profile?.email} />
-              </>
-            ) : (
-              <>
-                <ReadOnlyField
-                  label="Full Name"
-                  value={`${profile?.firstName || ""} ${profile?.lastName || ""}`.trim()}
-                />
-                <ReadOnlyField label="Email" value={profile?.email} />
-                <ReadOnlyField label="Phone Number" value={profile?.phoneNumber || "Not set"} />
-                <ReadOnlyField
-                  label="Role"
-                  value={profile?.role?.replace(/_/g, " ") || "School Admin"}
-                />
-              </>
-            )}
-          </div>
-          {profile?.lastLogin && (
-            <p className="text-xs text-gray-500">
-              Last login: {new Date(profile.lastLogin).toLocaleString()}
-            </p>
-          )}
-        </div>
-      </Card>
-
-      {/* Account Security */}
-      <Card>
-        <CardHeader title="Account Security" />
-        <div className="p-5">
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Password</p>
-              <p className="text-xs text-gray-500">Update your account password</p>
-            </div>
-            <OutlineBtn onClick={() => setShowPwModal(true)}>
-              <Lock className="w-3.5 h-3.5" /> Change Password
-            </OutlineBtn>
-          </div>
-        </div>
-      </Card>
-
-      <AnimatePresence>
-        {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function ChangePasswordModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [show, setShow] = useState({ current: false, newPw: false, confirm: false });
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (form.newPassword !== form.confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-    if (form.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-    setSaving(true);
-    try {
-      await changeSettingsPassword(form);
-      toast.success("Password changed successfully");
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to change password");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const rules = [
-    { text: "At least 8 characters", ok: form.newPassword.length >= 8 },
-    { text: "One uppercase letter", ok: /[A-Z]/.test(form.newPassword) },
-    { text: "One number", ok: /[0-9]/.test(form.newPassword) },
-    { text: "One special character", ok: /[^A-Za-z0-9]/.test(form.newPassword) },
-  ];
-
-  return (
-    <ModalShell title="Change Password" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {(["current", "newPw", "confirm"] as const).map((key, i) => {
-          const labels = ["Current Password *", "New Password *", "Confirm New Password *"];
-          const fields = ["currentPassword", "newPassword", "confirmPassword"] as const;
-          return (
-            <div key={key}>
-              <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
-                {labels[i]}
-              </label>
-              <div className="relative">
-                <input
-                  type={show[key] ? "text" : "password"}
-                  value={form[fields[i]]}
-                  onChange={(e) => setForm({ ...form, [fields[i]]: e.target.value })}
-                  required
-                  className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShow({ ...show, [key]: !show[key] })}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                >
-                  {show[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          );
-        })}
-
-        {form.newPassword && (
-          <ul className="space-y-1">
-            {rules.map((r) => (
-              <li
-                key={r.text}
-                className={`flex items-center gap-1.5 text-xs ${r.ok ? "text-green-600" : "text-gray-400"}`}
-              >
-                <Check className={`w-3 h-3 ${r.ok ? "" : "opacity-0"}`} />
-                {r.text}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="flex gap-3 pt-2">
-          <OutlineBtn onClick={onClose} disabled={saving} className="flex-1 justify-center">
-            Cancel
-          </OutlineBtn>
-          <PrimaryBtn type="submit" loading={saving} className="flex-1 justify-center">
-            Update Password
-          </PrimaryBtn>
-        </div>
-      </form>
-    </ModalShell>
-  );
-}
 
 // ─── Academic Setup Section ───────────────────────────────────────────────────
 
@@ -3208,11 +2324,7 @@ function AppearanceSection() {
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
-function SubAdminSettingsSection() {
-  return <SubAdminsSection />;
-}
-
-const SECTION_MAP: Record<Section, React.ComponentType> = {
+const SECTION_MAP: Record<SectionId, React.ComponentType<SettingsSectionProps>> = {
   "school-profile": SchoolProfileSection,
   "admin-account": AdminAccountSection,
   "academic-setup": AcademicSetupSection,
@@ -3225,16 +2337,28 @@ const SECTION_MAP: Record<Section, React.ComponentType> = {
   security: SecuritySection,
   "data-system": DataSystemSection,
   appearance: AppearanceSection,
-  "sub-admins": SubAdminSettingsSection,
+  "sub-admins": SubAdminsSection,
 };
 
+/**
+ * Settings — a sidebar of sections, one rendered at a time.
+ *
+ * The route itself already requires `manage:settings` (RouteGuard reads
+ * `routePermissions`); `canManage` passes the same fact down so a role without
+ * it never sees an edit control it cannot use. Sub-Admins is reserved for the
+ * primary school admin.
+ */
 export default function SettingsPage() {
-  const [active, setActive] = useState<Section>("school-profile");
-  const { isFullAdmin } = useAuth();
-  const ActiveSection = SECTION_MAP[active];
+  const [active, setActive] = useState<SectionId>("school-profile");
+  const { hasPermission, isFullAdmin } = usePermissions();
 
-  // Sub-Admins section is only accessible to full school_admin
-  const visibleSections = SECTIONS.filter((s) => s.id !== "sub-admins" || isFullAdmin);
+  const canManage = hasPermission(Permission.MANAGE_SETTINGS);
+  const canManageSubAdmins = isFullAdmin && hasPermission(Permission.MANAGE_SUB_ADMINS);
+  const sections = visibleSections(canManageSubAdmins);
+
+  // A tab that stops being visible (role change, session refresh) falls back.
+  const current = sections.some((s) => s.id === active) ? active : "school-profile";
+  const ActiveSection = SECTION_MAP[current];
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 overflow-hidden">
@@ -3246,13 +2370,15 @@ export default function SettingsPage() {
             Manage your school&apos;s preferences
           </p>
         </div>
-        <nav className="flex-1 overflow-y-auto p-2">
-          {visibleSections.map((s) => {
+        <nav className="flex-1 overflow-y-auto p-2" aria-label="Settings sections">
+          {sections.map((s) => {
             const Icon = s.icon;
-            const isActive = active === s.id;
+            const isActive = current === s.id;
             return (
               <button
                 key={s.id}
+                type="button"
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => setActive(s.id)}
                 className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-left transition-colors ${
                   isActive
@@ -3285,7 +2411,7 @@ export default function SettingsPage() {
       {/* Right Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-8 py-8">
-          <ActiveSection />
+          <ActiveSection canManage={canManage} onNavigate={setActive} />
         </div>
       </main>
     </div>
