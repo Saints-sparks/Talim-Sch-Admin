@@ -15,7 +15,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { useBodyScrollLock } from "@/hooks/fees/useBodyScrollLock";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { ApiError } from "@/lib/apiError";
 import type { TimetableCourse } from "@/app/services/timetable.service";
 import type { TimetableDay } from "@/app/services/timetable.service";

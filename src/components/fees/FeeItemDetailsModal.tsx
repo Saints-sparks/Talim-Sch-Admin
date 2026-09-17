@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { FiX } from "react-icons/fi";
 import type { FeeItem } from "@/app/services/fees.service";
-import { useBodyScrollLock } from "@/hooks/fees/useBodyScrollLock";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { FeeStatusBadge } from "./FeeStatusBadge";
 import { feeTypeLabel, formatDate, formatNaira, refName } from "./formatters";
 import { brandTextClass, bodyTextClass, headingClass, modalBackdropClass, modalPanelClass, mutedTextClass } from "./ui";

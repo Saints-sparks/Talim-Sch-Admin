@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FiX } from "react-icons/fi";
 import type { FeeCategory } from "@/app/services/fees.service";
-import { useBodyScrollLock } from "@/hooks/fees/useBodyScrollLock";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
   headingClass,
   inputClass,

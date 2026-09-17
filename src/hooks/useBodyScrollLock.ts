@@ -1,14 +1,21 @@
 /**
- * Freezes the page behind a modal and gives the scroll position back when it
- * closes — without this the page underneath scrolls while a dialog is open and
- * jumps to the top once it is dismissed.
+ * Body scroll locking for modals.
+ *
+ * A dialog that does not lock the page leaves it scrolling behind the overlay,
+ * so reopening lands somewhere else. This freezes the page while a modal is
+ * open and puts the previous value back. The lock is counted, so a modal
+ * opened on top of another does not release the outer one's lock when it
+ * closes — the page stays frozen until the last one is dismissed.
  */
 "use client";
 
 import { useEffect } from "react";
 
+let lockCount = 0;
+let previousOverflow = "";
+
 /**
- * Locks `document.body` scrolling while `locked` is true.
+ * Freezes page scrolling while `locked` is true.
  *
  * @param locked - Whether a modal is currently open.
  */
@@ -16,10 +23,15 @@ export function useBodyScrollLock(locked: boolean): void {
   useEffect(() => {
     if (!locked || typeof document === "undefined") return;
 
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
+    if (lockCount === 0) {
+      previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    lockCount += 1;
+
     return () => {
-      document.body.style.overflow = overflow;
+      lockCount -= 1;
+      if (lockCount === 0) document.body.style.overflow = previousOverflow;
     };
   }, [locked]);
 }
