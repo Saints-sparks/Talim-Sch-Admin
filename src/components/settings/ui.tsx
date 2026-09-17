@@ -110,6 +110,7 @@ export function InputField({
   label,
   value,
   onChange,
+  onBlur,
   type = "text",
   placeholder,
   required,
@@ -119,6 +120,8 @@ export function InputField({
   label: string;
   value: string;
   onChange: (v: string) => void;
+  /** Called when the field loses focus — where a per-field save belongs. */
+  onBlur?: () => void;
   type?: string;
   placeholder?: string;
   required?: boolean;
@@ -134,6 +137,7 @@ export function InputField({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         disabled={disabled}

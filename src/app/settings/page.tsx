@@ -15,8 +15,6 @@ import {
   Plus,
   X,
   Check,
-  Trash2,
-  Upload,
   Download,
   ExternalLink,
   Lock,
@@ -47,13 +45,10 @@ import {
   PaystackBank,
 } from "@/app/services/finance.service";
 import {
-  getReceiptSettings,
-  updateReceiptSettings,
   getFinanceSettings,
   updateFinanceSettings,
   fetchExportData,
   downloadAsCsv,
-  ReceiptSettings,
   FinanceSettings,
 } from "@/app/services/school-settings.service";
 import {
@@ -71,7 +66,7 @@ import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
 import { AcademicSetupSection } from "@/components/settings/AcademicSetupSection";
 import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculumSection";
 import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
-import { uploadToCloudinary } from "@/app/utils/cloudinary";
+import { FeesReceiptsSection } from "@/components/settings/FeesReceiptsSection";
 import { api } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
@@ -86,242 +81,6 @@ import { Permission } from "@/lib/permissions";
 
 
 
-// ─── Fees & Receipts Section ──────────────────────────────────────────────────
-
-function FeesReceiptsSection() {
-  const [settings, setSettings] = useState<ReceiptSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [footerNote, setFooterNote] = useState("");
-  const signatureRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    getReceiptSettings()
-      .then((r) => {
-        setSettings(r.settings);
-        setFooterNote(r.settings.footerNote || "");
-      })
-      .catch(() => toast.error("Could not load receipt settings"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const updateToggle = async (field: keyof ReceiptSettings, value: boolean) => {
-    if (!settings) return;
-    const prev = { ...settings };
-    setSettings({ ...settings, [field]: value });
-    try {
-      await updateReceiptSettings({ [field]: value });
-    } catch {
-      setSettings(prev);
-      toast.error("Failed to save");
-    }
-  };
-
-  const saveFooterNote = async () => {
-    setSaving(true);
-    try {
-      await updateReceiptSettings({ footerNote });
-      setSettings((s) => (s ? { ...s, footerNote } : s));
-      toast.success("Footer note saved");
-    } catch {
-      toast.error("Failed to save footer note");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      toast.error("Only PNG or JPG files");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Max 2MB");
-      return;
-    }
-    setUploading(true);
-    try {
-      const data = { secure_url: await uploadToCloudinary(file) };
-      if (data.secure_url) {
-        await updateReceiptSettings({ signatureUrl: data.secure_url });
-        setSettings((s) => (s ? { ...s, signatureUrl: data.secure_url } : s));
-        toast.success("Signature uploaded");
-      }
-    } catch {
-      toast.error("Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeSignature = async () => {
-    try {
-      await updateReceiptSettings({ signatureUrl: "", signatureName: "", signatureTitle: "" });
-      setSettings((s) =>
-        s ? { ...s, signatureUrl: "", signatureName: "", signatureTitle: "" } : s
-      );
-      toast.success("Signature removed");
-    } catch {
-      toast.error("Failed to remove signature");
-    }
-  };
-
-  if (loading) return <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />;
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Fees & Receipts" desc="Fee categories, invoices and receipt design" />
-
-      <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#EBF0F7] flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-[#003366]" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-                Fee Categories
-              </p>
-              <p className="text-xs text-gray-500">Manage fee types, invoices and assignments</p>
-            </div>
-          </div>
-          <OutlineBtn onClick={() => router.push("/fees-management")}>
-            Go to Fees Management <ChevronRight className="w-3.5 h-3.5" />
-          </OutlineBtn>
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Receipt Signature" />
-        <div className="p-5">
-          {settings?.signatureUrl ? (
-            <div className="flex items-start gap-5">
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-w-[160px] text-center">
-                <img
-                  src={settings.signatureUrl}
-                  alt="Signature"
-                  className="max-h-16 mx-auto object-contain"
-                />
-                {settings.signatureName && (
-                  <p className="text-xs font-semibold text-gray-700 mt-2">
-                    {settings.signatureName}
-                  </p>
-                )}
-                {settings.signatureTitle && (
-                  <p className="text-xs text-gray-500">{settings.signatureTitle}</p>
-                )}
-              </div>
-              <div className="space-y-3 flex-1">
-                <InputField
-                  label="Signatory Name"
-                  value={settings.signatureName || ""}
-                  onChange={async (v) => {
-                    setSettings((s) => (s ? { ...s, signatureName: v } : s));
-                    await updateReceiptSettings({ signatureName: v });
-                  }}
-                  placeholder="e.g. A. Okafor"
-                />
-                <InputField
-                  label="Signatory Title"
-                  value={settings.signatureTitle || ""}
-                  onChange={async (v) => {
-                    setSettings((s) => (s ? { ...s, signatureTitle: v } : s));
-                    await updateReceiptSettings({ signatureTitle: v });
-                  }}
-                  placeholder="e.g. Principal"
-                />
-                <div className="flex gap-2">
-                  <input
-                    ref={signatureRef}
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    className="hidden"
-                    onChange={handleSignatureUpload}
-                  />
-                  <OutlineBtn onClick={() => signatureRef.current?.click()} disabled={uploading}>
-                    <Upload className="w-3.5 h-3.5" />{" "}
-                    {uploading ? "Uploading…" : "Change Signature"}
-                  </OutlineBtn>
-                  <OutlineBtn
-                    onClick={removeSignature}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Remove
-                  </OutlineBtn>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-500 mb-3">No signature uploaded</p>
-              <input
-                ref={signatureRef}
-                type="file"
-                accept="image/png,image/jpeg"
-                className="hidden"
-                onChange={handleSignatureUpload}
-              />
-              <PrimaryBtn onClick={() => signatureRef.current?.click()} loading={uploading}>
-                <Upload className="w-4 h-4" /> Upload Signature
-              </PrimaryBtn>
-              <p className="text-xs text-gray-400 mt-2">PNG, JPG · max 2MB</p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Receipt Preferences" />
-        <div className="px-5 pb-2 pt-1">
-          <ToggleRow
-            label="Show school logo on receipt"
-            checked={settings?.showSchoolLogo ?? true}
-            onChange={(v) => updateToggle("showSchoolLogo", v)}
-          />
-          <ToggleRow
-            label="Allow parents to download receipts"
-            checked={settings?.allowParentDownload ?? true}
-            onChange={(v) => updateToggle("allowParentDownload", v)}
-          />
-          <ToggleRow
-            label="Show QR verification code"
-            checked={settings?.showQrVerification ?? false}
-            onChange={(v) => updateToggle("showQrVerification", v)}
-          />
-          <ToggleRow
-            label="Show authorized signature"
-            checked={settings?.showAuthorizedSignature ?? false}
-            onChange={(v) => updateToggle("showAuthorizedSignature", v)}
-          />
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Receipt Footer Note" />
-        <div className="p-5 space-y-3">
-          <textarea
-            value={footerNote}
-            onChange={(e) => setFooterNote(e.target.value)}
-            maxLength={250}
-            rows={3}
-            placeholder="e.g. Thank you for your payment. Every child. Every classroom. Every future."
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] resize-none"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">{footerNote.length}/250 characters</span>
-            <PrimaryBtn onClick={saveFooterNote} loading={saving}>
-              Save Preferences
-            </PrimaryBtn>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 // ─── Payments & Finance Section ───────────────────────────────────────────────
 
