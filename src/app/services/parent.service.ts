@@ -1,7 +1,16 @@
-// app/services/parent.service.ts
+/**
+ * Parents — the directory behind "Users → Parents", with the children linked
+ * to each parent.
+ *
+ * Unlike the student and teacher rosters, `GET /parents/school/:schoolId`
+ * filters, searches and sorts server-side, so the page passes its controls
+ * straight through instead of filtering in the browser.
+ */
 import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
+import { sessionStore } from "@/lib/session";
 
+/** The user account behind a parent or a child. */
 export interface ParentUser {
   _id: string;
   firstName: string;
@@ -17,6 +26,7 @@ export interface ParentUser {
   createdAt?: string;
 }
 
+/** A student linked to a parent. */
 export interface ParentChild {
   _id: string;
   gradeLevel?: string;
@@ -44,6 +54,7 @@ export interface ParentChild {
   };
 }
 
+/** A parent and the children linked to them. */
 export interface Parent {
   _id: string;
   userId: ParentUser;
@@ -54,6 +65,7 @@ export interface Parent {
   updatedAt?: string;
 }
 
+/** The headline counts the parents dashboard shows above the table. */
 export interface ParentsStats {
   totalParents: number;
   activeParents: number;
@@ -61,6 +73,7 @@ export interface ParentsStats {
   totalChildren: number;
 }
 
+/** A page of parents, with the dashboard's stats attached. */
 export interface GetParentsResponse {
   data: Parent[];
   meta: {
@@ -74,70 +87,76 @@ export interface GetParentsResponse {
   stats?: ParentsStats;
 }
 
+/** Status values `GET /parents/school/:schoolId` accepts. */
+export type ParentStatusFilter = "all" | "active" | "inactive";
+
+/** Gender values `GET /parents/school/:schoolId` accepts. */
+export type ParentGenderFilter = "all" | "male" | "female" | "other";
+
+/** Sort orders `GET /parents/school/:schoolId` accepts. */
+export type ParentSortOrder = "az" | "za" | "joined_desc" | "joined_asc";
+
+/** Query for `GET /parents/school/:schoolId` (backend `GetParentsQueryDto`). */
 export interface GetParentsParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: string;
-  gender?: string;
-  sortBy?: string;
+  status?: ParentStatusFilter;
+  gender?: ParentGenderFilter;
+  sortBy?: ParentSortOrder;
 }
 
-const getStoredJSON = (key: string) => {
-  if (typeof window === "undefined") return null;
-  const item = localStorage.getItem(key) || sessionStorage.getItem(key);
-  if (!item) return null;
-
-  try {
-    return JSON.parse(item);
-  } catch {
-    return null;
-  }
-};
+/** Just the profile fields the parents page reads for a user. */
+export interface ParentProfileFields {
+  dateOfBirth?: string;
+  gender?: string;
+}
 
 export const parentService = {
-  async getUserProfile(userId: string): Promise<Partial<ParentUser>> {
+  /**
+   * The date of birth and gender for one user, which the parents list does not
+   * include. Returns `{}` rather than throwing: this only enriches the detail
+   * panel, and one missing profile must not blank the page.
+   *
+   * @param userId - The user to read.
+   * @returns The fields, or `{}` when they could not be read.
+   */
+  async getUserProfile(userId: string): Promise<ParentProfileFields> {
     try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.GET_USER_PROFILE(userId)}`
+      const data = await api.get<{ user?: ParentProfileFields } & ParentProfileFields>(
+        API_ENDPOINTS.GET_USER_PROFILE(userId),
       );
-      if (!response.ok) return {};
-      const data = await response.json();
-      return data.user ?? data ?? {};
+      return data?.user ?? data ?? {};
     } catch {
       return {};
     }
   },
 
-  async getParentsDashboard(
-    params: GetParentsParams = {}
-  ): Promise<GetParentsResponse> {
-    const user = getStoredJSON("user");
-    const schoolId =
-      typeof user?.schoolId === "string" ? user.schoolId : user?.schoolId?._id;
-    if (!schoolId) {
-      throw new Error("School ID not found in user data");
-    }
+  /**
+   * A filtered, sorted page of the school's parents plus the dashboard stats.
+   *
+   * @param params - Page, page size, search text, status, gender and sort order.
+   * @returns The page, its `meta` and the stats.
+   * @throws `Error` when there is no school in the session; `ApiError` otherwise.
+   */
+  async getParentsDashboard(params: GetParentsParams = {}): Promise<GetParentsResponse> {
+    const schoolId = sessionStore.getSchoolId();
+    if (!schoolId) throw new Error("No school in the current session");
+
     const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        query.set(key, String(value));
-      }
-    });
-
-    const url = `${API_ENDPOINTS.GET_PARENT(schoolId)}${
-        query.toString() ? `?${query.toString()}` : ""
-      }`;
-
-    const response = await apiClient.get(url);
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch parents");
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
     }
-    const data: GetParentsResponse = await response.json();
-    return data;
+
+    const suffix = query.toString() ? `?${query}` : "";
+    return api.get<GetParentsResponse>(`${API_ENDPOINTS.GET_PARENT(schoolId)}${suffix}`);
   },
 
+  /**
+   * Every parent on the first page of the school's directory.
+   *
+   * @returns The parents.
+   */
   async getParentsBySchoolId(): Promise<Parent[]> {
     const response = await this.getParentsDashboard();
     return response.data;
