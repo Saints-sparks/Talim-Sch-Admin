@@ -6,19 +6,15 @@ import { AnimatePresence } from "framer-motion";
 import {
   UserCog,
   Receipt,
-  MessageSquare,
-  Bell,
   Sun,
   Moon,
   Monitor,
-  ChevronRight,
   Check,
   Download,
   ExternalLink,
   Lock,
   AlertCircle,
   CheckCircle2,
-  Info,
   Loader2,
   Users,
   FileText,
@@ -42,7 +38,6 @@ import {
   CardHeader,
   OutlineBtn,
   SectionHeader,
-  ToggleRow,
 } from "@/components/settings/ui";
 import { SchoolProfileSection } from "@/components/settings/SchoolProfileSection";
 import { AdminAccountSection } from "@/components/settings/AdminAccountSection";
@@ -52,9 +47,8 @@ import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculu
 import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
 import { FeesReceiptsSection } from "@/components/settings/FeesReceiptsSection";
 import { PaymentsFinanceSection } from "@/components/settings/PaymentsFinanceSection";
-import { api } from "@/lib/apiClient";
-import { getErrorMessage } from "@/lib/apiError";
-import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
+import { CommunicationSection } from "@/components/settings/CommunicationSection";
+import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import {
   visibleSections,
   type SectionId,
@@ -68,252 +62,6 @@ import { Permission } from "@/lib/permissions";
 
 
 
-// ─── Communication Section ────────────────────────────────────────────────────
-
-function CommunicationSection() {
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Communication" desc="Email, SMS and messaging preferences" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          {
-            title: "Email Notifications",
-            desc: "Configure automated email notifications sent to parents and staff",
-            icon: Bell,
-            link: "/notifications",
-          },
-          {
-            title: "SMS Alerts",
-            desc: "Manage SMS alerts for fee payments, results and attendance",
-            icon: MessageSquare,
-            link: "/notifications",
-          },
-          {
-            title: "Parent Messages",
-            desc: "Configure parent-teacher messaging preferences",
-            icon: Users,
-            link: "/messages",
-          },
-        ].map((c) => (
-          <Card key={c.title} className="p-5">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] flex items-center justify-center shrink-0">
-                <c.icon className="w-4 h-4 text-[#003366]" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
-              </div>
-            </div>
-            <a
-              href={c.link}
-              className="inline-flex items-center gap-1 text-xs text-[#003366] font-medium hover:underline"
-            >
-              Configure <ChevronRight className="w-3 h-3" />
-            </a>
-          </Card>
-        ))}
-      </div>
-      <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-        <Info className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-yellow-700">
-          Full communication engine configuration is coming soon. Use the links above to access
-          current messaging features.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Notifications Section ────────────────────────────────────────────────────
-
-interface AdminNotifPrefs {
-  announcementsEnabled: boolean;
-  feesEnabled: boolean;
-  attendanceEnabled: boolean;
-  resultsEnabled: boolean;
-  messagesEnabled: boolean;
-  pushEnabled: boolean;
-  emailEnabled: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-}
-
-const ADMIN_NOTIF_DEFAULTS: AdminNotifPrefs = {
-  announcementsEnabled: true,
-  feesEnabled: true,
-  attendanceEnabled: true,
-  resultsEnabled: false,
-  messagesEnabled: true,
-  pushEnabled: true,
-  emailEnabled: true,
-  quietHoursEnabled: false,
-  quietHoursStart: "22:00",
-  quietHoursEnd: "07:00",
-};
-
-
-function NotificationsSection() {
-  const [prefs, setPrefs] = useState<AdminNotifPrefs>(ADMIN_NOTIF_DEFAULTS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<Partial<Record<keyof AdminNotifPrefs, boolean>>>({});
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<Partial<AdminNotifPrefs>>("/notifications/preferences")
-      .then((data) => {
-        if (data && typeof data === "object") {
-          setPrefs((prev) => ({ ...prev, ...data }));
-        }
-      })
-      .catch(() => {
-        setError(
-          "Could not load preferences. Showing defaults — your changes will still be saved."
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const toggle = async (field: keyof AdminNotifPrefs, value: boolean | string) => {
-    const prev = prefs[field];
-    setPrefs((p) => ({ ...p, [field]: value }));
-    setSaving((s) => ({ ...s, [field]: true }));
-    try {
-      await api.patch("/notifications/preferences", { [field]: value });
-    } catch (error) {
-      setPrefs((p) => ({ ...p, [field]: prev }));
-      toast.error(getErrorMessage(error, "Failed to save preference. Please try again."));
-    } finally {
-      setSaving((s) => ({ ...s, [field]: false }));
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-5">
-        <SectionHeader title="Notifications" desc="Manage notification preferences and alerts" />
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Notifications" desc="Manage notification preferences and alerts" />
-
-      {error && (
-        <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100">
-          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700">{error}</p>
-        </div>
-      )}
-
-      <Card>
-        <CardHeader title="Notification Preferences" />
-        <div className="px-5 pb-2 pt-1">
-          <ToggleRow
-            label="Announcement notifications"
-            desc="Get notified when announcements are published"
-            checked={prefs.announcementsEnabled}
-            onChange={(v) => toggle("announcementsEnabled", v)}
-            disabled={saving.announcementsEnabled}
-          />
-          <ToggleRow
-            label="Fee payment alerts"
-            desc="Notify when parents make payments or withdrawals"
-            checked={prefs.feesEnabled}
-            onChange={(v) => toggle("feesEnabled", v)}
-            disabled={saving.feesEnabled}
-          />
-          <ToggleRow
-            label="Leave request alerts"
-            desc="Notify on new or updated leave requests"
-            checked={prefs.attendanceEnabled}
-            onChange={(v) => toggle("attendanceEnabled", v)}
-            disabled={saving.attendanceEnabled}
-          />
-          <ToggleRow
-            label="Result publishing alerts"
-            desc="Notify when results are published to parents"
-            checked={prefs.resultsEnabled}
-            onChange={(v) => toggle("resultsEnabled", v)}
-            disabled={saving.resultsEnabled}
-          />
-          <ToggleRow
-            label="New message alerts"
-            desc="Notify when you receive a new message"
-            checked={prefs.messagesEnabled}
-            onChange={(v) => toggle("messagesEnabled", v)}
-            disabled={saving.messagesEnabled}
-          />
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Delivery" />
-        <div className="px-5 pb-2 pt-1">
-          <ToggleRow
-            label="Push notifications"
-            desc="Send alerts to this device"
-            checked={prefs.pushEnabled}
-            onChange={(v) => toggle("pushEnabled", v)}
-            disabled={saving.pushEnabled}
-          />
-          <ToggleRow
-            label="Email notifications"
-            desc="Receive updates via email"
-            checked={prefs.emailEnabled}
-            onChange={(v) => toggle("emailEnabled", v)}
-            disabled={saving.emailEnabled}
-          />
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Browser Notifications" />
-        <div className="px-5 pb-2 pt-1">
-          <PushNotificationToggle />
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Quiet Hours" />
-        <div className="px-5 pb-2 pt-1">
-          <ToggleRow
-            label="Enable quiet hours"
-            desc="Suppress non-urgent notifications between set times"
-            checked={prefs.quietHoursEnabled}
-            onChange={(v) => toggle("quietHoursEnabled", v)}
-            disabled={saving.quietHoursEnabled}
-          />
-          {prefs.quietHoursEnabled && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-3">
-              {(["quietHoursStart", "quietHoursEnd"] as const).map((field) => (
-                <div key={field}>
-                  <p className="text-xs text-gray-500 mb-1">
-                    {field === "quietHoursStart" ? "Start time" : "End time"}
-                  </p>
-                  <input
-                    type="time"
-                    value={prefs[field]}
-                    onChange={(e) => toggle(field, e.target.value)}
-                    className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003366]"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 // ─── Security Section ─────────────────────────────────────────────────────────
 
