@@ -49,6 +49,7 @@ import {
   type ChatUploadFn,
   type UploadItem,
 } from "@/components/chat-kit";
+import { logger } from "@/lib/logger";
 import { applyMessagesRead, nextReadMarker, type ReadEvent, type ReadMarker } from "@/lib/chat/readReceipts";
 
 /** Loading state of the open conversation, separate from the room list. */
@@ -65,6 +66,18 @@ export interface SendMessageInput {
   voice?: { file: File; duration: number };
 }
 
+/**
+ * Narrows a socket payload to a readable record, so a malformed event is
+ * ignored rather than throwing inside a handler.
+ *
+ * @param value - The raw event payload.
+ * @returns The payload as a record, or an empty one.
+ */
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+/** Everything the chat screens need: the room list, the open room, and the actions that change either. */
 export interface UseChatsReturn {
   // Room list
   chatRooms: ChatRoom[];
@@ -289,7 +302,7 @@ export const useChats = (): UseChatsReturn => {
       setChatRooms(() => merged);
       return merged;
     } catch (err) {
-      console.error("❌ Error in fetchChatRooms:", err);
+      logger.error('chat', "❌ Error in fetchChatRooms:", err);
       // Keep the list we have; the sidebar shows the error with Retry.
       setRoomsError(errorMessage(err, "Failed to fetch chat rooms"));
       return chatRoomsRef.current;
@@ -322,7 +335,7 @@ export const useChats = (): UseChatsReturn => {
         setChatRooms((prev) => upsertRoom(prev, newRoom));
         toast.success("Chat room created successfully");
         return newRoom;
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.error(errorMessage(err, "Failed to create chat room"));
         return null;
       }
@@ -343,8 +356,8 @@ export const useChats = (): UseChatsReturn => {
         const newRoom = await chatService.createGroupChat(data);
         setChatRooms((prev) => upsertRoom(prev, newRoom));
         return newRoom;
-      } catch (err: any) {
-        console.error("❌ Error in createGroupChat:", err);
+      } catch (err: unknown) {
+        logger.error('chat', "❌ Error in createGroupChat:", err);
         toast.error(errorMessage(err, "Failed to create group chat"));
         return null;
       }
@@ -418,7 +431,7 @@ export const useChats = (): UseChatsReturn => {
         setThreadStatus("ready");
       } catch (err) {
         if (selectSeqRef.current !== seq || currentRoomIdRef.current !== roomId) return;
-        console.error("❌ Error loading messages:", err);
+        logger.error('chat', "❌ Error loading messages:", err);
         setThreadStatus("error", LOAD_ERROR);
       }
     },
@@ -734,7 +747,7 @@ export const useChats = (): UseChatsReturn => {
       }));
       return page.messages.length > 0;
     } catch (err) {
-      console.error("Error loading more messages:", err);
+      logger.error('chat', "Error loading more messages:", err);
       return false;
     } finally {
       loadingMoreRef.current = false;
@@ -763,7 +776,7 @@ export const useChats = (): UseChatsReturn => {
         const updatedRoom = await chatService.addParticipant(roomId, userId);
         setChatRooms((prev) => upsertRoom(prev, updatedRoom));
         toast.success("Participant added successfully");
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.error(errorMessage(err, "Failed to add participant"));
       }
     },
@@ -784,8 +797,8 @@ export const useChats = (): UseChatsReturn => {
         const updatedRoom = await chatService.addParticipantsToRoom(roomId, userIds);
         if (updatedRoom?._id) setChatRooms((prev) => upsertRoom(prev, updatedRoom));
         toast.success(`${userIds.length} participant${userIds.length !== 1 ? "s" : ""} added successfully`);
-      } catch (err: any) {
-        console.error("Error adding participants:", err);
+      } catch (err: unknown) {
+        logger.error('chat', "Error adding participants:", err);
         toast.error(errorMessage(err, "Failed to add participants"));
         throw err; // Re-throw so the modal can handle it
       }
@@ -849,7 +862,7 @@ export const useChats = (): UseChatsReturn => {
       if (!isAuthenticated || !accessToken) return [];
       try {
         return await chatService.searchChatRooms(params);
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.error(errorMessage(err, "Failed to search chat rooms"));
         return [];
       }
@@ -901,8 +914,9 @@ export const useChats = (): UseChatsReturn => {
 
   // Live events
   useEffect(() => {
-    const unsubJoined = subscribe("chat-room-joined", (data: any) => {
-      const roomId = idOf(data?.roomId);
+    const unsubJoined = subscribe("chat-room-joined", (payload: unknown) => {
+      const data = asRecord(payload);
+      const roomId = idOf(data.roomId);
       if (!roomId || roomId !== currentRoomIdRef.current) return;
       const messages = (Array.isArray(data.messages) ? data.messages : []).map((m: unknown) =>
         normalizeMessage(m, roomId)
@@ -910,7 +924,7 @@ export const useChats = (): UseChatsReturn => {
       updateThread(roomId, (t) => ({
         messages: mergeMessages(t.messages, messages),
         hasMore: t.loaded ? t.hasMore : Boolean(data.hasMore),
-        nextCursor: t.loaded ? t.nextCursor : data.nextCursor,
+        nextCursor: t.loaded ? t.nextCursor : (data.nextCursor as string | undefined),
         loaded: true,
       }));
       if (data.room) {
@@ -1004,8 +1018,9 @@ export const useChats = (): UseChatsReturn => {
       setChatRooms((prev) => applyParticipantsChanged(prev, data, currentUserIdRef.current).rooms);
     });
 
-    const unsubError = subscribe("error", (data: any) => {
-      if (data?.code === "UNAUTHENTICATED") return; // handled by the socket's token refresh
+    const unsubError = subscribe("error", (payload: unknown) => {
+      const data = asRecord(payload);
+      if (data.code === "UNAUTHENTICATED") return; // handled by the socket's token refresh
       const clientMessageId = typeof data?.clientMessageId === "string" ? data.clientMessageId : "";
       if (clientMessageId) {
         // The ack settles sends in flight; this covers anything else.
