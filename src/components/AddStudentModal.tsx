@@ -1,27 +1,35 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
-import {
-  registerStudent,
-  createStudentProfile,
-  getClasses,
-  Class,
-} from "../app/services/student.service";
-import { getSchoolId } from "../app/services/school.service";
+import { useSchoolId } from "@/hooks/useSchoolId";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { classSchoolId, useRosterClasses } from "@/hooks/users/useRosterClasses";
+import { useCreateStudent } from "@/hooks/users/useStudents";
+import { ApiError, getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import type { ParentRelationship } from "@/app/services/student.service";
 
-const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [isLoading, setIsLoading] = useState(false);
+interface AddStudentModalProps {
+  /** Closes the dialog. */
+  onClose: () => void;
+  /** Called after a student has been created, so the caller can refresh. */
+  onSuccess?: () => void;
+}
+
+const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose, onSuccess }) => {
+  const schoolId = useSchoolId();
+  const { classes } = useRosterClasses();
+  const createStudent = useCreateStudent();
+  const isLoading = createStudent.isPending;
   const [currentStep, setCurrentStep] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
+  useBodyScrollLock(true);
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
     lastName: "",
     phoneNumber: "",
-    password: "",
     classId: "",
     gradeLevel: "",
     parentContact: {
@@ -32,46 +40,6 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       relationship: "",
     },
   });
-
-  useEffect(() => {
-    const fetchClasses = async () => {
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        toast.error("School ID is required");
-        return;
-      }
-
-      try {
-        const classes = await getClasses();
-        setClasses(classes);
-      } catch (error) {
-        console.error("Error fetching classes:", error);
-        toast.error("Failed to load classes");
-      }
-    };
-
-    fetchClasses();
-  }, []);
-
-  const getClassSchoolId = (selectedClass?: Class): string | null => {
-    const schoolId = selectedClass?.schoolId;
-    if (typeof schoolId === "string") return schoolId;
-    if (schoolId && typeof schoolId === "object") {
-      return schoolId._id || (schoolId as { id?: string }).id || null;
-    }
-    return null;
-  };
-
-  const generateRandomPassword = () => {
-    const length = 12;
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charset.length);
-      password += charset[randomIndex];
-    }
-    return password;
-  };
 
   const isBlank = (value: string) => value.trim().length === 0;
 
@@ -101,87 +69,68 @@ const AddStudentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
+    if (!schoolId) {
+      toast.error("We couldn't tell which school you're signed in to. Please sign in again.");
+      return;
+    }
+
+    if (currentStep === 0) {
+      const missingFields = getAccountMissingFields();
+      if (missingFields.length > 0) {
+        showMissingFieldsToast(missingFields);
+        return;
+      }
+      setCurrentStep(1);
+      return;
+    }
+
+    const missingFields = getProfileMissingFields();
+    if (missingFields.length > 0) {
+      showMissingFieldsToast(missingFields);
+      return;
+    }
+
+    // A class carries its own school; prefer it so a class shared with another
+    // campus is enrolled against the right school.
+    const selectedClass = classes.find((c) => c._id === formData.classId);
+    const targetSchoolId = classSchoolId(selectedClass) || schoolId;
+
     try {
-      let schoolId = getSchoolId();
-
-      if (!schoolId) {
-        toast.error("School ID not found. Please log in again.");
-        throw new Error("School ID not found");
-      }
-
-      // Validate schoolId format (should be a MongoDB ObjectId)
-      if (!/^[0-9a-fA-F]{24}$/.test(schoolId)) {
-        console.error("Invalid schoolId format:", schoolId);
-        toast.error("Invalid school ID format. Please contact support.");
-        throw new Error("Invalid school ID format");
-      }
-
-      if (currentStep === 0) {
-        const missingFields = getAccountMissingFields();
-        if (missingFields.length > 0) {
-          showMissingFieldsToast(missingFields);
-          return;
-        }
-
-        setCurrentStep(1);
-      } else {
-        const missingFields = getProfileMissingFields();
-        if (missingFields.length > 0) {
-          showMissingFieldsToast(missingFields);
-          return;
-        }
-
-        const selectedClass = classes.find((c) => c._id === formData.classId);
-        schoolId = getClassSchoolId(selectedClass) || schoolId;
-
-        const password = formData.password || generateRandomPassword();
-        let studentUserId = userId;
-        if (!studentUserId) {
-          const registrationData = {
-            email: formData.email,
-            role: "student",
-            schoolId,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phoneNumber: formData.phoneNumber,
-            password,
-          };
-
-          const registrationResult = await registerStudent(registrationData);
-          studentUserId = registrationResult.userId;
-          setUserId(studentUserId);
-          setFormData((prev) => ({ ...prev, password }));
-        }
-
-        if (!studentUserId) {
-          throw new Error("Student registration did not return a user ID");
-        }
-
-        const profileData = {
-          userId: studentUserId,
+      // No password is sent: the API generates a temporary one, emails a
+      // set-password link, and hands it back so the onboarding email quotes
+      // the password the student can actually sign in with.
+      await createStudent.mutateAsync({
+        account: {
+          email: formData.email.trim(),
+          role: "student",
+          schoolId: targetSchoolId,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phoneNumber: formData.phoneNumber.trim(),
+        },
+        profile: {
           classId: formData.classId,
           gradeLevel: formData.gradeLevel,
           parentContact: {
-            fullName: `${formData.parentContact.firstName} ${formData.parentContact.lastName}`,
-            phoneNumber: formData.parentContact.phoneNumber,
-            email: formData.parentContact.email,
-            relationship: formData.parentContact.relationship,
+            fullName: `${formData.parentContact.firstName} ${formData.parentContact.lastName}`.trim(),
+            phoneNumber: formData.parentContact.phoneNumber.trim(),
+            email: formData.parentContact.email.trim(),
+            relationship: formData.parentContact.relationship as ParentRelationship,
           },
-          password, // Include password for onboarding email
-        };
+        },
+      });
 
-        await createStudentProfile(profileData);
-        toast.success("Student profile created successfully!");
-        onClose();
-      }
+      toast.success("Student profile created successfully!");
+      onSuccess?.();
+      onClose();
     } catch (error) {
-      console.error("Error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "An error occurred. Please try again.";
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      logger.error("students", "Failed to create student", error);
+      if (error instanceof ApiError && error.code === "CONFLICT") {
+        toast.error("An account with that email already exists.");
+        setCurrentStep(0);
+        return;
+      }
+      toast.error(getErrorMessage(error, "We couldn't create this student. Please try again."));
     }
   };
 

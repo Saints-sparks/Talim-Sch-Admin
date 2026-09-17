@@ -1,7 +1,17 @@
+/**
+ * Students — the roster the School Admin "Users → Students" area reads and
+ * writes, plus the handful of class helpers the student pages share.
+ *
+ * Every call goes through the typed `api` facade, so failures arrive as
+ * `ApiError` with a stable `code` the pages branch on. `getClasses` is a
+ * re-export of the canonical implementation in `school.service`; it stays
+ * exported here only because a dozen pages still import it from this module.
+ */
 import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
+import { getClasses as getSchoolClasses } from "@/app/services/school.service";
 
-interface User {
+interface StudentUser {
   _id: string;
   firstName: string;
   lastName: string;
@@ -13,7 +23,7 @@ interface User {
   [key: string]: string | number | boolean;
 }
 
-interface Course {
+interface AssignedCourse {
   _id: string;
   courseCode: string;
   title: string;
@@ -32,6 +42,7 @@ interface Course {
   id: string;
 }
 
+/** A class as the `/classes` endpoint returns it to the student and class pages. */
 export interface Class {
   _id: string;
   name: string;
@@ -64,7 +75,7 @@ export interface Class {
         updatedAt: string;
         __v: number;
       };
-  assignedCourses: Course[];
+  assignedCourses: AssignedCourse[];
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -92,6 +103,12 @@ export interface Class {
     updatedAt: string;
     __v: number;
   };
+  // The class endpoints return extra populated fields (students, courses,
+  // subjects) whose shape differs per route, and the /classes pages — owned by
+  // another track — read them directly. Narrowing this to `unknown` breaks
+  // those callers, so the escape hatch stays until the class helpers move out
+  // of this service.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -102,23 +119,19 @@ interface UpdateClassData {
   classCapacity: string;
 }
 
-interface AssignTeacherData {
-  teacherId: string;
-}
-
 interface ParentContact {
   _id: string;
   fullName: string;
   phoneNumber: string;
   email: string;
   relationship: string;
-  address: string;
   [key: string]: string;
 }
 
+/** A student row as the paginated roster endpoints return it. */
 export interface Student {
   _id: string;
-  userId: User;
+  userId: StudentUser;
   classId: Class;
   admissionNumber?: string;
   schoolId?: string;
@@ -129,9 +142,10 @@ export interface Student {
   enrollmentDate?: string;
   assignedSubjects?: string[];
   attendance?: string;
-  [key: string]: string | boolean | string[] | User | Class | ParentContact | undefined;
+  [key: string]: string | boolean | string[] | StudentUser | Class | ParentContact | undefined;
 }
 
+/** A single student, as `GET /students/:id` returns it (populated refs). */
 export interface StudentById {
   _id: string;
   admissionNumber?: string;
@@ -173,72 +187,49 @@ export interface StudentById {
   attendance?: string;
 }
 
-interface StudentResponse {
-  _id: string;
-  admissionNumber?: string;
-  schoolId?: string;
-  userId: {
-    _id: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
-  classId: {
-    _id: string;
-    name: string;
-  };
-  gradeLevel: string;
-  parentId: {
-    _id: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-  };
-  parentContact: {
-    fullName: string;
-    phoneNumber: string;
-    email: string;
-    relationship: string;
-    _id: string;
-  };
-  isActive: boolean;
+/** Pagination envelope every roster endpoint answers with. */
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  lastPage: number;
+  limit: number;
 }
 
-interface StudentApiResponse {
-  data: StudentResponse[];
-  meta: {
-    total: number;
-    page: number;
-    lastPage: number;
-    limit: number;
-  };
-}
-
+/** A page of students. */
 export interface GetStudentsResponse {
   data: Student[];
-  meta: {
-    total: number;
-    page: number;
-    lastPage: number;
-    limit: number;
-  };
+  meta: PaginationMeta;
 }
 
-interface RegisterStudentPayload {
+/**
+ * Body for `POST /auth/register` when enrolling a student.
+ *
+ * `password` is deliberately absent: the API generates a temporary one and
+ * emails a set-password link, and returns it as `temporaryPassword`.
+ */
+export interface RegisterStudentPayload {
   email: string;
-  password: string;
-  role: string;
+  role: "student";
   schoolId: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
 }
 
-interface CreateStudentProfilePayload {
+/** What `POST /auth/register` answers with. */
+export interface RegisterStudentResponse {
+  message: string;
+  userId: string;
+  /** Present only when the server generated the password. */
+  temporaryPassword?: string;
+  passwordResetEmailSent?: boolean;
+}
+
+/** The relationships the backend's `ParentRelationship` enum accepts. */
+export type ParentRelationship = "MOTHER" | "FATHER" | "GUARDIAN" | "OTHER";
+
+/** Body for `POST /students` (backend `CreateStudentDto`). */
+export interface CreateStudentProfilePayload {
   userId: string;
   classId: string;
   gradeLevel: string;
@@ -246,344 +237,207 @@ interface CreateStudentProfilePayload {
     fullName: string;
     phoneNumber: string;
     email: string;
-    relationship: string;
+    relationship: ParentRelationship;
   };
-  password?: string; // Student's password for email notification
+  /** The student's password, so the onboarding email quotes the real one. */
+  password?: string;
+  admissionNumber?: string;
 }
 
-export const registerStudent = async (payload: RegisterStudentPayload) => {
+/** Personal fields of `UpdateStudentDto.userInfo`. */
+export interface UpdateStudentUserInfo {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  userAvatar?: string;
+}
 
-  const response = await apiClient.post(API_ENDPOINTS.REGISTER, payload);
+/** Body for `PUT /students/:id` (backend `UpdateStudentDto`). */
+export interface UpdateStudentPayload {
+  userInfo?: UpdateStudentUserInfo;
+  classId?: string;
+  gradeLevel?: string;
+  parentContact?: {
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    relationship: ParentRelationship;
+  };
+  isActive?: boolean;
+}
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("Registration failed:", errorData);
-    throw new Error(
-      errorData.message || `Registration failed: ${response.status} ${response.statusText}`
-    );
-  }
+/**
+ * Creates the student's login account.
+ *
+ * @param payload - Account fields; no password, the API generates one.
+ * @returns The new user id and the generated temporary password.
+ * @throws `ApiError` — `CONFLICT` when the email already has an account.
+ */
+export const registerStudent = async (
+  payload: RegisterStudentPayload,
+): Promise<RegisterStudentResponse> => api.post<RegisterStudentResponse>(API_ENDPOINTS.REGISTER, payload);
 
-  const result = await response.json();
-  return result;
-};
+/**
+ * Creates the student record for an account made by `registerStudent`, links
+ * (or creates) the parent, and triggers the onboarding emails.
+ *
+ * @param payload - Class, grade level and parent contact.
+ * @returns The created student.
+ * @throws `ApiError` — `VALIDATION_FAILED` when a field fails the DTO.
+ */
+export const createStudentProfile = async (payload: CreateStudentProfilePayload): Promise<StudentById> =>
+  api.post<StudentById>(API_ENDPOINTS.CREATE_STUDENT, payload);
 
-export const createStudentProfile = async (payload: CreateStudentProfilePayload) => {
+/**
+ * The school's classes.
+ *
+ * Re-exported from `school.service`, which owns the one implementation. New
+ * code should import `useClasses()` from `@/hooks/queries/reference` instead.
+ *
+ * @returns Every class in the signed-in school.
+ */
+export const getClasses = async (): Promise<Class[]> =>
+  (await getSchoolClasses()) as unknown as Class[];
 
-  const response = await apiClient.post(API_ENDPOINTS.CREATE_STUDENT, payload);
+/**
+ * Creates a class.
+ *
+ * @param payload - The class to create.
+ * @returns The created class.
+ */
+export const createClass = async (payload: Omit<Class, "_id">): Promise<Class> =>
+  api.post<Class>(API_ENDPOINTS.CREATE_CLASS, payload);
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("Profile creation failed:", errorData);
-    throw new Error(
-      errorData.message || `Profile creation failed: ${response.status} ${response.statusText}`
-    );
-  }
-
-  const result = await response.json();
-  return result;
-};
-
-export const getClasses = async (): Promise<Class[]> => {
-  const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch classes");
-  }
-
-  const raw = await response.json();
-  return Array.isArray(raw) ? raw : raw?.data || raw?.classes || [];
-};
-
-export const createClass = async (payload: Omit<Class, "_id">) => {
-  const response = await apiClient.post(API_ENDPOINTS.CREATE_CLASS, payload);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const msg = Array.isArray(errorData?.message)
-      ? errorData.message.join(", ")
-      : errorData?.message || "Class creation failed";
-    throw new Error(msg);
-  }
-
-  return response.json() as Promise<Class>;
-};
-
-export const editClass = async (classId: string, data: any) => {
-  const url = API_ENDPOINTS.EDIT_CLASS(classId);
-
-  const response = await apiClient.put(url, data);
-
-  if (!response.ok) {
-    try {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to update class");
-    } catch (jsonError) {
-      // If we can't parse JSON, use the status text
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
-    }
-  }
-
-  return response.json();
-};
-
-export const updateCoursesInClass = async (classId: string, courseIds: string[]) => {
-  const response = await apiClient.put(API_ENDPOINTS.UPDATE_COURSES_BY_CLASS(classId), {
-    courseIds,
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to update courses in class");
-  }
-
-  return response.json();
-};
-
-export const getClass = async (classId: string) => {
+/**
+ * One class by id. Falls back to scanning the class list when the API has no
+ * single-class route for this deployment.
+ *
+ * @param classId - The class to load.
+ * @returns The class.
+ * @throws `ApiError` or `Error` when the class is in neither place.
+ */
+// The /classes pages assign this straight into their own richer `ClassDetails`
+// type; keeping the loose return preserves that until the class helpers move.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getClass = async (classId: string): Promise<any> => {
   try {
-    const response = await apiClient.get(`${API_ENDPOINTS.GET_CLASS}/${classId}`);
-
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    }
-
-    // If not ok, log the error but continue to fallback
-    const errorText = await response.text();
-    console.warn("⚠️ Direct fetch failed:", response.status, errorText);
-  } catch (directError) {
-    console.warn("⚠️ Direct fetch threw error:", directError);
-  }
-
-  // Fallback: Get all classes and find the one we need
-  try {
-    const response = await apiClient.get(API_ENDPOINTS.GET_CLASSES);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch classes from list endpoint");
-    }
-
-    const allClasses = await response.json();
-
-    const foundClass = allClasses.find((c: any) => c._id === classId);
-
-    if (!foundClass) {
-      throw new Error(`Class with ID ${classId} not found`);
-    }
-
-    return foundClass;
-  } catch (fallbackError) {
-    console.error("❌ Fallback also failed:", fallbackError);
-    throw new Error(
-      `Failed to fetch class: ${fallbackError instanceof Error ? fallbackError.message : "Unknown error"}`
-    );
+    return await api.get<Class>(`${API_ENDPOINTS.GET_CLASS}/${encodeURIComponent(classId)}`);
+  } catch {
+    const all = await getClasses();
+    const found = all.find((c) => c._id === classId);
+    if (!found) throw new Error(`Class with ID ${classId} not found`);
+    return found;
   }
 };
 
-export const updateStudent = async (studentId: string, data: Partial<Student>) => {
-  try {
-    const response = await apiClient.put(`${API_ENDPOINTS.STUDENTS}/${studentId}`, data);
-
-    if (!response.ok) {
-      // Parse the error response to get detailed error information
-      const errorData = await response.json().catch(() => null);
-
-      if (errorData && errorData.message) {
-        // Handle array of error messages
-        if (Array.isArray(errorData.message)) {
-          throw new Error(errorData.message.join(", "));
-        }
-        // Handle single error message
-        throw new Error(errorData.message);
-      }
-
-      // Fallback error message based on status code
-      if (response.status === 400) {
-        throw new Error("Invalid data provided. Please check your input.");
-      } else if (response.status === 404) {
-        throw new Error("Student not found.");
-      } else if (response.status === 401) {
-        throw new Error("You are not authorized to update this student.");
-      } else {
-        throw new Error("Failed to update student profile. Please try again.");
-      }
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("Error updating student:", error);
-    throw error;
-  }
-};
+/**
+ * Updates a student's record.
+ *
+ * @param studentId - The student to update.
+ * @param data - Fields to change (backend `UpdateStudentDto`).
+ * @returns The updated student.
+ * @throws `ApiError` — `VALIDATION_FAILED`, `NOT_FOUND` or `FORBIDDEN`.
+ */
+export const updateStudent = async (studentId: string, data: UpdateStudentPayload): Promise<StudentById> =>
+  api.put<StudentById>(`${API_ENDPOINTS.STUDENTS}/${encodeURIComponent(studentId)}`, data);
 
 export const studentService = {
-  async getStudents(page: number = 1, limit: number = 10): Promise<GetStudentsResponse> {
-    try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.GET_STUDENTS}?page=${page}&limit=${limit}`
-      );
-      const data: GetStudentsResponse = await response.json();
-      return data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * A page of the school's students.
+   *
+   * @param page - 1-based page number.
+   * @param limit - Rows per page (the API caps this at 500).
+   * @returns The page and its `meta`.
+   */
+  async getStudents(page = 1, limit = 10): Promise<GetStudentsResponse> {
+    const query = new URLSearchParams({ page: String(page), limit: String(Math.min(limit, 500)) });
+    return api.get<GetStudentsResponse>(`${API_ENDPOINTS.GET_STUDENTS}?${query}`);
   },
 
+  /**
+   * One student by id.
+   *
+   * @param studentId - The student to load.
+   * @returns The student.
+   * @throws `ApiError` — `NOT_FOUND` when no such student is in this school.
+   */
   async getStudentById(studentId: string): Promise<StudentById> {
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.GET_STUDENT}/${studentId}`);
-
-      if (!response.ok) {
-        // Handle 404 specifically
-        if (response.status === 404) {
-          throw new Error("Student not found");
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch student details");
-      }
-
-      const data = await response.json();
-      return data.data[0];
-    } catch (error) {
-      if (error instanceof Error && error.name === "TimeoutError") {
-        console.error("❌ Student fetch timed out");
-        throw new Error("Request timed out. Please check your connection and try again.");
-      }
-      console.error("❌ Error fetching student:", error);
-      throw error;
-    }
-  },
-
-  async getStudentsByClass(
-    classId: string,
-    page: number = 1,
-    limit: number = 10
-  ): Promise<GetStudentsResponse> {
-    try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?page=${page}&limit=${limit}`
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to fetch students");
-      }
-
-      const data: GetStudentsResponse = await response.json();
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  },
-};
-
-export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> => {
-  try {
-    const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`, {
-      name: updateData.name,
-      ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
-      classDescription: updateData.classDescription,
-      classCapacity: updateData.classCapacity,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to update class");
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("Error updating class:", error);
-    throw error;
-  }
-};
-
-export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> => {
-  try {
-    const response = await apiClient.put(
-      `${API_ENDPOINTS.BASE_URL}/classes/${classId}/assign-teacher`,
-      { teacherId }
+    const body = await api.get<{ data?: StudentById[] } | StudentById>(
+      `${API_ENDPOINTS.GET_STUDENT}/${encodeURIComponent(studentId)}`,
     );
+    const wrapped = (body as { data?: StudentById[] })?.data;
+    return Array.isArray(wrapped) ? wrapped[0] : (body as StudentById);
+  },
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to assign teacher to class");
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("Error assigning teacher to class:", error);
-    throw error;
-  }
+  /**
+   * A page of the students in one class.
+   *
+   * @param classId - The class to list.
+   * @param page - 1-based page number.
+   * @param limit - Rows per page (the API caps this at 500).
+   * @returns The page and its `meta`.
+   */
+  async getStudentsByClass(classId: string, page = 1, limit = 10): Promise<GetStudentsResponse> {
+    const query = new URLSearchParams({ page: String(page), limit: String(Math.min(limit, 500)) });
+    return api.get<GetStudentsResponse>(`${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?${query}`);
+  },
 };
 
+/**
+ * Renames a class or changes its capacity/description.
+ *
+ * @param classId - The class to update.
+ * @param updateData - The fields to change.
+ * @returns The updated class.
+ */
+export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> =>
+  api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}`, {
+    name: updateData.name,
+    ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
+    classDescription: updateData.classDescription,
+    classCapacity: updateData.classCapacity,
+  });
+
+/**
+ * Makes a teacher the form teacher of a class.
+ *
+ * @param classId - The class.
+ * @param teacherId - The teacher's user id.
+ * @returns The updated class.
+ */
+export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> =>
+  api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}/assign-teacher`, { teacherId });
+
+/**
+ * Deletes a class.
+ *
+ * @param classId - The class to delete.
+ * @returns Nothing.
+ */
 export const deleteClass = async (classId: string): Promise<void> => {
-  try {
-    const response = await apiClient.delete(`${API_ENDPOINTS.BASE_URL}/classes/${classId}`);
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to delete class");
-    }
-
-    // Note: DELETE might return 204 No Content, so we don't always need to parse JSON
-    if (response.status !== 204) {
-      return response.json();
-    }
-  } catch (error) {
-    console.error("Error deleting class:", error);
-    throw error;
-  }
+  await api.delete(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}`);
 };
 
-// Update student status (activate/deactivate)
+/**
+ * Activates or deactivates a student.
+ *
+ * @param studentId - The student to change.
+ * @param isActive - `true` to activate, `false` to deactivate.
+ * @returns A confirmation message.
+ * @throws `ApiError` — `FORBIDDEN` without `manage:students`.
+ */
 export const updateStudentStatus = async (
   studentId: string,
-  isActive: boolean
+  isActive: boolean,
 ): Promise<{ message: string }> => {
-  try {
-    const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/students/${studentId}/status`, {
-      isActive,
-    });
-
-    if (!response.ok) {
-      // Try to parse error response if available
-      let errorMessage = `Failed to ${isActive ? "activate" : "deactivate"} student`;
-      try {
-        const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch (jsonError) {
-        // If JSON parsing fails, use status text
-        errorMessage = `${errorMessage}: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    // Handle successful response - check if there's content to parse
-    if (response.status === 204) {
-      // No content response, return success message
-      return {
-        message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
-      };
-    }
-
-    // Try to parse JSON response
-    try {
-      const responseText = await response.text();
-      if (responseText.trim() === "") {
-        // Empty response, return success message
-        return {
-          message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
-        };
-      }
-      return JSON.parse(responseText);
-    } catch (jsonError) {
-      // If JSON parsing fails, still return success since response was ok
-      return {
-        message: `Student ${isActive ? "activated" : "deactivated"} successfully`,
-      };
-    }
-  } catch (error) {
-    console.error("Error updating student status:", error);
-    throw error;
-  }
+  const body = await api.put<{ message?: string } | null>(
+    `${API_ENDPOINTS.BASE_URL}/students/${encodeURIComponent(studentId)}/status`,
+    { isActive },
+  );
+  return {
+    message: body?.message ?? `Student ${isActive ? "activated" : "deactivated"} successfully`,
+  };
 };
