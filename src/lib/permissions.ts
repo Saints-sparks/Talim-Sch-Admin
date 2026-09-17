@@ -33,3 +33,18 @@ export const Permission = {
 } as const;
 
 export type PermissionValue = typeof Permission[keyof typeof Permission];
+
+/**
+ * Accepts either a Permission key (`"MANAGE_FEES"`) or its value
+ * (`"manage:fees"`) and returns the value the API and the session use.
+ *
+ * The two look interchangeable in a component, but only the value is ever
+ * present in `user.permissions`, so a gate written with the key name would
+ * silently deny every sub-admin. Normalising here makes both spellings safe.
+ *
+ * @param permission - A Permission key or value.
+ * @returns The permission value.
+ */
+export function normalizePermission(permission: string): string {
+  return (Permission as Record<string, string>)[permission] ?? permission;
+}

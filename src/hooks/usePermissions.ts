@@ -6,9 +6,16 @@
  *   if (hasPermission('MANAGE_FEES')) { ... }
  */
 import { useAuth } from "@/context/AuthContext";
+import { normalizePermission } from "@/lib/permissions";
 
 export function usePermissions() {
-  const { hasPermission, isFullAdmin, isSubAdmin, user } = useAuth();
+  const { hasPermission: rawHasPermission, isFullAdmin, isSubAdmin, user } = useAuth();
+
+  /**
+   * True when the user holds `permission`, written either as a Permission key
+   * ("MANAGE_FEES") or as its value ("manage:fees").
+   */
+  const hasPermission = (permission: string): boolean => rawHasPermission(normalizePermission(permission));
 
   /**
    * Returns true if the user holds ALL of the provided permissions.

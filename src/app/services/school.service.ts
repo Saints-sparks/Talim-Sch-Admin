@@ -2,12 +2,22 @@ import { sessionStore } from "@/lib/session";
 import { api } from "@/lib/apiClient";
 import { API_URLS } from "../lib/api/config";
 
+/**
+ * A class as `GET /classes` returns it, mirroring the backend Class schema.
+ * `classTeacherId` and `assignedCourses` arrive populated on some routes, so
+ * both shapes are allowed.
+ */
 export interface Class {
   _id: string;
   name: string;
+  /** e.g. "Grade 1" — required by the backend, so always present. */
+  gradeLevel?: string;
+  classDescription?: string;
+  /** Stored as a string on the backend, not a number. */
+  classCapacity?: string;
   schoolId: string;
-  classTeacherId: string;
-  assignedCourses: string[];
+  classTeacherId: string | { _id: string; [key: string]: unknown } | null;
+  assignedCourses: Array<string | { _id: string; [key: string]: unknown }>;
 }
 
 export interface PrimaryContact {

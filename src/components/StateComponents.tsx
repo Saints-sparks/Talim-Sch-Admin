@@ -39,7 +39,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ message = "Loading..
           ease: "linear",
         }}
       />
-      <p className="text-gray-600 font-medium">{message}</p>
+      <p className="text-gray-600 dark:text-slate-300 font-medium">{message}</p>
     </motion.div>
   );
 };
@@ -57,10 +57,10 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white rounded-lg border border-gray-200 p-8 max-w-md mx-4 shadow-sm">
-        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 max-w-md mx-4 shadow-sm">
+        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-6 h-6 text-red-600"
+            className="w-6 h-6 text-red-600 dark:text-red-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -73,8 +73,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
             />
           </svg>
         </div>
-        <div className="text-gray-800 text-lg font-semibold mb-2">{title}</div>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="text-gray-800 dark:text-slate-100 text-lg font-semibold mb-2">{title}</div>
+        <p className="text-gray-600 dark:text-slate-300 mb-6">{message}</p>
         {onRetry && (
           <button
             onClick={onRetry}
@@ -102,7 +102,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white rounded-lg border border-gray-200 p-8 max-w-md mx-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 max-w-md mx-4 shadow-sm">
         <motion.div
           className="text-gray-400 text-5xl mb-4"
           initial={{ scale: 0.8 }}
@@ -111,8 +111,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         >
           {icon}
         </motion.div>
-        <div className="text-gray-800 text-lg font-semibold mb-2">{title}</div>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="text-gray-800 dark:text-slate-100 text-lg font-semibold mb-2">{title}</div>
+        <p className="text-gray-600 dark:text-slate-300 mb-6">{message}</p>
         {actionText && onAction && (
           <button
             onClick={onAction}

@@ -53,7 +53,8 @@ export const queryKeys = {
   fees: {
     all: ["fees"] as const,
     categories: (schoolId: string) => ["fees", schoolId, "categories"] as const,
-    items: (schoolId: string) => ["fees", schoolId, "items"] as const,
+    items: (schoolId: string, params?: Record<string, unknown>) =>
+      (params ? ["fees", schoolId, "items", params] : ["fees", schoolId, "items"]) as readonly unknown[],
     assignments: (schoolId: string, params?: Record<string, unknown>) => ["fees", schoolId, "assignments", params ?? {}] as const,
     summary: (schoolId: string) => ["fees", schoolId, "summary"] as const,
   },
@@ -70,6 +71,11 @@ export const queryKeys = {
     bankAccounts: (schoolId: string) => ["finance", schoolId, "bankAccounts"] as const,
     withdrawals: (schoolId: string, params?: Record<string, unknown>) => ["finance", schoolId, "withdrawals", params ?? {}] as const,
     security: (schoolId: string) => ["finance", schoolId, "security"] as const,
+    /** Bank list from the payment provider — the same for every school. */
+    banks: (country: string) => ["finance", "banks", country] as const,
+    /** Account-name resolution for one account/bank pair. */
+    accountName: (accountNumber: string, bankCode: string) =>
+      ["finance", "account-name", accountNumber, bankCode] as const,
   },
   timetable: {
     all: ["timetable"] as const,
@@ -96,8 +102,30 @@ export const queryKeys = {
   settings: {
     all: ["settings"] as const,
     school: (schoolId: string) => ["settings", schoolId, "school"] as const,
+    /** Receipt numbering and signatory settings. */
+    receipt: (schoolId: string) => ["settings", schoolId, "receipt"] as const,
+    /** Payment provider and payout configuration. */
+    finance: (schoolId: string) => ["settings", schoolId, "finance"] as const,
+    /** The signed-in administrator's own profile. */
+    adminProfile: (userId: string) => ["settings", "admin-profile", userId] as const,
+    /** Per-user notification preferences. */
+    notificationPrefs: (userId: string) => ["settings", "notification-prefs", userId] as const,
   },
 } as const;
+
+/**
+ * The prefix of a params-carrying list key, for invalidating every page of a
+ * list at once. `queryKeys.fees.assignments(id, { page: 2 })` and its
+ * unfiltered sibling share `listPrefix(queryKeys.fees.assignments(id))`;
+ * invalidating with the full key would only match one page.
+ *
+ * @param key - A key built by one of the factories above.
+ * @returns The key without its trailing params object.
+ */
+export function listPrefix(key: readonly unknown[]): readonly unknown[] {
+  const last = key[key.length - 1];
+  return last && typeof last === "object" && !Array.isArray(last) ? key.slice(0, -1) : key;
+}
 
 /** Stale times (ms) by how often data actually changes. */
 export const staleTimes = {

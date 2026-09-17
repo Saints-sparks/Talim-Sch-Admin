@@ -22,9 +22,13 @@ interface PermissionGateProps {
  * school_sub_admin  → rendered only if permissions match.
  *
  * Examples:
- *   <PermissionGate permission="MANAGE_FEES">…</>
- *   <PermissionGate permission={["MANAGE_FEES","MANAGE_FINANCE"]} any>…</>
- *   <PermissionGate permission="MANAGE_SUB_ADMINS" fallback={<p>No access</p>}>…</>
+ *   <PermissionGate permission={Permission.MANAGE_FEES}>…</>
+ *   <PermissionGate permission={[Permission.MANAGE_FEES, Permission.MANAGE_FINANCE]} any>…</>
+ *   <PermissionGate permission={Permission.MANAGE_SUB_ADMINS} fallback={<p>No access</p>}>…</>
+ *
+ * Pass the constant from `@/lib/permissions`. A bare key name ("MANAGE_FEES")
+ * also works — `usePermissions` normalises it — but the constant is what the
+ * API compares against.
  */
 export function PermissionGate({
   permission,
