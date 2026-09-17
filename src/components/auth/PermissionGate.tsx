@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface PermissionGateProps {
@@ -69,12 +70,7 @@ export function RequirePermission({
   redirectTo = "/access-denied",
   children,
 }: RequirePermissionProps) {
-  // Import here to avoid circular imports at the module level
-  const { useEffect } = React;
-  const { useRouter } = require("next/navigation");
-
-  const { hasAllPermissions, hasAnyPermission, isFullAdmin, isSubAdmin } =
-    usePermissions();
+  const { hasAllPermissions, hasAnyPermission, isFullAdmin } = usePermissions();
   const router = useRouter();
 
   const permissions = Array.isArray(permission) ? permission : [permission];
