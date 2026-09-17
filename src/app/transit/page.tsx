@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeftRight, Users, TrendingUp, AlertCircle, CheckCircle, Plus } from "lucide-react";
-import { getTransitDashboard, TransitDashboard } from "@/app/services/transit.service";
-import { toast } from "@/components/CustomToast";
+import {
+  AlertCircle,
+  ArrowLeftRight,
+  CalendarCheck,
+  CheckCircle,
+  TrendingUp,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { useTransitDashboard } from "@/hooks/transit/useTransitDashboard";
+import { cn } from "@/lib/utils";
+import { surface, text } from "@/components/transit/ui";
+import { TransitErrorState } from "@/components/transit/TransitStates";
+import { NewTransferButtons } from "@/components/transit/NewTransferButtons";
 
+/** One counter on the overview, optionally linking to the list behind it. */
 function StatCard({
   label,
   value,
@@ -14,149 +25,190 @@ function StatCard({
   href,
 }: {
   label: string;
-  value: number | string;
-  icon: React.ElementType;
+  value: number;
+  icon: LucideIcon;
   color: string;
   href?: string;
 }) {
   const content = (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`p-3 rounded-lg ${color}`}>
+    <div
+      className={cn(
+        "rounded-xl p-5 flex items-start gap-4 shadow-sm transition-shadow h-full",
+        surface.card,
+        href && "hover:shadow-md"
+      )}
+    >
+      <span className={cn("p-3 rounded-lg shrink-0", color)}>
         <Icon className="w-5 h-5 text-white" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-[#030E18]">{value}</p>
-        <p className="text-sm text-[#929292] mt-0.5">{label}</p>
-      </div>
+      </span>
+      <span>
+        <span className={cn("block text-2xl font-bold", text.strong)}>{value}</span>
+        <span className={cn("block text-sm mt-0.5", text.muted)}>{label}</span>
+      </span>
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-  return content;
+  return href ? (
+    <Link href={href} className="block">
+      {content}
+    </Link>
+  ) : (
+    content
+  );
 }
 
-export default function TransitDashboardPage() {
-  const [stats, setStats] = useState<TransitDashboard | null>(null);
-  const [loading, setLoading] = useState(true);
+/** One of the three shortcuts under the counters. */
+function QuickAction({
+  href,
+  icon: Icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "rounded-xl p-5 transition-all hover:shadow-md hover:border-[#003366]/30 dark:hover:border-sky-500/40",
+        surface.card
+      )}
+    >
+      <Icon className={cn("w-6 h-6 mb-3", text.brand)} />
+      <h3 className={cn("font-semibold", text.strong)}>{title}</h3>
+      <p className={cn("text-sm mt-1", text.muted)}>{description}</p>
+    </Link>
+  );
+}
 
-  useEffect(() => {
-    getTransitDashboard()
-      .then(setStats)
-      .catch(() => toast.error("Failed to load transit dashboard"))
-      .finally(() => setLoading(false));
-  }, []);
+/** Which dashboard counter a card shows. */
+type CounterKey =
+  | "pendingIncoming"
+  | "pendingOutgoing"
+  | "openPromotionRuns"
+  | "totalActiveEnrollments"
+  | "studentsWithoutEnrollment";
+
+/** The counters, in the order they appear on the overview. */
+const CARDS: { key: CounterKey; label: string; icon: LucideIcon; color: string; href?: string }[] = [
+  {
+    key: "pendingIncoming",
+    label: "Pending Incoming Transfers",
+    icon: ArrowLeftRight,
+    color: "bg-amber-500",
+    href: "/transit/transfers?status=requested",
+  },
+  {
+    key: "pendingOutgoing",
+    label: "Pending Outgoing Transfers",
+    icon: ArrowLeftRight,
+    color: "bg-blue-500",
+    href: "/transit/transfers?status=source_approved",
+  },
+  {
+    key: "openPromotionRuns",
+    label: "Open Promotion Runs",
+    icon: TrendingUp,
+    color: "bg-purple-500",
+    href: "/transit/promotions",
+  },
+  {
+    key: "totalActiveEnrollments",
+    label: "Active Enrollments",
+    icon: CheckCircle,
+    color: "bg-green-500",
+    href: "/transit/enrollments?status=active",
+  },
+  {
+    key: "studentsWithoutEnrollment",
+    label: "Students Without Enrollment",
+    icon: AlertCircle,
+    color: "bg-rose-500",
+    href: "/transit/enrollments",
+  },
+];
+
+/** The transit overview: what is waiting, and where to go next. */
+export default function TransitDashboardPage() {
+  const { data, isLoading, isError, error, refetch } = useTransitDashboard();
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#030E18]">Transit</h1>
-          <p className="text-sm text-[#929292] mt-1">
+          <h1 className={cn("text-2xl font-bold", text.strong)}>Transit</h1>
+          <p className={cn("text-sm mt-1", text.muted)}>
             Manage student transfers, class promotions, and academic year closures
+            {data?.currentAcademicYear?.year ? ` · ${data.currentAcademicYear.year}` : ""}
           </p>
         </div>
-        <div className="flex gap-3">
-          <Link
-            href="/transit/transfers/new/target"
-            className="flex items-center gap-2 px-4 py-2 border border-[#003366] text-[#003366] rounded-lg text-sm font-medium hover:bg-[#003366]/5 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Pull Transfer
-          </Link>
-          <Link
-            href="/transit/transfers/new/source"
-            className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#003366]/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Push Transfer
-          </Link>
-        </div>
-      </div>
+        <NewTransferButtons />
+      </header>
 
-      {/* Stats */}
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 h-24 animate-pulse" />
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4" aria-hidden>
+          {CARDS.map((card) => (
+            <div
+              key={card.key}
+              className={cn("rounded-xl p-5 h-24 animate-pulse", surface.card)}
+            />
           ))}
         </div>
-      ) : stats ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <StatCard
-            label="Pending Incoming Transfers"
-            value={stats.pendingIncoming}
-            icon={ArrowLeftRight}
-            color="bg-amber-500"
-            href="/transit/transfers?status=requested"
-          />
-          <StatCard
-            label="Pending Outgoing Transfers"
-            value={stats.pendingOutgoing}
-            icon={ArrowLeftRight}
-            color="bg-blue-500"
-            href="/transit/transfers?status=source_approved"
-          />
-          <StatCard
-            label="Open Promotion Runs"
-            value={stats.openPromotionRuns}
-            icon={TrendingUp}
-            color="bg-purple-500"
-            href="/transit/promotions"
-          />
-          <StatCard
-            label="Active Enrollments"
-            value={stats.totalActiveEnrollments}
-            icon={CheckCircle}
-            color="bg-green-500"
-          />
-          <StatCard
-            label="Students Without Enrollment"
-            value={stats.studentsWithoutEnrollment}
-            icon={AlertCircle}
-            color="bg-rose-500"
-          />
-        </div>
-      ) : null}
+      ) : isError ? (
+        <TransitErrorState
+          error={error}
+          onRetry={() => refetch()}
+          fallbackTitle="We couldn't load the transit overview"
+        />
+      ) : (
+        data && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {CARDS.map((card) => (
+              <StatCard
+                key={card.key}
+                label={card.label}
+                value={data[card.key]}
+                icon={card.icon}
+                color={card.color}
+                href={card.href}
+              />
+            ))}
+          </div>
+        )
+      )}
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-base font-semibold text-[#030E18] mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
+      <section>
+        <h2 className={cn("text-base font-semibold mb-4", text.strong)}>Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <QuickAction
             href="/transit/transfers"
-            className="group bg-white border border-gray-100 rounded-xl p-5 hover:border-[#003366]/30 hover:shadow-md transition-all"
-          >
-            <ArrowLeftRight className="w-6 h-6 text-[#003366] mb-3" />
-            <h3 className="font-semibold text-[#030E18]">Student Transfers</h3>
-            <p className="text-sm text-[#929292] mt-1">
-              View and manage all incoming and outgoing transfer requests
-            </p>
-          </Link>
-          <Link
+            icon={ArrowLeftRight}
+            title="Student Transfers"
+            description="View and manage all incoming and outgoing transfer requests"
+          />
+          <QuickAction
             href="/transit/promotions"
-            className="group bg-white border border-gray-100 rounded-xl p-5 hover:border-[#003366]/30 hover:shadow-md transition-all"
-          >
-            <TrendingUp className="w-6 h-6 text-[#003366] mb-3" />
-            <h3 className="font-semibold text-[#030E18]">Class Promotions</h3>
-            <p className="text-sm text-[#929292] mt-1">
-              Promote students to the next class at end of academic year
-            </p>
-          </Link>
-          <Link
+            icon={TrendingUp}
+            title="Class Promotions"
+            description="Promote students to the next class at end of academic year"
+          />
+          <QuickAction
+            href="/transit/enrollments"
+            icon={Users}
+            title="Enrollments"
+            description="Enrol students into a class and academic year, one or many at a time"
+          />
+          <QuickAction
             href="/settings"
-            className="group bg-white border border-gray-100 rounded-xl p-5 hover:border-[#003366]/30 hover:shadow-md transition-all"
-          >
-            <Users className="w-6 h-6 text-[#003366] mb-3" />
-            <h3 className="font-semibold text-[#030E18]">Academic Year Closure</h3>
-            <p className="text-sm text-[#929292] mt-1">
-              Close an academic year and snapshot all records before the new season
-            </p>
-          </Link>
+            icon={CalendarCheck}
+            title="Academic Year Closure"
+            description="Close an academic year and snapshot all records before the new season"
+          />
         </div>
-      </div>
+      </section>
     </div>
   );
 }
