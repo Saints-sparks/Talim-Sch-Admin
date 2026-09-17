@@ -1,6 +1,7 @@
 // services/chatServices.ts
 import { apiClient } from '@/lib/apiClient';
 import { ApiError } from '@/lib/apiError';
+import { logger } from '@/lib/logger';
 import {
   ChatRoom,
   ChatMessage,
@@ -15,11 +16,46 @@ import {
 import { normalizeMessage } from '@/lib/chat/messages';
 import { normalizeRoom } from '@/lib/chat/rooms';
 
+/**
+ * A server payload before it has been narrowed. The chat endpoints wrap their
+ * results inconsistently (`data`, `result`, `message`, or the bare object),
+ * so every reader goes through `field()` rather than asserting a shape.
+ */
+type Payload = unknown;
+
+/**
+ * Reads one property off an unknown payload.
+ *
+ * @param payload - Any server response.
+ * @param name - Property to read.
+ * @returns The value, or `undefined` when the payload is not an object.
+ */
+function field(payload: Payload, name: string): unknown {
+  return payload && typeof payload === "object" ? (payload as Record<string, unknown>)[name] : undefined;
+}
+
+/**
+ * The first property present out of `names`, else the payload itself — the
+ * "unwrap whatever envelope this endpoint used" rule, in one place.
+ *
+ * @param payload - Any server response.
+ * @param names - Envelope properties to try, in order.
+ * @returns The unwrapped payload.
+ */
+function unwrap(payload: Payload, ...names: string[]): unknown {
+  for (const name of names) {
+    const value = field(payload, name);
+    if (value !== undefined && value !== null) return value;
+  }
+  return payload;
+}
+
 class ChatService {
   private readonly baseUrl = '/chat';
 
-  private normalizeRoomPayload(payload: any): ChatRoom {
-    return normalizeRoom(payload?.result ?? payload);
+  /** A room from any of the envelopes the chat endpoints use. */
+  private normalizeRoomPayload(payload: Payload): ChatRoom {
+    return normalizeRoom(unwrap(payload, "result"));
   }
 
   private async extractErrorMessage(response: Response): Promise<string> {
@@ -55,29 +91,25 @@ class ChatService {
     return error;
   }
 
-  private normalizeMessagePayload(payload: any, fallbackRoomId?: string): ChatMessage {
-    const message = payload?.message || payload?.data || payload?.result || payload;
-    return normalizeMessage(message, fallbackRoomId);
+  /** A message from any of the envelopes the chat endpoints use. */
+  private normalizeMessagePayload(payload: Payload, fallbackRoomId?: string): ChatMessage {
+    return normalizeMessage(unwrap(payload, "message", "data", "result"), fallbackRoomId);
   }
 
+  /** A page of messages, whether the endpoint returned a list or a cursor page. */
   private normalizeCursorMessagesPayload(
-    payload: any,
+    payload: Payload,
     fallbackRoomId: string
   ): CursorMessagesResponse {
-    const source = payload?.data || payload?.result || payload;
-    const messages = Array.isArray(source?.messages)
-      ? source.messages
-      : Array.isArray(source)
-      ? source
-      : [];
+    const source = unwrap(payload, "data", "result");
+    const list = field(source, "messages");
+    const messages = Array.isArray(list) ? list : Array.isArray(source) ? source : [];
 
     return {
-      messages: messages.map((message: any) =>
-        this.normalizeMessagePayload(message, fallbackRoomId)
-      ),
-      hasMore: Boolean(source?.hasMore),
-      nextCursor: source?.nextCursor,
-      prevCursor: source?.prevCursor,
+      messages: messages.map((message: unknown) => this.normalizeMessagePayload(message, fallbackRoomId)),
+      hasMore: Boolean(field(source, "hasMore")),
+      nextCursor: field(source, "nextCursor") as string | undefined,
+      prevCursor: field(source, "prevCursor") as string | undefined,
     };
   }
   
@@ -102,7 +134,7 @@ class ChatService {
       
       if (!response.ok) {
         const errorText = await this.extractErrorMessage(response);
-        console.error('❌ Error response body:', errorText);
+        logger.error('chat', '❌ Error response body:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -113,7 +145,7 @@ class ChatService {
       }
       return result;
     } catch (error) {
-      console.error('❌ Error creating chat room:', error);
+      logger.error('chat', '❌ Error creating chat room:', error);
       throw error;
     }
   }
@@ -130,7 +162,7 @@ class ChatService {
       
       if (!response.ok) {
         const errorText = await this.extractErrorMessage(response);
-        console.error('❌ Error response body:', errorText);
+        logger.error('chat', '❌ Error response body:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -140,7 +172,7 @@ class ChatService {
         throw new Error('Empty response from server');
       }
 
-      let raw: any;
+      let raw: Payload;
       try {
         raw = JSON.parse(text);
       } catch {
@@ -154,7 +186,7 @@ class ChatService {
 
       return result;
     } catch (error) {
-      console.error('❌ Error creating group chat:', error);
+      logger.error('chat', '❌ Error creating group chat:', error);
       throw error;
     }
   }
@@ -197,7 +229,7 @@ class ChatService {
       const rooms = Array.isArray(result) ? result : [];
       return rooms.map((room) => normalizeRoom(room));
     } catch (error) {
-      console.error('❌ Error fetching user chat rooms:', error);
+      logger.error('chat', '❌ Error fetching user chat rooms:', error);
       throw error;
     }
   }
@@ -224,7 +256,7 @@ class ChatService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('❌ Error searching chat rooms:', error);
+      logger.error('chat', '❌ Error searching chat rooms:', error);
       throw error;
     }
   }
@@ -251,7 +283,7 @@ class ChatService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('❌ Error fetching chat room messages:', error);
+      logger.error('chat', '❌ Error fetching chat room messages:', error);
       throw error;
     }
   }
@@ -389,7 +421,7 @@ class ChatService {
       const normalized = this.normalizeCursorMessagesPayload(data, roomId);
       return normalized;
     } catch (error) {
-      console.error(`❌ Error in executeMessagesRequest for ${cacheKey}:`, error);
+      logger.error('chat', `❌ Error in executeMessagesRequest for ${cacheKey}:`, error);
       throw error;
     }
   }
@@ -408,9 +440,9 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       let errorText = '';
       try {
         errorText = await response.text();
-        console.error('❌ Error response body:', errorText);
+        logger.error('chat', '❌ Error response body:', errorText);
       } catch (e) {
-        console.error('❌ Could not read error response body');
+        logger.error('chat', '❌ Could not read error response body');
       }
       
       throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
@@ -429,7 +461,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
     
     return transformedMessage;
   } catch (error) {
-    console.error('❌ ChatService.sendMessage - Error:', error);
+    logger.error('chat', '❌ ChatService.sendMessage - Error:', error);
     throw error;
   }
 }
@@ -476,7 +508,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       }
       
     } catch (error) {
-      console.error('❌ Error marking message as read:', error);
+      logger.error('chat', '❌ Error marking message as read:', error);
       throw error;
     }
   }
@@ -498,7 +530,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       const count = await response.json();
       return count;
     } catch (error) {
-      console.error('❌ Error fetching unread message count:', error);
+      logger.error('chat', '❌ Error fetching unread message count:', error);
       throw error;
     }
   }
@@ -520,7 +552,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       const participants = await response.json();
       return participants;
     } catch (error) {
-      console.error('❌ Error fetching chat room participants:', error);
+      logger.error('chat', '❌ Error fetching chat room participants:', error);
       throw error;
     }
   }
@@ -545,7 +577,7 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
       const updatedRoom = await response.json();
       return this.normalizeRoomPayload(updatedRoom);
     } catch (error) {
-      console.error('❌ Error adding participant:', error);
+      logger.error('chat', '❌ Error adding participant:', error);
       throw error;
     }
   }
@@ -603,7 +635,7 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
 
     return this.normalizeRoomPayload(await response.json());
   } catch (error) {
-    console.error('Error in addParticipantsToRoom:', error);
+    logger.error('chat', 'Error in addParticipantsToRoom:', error);
     throw error;
   }
 }

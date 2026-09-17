@@ -110,10 +110,22 @@ function toDate(value: unknown): Date {
  * @param raw - A `MessageView` (or an older payload).
  * @param fallbackRoomId - Room to assume when the payload doesn't say.
  */
+/**
+ * Narrows an unknown value to a readable record. Chat payloads arrive from
+ * REST and from socket events in several shapes, so every nested read goes
+ * through this rather than asserting a type that may not hold.
+ *
+ * @param value - Any value from a payload.
+ * @returns The value as a record, or an empty one.
+ */
+function rec(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
 export function normalizeMessage(raw: unknown, fallbackRoomId = ""): ChatMessage {
-  const m = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
-  const sender = m.sender && typeof m.sender === "object" ? m.sender : undefined;
-  const populated = m.senderId && typeof m.senderId === "object" ? m.senderId : undefined;
+  const m = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const sender = m.sender && typeof m.sender === "object" ? rec(m.sender) : undefined;
+  const populated = m.senderId && typeof m.senderId === "object" ? rec(m.senderId) : undefined;
 
   const attachments = (Array.isArray(m.attachments) ? m.attachments : [])
     .map(normalizeAttachment)
@@ -138,7 +150,7 @@ export function normalizeMessage(raw: unknown, fallbackRoomId = ""): ChatMessage
     clientMessageId: typeof m.clientMessageId === "string" ? m.clientMessageId : undefined,
     senderId: idOf(m.senderId) || idOf(sender?._id),
     senderName: serverName || aliasName || populatedName,
-    senderAvatar: sender?.avatar || m.senderAvatar || populated?.userAvatar || undefined,
+    senderAvatar: (sender?.avatar || m.senderAvatar || populated?.userAvatar || undefined) as string | undefined,
     content: text,
     roomId: idOf(m.roomId) || idOf(m.chatRoomId) || fallbackRoomId,
     isRead: Boolean(m.isRead),

@@ -58,31 +58,53 @@ export interface DisplayChatRoom {
   createdBy?: string;
 }
 
+/**
+ * Narrows an unknown value to a readable record. Chat payloads arrive from
+ * REST and from socket events in several shapes, so every nested read goes
+ * through this rather than asserting a type that may not hold.
+ *
+ * @param value - Any value from a payload.
+ * @returns The value as a record, or an empty one.
+ */
+function rec(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+/**
+ * A payload field that should be text.
+ *
+ * @param value - Any value from a payload.
+ * @returns The string, or `undefined` when it is anything else.
+ */
+function str(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
 export function normalizeParticipant(raw: unknown): Participant {
   if (typeof raw === "string" || typeof raw === "number") {
     const id = String(raw);
     return { _id: id, userId: id };
   }
-  const p = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
-  const user = p.user && typeof p.user === "object" ? p.user : {};
-  const populatedUserId = p.userId && typeof p.userId === "object" ? p.userId : {};
+  const p = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const user = rec(p.user);
+  const populatedUserId = rec(p.userId);
   const id = idOf(p.userId) || idOf(p._id) || idOf(p.id) || idOf(p.user);
   return {
     ...p,
     _id: id,
     userId: id,
-    firstName: p.firstName ?? user.firstName ?? populatedUserId.firstName,
-    lastName: p.lastName ?? user.lastName ?? populatedUserId.lastName,
-    email: p.email ?? user.email ?? populatedUserId.email,
-    role: p.role ?? user.role ?? populatedUserId.role,
-    userAvatar: p.userAvatar ?? p.avatar ?? user.userAvatar ?? populatedUserId.userAvatar ?? null,
+    firstName: str(p.firstName ?? user.firstName ?? populatedUserId.firstName),
+    lastName: str(p.lastName ?? user.lastName ?? populatedUserId.lastName),
+    email: str(p.email ?? user.email ?? populatedUserId.email),
+    role: str(p.role ?? user.role ?? populatedUserId.role),
+    userAvatar: str(p.userAvatar ?? p.avatar ?? user.userAvatar ?? populatedUserId.userAvatar) ?? null,
     isOnline: Boolean(p.isOnline),
   };
 }
 
 function normalizeLastMessage(raw: unknown): ChatRoomLastMessage | undefined {
   if (!raw || typeof raw !== "object") return undefined;
-  const m = raw as Record<string, any>;
+  const m = raw as Record<string, unknown>;
   if (!m._id && !m.createdAt && !m.timestamp) return undefined;
   const preview =
     typeof m.preview === "string"
@@ -94,19 +116,19 @@ function normalizeLastMessage(raw: unknown): ChatRoomLastMessage | undefined {
           : "";
   return {
     _id: idOf(m._id) || undefined,
-    senderId: idOf(m.senderId) || idOf(m.sender?._id),
-    senderName: m.senderName || m.sender?.name || "",
-    type: m.type || "text",
+    senderId: idOf(m.senderId) || idOf(rec(m.sender)._id),
+    senderName: (m.senderName as string) || (rec(m.sender).name as string) || "",
+    type: (m.type as ChatRoomLastMessage["type"]) || "text",
     preview,
     content: preview,
-    createdAt: m.createdAt ?? m.timestamp,
+    createdAt: (m.createdAt ?? m.timestamp) as string,
   };
 }
 
 /** Reads a room from REST or `chat-rooms-update` (`_id` or the `roomId` alias). */
 export function normalizeRoom(raw: unknown): ChatRoom {
-  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
-  const room = r.data || r.chatRoom || r.room || r;
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const room = rec(r.data || r.chatRoom || r.room || r);
   const id = idOf(room._id) || idOf(room.roomId) || idOf(room.id);
   return {
     ...room,
