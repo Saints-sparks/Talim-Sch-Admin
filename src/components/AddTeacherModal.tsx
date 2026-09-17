@@ -1,20 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { CalendarDays, Check, Clock, UsersRound } from "lucide-react";
-import { registerTeacher, createTeacherProfile } from "../app/services/teacher.service";
-import { getClasses } from "../app/services/student.service";
-import { getSchoolId } from "../app/services/school.service";
+import { useSchoolId } from "@/hooks/useSchoolId";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useRosterClasses } from "@/hooks/users/useRosterClasses";
+import { useCreateTeacher } from "@/hooks/users/useTeachers";
+import { ApiError, getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import type { AcademicQualification } from "@/app/services/teacher.service";
 
-interface Class {
-  _id: string;
-  name: string;
-}
-
-const ACADEMIC_QUALIFICATIONS = ["Graduate", "Postgraduate", "Doctorate", "Other"] as const;
+// Exactly the backend's AcademicQualification enum — anything else is rejected
+// by the create-profile DTO.
+const ACADEMIC_QUALIFICATIONS: readonly AcademicQualification[] = [
+  "Undergraduate",
+  "Graduate",
+  "Postgraduate",
+  "Doctorate",
+] as const;
 
 const EMPLOYMENT_TYPES = ["Fulltime", "Parttime"] as const;
 
@@ -28,15 +34,21 @@ const AVAILABLE_TIME_SLOTS = [
   "10:00 AM - 4:00 PM",
 ] as const;
 
-const AddTeacherModal: React.FC<{
+interface AddTeacherModalProps {
+  /** Closes the dialog. */
   onClose: () => void;
-  onSuccess?: () => Promise<void>;
-}> = ({ onClose, onSuccess }) => {
+  /** Called after the teacher has been created, so the caller can refresh. */
+  onSuccess?: () => void | Promise<void>;
+}
+
+const AddTeacherModal: React.FC<AddTeacherModalProps> = ({ onClose, onSuccess }) => {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const schoolId = useSchoolId();
+  const { classes } = useRosterClasses();
+  const createTeacher = useCreateTeacher();
+  const isLoading = createTeacher.isPending;
   const [currentStep, setCurrentStep] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
+  useBodyScrollLock(true);
   const [formData, setFormData] = useState({
     // Step 0: Registration data
     email: "",
@@ -46,79 +58,90 @@ const AddTeacherModal: React.FC<{
 
     // Step 1: Personal details
     dateOfBirth: "",
-    gender: "",
-    highestAcademicQualification: "Graduate",
+    gender: "" as "" | "male" | "female" | "other",
+    highestAcademicQualification: "Graduate" as AcademicQualification,
     yearsOfExperience: 0,
     specialization: "",
 
     // Step 2: Employment details
-    employmentType: "Fulltime",
-    employmentRole: "Academic",
-    availabilityDays: [],
+    employmentType: "Fulltime" as "Fulltime" | "Parttime",
+    employmentRole: "Academic" as "Academic" | "NonAcademic",
+    availabilityDays: [] as string[],
     availableTime: "",
     isFormTeacher: false,
-    assignedClasses: [],
-    assignedCourses: [],
+    assignedClasses: [] as string[],
+    assignedCourses: [] as string[],
   });
 
-  useEffect(() => {
-    const fetchClasses = async () => {
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        toast.error("School ID is required");
-        return;
-      }
+  const isBlank = (value: string) => value.trim().length === 0;
 
-      try {
-        const classes = await getClasses();
-        setClasses(classes);
-      } catch (error) {
-        toast.error("Failed to load classes");
+  /** The fields the current step still needs, in the words the admin sees. */
+  const missingForStep = (step: number): string[] => {
+    const missing: string[] = [];
+    if (step === 0) {
+      if (isBlank(formData.email)) missing.push("email address");
+      if (isBlank(formData.firstName)) missing.push("first name");
+      if (isBlank(formData.lastName)) missing.push("last name");
+      if (isBlank(formData.phoneNumber)) missing.push("phone number");
+      if (isBlank(formData.dateOfBirth)) missing.push("date of birth");
+      if (isBlank(formData.gender)) missing.push("gender");
+    }
+    if (step === 1) {
+      if (isBlank(formData.specialization)) missing.push("specialization");
+      if (formData.yearsOfExperience < 0 || formData.yearsOfExperience > 50) {
+        missing.push("years of experience between 0 and 50");
       }
-    };
-
-    fetchClasses();
-  }, []);
+    }
+    if (step === 2) {
+      if (formData.availabilityDays.length === 0) missing.push("at least one availability day");
+      if (isBlank(formData.availableTime)) missing.push("an available time");
+    }
+    return missing;
+  };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
+    const missing = missingForStep(currentStep);
+    if (missing.length > 0) {
+      toast.error(`Please complete: ${missing.join(", ")}`);
+      return;
+    }
+
+    if (currentStep === 0) {
+      setCurrentStep(1);
+      return;
+    }
+    if (currentStep === 1) {
+      setCurrentStep(2);
+      return;
+    }
+
+    if (!schoolId) {
+      toast.error("We couldn't tell which school you're signed in to. Please sign in again.");
+      return;
+    }
+
     try {
-      const schoolId = getSchoolId();
-
-      if (!schoolId) throw new Error("School ID not found");
-
-      if (currentStep === 0) {
-        // First step - register the teacher
-        // No password is sent: the API generates a temporary one and emails the
-        // teacher a set-password link.
-        const registrationData = {
-          email: formData.email,
+      // No password is sent: the API generates a temporary one, forces a change
+      // at first sign-in and emails a set-password link. Never send a default.
+      //
+      // Date of birth and gender belong to the account, not the teacher
+      // profile: the create-profile DTO rejects any field it does not declare,
+      // so they go out with the registration instead.
+      await createTeacher.mutateAsync({
+        account: {
+          email: formData.email.trim(),
           role: "teacher",
           schoolId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-        };
-        const { userId } = await registerTeacher(registrationData);
-        if (userId) {
-          toast.success("Teacher account created successfully");
-        }
-        setUserId(userId);
-        setCurrentStep(1);
-      } else if (currentStep === 1) {
-        // Move to next step without submitting
-        setCurrentStep(2);
-      } else {
-        // Final step - create teacher profile
-        if (!userId) throw new Error("User ID not found");
-
-        const profileData = {
-          userId,
-          dateOfBirth: formData.dateOfBirth,
-          gender: formData.gender,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phoneNumber: formData.phoneNumber.trim() || undefined,
+          ...(formData.dateOfBirth ? { dateOfBirth: formData.dateOfBirth } : {}),
+          ...(formData.gender ? { gender: formData.gender } : {}),
+        },
+        profile: {
           highestAcademicQualification: formData.highestAcademicQualification,
-          yearsOfExperience: formData.yearsOfExperience,
-          specialization: formData.specialization,
+          yearsOfExperience: Number(formData.yearsOfExperience) || 0,
+          specialization: formData.specialization.trim(),
           employmentType: formData.employmentType,
           employmentRole: formData.employmentRole,
           availabilityDays: formData.availabilityDays,
@@ -126,22 +149,24 @@ const AddTeacherModal: React.FC<{
           isFormTeacher: formData.isFormTeacher,
           assignedClasses: formData.assignedClasses,
           assignedCourses: formData.assignedCourses,
-        };
+        },
+      });
 
-        await createTeacherProfile(userId, profileData);
-        toast.success("Teacher Profile created successfully");
-        if (onSuccess) {
-          await onSuccess();
-        } else {
-          router.push("/users/teachers");
-        }
-        onClose();
+      toast.success("Teacher profile created successfully");
+      if (onSuccess) {
+        await onSuccess();
+      } else {
+        router.push("/users/teachers");
       }
+      onClose();
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "An error occurred. Please try again.";
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
+      logger.error("teachers", "Failed to create teacher", error);
+      if (error instanceof ApiError && error.code === "CONFLICT") {
+        toast.error("An account with that email already exists.");
+        setCurrentStep(0);
+        return;
+      }
+      toast.error(getErrorMessage(error, "We couldn't add this teacher. Please try again."));
     }
   };
 
@@ -157,17 +182,8 @@ const AddTeacherModal: React.FC<{
     setFormData({ ...formData, [name]: checked });
   };
 
-  const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, options } = e.target;
-    const selectedValues = Array.from(options)
-      .filter((option) => option.selected)
-      .map((option) => option.value);
-
-    setFormData({ ...formData, [name]: selectedValues });
-  };
-
   const toggleArrayField = (field: "assignedClasses" | "availabilityDays", value: string) => {
-    const currentValues = formData[field] as string[];
+    const currentValues = formData[field];
     const nextValues = currentValues.includes(value)
       ? currentValues.filter((item) => item !== value)
       : [...currentValues, value];
@@ -298,9 +314,9 @@ const AddTeacherModal: React.FC<{
                     <option value="" disabled>
                       Select gender
                     </option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>

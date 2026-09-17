@@ -1,566 +1,220 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import TeachersSkeleton from "@/components/TeachersSkeleton";
-import { Teacher, teacherService } from "@/app/services/teacher.service";
-import { getClasses, type Class } from "@/app/services/student.service";
+import { EmptyState } from "@/components/StateComponents";
 import { toast } from "@/components/CustomToast";
-import { ErrorState, EmptyState } from "@/components/StateComponents";
-import { ChevronDown, Search } from "@/components/Icons";
+import { PermissionGate, RequirePermission } from "@/components/auth/PermissionGate";
+import { Permission } from "@/lib/permissions";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { useRosterClasses } from "@/hooks/users/useRosterClasses";
+import { useRosterControls } from "@/hooks/users/useRosterControls";
+import { useTeacherRoster, useUpdateTeacherStatus } from "@/hooks/users/useTeachers";
+import RosterFilters from "@/components/users/RosterFilters";
+import RosterPagination from "@/components/users/RosterPagination";
+import RosterErrorState from "@/components/users/RosterErrorState";
+import TeacherRosterCard, { teacherFields } from "@/components/users/TeacherRosterCard";
+import { teacherUserId, type Teacher } from "@/app/services/teacher.service";
 
-const TeachersPage: React.FC = () => {
+/**
+ * How many teachers to pull in one request while a filter is active. The list
+ * endpoint has no search, class or status parameter, so those are applied
+ * client-side; scanning a wide page keeps them school-wide instead of matching
+ * only the page on screen. 500 is the API's cap.
+ */
+const FILTER_SCAN_LIMIT = 500;
+
+/** True when `teacher` matches the search text across their name, contact and staff number. */
+function matchesSearch(teacher: Teacher, search: string): boolean {
+  if (!search) return true;
+  const user = typeof teacher.userId === "object" ? teacher.userId : null;
+  return [
+    user?.firstName || teacher.firstName,
+    user?.lastName || teacher.lastName,
+    user?.email || teacher.email,
+    user?.phoneNumber || teacher.phoneNumber,
+    teacher.staffNumber,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(search);
+}
+
+function TeachersRoster() {
   const router = useRouter();
+  const controls = useRosterControls(9);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [totalTeachers, setTotalTeachers] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  const [teachersPerPage, setTeachersPerPage] = useState(9);
+  const { classes } = useRosterClasses();
+  const rosterQuery = useTeacherRoster({
+    page: controls.hasAnyFilter ? 1 : controls.page,
+    limit: controls.hasAnyFilter ? FILTER_SCAN_LIMIT : controls.pageSize,
+  });
+  const updateStatus = useUpdateTeacherStatus();
 
-  const getTeacherUser = (teacher: Teacher) =>
-    typeof teacher.userId === "object" ? teacher.userId : null;
-  const getTeacherUserId = (teacher: Teacher) => getTeacherUser(teacher)?._id || teacher._id;
-  const getTeacherFirstName = (teacher: Teacher) =>
-    getTeacherUser(teacher)?.firstName || teacher.firstName || "";
-  const getTeacherLastName = (teacher: Teacher) =>
-    getTeacherUser(teacher)?.lastName || teacher.lastName || "";
-  const getTeacherEmail = (teacher: Teacher) =>
-    getTeacherUser(teacher)?.email || teacher.email || "";
-  const getTeacherPhone = (teacher: Teacher) =>
-    getTeacherUser(teacher)?.phoneNumber || teacher.phoneNumber || "";
-  const getTeacherStaffNumber = (teacher: Teacher) => teacher.staffNumber || "";
-  const getTeacherAvatar = (teacher: Teacher) =>
-    teacher.userAvatar || getTeacherUser(teacher)?.userAvatar || "";
-  const getAssignedClasses = (teacher: Teacher) =>
-    teacher.assignedClasses || [];
+  const rows = useMemo(() => rosterQuery.data?.data ?? [], [rosterQuery.data]);
 
-  const fetchTeachers = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await teacherService.getTeachers(1, 1000);
-      const teachersWithProfiles = await Promise.all(
-        response.data.map(async (teacher) => {
-          const userId = getTeacherUserId(teacher);
-
-          try {
-            const profile = await teacherService.getTeacherById(userId);
-            return {
-              ...teacher,
-              assignedClasses:
-                profile.classTeacherClasses || profile.assignedClasses || [],
-              assignedCourses: profile.assignedCourses || [],
-              isFormTeacher: profile.isFormTeacher,
-              staffNumber: profile.staffNumber,
-              hasTeacherProfile: true,
-            };
-          } catch (profileError) {
-            return { ...teacher, hasTeacherProfile: false };
-          }
-        })
-      );
-
-      setTeachers(teachersWithProfiles);
-      if (response.meta && typeof response.meta.total === "number") {
-        setTotalTeachers(response.meta.total);
-      } else {
-        setTotalTeachers(response.data.length);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch teachers");
-      toast.error("Failed to fetch teachers");
-    } finally {
-      setIsLoading(false);
+  const { visible, total } = useMemo(() => {
+    if (!controls.hasAnyFilter) {
+      return { visible: rows, total: rosterQuery.data?.meta?.total ?? rows.length };
     }
-  }, []);
+    const search = controls.debouncedSearch.trim().toLowerCase();
+    const filtered = rows.filter((teacher) => {
+      const classMatch =
+        !controls.classId || (teacher.assignedClasses ?? []).some((cls) => cls._id === controls.classId);
+      const statusMatch =
+        controls.status === "" || (controls.status === "active" ? teacher.isActive : !teacher.isActive);
+      return matchesSearch(teacher, search) && classMatch && statusMatch;
+    });
+    const start = (controls.page - 1) * controls.pageSize;
+    return { visible: filtered.slice(start, start + controls.pageSize), total: filtered.length };
+  }, [
+    rows,
+    rosterQuery.data,
+    controls.hasAnyFilter,
+    controls.debouncedSearch,
+    controls.classId,
+    controls.status,
+    controls.page,
+    controls.pageSize,
+  ]);
 
-  const fetchClasses = useCallback(async () => {
-    try {
-      const classes = await getClasses();
-      setClasses(classes);
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      toast.error("Failed to load classes");
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTeachers();
-    fetchClasses();
-  }, [fetchTeachers, fetchClasses]);
-
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
-
-  const toggleMenu = (teacherId: string) => {
-    setMenuOpen(menuOpen === teacherId ? null : teacherId);
-  };
-
-  const handleViewProfile = (teacher: Teacher) => {
-    router.push(`/users/teachers/${getTeacherUserId(teacher)}`);
-  };
-
-  const handleEditTeacher = (teacher: Teacher) => {
+  const toggleModal = () => setIsModalOpen((open) => !open);
+  const viewProfile = (teacher: Teacher) => router.push(`/users/teachers/${teacherUserId(teacher)}`);
+  const editTeacher = (teacher: Teacher) => {
     setMenuOpen(null);
-    router.push(`/users/teachers/${getTeacherUserId(teacher)}/edit`);
+    router.push(`/users/teachers/${teacherUserId(teacher)}/edit`);
   };
 
-  const handleDeactivateTeacher = async (teacher: Teacher) => {
+  const deactivateTeacher = async (teacher: Teacher) => {
     setMenuOpen(null);
-    const userId = getTeacherUserId(teacher);
-    const teacherName = `${getTeacherFirstName(teacher)} ${getTeacherLastName(
-      teacher
-    )}`.trim();
-
+    const { firstName, lastName } = teacherFields(teacher);
+    const name = `${firstName} ${lastName}`.trim() || "this teacher";
     if (
       !window.confirm(
-        `Deactivate ${teacherName || "this teacher"}? They will no longer be able to access the teacher portal.`
+        `Deactivate ${name}? They will no longer be able to access the teacher portal.`,
       )
     ) {
       return;
     }
 
     try {
-      await teacherService.deactivateTeacher(userId);
+      await updateStatus.mutateAsync({ userId: teacherUserId(teacher), isActive: false });
       toast.success("Teacher deactivated successfully");
-      await fetchTeachers();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to deactivate teacher"
-      );
+      logger.error("teachers", "Failed to deactivate teacher", error);
+      toast.error(getErrorMessage(error, "We couldn't deactivate this teacher. Please try again."));
     }
   };
 
-  // Filter teachers based on search term, selected class, and status
-  const filteredTeachers = teachers.filter((teacher) => {
-    const search = searchTerm.trim().toLowerCase();
-    const searchableText = [
-      getTeacherFirstName(teacher),
-      getTeacherLastName(teacher),
-      getTeacherEmail(teacher),
-      getTeacherPhone(teacher),
-      getTeacherStaffNumber(teacher),
-    ]
-      .join(" ")
-      .toLowerCase();
-    const nameMatch = !search || searchableText.includes(search);
-
-    const classMatch =
-      !selectedClass ||
-      getAssignedClasses(teacher).some((cls) => cls._id === selectedClass);
-
-    // Use isActive boolean for status
-    const statusMatch =
-      !statusFilter ||
-      (statusFilter === "active" && teacher.isActive) ||
-      (statusFilter === "inactive" && !teacher.isActive);
-
-    return nameMatch && classMatch && statusMatch;
-  });
-
-  // Calculate pagination values for filtered results
-  const totalPages = Math.max(1, Math.ceil(filteredTeachers.length / teachersPerPage));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const currentTeachers = filteredTeachers.slice(
-    (safeCurrentPage - 1) * teachersPerPage,
-    (safeCurrentPage - 1) * teachersPerPage + teachersPerPage
-  );
-  const showingStart =
-    filteredTeachers.length === 0
-      ? 0
-      : (safeCurrentPage - 1) * teachersPerPage + 1;
-  const showingEnd = Math.min(
-    (safeCurrentPage - 1) * teachersPerPage + teachersPerPage,
-    filteredTeachers.length
-  );
-
   return (
     <div className="min-h-screen p-4 leading-[120%] flex flex-col">
-      {/* Title and Controls - Redesigned */}
-      <div className="bg-[#F8F8F8] pt-4 x-2 sm:px-6" data-guide="teachers-header">
+      <div className="bg-[#F8F8F8] dark:bg-transparent pt-4 px-2 sm:px-6" data-guide="teachers-header">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-[19px] font-semibold ">My Teachers</h1>
-            <span className="bg-white border border-[#E4E4E4] text-[15px] font-medium px-3 py-1 rounded-full">
-              {totalTeachers} teachers
+            <h1 className="text-[19px] font-semibold text-gray-900 dark:text-white">My Teachers</h1>
+            <span className="bg-white dark:bg-slate-800 border border-[#E4E4E4] dark:border-slate-700 text-[15px] font-medium px-3 py-1 rounded-full">
+              {rosterQuery.data?.meta?.total ?? 0} teachers
             </span>
           </div>
-          <Tooltip content="Register a teacher account. They will receive login credentials via email." side="top">
-          <button
-            data-guide="teachers-add"
-            onClick={toggleModal}
-            className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
-          >
-            <span className="text-lg font-bold">+</span> Add Teacher
-          </button>
-          </Tooltip>
+          <PermissionGate permission={Permission.MANAGE_TEACHERS}>
+            <Tooltip
+              content="Register a teacher account. They will receive an email to set their own password."
+              side="top"
+            >
+              <button
+                data-guide="teachers-add"
+                onClick={toggleModal}
+                className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
+              >
+                <span className="text-lg font-bold">+</span> Add Teacher
+              </button>
+            </Tooltip>
+          </PermissionGate>
         </div>
 
-        {/* Filters Row */}
-        <div className="bg-white rounded-2xl py-3 mt-4 w-fit" data-guide="teachers-filters">
-          <div className="flex flex-col md:flex-row gap-3 px-6 py-4">
-            {/* Search */}
-            <div className="relative flex-1 w-[220px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search />
-              </span>
-              <input
-                type="text"
-                placeholder="Search name or ID"
-                className="w-full pl-10 placeholder-[#B3B3B3] placeholder:font-medium pr-4 py-2 bg-white border border-[#E0E0E0] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-            {/* Class Filter */}
-            <div className="relative w-[220px]">
-              <select
-                className="appearance-none bg-white border border-[#E0E0E0] h-[40px] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold w-[220px] text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={selectedClass || ""}
-                onChange={(e) => {
-                  setSelectedClass(e.target.value || null);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">All Classes</option>
-                {classes.map((cls) => (
-                  <option key={cls._id} value={cls._id}>
-                    {cls.name}
-                  </option>
-                ))}
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                <ChevronDown />
-              </span>
-            </div>
-            {/* Status Filter */}
-            <div className="relative w-[220px]">
-              <select
-                className="appearance-none bg-white border border-[#E0E0E0] h-[40px] rounded-xl px-4 py-2 pr-8 text-[15px] font-semibold w-[220px] text-[#808080] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                <ChevronDown />
-              </span>
-            </div>
-          </div>
+        <div className="mt-4">
+          <RosterFilters
+            dataGuide="teachers-filters"
+            search={controls.search}
+            onSearchChange={controls.setSearch}
+            classes={classes}
+            selectedClass={controls.classId}
+            onClassChange={controls.setClassId}
+            classTooltip="Show only teachers assigned to this class."
+            status={controls.status}
+            onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
+            statusTooltip="Inactive teachers keep their records but cannot sign in."
+          />
         </div>
       </div>
 
       {isModalOpen && (
-        <AddTeacherModal onClose={toggleModal} onSuccess={fetchTeachers} />
+        <AddTeacherModal onClose={toggleModal} onSuccess={async () => { await rosterQuery.refetch(); }} />
       )}
 
-      {/* Main Content Area - Flex container to push pagination to bottom */}
       <div className="flex flex-col flex-1" data-guide="teachers-list">
-        {/* Content Section */}
-        {isLoading ? (
+        {rosterQuery.isPending ? (
           <TeachersSkeleton />
-        ) : error ? (
-          <ErrorState
-            title="Error Loading Teachers"
-            message={error}
-            onRetry={fetchTeachers}
+        ) : rosterQuery.isError ? (
+          <RosterErrorState
+            error={rosterQuery.error}
+            resource="teachers"
+            onRetry={() => rosterQuery.refetch()}
           />
-        ) : filteredTeachers.length === 0 ? (
+        ) : visible.length === 0 ? (
           <EmptyState
             icon="👨‍🏫"
             title="No Teachers Found"
             message={
-              searchTerm || selectedClass || statusFilter
+              controls.hasAnyFilter
                 ? "No teachers match your current search or filter criteria."
                 : "Get started by adding your first teacher to the system."
             }
-            actionText={
-              searchTerm || selectedClass || statusFilter
-                ? "Clear Filters"
-                : "Add First Teacher"
-            }
-            onAction={
-              searchTerm || selectedClass || statusFilter
-                ? () => {
-                    setSearchTerm("");
-                    setSelectedClass(null);
-                    setStatusFilter("");
-                    setCurrentPage(1);
-                  }
-                : toggleModal
-            }
+            actionText={controls.hasAnyFilter ? "Clear Filters" : "Add First Teacher"}
+            onAction={controls.hasAnyFilter ? controls.reset : toggleModal}
           />
         ) : (
           <>
-            {/* Teachers Grid - Takes available space */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
-              {currentTeachers.map((teacher) => {
-                // Use initials if no avatar
-                // Prefer teacher.userAvatar, fallback to teacher.userId?.userAvatar, fallback to initials
-                const avatarUrl = getTeacherAvatar(teacher);
-                const initials = `${getTeacherFirstName(teacher).charAt(
-                  0
-                )}${getTeacherLastName(teacher).charAt(0)}`.toUpperCase();
-                // Pick a color for initials avatar (hash by name)
-                const colorList = [
-                  "bg-[#154473] text-white",
-                  "bg-green-600 text-white",
-                  "bg-orange-400 text-white",
-                  "bg-purple-500 text-white",
-                  "bg-pink-500 text-white",
-                  "bg-gray-400 text-white",
-                ];
-                const colorIdx =
-                  Math.abs(
-                    (
-                      getTeacherFirstName(teacher) || "T"
-                    ).charCodeAt(0) +
-                      (getTeacherLastName(teacher) || "A").charCodeAt(0)
-                  ) % colorList.length;
-                const colorClass = colorList[colorIdx];
-                return (
-                  <div
-                    key={teacher._id}
-                    className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center relative group transition-shadow hover:shadow-lg"
-                  >
-                    {/* Three dots menu */}
-                    <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1"
-                      onClick={() => toggleMenu(teacher._id)}
-                    >
-                      <span className="text-xl font-bold">⋮</span>
-                    </button>
-                    {menuOpen === teacher._id && (
-                      <div className="absolute right-4 top-12 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button
-                          className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-                          onClick={() => handleEditTeacher(teacher)}
-                        >
-                          Edit
-                        </button>
-                        <Tooltip content="Prevents the teacher from logging in. Their records and history are retained." side="top">
-                        <button
-                          className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 rounded-b-lg"
-                          onClick={() => handleDeactivateTeacher(teacher)}
-                          disabled={!teacher.isActive}
-                        >
-                          Deactivate
-                        </button>
-                        </Tooltip>
-                      </div>
-                    )}
-                    {/* Avatar or Initials */}
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={`${getTeacherFirstName(teacher)} avatar`}
-                        className="w-16 h-16 rounded-full object-cover mb-3"
-                      />
-                    ) : (
-                      <div
-                        className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mb-3 ${colorClass}`}
-                      >
-                        {initials}
-                      </div>
-                    )}
-                    <div className="text-center flex flex-col items-center flex-1 w-full">
-                      <h3 className="font-semibold text-gray-900 text-base mb-1">
-                        {getTeacherFirstName(teacher)} {getTeacherLastName(teacher)}
-                      </h3>
-                      <p className="text-xs font-medium text-[#154473] mb-2">
-                        Staff No. {getTeacherStaffNumber(teacher) || "Not assigned"}
-                      </p>
-                      <div className="flex gap-2 mb-3">
-                        {getAssignedClasses(teacher).slice(0, 1).map((cls) => (
-                          <Tooltip key={cls._id} content="Classes this teacher is currently assigned to. Manage assignments in the teacher's profile." side="top">
-                          <span
-                            className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded"
-                          >
-                            {cls.name}
-                          </span>
-                          </Tooltip>
-                        ))}
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded ${
-                            teacher.isActive
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-200 text-gray-500"
-                          }`}
-                        >
-                          {teacher.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                      {!teacher.hasTeacherProfile && (
-                        <p className="text-xs text-amber-600 mb-3">
-                          Profile setup pending
-                        </p>
-                      )}
-                      <button
-                        onClick={() => handleViewProfile(teacher)}
-                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg py-2 mt-auto transition"
-                      >
-                        View Profile
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {visible.map((teacher) => (
+                <TeacherRosterCard
+                  key={teacher._id}
+                  teacher={teacher}
+                  menuOpen={menuOpen === teacher._id}
+                  onToggleMenu={(id) => setMenuOpen((open) => (open === id ? null : id))}
+                  onViewProfile={viewProfile}
+                  onEdit={editTeacher}
+                  onDeactivate={deactivateTeacher}
+                />
+              ))}
             </div>
 
-            {totalPages > 1 && (
-              <div className="mt-8">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="flex flex-col lg:flex-row justify-between items-center px-8 py-6 gap-6">
-                    <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
-                      Showing{" "}
-                      <span className="font-semibold text-blue-600">
-                        {showingStart}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-semibold text-blue-600">
-                        {showingEnd}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-semibold text-blue-600">
-                        {filteredTeachers.length}
-                      </span>{" "}
-                      teachers
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <span className="font-medium">Show:</span>
-                        <select
-                          className="bg-white border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                          value={teachersPerPage}
-                          onChange={(e) => {
-                            setTeachersPerPage(Number(e.target.value));
-                            setCurrentPage(1);
-                          }}
-                        >
-                          <option value="4">4</option>
-                          <option value="9">9</option>
-                          <option value="18">18</option>
-                          <option value="27">27</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-                          disabled={safeCurrentPage === 1}
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                          aria-label="Previous page"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 19l-7-7 7-7"
-                            />
-                          </svg>
-                        </motion.button>
-
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                              pageNum = i + 1;
-                            } else if (safeCurrentPage <= 3) {
-                              pageNum = i + 1;
-                            } else if (safeCurrentPage >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i;
-                            } else {
-                              pageNum = safeCurrentPage - 2 + i;
-                            }
-
-                            return (
-                              <motion.button
-                                key={pageNum}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setCurrentPage(pageNum)}
-                                className={`w-10 h-10 text-sm rounded-xl font-medium transition-all flex items-center justify-center ${
-                                  safeCurrentPage === pageNum
-                                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
-                                aria-label={`Go to page ${pageNum}`}
-                              >
-                                {pageNum}
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-                          disabled={safeCurrentPage === totalPages}
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages)
-                            )
-                          }
-                          aria-label="Next page"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <RosterPagination
+              page={controls.page}
+              pageSize={controls.pageSize}
+              total={total}
+              itemLabel="teachers"
+              onPageChange={controls.setPage}
+              onPageSizeChange={controls.setPageSize}
+            />
           </>
         )}
       </div>
     </div>
   );
-};
+}
 
-export default TeachersPage;
+/** `/users/teachers` — the teacher roster, behind `manage:teachers`. */
+export default function TeachersPage() {
+  return (
+    <RequirePermission permission={Permission.MANAGE_TEACHERS}>
+      <TeachersRoster />
+    </RequirePermission>
+  );
+}
