@@ -1,613 +1,182 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Tooltip } from "@/components/ui/Tooltip";
-
-import { useRouter, useParams } from "next/navigation";
-import {
-  getLeaveRequestById,
-  updateLeaveRequestStatus,
-} from "@/app/services/leave.service";
+/**
+ * One leave request, with everything a reviewer needs to decide it.
+ *
+ * The decision goes through the same mutation as the queue, so approving here
+ * invalidates the queue behind it. A rejection can carry a reason, which the
+ * API stores as `declineReason` and shows to the parent — the old "admin
+ * comments" box was never sent anywhere.
+ */
+import React, { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/CustomToast";
+import { ErrorState, LoadingState } from "@/components/StateComponents";
+import { LeaveDecisionActions } from "@/components/leave/LeaveDecisionActions";
+import { LeaveRequestDetails } from "@/components/leave/LeaveRequestDetails";
+import {
+  FALLBACK_AVATAR,
+  STATUS_BADGE,
+  statusKey,
+  statusValue,
+  studentAvatar,
+  studentName,
+} from "@/components/leave/leave.presentation";
+import { useLeaveRequest, useUpdateLeaveStatus } from "@/hooks/leave/useLeaveRequests";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
 
-// Updated interface to match your actual API response
-interface ApiLeaveRequest {
-  _id: string;
-  child: string;
-  classTeacher: string;
-  createdAt: string;
-  endDate: string;
-  leaveType: string;
-  reason: string;
-  startDate: string;
-  status: string;
-  studentProfile: {
-    _id: string;
-    userId: string;
-    classId: string;
-    gradeLevel: string;
-    isActive: boolean;
-    parentContact: {
-      fullName: string;
-      phoneNumber: string;
-      email: string;
-    };
-    parentId: string;
-    enrolledCourses: string[];
-    createdAt: string;
-    updatedAt: string;
-    __v: number;
-  };
-  studentUser: {
-    _id: string;
-    userId: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-    role: string;
-    schoolId: string;
-    isActive: boolean;
-    isEmailVerified: boolean;
-    __v: number;
-  };
-  term: string;
-  updatedAt: string;
-  viewed: boolean;
-  attachments: string[];
-  __v: number;
-}
-
-// Type definition for transformed leave request
-interface TransformedLeaveRequest {
-  id: string;
-  studentName: string;
-  studentImage?: string;
-  leaveType: string;
-  gradeLevel: string;
-  parent: string;
-  parentPhone?: string;
-  parentEmail?: string;
-  studentEmail: string;
-  studentPhone?: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-  status: "pending" | "approved" | "rejected";
-  submittedDate: string;
-  updatedDate: string;
-  attachments?: string[];
-  viewed: boolean;
-  originalData: ApiLeaveRequest;
-}
-
-const AdminRequestDetailPage: React.FC = () => {
+/**
+ * The leave-request detail screen.
+ */
+export default function LeaveRequestDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const requestId = params.id as string;
+  const leaveId = typeof params.id === "string" ? params.id : "";
 
-  const [leaveRequest, setLeaveRequest] =
-    useState<TransformedLeaveRequest | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [comments, setComments] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
+  const request = useLeaveRequest(leaveId);
+  const decide = useUpdateLeaveStatus();
 
-  // Fetch leave request details using your service
-  useEffect(() => {
-    const fetchLeaveRequest = async () => {
-      if (!requestId) return;
+  const goBack = () => router.push("/leave-requests");
 
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Using your existing service function
-        const response = await getLeaveRequestById(requestId);
-
-        // Handle response structure - check if it's wrapped or direct
-        let data: ApiLeaveRequest;
-        if (response && typeof response === "object") {
-          if ("data" in response && response.data) {
-            data = response.data as ApiLeaveRequest;
-          } else if ("_id" in response) {
-            // First cast to unknown to bypass type checking, then to ApiLeaveRequest
-            data = response as unknown as ApiLeaveRequest;
-          } else {
-            throw new Error("Invalid API response format");
-          }
-        } else {
-          throw new Error("Invalid API response format");
-        }
-
-        const transformedData = transformApiResponse(data);
-        setLeaveRequest(transformedData);
-      } catch (err) {
-        console.error("Error fetching leave request:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch leave request"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaveRequest();
-  }, [requestId]);
-
-  // Transform API response to match your UI interface
-  const transformApiResponse = (
-    data: ApiLeaveRequest
-  ): TransformedLeaveRequest => {
-    return {
-      id: data._id,
-      studentName: `${data.studentUser.firstName} ${data.studentUser.lastName}`,
-      studentImage:
-        "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp",
-      leaveType: data.leaveType,
-      gradeLevel: data.studentProfile.gradeLevel,
-      parent: data.studentProfile.parentContact.fullName,
-      parentPhone: data.studentProfile.parentContact.phoneNumber,
-      parentEmail: data.studentProfile.parentContact.email,
-      studentEmail: data.studentUser.email,
-      studentPhone: data.studentUser.phoneNumber,
-      startDate: new Date(data.startDate).toLocaleDateString(),
-      endDate: new Date(data.endDate).toLocaleDateString(),
-      description: data.reason || "",
-      status: data.status.toLowerCase() as "pending" | "approved" | "rejected",
-      submittedDate: new Date(data.createdAt).toLocaleDateString(),
-      updatedDate: new Date(data.updatedAt).toLocaleDateString(),
-      attachments: data.attachments || [],
-      viewed: data.viewed || false,
-      originalData: data,
-    };
-  };
-
-  const handleApprove = async () => {
-    if (!leaveRequest) return;
-
-    setActionLoading(true);
-
+  const handleDecision = async (decision: "approved" | "rejected") => {
     try {
-      // Using your existing service function
-      await updateLeaveRequestStatus(leaveRequest.id, "Approved");
-
-      const updatedRequest = {
-        ...leaveRequest,
-        status: "approved" as const,
-        updatedDate: new Date().toLocaleDateString(),
-      };
-
-      setLeaveRequest(updatedRequest);
-      toast.success("Leave request approved successfully!");
-    } catch (err) {
-      console.error("Error approving request:", err);
-      toast.error("Failed to approve request");
-    } finally {
-      setActionLoading(false);
+      await decide.mutateAsync({
+        leaveId,
+        status: statusValue(decision),
+        viewed: true,
+        declineReason: decision === "rejected" ? declineReason.trim() || undefined : undefined,
+      });
+      toast.success(
+        decision === "approved" ? "Leave request approved successfully!" : "Leave request rejected."
+      );
+      setDeclineReason("");
+    } catch (error) {
+      logger.error("leave-requests", `Failed to mark request ${decision}`, error);
+      toast.error(getErrorMessage(error, `Failed to ${decision === "approved" ? "approve" : "reject"} request`));
     }
   };
-
-  const handleReject = async () => {
-    if (!leaveRequest) return;
-
-    setActionLoading(true);
-
-    try {
-      // Using your existing service function
-      await updateLeaveRequestStatus(leaveRequest.id, "Rejected");
-
-      const updatedRequest = {
-        ...leaveRequest,
-        status: "rejected" as const,
-        updatedDate: new Date().toLocaleDateString(),
-      };
-
-      setLeaveRequest(updatedRequest);
-      toast.success("Leave request rejected.");
-    } catch (err) {
-      console.error("Error rejecting request:", err);
-      toast.error("Failed to reject request");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "text-yellow-600 bg-yellow-100";
-      case "approved":
-        return "text-green-600 bg-green-100";
-      case "rejected":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
-  const handleDownloadAttachment = (attachment: string) => {
-    // Implement download logic based on your file storage system
-    window.open(attachment, "_blank");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#154473]"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-1 px-6 py-4">
-          <div className="flex items-center mb-6">
-            <button
-              onClick={() => router.push("/leave-requests")}
-              className="mr-4 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition"
-            >
-              ← Back
-            </button>
-            <h1 className="text-2xl font-semibold">Leave Request Details</h1>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="flex">
-              <div className="text-red-400">⚠️</div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-sm text-red-700">{error}</div>
-                <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                  >
-                    Retry
-                  </button>
-                  <button
-                    onClick={() => router.push("/leave-requests")}
-                    className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                  >
-                    Back to List
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!leaveRequest) {
-    return (
-      <div className="flex flex-col h-screen bg-gray-100">
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-center">
-            <div className="text-gray-400 text-4xl mb-4">❌</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Request Not Found
-            </h3>
-            <p className="text-gray-500 mb-4">
-              The leave request you're looking for doesn't exist.
-            </p>
-            <button
-              onClick={() => router.push("/leave-requests")}
-              className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition"
-            >
-              Back to Leave Requests
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-     
-
-      {/* Fixed Back Button and Title */}
-      <div className="flex-shrink-0 px-6 py-4 bg-gray-100">
+    <div className="flex h-screen flex-col bg-slate-100 dark:bg-slate-900">
+      <div className="flex-shrink-0 px-6 py-4">
         <div className="flex items-center">
           <button
-            onClick={() => router.push("/leave-requests")}
-            className="mr-4 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition"
+            type="button"
+            onClick={goBack}
+            className="mr-4 rounded-md p-2 text-slate-600 transition hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
           >
             ← Back
           </button>
-          <h1 className="text-2xl font-semibold">Leave Request Details</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+            Leave Request Details
+          </h1>
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-hidden px-6">
         <div className="h-full overflow-y-auto pb-6">
-          {/* Main Card */}
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            {/* Header */}
-            <div className="bg-gray-50 px-6 py-4 border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <img
-                    src={leaveRequest.studentImage}
-                    alt={leaveRequest.studentName}
-                    className="w-16 h-16 rounded-full object-cover mr-4"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://www.girlsinc.org/wp-content/uploads/2023/12/front-page-hero-animated-v4-526x442.webp";
-                    }}
-                  />
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
-                      {leaveRequest.studentName}
-                    </h2>
-                    <p className="text-gray-600">
-                      {leaveRequest.gradeLevel} • {leaveRequest.leaveType}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`text-sm px-3 py-1 rounded-full capitalize font-medium ${getStatusColor(
-                    leaveRequest.status
-                  )}`}
-                >
-                  {leaveRequest.status}
-                </span>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              {/* Request Information */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                    Student Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Student Name:
-                      </span>
-                      <p className="text-gray-800">
-                        {leaveRequest.studentName}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Grade Level:
-                      </span>
-                      <p className="text-gray-800">{leaveRequest.gradeLevel}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Student Email:
-                      </span>
-                      <p className="text-gray-800">
-                        {leaveRequest.studentEmail}
-                      </p>
-                    </div>
-                    {leaveRequest.studentPhone && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">
-                          Student Phone:
-                        </span>
-                        <p className="text-gray-800">
-                          {leaveRequest.studentPhone}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Student ID:
-                      </span>
-                      <p className="text-gray-800">
-                        {leaveRequest.originalData.studentUser.userId}
+          {request.isLoading ? (
+            <LoadingState message="Loading leave request..." />
+          ) : request.isError ? (
+            <ErrorState
+              title="Couldn't load this leave request"
+              message={getErrorMessage(request.error, "Failed to fetch leave request")}
+              onRetry={() => void request.refetch()}
+            />
+          ) : !request.data ? (
+            <ErrorState
+              title="Request Not Found"
+              message="The leave request you're looking for doesn't exist."
+              onRetry={goBack}
+              retryText="Back to Leave Requests"
+            />
+          ) : (
+            <div className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-slate-800">
+              <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center">
+                    {/* Plain <img>: avatars come from arbitrary upload hosts and next/image has no remotePatterns configured. */}
+                    <img
+                      src={studentAvatar(request.data)}
+                      alt=""
+                      className="mr-4 h-16 w-16 shrink-0 rounded-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.src = FALLBACK_AVATAR;
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <h2 className="truncate text-xl font-semibold text-slate-800 dark:text-slate-100">
+                        {studentName(request.data)}
+                      </h2>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        {[request.data.studentProfile?.gradeLevel, request.data.leaveType]
+                          .filter(Boolean)
+                          .join(" • ")}
                       </p>
                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                    Parent Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Parent Name:
-                      </span>
-                      <p className="text-gray-800">{leaveRequest.parent}</p>
-                    </div>
-                    {leaveRequest.parentPhone && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">
-                          Parent Phone:
-                        </span>
-                        <p className="text-gray-800">
-                          {leaveRequest.parentPhone}
-                        </p>
-                      </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-3 py-1 text-sm font-medium capitalize",
+                      STATUS_BADGE[statusKey(request.data.status)]
                     )}
-                    {leaveRequest.parentEmail && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">
-                          Parent Email:
-                        </span>
-                        <p className="text-gray-800">
-                          {leaveRequest.parentEmail}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  >
+                    {statusKey(request.data.status)}
+                  </span>
                 </div>
               </div>
 
-              {/* Leave Details */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Leave Details
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Leave Type:
-                    </span>
-                    <p className="text-gray-800">{leaveRequest.leaveType}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Leave Period:
-                    </span>
-                    <p className="text-gray-800">
-                      {leaveRequest.startDate} - {leaveRequest.endDate}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Request Submitted:
-                    </span>
-                    <p className="text-gray-800">
-                      {leaveRequest.submittedDate}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Last Updated:
-                    </span>
-                    <p className="text-gray-800">{leaveRequest.updatedDate}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Current Status:
-                    </span>
-                    <p
-                      className={`capitalize font-medium ${
-                        leaveRequest.status === "pending"
-                          ? "text-yellow-600"
-                          : leaveRequest.status === "approved"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {leaveRequest.status}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <div className="p-6">
+                <LeaveRequestDetails request={request.data} />
 
-              {/* Description */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Reason for Leave
-                </h3>
-                <div className="bg-gray-50 rounded-md p-4">
-                  <p className="text-gray-800 leading-relaxed">
-                    {leaveRequest.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Attachments */}
-              {leaveRequest.attachments &&
-                leaveRequest.attachments.length > 0 && (
-                  <div className="mb-6">
-                    <Tooltip content="Supporting documents submitted by the parent (e.g. medical certificate)." side="right">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Attachments
+                {statusKey(request.data.status) === "pending" ? (
+                  <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
+                    <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
+                      Take Action
                     </h3>
-                    </Tooltip>
-                    <div className="space-y-2">
-                      {leaveRequest.attachments.map((attachment, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 rounded-md p-3"
-                        >
-                          <div className="flex items-center">
-                            <div className="text-blue-500 mr-3">📎</div>
-                            <span className="text-gray-800">{attachment}</span>
-                          </div>
-                          <button
-                            onClick={() => handleDownloadAttachment(attachment)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
-                          >
-                            Download
-                          </button>
-                        </div>
-                      ))}
+                    <div className="mb-4">
+                      <label
+                        htmlFor="decline-reason"
+                        className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                      >
+                        Reason for rejection (optional — shown to the parent)
+                      </label>
+                      <textarea
+                        id="decline-reason"
+                        value={declineReason}
+                        onChange={(event) => setDeclineReason(event.target.value)}
+                        placeholder="Explain why this leave cannot be approved..."
+                        rows={3}
+                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                      />
                     </div>
-                  </div>
-                )}
-
-              {/* Action Section - Only show for pending requests */}
-              {leaveRequest.status === "pending" && (
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Take Action
-                  </h3>
-
-                  {/* Comments Input */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="comments"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Admin Comments (Optional)
-                    </label>
-                    <textarea
-                      id="comments"
-                      value={comments}
-                      onChange={(e) => setComments(e.target.value)}
-                      placeholder="Add any comments about this decision..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={3}
+                    <LeaveDecisionActions
+                      variant="detail"
+                      isPending={decide.isPending}
+                      onApprove={() => void handleDecision("approved")}
+                      onReject={() => void handleDecision("rejected")}
+                      fallback={
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          You don&apos;t have permission to action leave requests.
+                        </p>
+                      }
                     />
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end gap-4">
-                    <Tooltip content="Marks the leave as rejected. The parent and class teacher are notified automatically." side="top">
-                    <button
-                      onClick={handleReject}
-                      disabled={actionLoading}
-                      className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-red-600 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {actionLoading ? "Processing..." : "Reject"}
-                    </button>
-                    </Tooltip>
-                    <Tooltip content="Marks the leave as approved. The parent and class teacher are notified automatically." side="top">
-                    <button
-                      onClick={handleApprove}
-                      disabled={actionLoading}
-                      className="px-6 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {actionLoading ? "Processing..." : "Approve"}
-                    </button>
-                    </Tooltip>
-                  </div>
-                </div>
-              )}
-
-              {/* Message for already processed requests */}
-              {leaveRequest.status !== "pending" && (
-                <div className="border-t pt-6">
-                  <div className="bg-gray-50 rounded-md p-4 text-center">
-                    <p className="text-gray-600">
-                      This request has already been {leaveRequest.status}.
+                ) : (
+                  <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
+                    <p className="rounded-md bg-slate-50 p-4 text-center text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
+                      This request has already been {statusKey(request.data.status)}.
                     </p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminRequestDetailPage;
+}
