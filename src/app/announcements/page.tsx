@@ -1,408 +1,82 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Archive,
-  BarChart3,
-  Bell,
-  Calendar,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Eye,
-  FileText,
-  Filter,
-  Image as ImageIcon,
-  Megaphone,
-  MoreVertical,
-  Paperclip,
-  Pencil,
-  Pin,
-  Plus,
-  Search,
-  Send,
-  UploadCloud,
-  Users,
-  X,
-} from "lucide-react";
-import {
-  AnnouncementStats,
-  createAnnouncement,
-  CreateAnnouncementResponse,
-  getAnnouncementStatsBySender,
-  getAnnouncementsBySender,
-} from "../services/announcement.service";
-import { uploadFileAttachment } from "../services/files.service";
-import { toast } from "@/components/CustomToast";
+/**
+ * Announcements — the school's outgoing broadcasts.
+ *
+ * The list is filtered and paginated by the API (one cache entry per tab,
+ * search term and page), so the counts under the table match what is on
+ * screen. Creating an announcement invalidates the cached pages and the stat
+ * cards together, and the create button is gated on MANAGE_ANNOUNCEMENTS —
+ * a sub-admin without it reads the board but cannot post to it.
+ */
+import React, { useMemo, useState } from "react";
+import { Megaphone, Plus, Search } from "lucide-react";
+import { Permission } from "@/lib/permissions";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { getErrorMessage } from "@/lib/apiError";
 import AnnouncementsSkeleton from "@/components/AnnouncementsSkeleton";
-import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
+import { AnnouncementAnalytics } from "@/components/announcements/AnnouncementAnalytics";
+import { AnnouncementDetailModal } from "@/components/announcements/AnnouncementDetailModal";
+import { AnnouncementStatsCards } from "@/components/announcements/AnnouncementStatsCards";
+import { AnnouncementTable } from "@/components/announcements/AnnouncementTable";
+import { CreateAnnouncementModal } from "@/components/announcements/CreateAnnouncementModal";
+import {
+  TAB_STATUS,
+  toDashboardAnnouncement,
+  type AnnouncementTab,
+  type DashboardAnnouncement,
+} from "@/components/announcements/announcement.presentation";
+import {
+  emptyAnnouncementStats,
+  useAnnouncementStats,
+  useAnnouncements,
+  useDebouncedValue,
+} from "@/hooks/announcements/useAnnouncements";
 
-type AnnouncementStatus = "Published" | "Scheduled" | "Draft" | "Archived";
-type Audience = "All Parents" | "All Students" | "All Teachers" | "Custom";
-type ActiveTab = "Published" | "Scheduled" | "Drafts" | "Archived";
+/** Rows per page — the API's own default. */
+const PAGE_SIZE = 10;
 
-type DashboardAnnouncement = Omit<
-  CreateAnnouncementResponse,
-  "audience" | "status"
-> & {
-  audience: Audience[];
-  status: AnnouncementStatus;
-  publishDate: string | null;
-  readRate: number;
-  pinned: boolean;
-  views: number;
-};
-
-type NewAnnouncement = {
-  title: string;
-  content: string;
-  attachment?: string;
-  audience: Audience[];
-  schedule: "now" | "later";
-  scheduledFor?: string;
-  preview: boolean;
-};
-
-const tabs: ActiveTab[] = ["Published", "Scheduled", "Drafts", "Archived"];
-
-const statConfig = [
-  { label: "Total announcements", icon: Megaphone, tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400" },
-  { label: "Published", icon: Send, tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400" },
-  { label: "Scheduled", icon: Clock3, tone: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
-  { label: "Drafts", icon: Archive, tone: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
-];
-
-const defaultAnnouncementStats: AnnouncementStats = {
-  totalAnnouncements: 0,
-  published: 0,
-  scheduled: 0,
-  drafts: 0,
-  archived: 0,
-  readRate: 0,
-  parentEngagement: 0,
-  studentEngagement: 0,
-  dailyViews: [],
-  weeklyChange: {
-    totalAnnouncements: 0,
-    published: 0,
-    scheduled: 0,
-    drafts: 0,
-  },
-};
-
-const audienceStyles: Record<Audience, string> = {
-  "All Parents": "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  "All Students": "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  "All Teachers": "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-  Custom: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-};
-
-const statusStyles: Record<AnnouncementStatus, string> = {
-  Published: "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  Scheduled: "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  Draft: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-  Archived: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600",
-};
-
-const formatDateTime = (dateString: string | null) => {
-  if (!dateString) return "-";
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateString));
-};
-
-const clampPercent = (value: number) => Math.min(Math.max(value, 0), 100);
-
-const normalizeStatus = (status?: string): AnnouncementStatus => {
-  const normalized = status?.toUpperCase();
-  if (normalized === "SCHEDULED") return "Scheduled";
-  if (normalized === "DRAFT") return "Draft";
-  if (normalized === "ARCHIVED") return "Archived";
-  return "Published";
-};
-
-const normalizeAudience = (audience?: string[]): Audience[] => {
-  const labels: Record<string, Audience> = {
-    all_parents: "All Parents",
-    parents: "All Parents",
-    "all parents": "All Parents",
-    all_students: "All Students",
-    students: "All Students",
-    "all students": "All Students",
-    all_teachers: "All Teachers",
-    teachers: "All Teachers",
-    "all teachers": "All Teachers",
-    custom: "Custom",
-  };
-
-  const normalized = audience
-    ?.map((item) => labels[item.toLowerCase()] ?? (item as Audience))
-    .filter(Boolean);
-
-  return normalized?.length ? normalized : ["All Parents"];
-};
-
-const getDerivedAnnouncement = (
-  announcement: CreateAnnouncementResponse
-): DashboardAnnouncement => ({
-  ...announcement,
-  audience: normalizeAudience(announcement.audience),
-  status: normalizeStatus(announcement.status),
-  publishDate:
-    announcement.publishedAt ?? announcement.scheduledFor ?? announcement.createdAt,
-  readRate: announcement.readRate ?? 0,
-  pinned: announcement.isPinned ?? false,
-  views: announcement.readCount ?? 0,
-});
-
-const AnnouncementDashboard = () => {
-  const { user, isLoading: isAuthLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("Published");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
-  const [announcements, setAnnouncements] = useState<DashboardAnnouncement[]>([]);
-  const [announcementStats, setAnnouncementStats] = useState<AnnouncementStats>(
-    defaultAnnouncementStats
-  );
-  const [loading, setLoading] = useState(true);
+/**
+ * The announcements dashboard.
+ */
+export default function AnnouncementsPage() {
+  const [activeTab, setActiveTab] = useState<AnnouncementTab>("Published");
+  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    lastPage: 1,
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [viewing, setViewing] = useState<DashboardAnnouncement | null>(null);
+
+  const search = useDebouncedValue(searchTerm.trim());
+
+  const list = useAnnouncements({
+    page,
+    limit: PAGE_SIZE,
+    status: TAB_STATUS[activeTab],
+    search: search || undefined,
   });
-  const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncement>({
-    title: "",
-    content: "",
-    attachment: undefined,
-    audience: ["All Parents"],
-    schedule: "now",
-    scheduledFor: undefined,
-    preview: false,
-  });
+  const statsQuery = useAnnouncementStats();
 
-  const fetchAnnouncements = async () => {
-    if (isAuthLoading) return;
+  const announcements = useMemo<DashboardAnnouncement[]>(
+    () => (list.data?.data ?? []).map(toDashboardAnnouncement),
+    [list.data]
+  );
 
-    if (!user?.userId) {
-      setAnnouncements([]);
-      setAnnouncementStats(defaultAnnouncementStats);
-      setLoading(false);
-      return;
-    }
+  const stats = statsQuery.data ?? emptyAnnouncementStats;
+  const meta = list.data?.meta;
 
-    try {
-      setLoading(true);
-      const [response, statsResponse] = await Promise.all([
-        getAnnouncementsBySender(user.userId, {
-          page: pagination.page,
-          limit: pagination.limit,
-        }),
-        getAnnouncementStatsBySender(user.userId),
-      ]);
-      const apiAnnouncements = response.data.map(getDerivedAnnouncement);
-      setAnnouncements(apiAnnouncements);
-      setAnnouncementStats(statsResponse ?? defaultAnnouncementStats);
-      setPagination((prev) => ({
-        ...prev,
-        total: response.meta.total,
-        lastPage: Math.max(response.meta.lastPage, 1),
-      }));
-    } catch (error) {
-      console.error("Error fetching announcements:", error);
-      setAnnouncements([]);
-      setAnnouncementStats(defaultAnnouncementStats);
-      toast.error("Failed to fetch announcements.");
-    } finally {
-      setLoading(false);
-    }
+  const changeTab = (tab: AnnouncementTab) => {
+    setActiveTab(tab);
+    setPage(1);
   };
 
-  useEffect(() => {
-    fetchAnnouncements();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthLoading, user?.userId, pagination.page]);
-
-  const stats = [
-    announcementStats.totalAnnouncements,
-    announcementStats.published,
-    announcementStats.scheduled,
-    announcementStats.drafts,
-  ];
-
-  const weeklyChanges = [
-    announcementStats.weeklyChange?.totalAnnouncements ?? 0,
-    announcementStats.weeklyChange?.published ?? 0,
-    announcementStats.weeklyChange?.scheduled ?? 0,
-    announcementStats.weeklyChange?.drafts ?? 0,
-  ];
-
-  const formatWeeklyChange = (value: number) =>
-    `${value > 0 ? "+" : ""}${value}% this week`;
-
-  const shouldShowPagination = pagination.total > pagination.limit;
-
-  const goToPage = (page: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page: Math.min(Math.max(page, 1), prev.lastPage),
-    }));
+  const changeSearch = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
   };
 
-  const visibleAnnouncements = useMemo(() => {
-    const statusByTab: Record<ActiveTab, AnnouncementStatus> = {
-      Published: "Published",
-      Scheduled: "Scheduled",
-      Drafts: "Draft",
-      Archived: "Archived",
-    };
-
-    return announcements.filter((announcement) => {
-      const matchesTab = announcement.status === statusByTab[activeTab];
-      const query = searchTerm.trim().toLowerCase();
-      const matchesSearch =
-        !query ||
-        announcement.title.toLowerCase().includes(query) ||
-        announcement.content.toLowerCase().includes(query) ||
-        announcement.audience.some((audience) => audience.toLowerCase().includes(query));
-
-      return matchesTab && matchesSearch;
-    });
-  }, [activeTab, announcements, searchTerm]);
-
-  const averageReadRate = useMemo(() => {
-    return Math.round(announcementStats.readRate ?? 0);
-  }, [announcementStats.readRate]);
-
-  const dailyViews = useMemo(() => {
-    if (announcementStats.dailyViews?.length) {
-      return announcementStats.dailyViews;
-    }
-
-    return Array.from({ length: 7 }).map((_, index) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - index));
-      return { date: date.toISOString(), views: 0 };
-    });
-  }, [announcementStats.dailyViews]);
-
-  const maxDailyViews = Math.max(...dailyViews.map((item) => item.views), 1);
-
-  const handleAudienceToggle = (audience: Audience) => {
-    setNewAnnouncement((prev) => {
-      const exists = prev.audience.includes(audience);
-      const nextAudience = exists
-        ? prev.audience.filter((item) => item !== audience)
-        : [...prev.audience, audience];
-
-      return { ...prev, audience: nextAudience.length ? nextAudience : [audience] };
-    });
-  };
-
-  const validateAttachmentFile = (file: File) => {
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      return "File size must be less than 10MB";
-    }
-    return null;
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validationError = validateAttachmentFile(file);
-    if (validationError) {
-      toast.error(validationError);
-      e.target.value = "";
-      return;
-    }
-
-    setAttachmentName(file.name);
-    setIsUploadingAttachment(true);
-    setUploadProgress(0);
-
-    try {
-      const attachmentUrl = await uploadFileAttachment(file, setUploadProgress);
-      setNewAnnouncement((prev) => ({ ...prev, attachment: attachmentUrl }));
-      toast.success("Attachment uploaded successfully.");
-    } catch (error) {
-      console.error("Error uploading attachment:", error);
-      setAttachmentName(null);
-      toast.error("Failed to upload attachment. Please try again.");
-    } finally {
-      setIsUploadingAttachment(false);
-      setUploadProgress(0);
-      e.target.value = "";
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
-      toast.error("Title and content are required.");
-      return;
-    }
-
-    if (newAnnouncement.schedule === "later" && !newAnnouncement.scheduledFor) {
-      toast.error("Choose a date and time for scheduled announcements.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const scheduledFor =
-        newAnnouncement.schedule === "later" && newAnnouncement.scheduledFor
-          ? new Date(newAnnouncement.scheduledFor).toISOString()
-          : undefined;
-
-      const created = await createAnnouncement({
-        title: newAnnouncement.title,
-        content: newAnnouncement.content,
-        attachment: newAnnouncement.attachment,
-        attachments: newAnnouncement.attachment
-          ? [newAnnouncement.attachment]
-          : undefined,
-        audience: newAnnouncement.audience,
-        status:
-          newAnnouncement.schedule === "later" ? "SCHEDULED" : "PUBLISHED",
-        scheduledFor,
-      });
-
-      setAnnouncements((prev) => [getDerivedAnnouncement(created), ...prev]);
-      setNewAnnouncement({
-        title: "",
-        content: "",
-        attachment: undefined,
-        audience: ["All Parents"],
-        schedule: "now",
-        scheduledFor: undefined,
-        preview: false,
-      });
-      setAttachmentName(null);
-      setIsModalOpen(false);
-      await fetchAnnouncements();
-      toast.success("Announcement created successfully.");
-    } catch (error: any) {
-      console.error("Error creating announcement:", error);
-      toast.error(error?.message || "Failed to create announcement.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  // Nothing has ever loaded: the whole board is a skeleton rather than a set of
+  // empty frames. Later loads keep the frames and only the rows shimmer.
+  if (list.isLoading && !list.data && !list.isError) {
     return <AnnouncementsSkeleton />;
   }
 
@@ -424,8 +98,8 @@ const AnnouncementDashboard = () => {
                   Announcements
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-                  Create, schedule, analyze, and manage every school announcement
-                  from one calm command center.
+                  Create, schedule, analyze, and manage every school announcement from one calm
+                  command center.
                 </p>
               </div>
 
@@ -434,596 +108,61 @@ const AnnouncementDashboard = () => {
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(event) => changeSearch(event.target.value)}
                     placeholder="Search announcements..."
+                    aria-label="Search announcements"
                     className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 pl-10 pr-4 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 sm:w-72"
                   />
                 </div>
-                <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-                  <Filter className="h-4 w-4" />
-                  Filters
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  data-guide="announcements-create"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Announcement
-                </button>
+                <PermissionGate permission={Permission.MANAGE_ANNOUNCEMENTS}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateOpen(true)}
+                    data-guide="announcements-create"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Announcement
+                  </button>
+                </PermissionGate>
               </div>
             </div>
 
-            <div
-              className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-              data-guide="announcements-stats"
-            >
-              {statConfig.map((stat, index) => {
-                const Icon = stat.icon;
-                return (
-                  <div
-                    key={stat.label}
-                    className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={cn("rounded-2xl p-3", stat.tone)}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                        {formatWeeklyChange(weeklyChanges[index])}
-                      </span>
-                    </div>
-                    <p className="mt-5 text-3xl font-bold text-slate-950 dark:text-white">
-                      {stats[index]}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-                      {stat.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+            <AnnouncementStatsCards stats={stats} />
           </div>
         </section>
 
         <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-6">
-              <div
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
-                data-guide="announcements-list"
-              >
-                <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-700 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                          "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
-                          activeTab === tab
-                            ? "bg-[#003366] text-white shadow-sm"
-                            : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
-                        )}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                    <CheckCircle2 className="h-4 w-4 text-[#003366] dark:text-blue-400" />
-                    {visibleAnnouncements.length} records visible
-                  </div>
-                </div>
-
-                <div className="overflow-hidden">
-                  <table className="w-full table-fixed text-left">
-                    <colgroup>
-                      <col className="w-[28%]" />
-                      <col className="w-[18%]" />
-                      <col className="w-[13%]" />
-                      <col className="w-[15%]" />
-                      <col className="w-[14%]" />
-                      <col className="w-[12%]" />
-                    </colgroup>
-                    <thead className="bg-slate-50 dark:bg-slate-700/50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      <tr>
-                        <th className="px-4 py-4">Announcement</th>
-                        <th className="px-4 py-4">Audience</th>
-                        <th className="px-4 py-4">Status</th>
-                        <th className="px-4 py-4">Publish Date</th>
-                        <th className="px-4 py-4">Read Rate</th>
-                        <th className="px-4 py-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                      {visibleAnnouncements.length ? (
-                        visibleAnnouncements.map((announcement) => (
-                        <tr
-                          key={announcement.id}
-                          className="group transition hover:bg-slate-50/80 dark:hover:bg-slate-700/30"
-                        >
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400">
-                                {announcement.pinned ? (
-                                  <Pin className="h-5 w-5" />
-                                ) : announcement.hasAttachment ? (
-                                  <FileText className="h-5 w-5" />
-                                ) : (
-                                  <Bell className="h-5 w-5" />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="truncate font-semibold text-slate-950 dark:text-white">
-                                    {announcement.title}
-                                  </p>
-                                  {announcement.pinned && (
-                                    <span className="rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-bold text-[#003366] dark:text-blue-400">
-                                      Pinned
-                                    </span>
-                                  )}
-                                  {announcement.hasAttachment && (
-                                    <Paperclip className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                                  )}
-                                </div>
-                                <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
-                                  {announcement.content}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex flex-wrap gap-1.5">
-                              {announcement.audience.map((audience) => (
-                                <span
-                                  key={audience}
-                                  className={cn(
-                                    "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold",
-                                    audienceStyles[audience]
-                                  )}
-                                >
-                                  <Users className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">{audience}</span>
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold",
-                                statusStyles[announcement.status]
-                              )}
-                            >
-                              {announcement.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            <span className="inline-flex min-w-0 items-center gap-2">
-                              <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                              {formatDateTime(announcement.publishDate)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                                <div
-                                  className="h-full rounded-full bg-[#003366] dark:bg-blue-500"
-                                  style={{ width: `${clampPercent(announcement.readRate)}%` }}
-                                />
-                              </div>
-                              <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                {announcement.readRate}%
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex justify-end gap-1.5">
-                              {[Eye, Pencil, MoreVertical].map((Icon, index) => (
-                                <button
-                                  key={index}
-                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-sm hover:border-blue-100 dark:hover:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-[#003366] dark:hover:text-blue-400"
-                                >
-                                  <Icon className="h-4 w-4" />
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            className="px-5 py-12 text-center text-sm text-slate-500 dark:text-slate-400"
-                          >
-                            No announcements found for this view.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-slate-700 px-5 py-4 text-sm text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-                  <p>
-                    {shouldShowPagination
-                      ? `Showing ${
-                          visibleAnnouncements.length
-                            ? (pagination.page - 1) * pagination.limit + 1
-                            : 0
-                        } to ${Math.min(
-                          pagination.page * pagination.limit,
-                          pagination.total
-                        )} of ${pagination.total} announcements`
-                      : `Showing ${visibleAnnouncements.length} of ${pagination.total} announcements`}
-                  </p>
-                  {shouldShowPagination && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={pagination.page <= 1}
-                        onClick={() => goToPage(pagination.page - 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-[#003366] dark:border-blue-500 px-3 text-sm font-bold text-[#003366] dark:text-blue-400">
-                        {pagination.page}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={pagination.page >= pagination.lastPage}
-                        onClick={() => goToPage(pagination.page + 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AnnouncementTable
+                announcements={announcements}
+                activeTab={activeTab}
+                onTabChange={changeTab}
+                isLoading={list.isFetching && !list.data}
+                errorMessage={
+                  list.isError ? getErrorMessage(list.error, "Failed to fetch announcements.") : null
+                }
+                onRetry={() => void list.refetch()}
+                onView={setViewing}
+                page={meta?.page ?? page}
+                lastPage={Math.max(meta?.lastPage ?? 1, 1)}
+                limit={meta?.limit ?? PAGE_SIZE}
+                total={meta?.total ?? 0}
+                onPageChange={setPage}
+              />
             </div>
 
-            <aside className="min-w-0 space-y-6" data-guide="announcements-analytics">
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Read rate
-                    </p>
-                    <p className="mt-1 text-3xl font-bold text-slate-950 dark:text-white">
-                      {averageReadRate}%
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/30 p-3 text-[#003366] dark:text-blue-400">
-                    <BarChart3 className="h-6 w-6" />
-                  </div>
-                </div>
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                  <div
-                    className="h-full rounded-full bg-[#003366] dark:bg-blue-500"
-                    style={{ width: `${clampPercent(averageReadRate)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                {[
-                  [
-                    "Parent engagement",
-                    `${announcementStats.parentEngagement ?? 0}%`,
-                    "Read rate across guardians",
-                  ],
-                  [
-                    "Student engagement",
-                    `${announcementStats.studentEngagement ?? 0}%`,
-                    "Average student reads",
-                  ],
-                ].map(([label, value, caption]) => (
-                  <div
-                    key={label}
-                    className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
-                  >
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{value}</p>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{caption}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-bold text-slate-950 dark:text-white">
-                      Daily announcement views
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      Views over the last school week
-                    </p>
-                  </div>
-                  <Eye className="h-5 w-5 text-slate-400 dark:text-slate-500" />
-                </div>
-                <div className="mt-6 flex h-44 items-end gap-3">
-                  {dailyViews.map((item) => (
-                    <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
-                      <div
-                        className="w-full rounded-t-xl bg-[#003366]"
-                        style={{
-                          height: `${Math.max(
-                            item.views ? (item.views / maxDailyViews) * 100 : 4,
-                            4
-                          )}%`,
-                        }}
-                        title={`${item.views} views`}
-                      />
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                        {new Intl.DateTimeFormat("en-GB", {
-                          weekday: "short",
-                        })
-                          .format(new Date(item.date))
-                          .slice(0, 1)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
+            <AnnouncementAnalytics stats={stats} />
           </div>
         </main>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-5">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400">
-                  <Megaphone className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-950 dark:text-white">
-                    Create Announcement
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Share important updates with your school community.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <PermissionGate permission={Permission.MANAGE_ANNOUNCEMENTS}>
+        <CreateAnnouncementModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+      </PermissionGate>
 
-            <form
-              id="announcement-form"
-              onSubmit={handleSubmit}
-              className="flex-1 space-y-6 overflow-y-auto px-6 py-5"
-            >
-              <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
-                <div className="space-y-5">
-                  <div>
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Title
-                    </label>
-                    <input
-                      value={newAnnouncement.title}
-                      onChange={(e) =>
-                        setNewAnnouncement((prev) => ({
-                          ...prev,
-                          title: e.target.value,
-                        }))
-                      }
-                      maxLength={100}
-                      placeholder="Enter announcement title..."
-                      className="mt-2 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 text-sm shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
-                    />
-                    <p className="mt-1 text-right text-xs text-slate-400 dark:text-slate-500">
-                      {newAnnouncement.title.length}/100
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Content
-                    </label>
-                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
-                      <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-2">
-                        {["Paragraph", "B", "I", "U"].map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600"
-                          >
-                            {item}
-                          </button>
-                        ))}
-                        <button type="button" className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-600">
-                          <ImageIcon className="h-4 w-4" />
-                        </button>
-                        <button type="button" className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-600">
-                          <Paperclip className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <textarea
-                        value={newAnnouncement.content}
-                        onChange={(e) =>
-                          setNewAnnouncement((prev) => ({
-                            ...prev,
-                            content: e.target.value,
-                          }))
-                        }
-                        maxLength={2000}
-                        rows={7}
-                        placeholder="Write your announcement content..."
-                        className="w-full resize-none border-0 bg-white dark:bg-slate-700 p-4 text-sm text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0"
-                      />
-                    </div>
-                    <p className="mt-1 text-right text-xs text-slate-400 dark:text-slate-500">
-                      {newAnnouncement.content.length}/2000
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <div>
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Audience
-                    </label>
-                    <div className="mt-2 grid gap-2">
-                      {(["All Parents", "All Students", "All Teachers", "Custom"] as Audience[]).map(
-                        (audience) => (
-                          <button
-                            key={audience}
-                            type="button"
-                            onClick={() => handleAudienceToggle(audience)}
-                            className={cn(
-                              "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition",
-                              newAnnouncement.audience.includes(audience)
-                                ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400 dark:border-blue-700"
-                                : "border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
-                            )}
-                          >
-                            <Users className="h-4 w-4" />
-                            {audience}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Schedule
-                    </label>
-                    <div className="mt-2 grid gap-2">
-                      {[
-                        ["now", "Publish immediately", "Send this announcement right away."],
-                        ["later", "Schedule for later", "Choose a future date and time."],
-                      ].map(([value, title, caption]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() =>
-                            setNewAnnouncement((prev) => ({
-                              ...prev,
-                              schedule: value as "now" | "later",
-                              scheduledFor:
-                                value === "now" ? undefined : prev.scheduledFor,
-                            }))
-                          }
-                          className={cn(
-                            "rounded-xl border p-3 text-left transition",
-                            newAnnouncement.schedule === value
-                              ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 dark:border-blue-700"
-                              : "border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
-                          )}
-                        >
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{title}</p>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
-                        </button>
-                      ))}
-                    </div>
-                    {newAnnouncement.schedule === "later" && (
-                      <input
-                        type="datetime-local"
-                        value={newAnnouncement.scheduledFor ?? ""}
-                        onChange={(event) =>
-                          setNewAnnouncement((prev) => ({
-                            ...prev,
-                            scheduledFor: event.target.value,
-                          }))
-                        }
-                        className="mt-3 h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Attachment
-                </label>
-                <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-7 text-center hover:border-[#003366] dark:hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-blue-900/10">
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    disabled={isUploadingAttachment || isSubmitting}
-                  />
-                  <UploadCloud className="h-8 w-8 text-slate-400 dark:text-slate-500" />
-                  <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    {attachmentName || "Click to upload or drag and drop"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Images, PDFs, and documents up to 10MB
-                  </p>
-                  {isUploadingAttachment && (
-                    <div className="mt-4 h-2 w-52 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                      <div
-                        className="h-full bg-[#003366] dark:bg-blue-500"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setNewAnnouncement((prev) => ({ ...prev, preview: !prev.preview }))
-                }
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-              >
-                <Eye className="h-4 w-4" />
-                Preview {newAnnouncement.preview ? "on" : "off"}
-              </button>
-
-              {newAnnouncement.preview && (
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Recipient preview
-                  </p>
-                  <h3 className="mt-3 text-lg font-bold text-slate-950 dark:text-white">
-                    {newAnnouncement.title || "Announcement title"}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {newAnnouncement.content || "Your announcement content will appear here."}
-                  </p>
-                </div>
-              )}
-            </form>
-
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-6 py-5 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="announcement-form"
-                disabled={isSubmitting || isUploadingAttachment}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Plus className="h-4 w-4" />
-                {isSubmitting ? "Creating..." : "Create Announcement"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnnouncementDetailModal announcement={viewing} onClose={() => setViewing(null)} />
     </>
   );
-};
-
-export default AnnouncementDashboard;
+}

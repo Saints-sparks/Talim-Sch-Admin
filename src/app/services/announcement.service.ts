@@ -1,62 +1,57 @@
-import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
-
-const getErrorMessage = async (response: Response, fallback: string) => {
-  const payload = await response.json().catch(() => null);
-  const message = payload?.message || payload?.error || fallback;
-  return Array.isArray(message) ? message.join(", ") : message;
-};
-
 /**
- * Interface for an announcement
+ * School announcements — the broadcast messages an administrator sends to
+ * parents, students and teachers.
+ *
+ * Every payload mirrors `CreateAnnouncementDto` in
+ * `talimBE-V2/src/modules/notification/data/dtos/create-announcement.dto.ts`.
+ * The audience values are the backend's `AnnouncementAudience` enum
+ * (`all_parents`, `all_students`, `all_teachers`, `custom`); `custom` is only
+ * valid together with a non-empty `targetAudience` of user ids, so the UI
+ * offers the three broadcast audiences only.
+ *
+ * The school is taken from the bearer token by the API; no call sends a
+ * school id. Every function throws `ApiError` on a non-2xx response.
  */
+import { api } from "@/lib/apiClient";
+import { API_ENDPOINTS } from "../lib/api/config";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Lifecycle of an announcement (`AnnouncementStatus` on the backend). */
+export type AnnouncementStatus = "PENDING" | "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+
+/** Who a broadcast reaches (`AnnouncementAudience` on the backend). */
+export type AnnouncementAudience = "all_parents" | "all_students" | "all_teachers" | "custom";
+
+/** Body of `POST /notifications/announcements` (`CreateAnnouncementDto`). */
 export interface Announcement {
-  /**
-   * Title of the announcement
-   */
   title: string;
-  /**
-   * Content of the announcement
-   */
   content: string;
-  /**
-   * Attachment URL of the announcement (optional)
-   */
+  /** Single attachment URL. The API merges it with `attachments`. */
   attachment?: string;
   attachments?: string[];
-  audience?: string[];
+  audience?: AnnouncementAudience[];
+  /** User ids — required by the API when `audience` contains `custom`. */
   targetAudience?: string[];
-  status?: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+  status?: AnnouncementStatus;
+  /** ISO timestamp; only meaningful with `status: "SCHEDULED"`. */
   scheduledFor?: string;
   isPinned?: boolean;
 }
 
+/** Query string accepted by `GET /notifications/announcements/sender/:id`. */
 export interface AnnouncementQuery {
   page?: number;
   limit?: number;
-  status?: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+  status?: AnnouncementStatus;
   search?: string;
 }
 
-/**
- * Interface for a create announcement response
- */
+/** One announcement as the API returns it. */
 export interface CreateAnnouncementResponse {
-  /**
-   * ID of the announcement
-   */
   id: string;
-  /**
-   * Title of the announcement
-   */
   title: string;
-  /**
-   * Content of the announcement
-   */
   content: string;
-  /**
-   * Attachment URL of the announcement (optional)
-   */
   attachment?: string;
   attachments?: string[];
   audience?: string[];
@@ -69,52 +64,31 @@ export interface CreateAnnouncementResponse {
   readCount?: number;
   audienceCount?: number;
   hasAttachment?: boolean;
-  /**
-   * Created at timestamp of the announcement
-   */
   createdAt: string;
-  /**
-   * Reactions of the announcement
-   */
   reactions: Record<string, number>;
 }
 
-/**
- * Interface for announcement meta data
- */
+/** Pagination envelope the announcement list is wrapped in. */
 export interface AnnouncementMeta {
-  /**
-   * Total number of announcements
-   */
   total: number;
-  /**
-   * Current page number
-   */
   page: number;
-  /**
-   * Last page number
-   */
   lastPage: number;
-  /**
-   * Limit of announcements per page
-   */
   limit: number;
 }
 
-/**
- * Interface for an announcement response
- */
+/** Body of `GET /notifications/announcements/sender/:id`. */
 export interface AnnouncementResponse {
-  /**
-   * Array of create announcement responses
-   */
   data: CreateAnnouncementResponse[];
-  /**
-   * Announcement meta data
-   */
   meta: AnnouncementMeta;
 }
 
+/** One day of the read-activity chart. */
+export interface AnnouncementDailyViews {
+  date: string;
+  views: number;
+}
+
+/** Body of `GET /notifications/announcements/sender/:id/stats`. */
 export interface AnnouncementStats {
   totalAnnouncements: number;
   published: number;
@@ -124,10 +98,7 @@ export interface AnnouncementStats {
   readRate: number;
   parentEngagement: number;
   studentEngagement: number;
-  dailyViews: Array<{
-    date: string;
-    views: number;
-  }>;
+  dailyViews: AnnouncementDailyViews[];
   weeklyChange?: {
     totalAnnouncements: number;
     published: number;
@@ -136,96 +107,55 @@ export interface AnnouncementStats {
   };
 }
 
-/**
- * Creates a new announcement
- * @param announcement Announcement to create
- * @returns Create announcement response
- */
-export const createAnnouncement = async (
-  announcement: Announcement
-): Promise<CreateAnnouncementResponse> => {
-  try {
-    const response = await apiClient.post(
-      `${API_ENDPOINTS.CREATE_ANNOUNCEMENT}`,
-      announcement
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        await getErrorMessage(response, "Failed to create announcement")
-      );
-    }
-
-    const data: CreateAnnouncementResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Failed to create announcement:", error);
-    throw error;
-  }
-};
+// ─── Calls ────────────────────────────────────────────────────────────────────
 
 /**
- * Gets announcements by sender
- * @param senderId ID of the sender
- * @param page Page number (default: 1)
- * @param limit Limit of announcements per page (default: 10)
- * @returns Announcement response
+ * Creates an announcement and sends it to the chosen audiences.
+ *
+ * @param announcement - Title, content and audience, plus an optional
+ *   attachment and schedule.
+ * @returns The created announcement.
  */
-export const getAnnouncementsBySender = async (
+export const createAnnouncement = (announcement: Announcement): Promise<CreateAnnouncementResponse> =>
+  api.post<CreateAnnouncementResponse>(API_ENDPOINTS.CREATE_ANNOUNCEMENT, announcement);
+
+/**
+ * One page of the announcements a sender has written, newest first.
+ *
+ * Filtering is done by the API, not in the browser: a status or search term
+ * belongs in the query so the pagination counts stay honest.
+ *
+ * @param senderId - The author's user id.
+ * @param queryOrPage - Page, limit, status and search. A bare number is the
+ *   legacy `(page, limit)` form and is still accepted.
+ * @param legacyLimit - Page size, when `queryOrPage` is a page number.
+ * @returns The page of announcements and its pagination meta.
+ */
+export const getAnnouncementsBySender = (
   senderId: string,
   queryOrPage: AnnouncementQuery | number = {},
   legacyLimit?: number
 ): Promise<AnnouncementResponse> => {
-  try {
-    const query =
-      typeof queryOrPage === "number"
-        ? { page: queryOrPage, limit: legacyLimit }
-        : queryOrPage;
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
+  const query: AnnouncementQuery =
+    typeof queryOrPage === "number" ? { page: queryOrPage, limit: legacyLimit } : queryOrPage;
 
-    if (query.status) params.set("status", query.status);
-    if (query.search) params.set("search", query.search);
+  const params = new URLSearchParams({
+    page: String(query.page ?? 1),
+    limit: String(query.limit ?? 10),
+  });
+  if (query.status) params.set("status", query.status);
+  if (query.search) params.set("search", query.search);
 
-    const response = await apiClient.get(
-      `${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId)}?${params.toString()}`
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        await getErrorMessage(response, "Failed to fetch announcements")
-      );
-    }
-
-    const data: AnnouncementResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Failed to fetch announcements:", error);
-    throw error;
-  }
+  return api.get<AnnouncementResponse>(
+    `${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(senderId)}?${params.toString()}`
+  );
 };
 
-export const getAnnouncementStatsBySender = async (
-  senderId: string
-): Promise<AnnouncementStats> => {
-  try {
-    const response = await apiClient.get(
-      API_ENDPOINTS.GET_ANNOUNCEMENT_STATS_BY_SENDER(senderId)
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        await getErrorMessage(response, "Failed to fetch announcement stats")
-      );
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("Failed to fetch announcement stats:", error);
-    throw error;
-  }
-};
+/**
+ * Dashboard counters and engagement rates for one sender's announcements.
+ *
+ * @param senderId - The author's user id.
+ * @returns Totals per status, read rates and the last week of views.
+ */
+export const getAnnouncementStatsBySender = (senderId: string): Promise<AnnouncementStats> =>
+  api.get<AnnouncementStats>(API_ENDPOINTS.GET_ANNOUNCEMENT_STATS_BY_SENDER(senderId));

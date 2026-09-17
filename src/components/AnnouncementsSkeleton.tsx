@@ -1,64 +1,72 @@
-import React from 'react';
+import React from "react";
 
+/**
+ * First-load placeholder for the announcements dashboard: the header band, the
+ * four stat cards, the list and the analytics rail, in the shape the real page
+ * takes so nothing shifts when the data lands.
+ */
 const AnnouncementsSkeleton: React.FC = () => {
-    return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            {/* Header Skeleton */}
-            <div className="animate-pulse">
-                <div className="h-16 bg-gray-200 rounded-lg mb-6"></div>
+  const bar = "rounded bg-slate-200 dark:bg-slate-700";
+  const card =
+    "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5";
+
+  return (
+    <div className="min-h-full bg-white dark:bg-slate-900" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading announcements</span>
+
+      <section className="animate-pulse border-b border-slate-200 dark:border-slate-700 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1480px]">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div className="space-y-3">
+              <div className={`h-6 w-56 ${bar}`} />
+              <div className={`h-9 w-72 ${bar}`} />
+              <div className={`h-4 w-96 max-w-full ${bar}`} />
             </div>
-
-            {/* Title and Add Button Skeleton */}
-            <div className="animate-pulse mb-6">
-                <div className="flex items-center justify-between">
-                    <div className="h-8 bg-gray-200 rounded w-48"></div>
-                    <div className="h-10 bg-gray-200 rounded w-32"></div>
-                </div>
+            <div className="flex gap-3">
+              <div className={`h-11 w-64 ${bar}`} />
+              <div className={`h-11 w-44 ${bar}`} />
             </div>
+          </div>
 
-            {/* Announcements Grid Skeleton */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                    <div key={item} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                        {/* Announcement Header */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-4 bg-gray-200 rounded w-16"></div>
-                        </div>
-
-                        {/* Announcement Content */}
-                        <div className="space-y-3">
-                            <div className="h-4 bg-gray-200 rounded w-full"></div>
-                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                            <div className="h-4 bg-gray-200 rounded w-4/6"></div>
-                        </div>
-
-                        {/* Announcement Footer */}
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                            <div className="flex gap-2">
-                                <div className="h-8 bg-gray-200 rounded w-16"></div>
-                                <div className="h-8 bg-gray-200 rounded w-16"></div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Pagination Skeleton */}
-            <div className="flex justify-center mt-8">
-                <div className="animate-pulse">
-                    <div className="flex gap-2">
-                        <div className="h-10 bg-gray-200 rounded w-20"></div>
-                        <div className="h-10 bg-gray-200 rounded w-10"></div>
-                        <div className="h-10 bg-gray-200 rounded w-10"></div>
-                        <div className="h-10 bg-gray-200 rounded w-10"></div>
-                        <div className="h-10 bg-gray-200 rounded w-20"></div>
-                    </div>
-                </div>
-            </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className={card}>
+                <div className={`h-11 w-11 ${bar}`} />
+                <div className={`mt-5 h-8 w-20 ${bar}`} />
+                <div className={`mt-2 h-4 w-32 ${bar}`} />
+              </div>
+            ))}
+          </div>
         </div>
-    );
+      </section>
+
+      <main className="mx-auto w-full max-w-[1480px] animate-pulse px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+            <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+              {[0, 1, 2, 3].map((tab) => (
+                <div key={tab} className={`h-9 w-24 ${bar}`} />
+              ))}
+            </div>
+            <div className="space-y-4 p-5">
+              {[0, 1, 2, 3, 4].map((row) => (
+                <div key={row} className={`h-12 ${bar}`} />
+              ))}
+            </div>
+          </div>
+
+          <aside className="space-y-6">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className={card}>
+                <div className={`h-4 w-24 ${bar}`} />
+                <div className={`mt-4 h-24 ${bar}`} />
+              </div>
+            ))}
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default AnnouncementsSkeleton;
