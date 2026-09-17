@@ -25,9 +25,13 @@ import {
  * This school's enrollments, filtered by the API.
  *
  * @param filters - Class, academic year and status; each optional.
+ * @param enabled - Set false to hold the request back until the filters are ready.
  * @returns Query result.
  */
-export function useEnrollments(filters: EnrollmentFilters): UseQueryResult<StudentEnrollment[]> {
+export function useEnrollments(
+  filters: EnrollmentFilters,
+  enabled = true
+): UseQueryResult<StudentEnrollment[]> {
   const schoolId = useSchoolId();
   return useQuery({
     queryKey: transitKeys.enrollmentList(schoolId ?? "none", {
@@ -41,7 +45,7 @@ export function useEnrollments(filters: EnrollmentFilters): UseQueryResult<Stude
         academicYearId: filters.academicYearId || undefined,
         status: filters.status || undefined,
       }),
-    enabled: Boolean(schoolId),
+    enabled: Boolean(schoolId) && enabled,
     staleTime: staleTimes.list,
     placeholderData: (previous) => previous,
   });

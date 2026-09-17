@@ -1,40 +1,74 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
+/**
+ * One notification, opened from a push notification's deep link.
+ *
+ * This route used to render a hardcoded "System Maintenance Scheduled" message
+ * whatever id it was given. It now reads the real notification — the API
+ * refuses one the signed-in user may not see — and marks it read on arrival,
+ * which is what tapping a push notification means.
+ */
+import React, { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { ErrorState, LoadingState } from "@/components/StateComponents";
+import { NotificationDetail } from "@/components/notifications/NotificationDetail";
+import {
+  useMarkNotificationRead,
+  useNotification,
+} from "@/hooks/notifications/useNotifications";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
 
-const NotificationDetailsPage: React.FC = () => {
+/**
+ * The single-notification screen.
+ */
+export default function NotificationDetailPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const notificationId = searchParams.get("id");
+  const params = useParams();
+  const notificationId = typeof params.id === "string" ? params.id : "";
 
-  // Dummy data for notification details
-  const notification = {
-    id: notificationId,
-    title: "System Maintenance Scheduled",
-    description:
-      "The system will be unavailable on Dec 29th from 1:00 AM to 3:00 AM GMT.",
-    time: "1:52 AM",
-  };
+  const notification = useNotification(notificationId);
+  const markRead = useMarkNotificationRead();
+  const { mutate: markAsRead } = markRead;
+
+  const isUnread = notification.data?.isRead === false;
+
+  useEffect(() => {
+    if (!notificationId || !isUnread) return;
+    markAsRead(notificationId, {
+      onError: (error) => logger.error("notifications", "Failed to mark notification read", error),
+    });
+  }, [notificationId, isUnread, markAsRead]);
 
   return (
-    <div className="p-6 bg-gray-100 h-full">
-      {/* Back Button */}
+    <div className="flex min-h-screen flex-col gap-4 bg-[#F8F8F8] p-4 dark:bg-slate-900 sm:p-6">
       <button
-        className="mb-4 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-        onClick={() => router.back()}
+        type="button"
+        onClick={() => router.push("/notifications")}
+        className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
       >
-        Back
+        <ArrowLeft className="h-4 w-4" />
+        All notifications
       </button>
 
-      {/* Notification Details */}
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <h1 className="text-2xl font-semibold mb-4">{notification.title}</h1>
-        <p className="text-gray-600 mb-4">{notification.description}</p>
-        <p className="text-sm text-gray-500">Time: {notification.time}</p>
-      </div>
+      {notification.isLoading ? (
+        <LoadingState message="Loading notification..." />
+      ) : notification.isError ? (
+        <ErrorState
+          title="Couldn't open this notification"
+          message={getErrorMessage(notification.error, "This notification is no longer available.")}
+          onRetry={() => void notification.refetch()}
+        />
+      ) : notification.data ? (
+        <div className="flex min-h-0 flex-1">
+          <NotificationDetail
+            notification={notification.data}
+            isMarkingRead={markRead.isPending}
+            onMarkRead={() => markAsRead(notificationId)}
+          />
+        </div>
+      ) : null}
     </div>
   );
-};
-
-export default NotificationDetailsPage;
+}

@@ -1,9 +1,26 @@
-import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+/**
+ * The administrator's own notification inbox.
+ *
+ * Notifications are per-user, not per-school: every call here is scoped by the
+ * signed-in user's id, and the API refuses to show one user another's inbox.
+ *
+ * Read state lives on the server (`readBy` on the notification, surfaced as
+ * `isRead` for the requesting recipient), so it survives a reload and agrees
+ * with the bell in the header. Nothing here keeps read state in the browser.
+ *
+ * See `talimBE-V2/src/modules/notification/controllers/notifications.controller.ts`
+ * and `fcm.controller.ts`. Every function throws `ApiError` on a non-2xx
+ * response.
+ */
+import { api } from "@/lib/apiClient";
 
-export type AdminNotificationSource = "talim" | "system" | "school";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AdminNotificationCategory =
+/** Who sent a notification (`NotificationSource` on the backend). */
+export type NotificationSource = "school" | "talim" | "system";
+
+/** What a notification is about (`NotificationCategory` on the backend). */
+export type NotificationCategory =
   | "announcement"
   | "attendance"
   | "academics"
@@ -13,318 +30,197 @@ export type AdminNotificationCategory =
   | "account"
   | "other";
 
-export type AdminNotificationStatus = "delivered" | "scheduled" | "draft" | "pending";
+/** How loudly it should be shown (`NotificationPriority` on the backend). */
+export type NotificationPriority = "low" | "medium" | "high";
 
-export type AdminNotification = {
+/** Where delivery got to (`NotificationStatus` on the backend). */
+export type NotificationDeliveryStatus = "pending" | "sent" | "failed";
+
+/** One notification, normalised for the inbox. */
+export interface AdminNotification {
   id: string;
-  rawId: string;
-  endpoint: "notification" | "announcement";
   title: string;
   message: string;
-  source: AdminNotificationSource;
+  source: NotificationSource;
+  /** Human-readable source, e.g. "Talim Notification" — the API supplies it. */
   sourceLabel: string;
-  category: AdminNotificationCategory;
-  audienceLabel: string;
+  category: NotificationCategory;
+  priority: NotificationPriority;
+  status: NotificationDeliveryStatus;
+  /** Display name of the sender. */
   sentBy: string;
   sentByEmail?: string;
-  status: AdminNotificationStatus;
-  priority: "low" | "medium" | "high";
+  /** True when this recipient has already opened it. */
+  isRead: boolean;
   createdAt: string;
-  scheduledFor?: string | null;
-  deliveredRate: number;
   attachments: string[];
-  targetSchools: Array<{ id: string; name: string }>;
-  recipientRoles: string[];
-  totalRecipients: number;
-  deliveredCount: number;
-  pendingCount: number;
-  failedCount: number;
-};
+}
 
-export type NotificationFormPayload = {
-  title: string;
-  message: string;
-  source: AdminNotificationSource;
-  category: AdminNotificationCategory;
-  priority: "low" | "medium" | "high";
-  status: "send_now" | "scheduled" | "draft";
-  scheduledFor?: string;
-  targetSchools: string[];
-  recipientRoles: string[];
-  deliveryMethods: string[];
-};
+/** A notification exactly as the API sends it, before normalisation. */
+interface RawNotification {
+  _id?: string;
+  id?: string;
+  title?: string;
+  message?: string;
+  body?: string;
+  source?: string;
+  sourceLabel?: string;
+  category?: string;
+  priority?: string;
+  status?: string;
+  senderName?: string;
+  senderEmail?: string;
+  senderId?: string | { firstName?: string; lastName?: string; email?: string };
+  isRead?: boolean;
+  attachment?: string;
+  attachments?: string[];
+  createdAt?: string;
+}
 
-type PaginatedResponse<T> = {
-  data?: T[];
-  announcements?: T[];
-  meta?: {
-    total?: number;
-  };
-};
+/** The pagination envelope `GET /notifications` replies with. */
+interface NotificationPage {
+  data?: RawNotification[];
+  meta?: { total?: number };
+}
 
-const getErrorMessage = async (response: Response, fallback: string) => {
-  const payload = await response.json().catch(() => null);
-  const message = payload?.message || payload?.error || fallback;
-  return Array.isArray(message) ? message.join(", ") : message;
-};
+// ─── Normalisation ────────────────────────────────────────────────────────────
 
-const getItems = (payload: PaginatedResponse<any> | any): any[] => {
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.announcements)) return payload.announcements;
-  if (Array.isArray(payload)) return payload;
-  return [];
-};
+const SOURCES = new Set<NotificationSource>(["school", "talim", "system"]);
+const CATEGORIES = new Set<NotificationCategory>([
+  "announcement",
+  "attendance",
+  "academics",
+  "grading",
+  "resources",
+  "messages",
+  "account",
+  "other",
+]);
+const PRIORITIES = new Set<NotificationPriority>(["low", "medium", "high"]);
+const STATUSES = new Set<NotificationDeliveryStatus>(["pending", "sent", "failed"]);
 
-const getId = (value: any): string => {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  return value._id || value.id || "";
-};
+/** The sender's display name, from whichever field the API populated. */
+function senderName(raw: RawNotification): string {
+  if (raw.senderName) return raw.senderName;
+  const sender = raw.senderId;
+  if (!sender || typeof sender === "string") return "Talim";
+  const name = [sender.firstName, sender.lastName].filter(Boolean).join(" ").trim();
+  return name || sender.email || "Talim";
+}
 
-const getName = (value: any, fallback = "All Schools") => {
-  if (!value) return fallback;
-  if (typeof value === "string") return fallback;
-  return value.name || value.schoolName || value.title || fallback;
-};
+/** The sender's email, when the API populated the sender. */
+function senderEmail(raw: RawNotification): string | undefined {
+  if (raw.senderEmail) return raw.senderEmail;
+  const sender = raw.senderId;
+  return sender && typeof sender !== "string" ? sender.email : undefined;
+}
 
-const getSenderName = (item: any, fallback = "Talim Admin") => {
-  if (item.senderName) return item.senderName;
-  if (item.senderDisplay?.name) return item.senderDisplay.name;
-  const sender = item.senderId || item.createdBy;
-  if (!sender || typeof sender === "string") return fallback;
-  const name = [sender.firstName, sender.lastName].filter(Boolean).join(" ");
-  return name || sender.email || fallback;
-};
+/**
+ * Narrows a value from the API onto one of a known set, falling back when the
+ * server sends something this build has not heard of.
+ */
+function oneOf<T extends string>(value: unknown, allowed: Set<T>, fallback: T): T {
+  const candidate = String(value ?? "").toLowerCase() as T;
+  return allowed.has(candidate) ? candidate : fallback;
+}
 
-const getSenderEmail = (item: any) => {
-  const sender = item.senderId || item.createdBy;
-  return item.senderEmail || item.senderDisplay?.email || sender?.email;
-};
-
-const getAttachments = (item: any) => [
-  ...(Array.isArray(item.attachments) ? item.attachments : []),
-  ...(item.attachment ? [item.attachment] : []),
-];
-
-const toStatus = (item: any): AdminNotificationStatus => {
-  const status = String(item.status || "").toLowerCase();
-  if (status.includes("draft")) return "draft";
-  if (status.includes("scheduled") || item.scheduledFor) return "scheduled";
-  if (status.includes("pending")) return "pending";
-  return "delivered";
-};
-
-const normalizeRoles = (roles: any): string[] => {
-  if (!Array.isArray(roles)) return [];
-  return roles.map((role) => String(role)).filter(Boolean);
-};
-
-const buildAudienceLabel = (item: any) => {
-  const targetSchools = Array.isArray(item.targetSchools) ? item.targetSchools : [];
-  const schoolCount = targetSchools.length;
-  const roles = normalizeRoles(item.recipientRoles || item.audience);
-
-  if (schoolCount > 1) return `${schoolCount} Schools`;
-  if (schoolCount === 1) return getName(targetSchools[0]);
-  if (roles.length) return roles.map(formatRole).join(", ");
-  return "Global";
-};
-
-const formatRole = (role: string) =>
-  role
-    .replace(/^all_/, "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-
-const normalizeNotification = (item: any): AdminNotification => {
-  const targetSchools = (Array.isArray(item.targetSchools) ? item.targetSchools : []).map((school: any) => ({
-    id: getId(school),
-    name: getName(school),
-  }));
-  const readCount = item.readCount || item.readBy?.length || 0;
-  const audienceCount = item.audienceCount || targetSchools.length || 1;
+/** Turns an API notification into the shape the inbox renders. */
+function normalize(raw: RawNotification): AdminNotification {
+  const source = oneOf<NotificationSource>(raw.source, SOURCES, "system");
 
   return {
-    id: `notification:${item._id || item.id}`,
-    rawId: item._id || item.id,
-    endpoint: "notification",
-    title: item.title || "Notification",
-    message: item.message || item.body || "No message provided.",
-    source: item.source || item.metadata?.source || "system",
-    sourceLabel: item.sourceLabel || (item.source === "talim" ? "Talim Notification" : "System Notification"),
-    category: item.category || item.metadata?.category || "other",
-    audienceLabel: buildAudienceLabel(item),
-    sentBy: getSenderName(item),
-    sentByEmail: getSenderEmail(item),
-    status: toStatus(item),
-    priority: item.priority || "medium",
-    createdAt: item.createdAt || new Date().toISOString(),
-    scheduledFor: item.scheduledFor,
-    deliveredRate: audienceCount ? Math.min(100, Math.round((readCount / audienceCount) * 100)) : 0,
-    attachments: getAttachments(item),
-    targetSchools,
-    recipientRoles: normalizeRoles(item.recipientRoles),
-    totalRecipients: audienceCount,
-    deliveredCount: readCount,
-    pendingCount: Math.max(0, audienceCount - readCount),
-    failedCount: 0,
+    id: raw._id ?? raw.id ?? "",
+    title: raw.title || "Notification",
+    message: raw.message || raw.body || "No message provided.",
+    source,
+    sourceLabel: raw.sourceLabel || (source === "talim" ? "Talim Notification" : "System Notification"),
+    category: oneOf<NotificationCategory>(raw.category, CATEGORIES, "other"),
+    priority: oneOf<NotificationPriority>(raw.priority, PRIORITIES, "medium"),
+    status: oneOf<NotificationDeliveryStatus>(raw.status, STATUSES, "sent"),
+    sentBy: senderName(raw),
+    sentByEmail: senderEmail(raw),
+    isRead: raw.isRead === true,
+    createdAt: raw.createdAt || new Date().toISOString(),
+    attachments: [
+      ...(Array.isArray(raw.attachments) ? raw.attachments : []),
+      ...(raw.attachment ? [raw.attachment] : []),
+    ],
   };
-};
+}
 
-const normalizeAnnouncement = (item: any): AdminNotification => {
-  const targetSchools = item.schoolId
-    ? [{ id: getId(item.schoolId), name: getName(item.schoolId, "Current School") }]
-    : [];
-  const readCount = item.readCount || item.readBy?.length || 0;
-  const audienceCount = item.audienceCount || item.targetAudience?.length || 1;
+// ─── Calls ────────────────────────────────────────────────────────────────────
 
-  return {
-    id: `announcement:${item._id || item.id}`,
-    rawId: item._id || item.id,
-    endpoint: "announcement",
-    title: item.title || "School announcement",
-    message: item.message || item.content || "No message provided.",
-    source: "school",
-    sourceLabel: "School Announcement",
-    category: item.category || "announcement",
-    audienceLabel: buildAudienceLabel({ ...item, targetSchools }),
-    sentBy: getSenderName(item, "School Admin"),
-    sentByEmail: getSenderEmail(item),
-    status: toStatus(item),
-    priority: "medium",
-    createdAt: item.publishedAt || item.createdAt || new Date().toISOString(),
-    scheduledFor: item.scheduledFor,
-    deliveredRate: item.readRate ?? (audienceCount ? Math.round((readCount / audienceCount) * 100) : 0),
-    attachments: getAttachments(item),
-    targetSchools,
-    recipientRoles: normalizeRoles(item.audience),
-    totalRecipients: audienceCount,
-    deliveredCount: readCount,
-    pendingCount: Math.max(0, audienceCount - readCount),
-    failedCount: 0,
-  };
-};
+/** How many notifications one request asks for. */
+const PAGE_SIZE = 100;
 
-export const getAdminNotifications = async (userId?: string) => {
-  const [notificationsResponse, announcementsResponse] = await Promise.allSettled([
-    userId
-      ? apiClient.get(`/notifications?page=1&limit=100&recipientId=${userId}`)
-      : apiClient.get("/notifications?page=1&limit=100"),
-    userId
-      ? apiClient.get(`${API_ENDPOINTS.GET_ANNOUNCEMENTS_BY_SENDER(userId)}?page=1&limit=100`)
-      : Promise.reject(new Error("Missing user id")),
-  ]);
+/**
+ * The notifications addressed to one user, newest first.
+ *
+ * @param userId - The recipient's user id.
+ * @returns The recipient's notifications.
+ */
+export async function getIncomingNotifications(userId: string): Promise<AdminNotification[]> {
+  const params = new URLSearchParams({
+    page: "1",
+    limit: String(PAGE_SIZE),
+    recipientId: userId,
+  });
+  const page = await api.get<NotificationPage>(`/notifications?${params.toString()}`);
 
-  const notifications =
-    notificationsResponse.status === "fulfilled" && notificationsResponse.value.ok
-      ? getItems(await notificationsResponse.value.json()).map(normalizeNotification)
-      : [];
+  return (page.data ?? [])
+    .map(normalize)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
 
-  const announcements =
-    announcementsResponse.status === "fulfilled" && announcementsResponse.value.ok
-      ? getItems(await announcementsResponse.value.json()).map(normalizeAnnouncement)
-      : [];
-
-  return [...notifications, ...announcements].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+/**
+ * One notification, for the deep link a push notification opens.
+ *
+ * The API refuses a notification the caller may not see, so a bad or foreign
+ * id is a `NOT_FOUND` rather than someone else's message.
+ *
+ * @param notificationId - The notification's id.
+ * @returns The notification.
+ */
+export async function getNotification(notificationId: string): Promise<AdminNotification> {
+  const raw = await api.get<RawNotification>(
+    `/notifications/${encodeURIComponent(notificationId)}`
   );
-};
+  return normalize(raw);
+}
 
-export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
-  try {
-    const res = await apiClient.get(`/notifications/unread/${userId}`);
-    if (!res.ok) return 0;
-    const data = await res.json();
-    return Array.isArray(data) ? data.length : (data?.count ?? data?.total ?? 0);
-  } catch {
-    return 0;
-  }
-};
+/**
+ * How many notifications a user has not opened yet — what the header bell
+ * shows.
+ *
+ * @param userId - The recipient's user id.
+ * @returns The unread count.
+ */
+export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  const data = await api.get<RawNotification[] | { count?: number; total?: number }>(
+    `/notifications/unread/${encodeURIComponent(userId)}`
+  );
 
-export const getIncomingNotifications = async (userId: string): Promise<AdminNotification[]> => {
-  try {
-    const res = await apiClient.get(`/notifications?page=1&limit=100&recipientId=${userId}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items = getItems(data);
-    return items.map(normalizeNotification);
-  } catch {
-    return [];
-  }
-};
+  if (Array.isArray(data)) return data.length;
+  return data?.count ?? data?.total ?? 0;
+}
 
-export const markNotificationAsRead = async (
-  notificationId: string,
-  userId: string,
-): Promise<void> => {
-  try {
-    // Backend uses PUT (not PATCH) and requires userId in the body
-    await apiClient.put(`/notifications/${notificationId}/read`, { userId });
-  } catch {
-    // Fail silently — UI state is already updated optimistically
-  }
-};
+/**
+ * Marks one notification read for the signed-in user.
+ *
+ * The reader is taken from the bearer token; a user id in the body is ignored
+ * by the API.
+ *
+ * @param notificationId - The notification's id.
+ */
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  await api.put(`/notifications/${encodeURIComponent(notificationId)}/read`);
+}
 
-export const createAdminNotification = async (
-  payload: NotificationFormPayload,
-  senderId: string,
-  fallbackSchoolId?: string,
-) => {
-  const targetSchools = payload.targetSchools.length
-    ? payload.targetSchools
-    : fallbackSchoolId
-      ? [fallbackSchoolId]
-      : [];
-
-  if (payload.source === "school") {
-    const announcementPayload = {
-      title: payload.title,
-      message: payload.message,
-      content: payload.message,
-      category: payload.category,
-      audience: payload.recipientRoles.length
-        ? payload.recipientRoles.map((role) => `all_${role}`)
-        : ["all_teachers", "all_students", "all_parents"],
-      status:
-        payload.status === "draft"
-          ? "DRAFT"
-          : payload.status === "scheduled"
-            ? "SCHEDULED"
-            : "PUBLISHED",
-      scheduledFor: payload.scheduledFor || undefined,
-      isPinned: false,
-    };
-
-    const response = await apiClient.post(API_ENDPOINTS.CREATE_ANNOUNCEMENT, announcementPayload);
-    if (!response.ok) {
-      throw new Error(await getErrorMessage(response, "Failed to create school announcement"));
-    }
-    return response.json();
-  }
-
-  const notificationPayload = {
-    title: payload.title,
-    message: payload.message,
-    senderId,
-    targetSchools,
-    recipientRoles: payload.recipientRoles,
-    priority: payload.priority,
-    type: `${payload.category}_notification`,
-    source: payload.source,
-    category: payload.category,
-    scheduledFor: payload.status === "scheduled" ? payload.scheduledFor : undefined,
-    isScheduled: payload.status === "scheduled",
-    metadata: {
-      deliveryMethods: payload.deliveryMethods,
-      source: payload.source,
-      category: payload.category,
-      module: payload.category,
-    },
-  };
-
-  const response = await apiClient.post("/notifications", notificationPayload);
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Failed to create notification"));
-  }
-  return response.json();
-};
+/**
+ * Marks every notification read for the signed-in user, in one request.
+ *
+ * @returns Nothing; the caller invalidates the inbox afterwards.
+ */
+export async function markAllNotificationsAsRead(): Promise<void> {
+  await api.patch("/notifications/read-all");
+}
