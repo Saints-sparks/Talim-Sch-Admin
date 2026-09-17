@@ -1,85 +1,65 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  getSchoolDashboard,
-  getDashboardSummary,
-  getFinanceSummary,
-  getAcademicSummary,
-  getPendingActions,
-  getRecentPayments,
-  getRecentAnnouncements,
-  type SchoolDashboardData,
-  type DashboardSummary,
-  type FinanceSummary,
-  type AcademicSummary,
-  type PendingActionsData,
-  type RecentPayment,
-  type RecentAnnouncement,
-} from "../app/services/dashboard.service";
-import { getSchoolId } from "../app/services/school.service";
+/**
+ * The dashboard page's one hook.
+ *
+ * It decides what the viewer is allowed to see, starts every panel's query at
+ * once (see `./dashboard/useDashboardQueries`), and hands the page a panel's
+ * data together with that panel's own loading flag — so a slow wallet call no
+ * longer holds the whole page on skeletons, and nothing shifts when the last
+ * panel lands.
+ *
+ * Only the base read is fatal. Every other panel degrades to an empty state,
+ * because losing the fee summary must not cost an administrator the page.
+ */
+"use client";
+
+import { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/components/CustomToast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/lib/permissions";
+import type {
+  AcademicSummary,
+  DashboardSummary,
+  FinanceSummary,
+  PendingActionsData,
+  RecentAnnouncement,
+  RecentPayment,
+  SchoolDashboardData,
+} from "@/app/services/dashboard.service";
+import {
+  useAcademicSummaryQuery,
+  useDashboardSummaryQuery,
+  useFinanceSummaryQuery,
+  useInvalidateDashboard,
+  usePendingActionsQuery,
+  useRecentAnnouncementsQuery,
+  useRecentPaymentsQuery,
+  useSchoolDashboardQuery,
+  withBaseCounts,
+} from "./dashboard/useDashboardQueries";
 
-// ==================== Original Hook (kept for backward compatibility) ====================
-
-interface UseDashboardReturn {
-  dashboardData: SchoolDashboardData | null;
-  isLoading: boolean;
-  error: string | null;
-  refreshDashboard: () => Promise<void>;
+/** Which panels this viewer's permissions let the page render at all. */
+export interface DashboardVisibility {
+  finance: boolean;
+  academics: boolean;
+  assessments: boolean;
+  classes: boolean;
+  pendingActions: boolean;
+  recentPayments: boolean;
+  recentAnnouncements: boolean;
 }
 
-export const useDashboard = (): UseDashboardReturn => {
-  const [dashboardData, setDashboardData] =
-    useState<SchoolDashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+/** Per-panel loading flags, so each section shows its own skeleton. */
+export interface DashboardLoading {
+  base: boolean;
+  summary: boolean;
+  finance: boolean;
+  academic: boolean;
+  pendingActions: boolean;
+  recentActivity: boolean;
+}
 
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        console.warn("No school ID available, skipping dashboard data fetch");
-        setDashboardData(null);
-        return;
-      }
-
-      const data = await getSchoolDashboard(schoolId);
-      setDashboardData(data);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to load dashboard data. Please try again later.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const refreshDashboard = useCallback(async () => {
-    await fetchDashboardData();
-  }, [fetchDashboardData]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
-
-  return {
-    dashboardData,
-    isLoading,
-    error,
-    refreshDashboard,
-  };
-};
-
-// ==================== Enhanced Hook ====================
-
-export interface EnhancedDashboardState {
+/** Everything the dashboard page renders. */
+export interface DashboardOverview {
   base: SchoolDashboardData | null;
   summary: DashboardSummary | null;
   finance: FinanceSummary | null;
@@ -87,99 +67,97 @@ export interface EnhancedDashboardState {
   pendingActions: PendingActionsData | null;
   recentPayments: RecentPayment[];
   recentAnnouncements: RecentAnnouncement[];
+  loading: DashboardLoading;
+  visibility: DashboardVisibility;
+  /** Set only when the base read failed; the page shows its error state. */
+  error: unknown;
+  /** True while a refresh is in flight and stale data is still on screen. */
+  isRefreshing: boolean;
+  /** Invalidates every dashboard panel. */
+  refresh: () => void;
 }
 
-interface UseEnhancedDashboardReturn {
-  data: EnhancedDashboardState;
-  isLoading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-}
-
-export const useEnhancedDashboard = (): UseEnhancedDashboardReturn => {
+/**
+ * Loads the dashboard for the signed-in administrator.
+ *
+ * @returns The panels' data, their loading flags, what the viewer may see, the
+ *   fatal error if the base read failed, and a refresh function.
+ */
+export function useDashboardOverview(): DashboardOverview {
   const { user } = useAuth();
   const userId = user?._id;
+  const { hasPermission, isFullAdmin } = usePermissions();
 
-  const [data, setData] = useState<EnhancedDashboardState>({
-    base: null,
-    summary: null,
-    finance: null,
-    academic: null,
-    pendingActions: null,
-    recentPayments: [],
-    recentAnnouncements: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const visibility = useMemo<DashboardVisibility>(() => {
+    const can = (permission: string) => isFullAdmin || hasPermission(permission);
+    const finance =
+      can(Permission.MANAGE_FEES) ||
+      can(Permission.MANAGE_FINANCE) ||
+      can(Permission.MANAGE_PAYMENTS);
+    return {
+      finance,
+      academics:
+        can(Permission.MANAGE_CLASSES) ||
+        can(Permission.MANAGE_CURRICULUM) ||
+        can(Permission.MANAGE_ASSESSMENTS) ||
+        can(Permission.MANAGE_TIMETABLE),
+      assessments: can(Permission.MANAGE_ASSESSMENTS),
+      classes: can(Permission.MANAGE_CLASSES),
+      pendingActions:
+        can(Permission.MANAGE_TRANSIT) ||
+        can(Permission.MANAGE_LEAVE_REQUESTS) ||
+        can(Permission.MANAGE_STUDENTS),
+      recentPayments: finance,
+      recentAnnouncements: can(Permission.MANAGE_ANNOUNCEMENTS) || can(Permission.MANAGE_MESSAGES),
+    };
+  }, [hasPermission, isFullAdmin]);
 
-  const fetchAll = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const base = useSchoolDashboardQuery();
+  const summary = useDashboardSummaryQuery(userId);
+  const finance = useFinanceSummaryQuery(visibility.finance);
+  const academic = useAcademicSummaryQuery(visibility.academics);
+  const pendingActions = usePendingActionsQuery(visibility.pendingActions);
+  const recentPayments = useRecentPaymentsQuery(visibility.recentPayments);
+  const recentAnnouncements = useRecentAnnouncementsQuery(
+    userId,
+    visibility.recentAnnouncements
+  );
 
-    const schoolId = getSchoolId();
-    if (!schoolId) {
-      console.warn("No school ID, skipping dashboard fetch");
-      setIsLoading(false);
-      return;
-    }
+  const invalidate = useInvalidateDashboard();
 
-    try {
-      const [
-        base,
-        finance,
-        academic,
-        pendingActions,
-        payments,
-        announcements,
-      ] = await Promise.all([
-        getSchoolDashboard(schoolId).catch(() => null),
-        getFinanceSummary(schoolId),
-        getAcademicSummary(schoolId),
-        getPendingActions(schoolId),
-        getRecentPayments(schoolId),
-        getRecentAnnouncements(schoolId, userId),
-      ]);
+  const mergedSummary = useMemo(
+    () => withBaseCounts(summary.data, base.data),
+    [summary.data, base.data]
+  );
 
-      const summary = await getDashboardSummary(
-        schoolId,
-        userId,
-        base
-          ? {
-              totalStudents: base.totalStudents,
-              totalTeachers: base.totalTeachers,
-              totalClasses: base.totalClasses,
-            }
-          : undefined
-      );
-
-      setData({
-        base,
-        summary,
-        finance,
-        academic,
-        pendingActions,
-        recentPayments: payments ?? [],
-        recentAnnouncements: announcements ?? [],
-      });
-
-      if (!base) {
-        const msg = "Failed to load core dashboard data";
-        setError(msg);
-        toast.error(msg);
-      }
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to load dashboard";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  return { data, isLoading, error, refresh: fetchAll };
-};
+  return {
+    base: base.data ?? null,
+    summary: mergedSummary,
+    finance: finance.data ?? null,
+    academic: academic.data ?? null,
+    pendingActions: pendingActions.data ?? null,
+    recentPayments: recentPayments.data ?? [],
+    recentAnnouncements: recentAnnouncements.data ?? [],
+    loading: {
+      base: base.isPending && base.isFetching,
+      summary: summary.isPending && summary.isFetching,
+      finance: finance.isPending && finance.isFetching,
+      academic: academic.isPending && academic.isFetching,
+      pendingActions: pendingActions.isPending && pendingActions.isFetching,
+      recentActivity:
+        (recentPayments.isPending && recentPayments.isFetching) ||
+        (recentAnnouncements.isPending && recentAnnouncements.isFetching),
+    },
+    visibility,
+    error: base.error,
+    isRefreshing:
+      base.isFetching ||
+      summary.isFetching ||
+      finance.isFetching ||
+      academic.isFetching ||
+      pendingActions.isFetching,
+    refresh: () => {
+      void invalidate();
+    },
+  };
+}

@@ -9,6 +9,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { staleTimes } from "@/lib/queryKeys";
+import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { useSchoolId } from "@/hooks/useSchoolId";
 import { transitKeys } from "@/hooks/transit/keys";
 import {
@@ -87,6 +88,63 @@ export function useCreateEnrollment(): UseMutationResult<
       client.invalidateQueries({
         queryKey: transitKeys.enrollmentHistory(school, payload.studentId),
       });
+    },
+  });
+}
+
+/** What one bulk enrolment attempt asks for. */
+export interface BulkEnrollInput {
+  studentIds: string[];
+  classId: string;
+  academicYearId: string;
+  termId?: string;
+  /** Names the students, so a failure can say who it was about. */
+  nameOf: (studentId: string) => string;
+}
+
+/** How a bulk enrolment went. */
+export interface BulkEnrollResult {
+  enrolled: number;
+  /** Students who already had an active enrollment — not a failure. */
+  skipped: number;
+  /** One line per real failure, naming the student. */
+  errors: string[];
+}
+
+/**
+ * Enrols several students into the same class and year, one request at a time.
+ *
+ * The API has no bulk endpoint, so this walks the list; a student who already
+ * has an active enrollment is counted as skipped rather than failed. The caches
+ * are invalidated once at the end instead of after every student.
+ *
+ * @returns Mutation result; `mutateAsync` resolves with the tally.
+ */
+export function useBulkEnroll(): UseMutationResult<BulkEnrollResult, unknown, BulkEnrollInput> {
+  const schoolId = useSchoolId();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ studentIds, classId, academicYearId, termId, nameOf }) => {
+      const result: BulkEnrollResult = { enrolled: 0, skipped: 0, errors: [] };
+      for (const studentId of studentIds) {
+        try {
+          await createEnrollment({ studentId, classId, academicYearId, termId, source: "manual" });
+          result.enrolled += 1;
+        } catch (error) {
+          if (error instanceof ApiError && error.code === "CONFLICT") {
+            result.skipped += 1;
+          } else {
+            result.errors.push(`${nameOf(studentId)}: ${getErrorMessage(error, "failed")}`);
+          }
+        }
+      }
+      return result;
+    },
+    onSuccess: () => {
+      const school = schoolId ?? "none";
+      client.invalidateQueries({ queryKey: transitKeys.enrollments(school) });
+      client.invalidateQueries({ queryKey: transitKeys.dashboard(school) });
     },
   });
 }

@@ -1,11 +1,30 @@
+/**
+ * Everything the school admin dashboard reads.
+ *
+ * The API has no single dashboard endpoint beyond `/schools/:id/dashboard`, so
+ * the summaries here fan out across the fees, finance, transit, leave,
+ * payments and notification endpoints and derive the numbers the cards show.
+ *
+ * Two error policies live side by side on purpose:
+ *  - `getSchoolDashboard` throws `ApiError` — without it the page has nothing
+ *    to render, so the page shows a full error state.
+ *  - every other reader returns `null` (or `[]`) when its endpoint fails,
+ *    through `safeGet`. One unavailable widget must not blank the dashboard;
+ *    the card renders its own empty state instead.
+ *
+ * The school comes from the bearer token on every call except the two that
+ * take a path id. Callers must never compare `schoolId` values by identity.
+ */
 import { API_BASE_URL } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
 import { getTerms, getAcademicYears } from "./academic.service";
 import { assessmentService } from "./assessment.service";
 import { getUnreadNotificationCount } from "./notification.service";
+import { logger } from "@/lib/logger";
 
 // ==================== Types ====================
 
+/** Counts and school profile from `GET /schools/:schoolId/dashboard`. */
 export interface SchoolDashboardData {
   totalClasses: number;
   totalStudents: number;
@@ -45,6 +64,7 @@ export interface SchoolDashboardData {
   };
 }
 
+/** The six KPI cards at the top of the dashboard. */
 export interface DashboardSummary {
   students: {
     total: number;
@@ -79,6 +99,7 @@ export interface DashboardSummary {
   };
 }
 
+/** Revenue chart and fee-status donut. */
 export interface FinanceSummary {
   revenueThisMonth: number;
   monthOverMonthPercent: number;
@@ -91,6 +112,7 @@ export interface FinanceSummary {
   };
 }
 
+/** Term progress, assessment counts and enrolment by class. */
 export interface AcademicSummary {
   currentTerm: {
     name: string;
@@ -109,6 +131,7 @@ export interface AcademicSummary {
   studentDistribution: Array<{ className: string; count: number }>;
 }
 
+/** Queues waiting on an administrator. */
 export interface PendingActionsData {
   transfers: { incoming: number; outgoing: number };
   leaveRequests: { pending: number };
@@ -116,6 +139,7 @@ export interface PendingActionsData {
   studentsWithoutEnrollment: { count: number };
 }
 
+/** One row of the recent payments panel. */
 export interface RecentPayment {
   studentName: string;
   amount: number;
@@ -124,11 +148,61 @@ export interface RecentPayment {
   status: "success" | "pending" | "failed";
 }
 
+/** One row of the recent announcements panel. */
 export interface RecentAnnouncement {
   title: string;
   audience: string;
   publishedAt: string;
   readRate: number;
+}
+
+/** `GET /fees/dashboard/summary`. */
+interface FeesDashboardBody {
+  totalExpectedAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+}
+
+/** `GET /finance/wallet/summary`. */
+interface WalletSummaryBody {
+  success: boolean;
+  summary: { availableBalance: number; thisMonthRevenue?: number };
+}
+
+/** One row of `GET /finance/wallet/transactions`. */
+interface WalletTransaction {
+  direction?: string;
+  amount: number;
+  createdAt: string;
+}
+
+/** `GET /transit/dashboard`. */
+interface TransitDashboardBody {
+  pendingIncoming: number;
+  pendingOutgoing: number;
+  openPromotionRuns: number;
+}
+
+/** One row of `GET /payments/admin/transactions` (`PaymentTransaction`). */
+interface PaymentTransactionRow {
+  internalReference?: string;
+  amount?: number;
+  schoolAmount?: number;
+  paymentChannel?: string;
+  providerName?: string;
+  paidAt?: string;
+  createdAt: string;
+  status?: string;
+}
+
+/** One row of `GET /notifications/announcements/...` (`Announcement`). */
+interface AnnouncementRow {
+  title: string;
+  targetAudience?: string | string[];
+  audience?: string | string[];
+  publishedAt?: string;
+  createdAt: string;
+  readRate?: number;
 }
 
 // ==================== Helpers ====================
@@ -149,6 +223,13 @@ const AUDIENCE_LABELS: Record<string, string> = {
   custom: "Custom",
 };
 
+/**
+ * Turns the backend's `AnnouncementAudience` values into something readable,
+ * hiding the raw user ids a custom audience is stored as.
+ *
+ * @param raw - The audience field, one value or many.
+ * @returns A comma-joined label, "Custom" when only ids were sent.
+ */
 function normalizeAudienceLabel(raw?: string | string[]): string {
   const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
   if (!arr.length) return "All";
@@ -158,18 +239,31 @@ function normalizeAudienceLabel(raw?: string | string[]): string {
   return resolved.length ? [...new Set(resolved)].join(", ") : "Custom";
 }
 
+/**
+ * A read whose failure only costs one card. Logs for the developer and
+ * resolves `null` so the dashboard keeps rendering.
+ *
+ * @typeParam T - Shape of the successful body.
+ * @param url - Path to read.
+ * @returns The parsed body, or `null` when the request failed.
+ */
 async function safeGet<T>(url: string): Promise<T | null> {
   try {
-    const res = await apiClient.get(url);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
+    return await api.get<T>(url);
+  } catch (err) {
+    logger.error("dashboard", `Optional dashboard read failed: ${url}`, err);
     return null;
   }
 }
 
+/**
+ * Buckets wallet credits into the last six calendar months.
+ *
+ * @param entries - Wallet ledger rows, newest or oldest first.
+ * @returns Up to six `{ month, amount }` points, oldest first.
+ */
 function buildMonthlyRevenue(
-  entries: Array<{ direction?: string; amount: number; createdAt: string }>
+  entries: WalletTransaction[]
 ): Array<{ month: string; amount: number }> {
   const byMonth: Record<string, number> = {};
   entries
@@ -191,32 +285,33 @@ function buildMonthlyRevenue(
 
 // ==================== Service Functions ====================
 
+/**
+ * The school's headline counts, recent classes and profile.
+ *
+ * @param schoolId - School to read; the only dashboard call that needs it.
+ * @returns The dashboard document.
+ * @throws ApiError When the read fails — the page cannot render without it.
+ */
 export const getSchoolDashboard = async (schoolId: string): Promise<SchoolDashboardData> => {
-  const response = await apiClient.get(`${API_BASE_URL}/schools/${schoolId}/dashboard`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to fetch dashboard data: ${response.status}`);
-  }
-  return response.json();
+  return api.get<SchoolDashboardData>(`${API_BASE_URL}/schools/${schoolId}/dashboard`);
 };
 
-// Derives fee KPIs from /fees/dashboard/summary and wallet balance from /finance/wallet/summary.
-// userId is used to fetch unread notification count.
+/**
+ * The KPI card numbers: fee collection from `/fees/dashboard/summary`, wallet
+ * balance from `/finance/wallet/summary`, unread count from notifications, and
+ * head counts passed in from the base dashboard rather than fetched twice.
+ *
+ * @param userId - Viewer, for their unread notification count; omit to skip it.
+ * @param baseStats - Student, teacher and class totals already loaded.
+ * @returns The summary, or `null` when both money endpoints are unavailable.
+ */
 export const getDashboardSummary = async (
-  schoolId: string,
   userId?: string,
   baseStats?: Pick<SchoolDashboardData, "totalStudents" | "totalTeachers" | "totalClasses">
 ): Promise<DashboardSummary | null> => {
   const [fees, wallet, unreadCount] = await Promise.all([
-    safeGet<{
-      totalExpectedAmount: number;
-      paidAmount: number;
-      outstandingAmount: number;
-    }>("/fees/dashboard/summary"),
-    safeGet<{
-      success: boolean;
-      summary: { availableBalance: number };
-    }>("/finance/wallet/summary"),
+    safeGet<FeesDashboardBody>("/fees/dashboard/summary"),
+    safeGet<WalletSummaryBody>("/finance/wallet/summary"),
     userId ? getUnreadNotificationCount(userId).catch(() => 0) : Promise.resolve(0),
   ]);
 
@@ -250,7 +345,7 @@ export const getDashboardSummary = async (
     },
     wallet: { balance: wallet?.summary?.availableBalance ?? 0 },
     notifications: {
-      unreadTotal: (unreadCount as number) ?? 0,
+      unreadTotal: unreadCount ?? 0,
       messages: 0,
       alerts: 0,
       trendPercent: 0,
@@ -258,26 +353,19 @@ export const getDashboardSummary = async (
   };
 };
 
-// Derives revenue and fee status from /fees/dashboard/summary and /finance/wallet/transactions.
-export const getFinanceSummary = async (schoolId: string): Promise<FinanceSummary | null> => {
+/**
+ * Revenue and fee status: `/fees/dashboard/summary` for the donut,
+ * `/finance/wallet/summary` and the wallet ledger for the monthly bars.
+ *
+ * @returns The finance summary, or `null` when both endpoints are unavailable.
+ */
+export const getFinanceSummary = async (): Promise<FinanceSummary | null> => {
   const [fees, wallet, txnRes] = await Promise.all([
-    safeGet<{
-      totalExpectedAmount: number;
-      paidAmount: number;
-      outstandingAmount: number;
-    }>("/fees/dashboard/summary"),
-    safeGet<{
-      success: boolean;
-      summary: { availableBalance: number; thisMonthRevenue: number };
-    }>("/finance/wallet/summary"),
-    safeGet<{
-      success: boolean;
-      data: Array<{
-        direction: string;
-        amount: number;
-        createdAt: string;
-      }>;
-    }>("/finance/wallet/transactions?limit=200"),
+    safeGet<FeesDashboardBody>("/fees/dashboard/summary"),
+    safeGet<WalletSummaryBody>("/finance/wallet/summary"),
+    safeGet<{ success: boolean; data: WalletTransaction[] }>(
+      "/finance/wallet/transactions?limit=200"
+    ),
   ]);
 
   if (!fees && !wallet) return null;
@@ -302,14 +390,17 @@ export const getFinanceSummary = async (schoolId: string): Promise<FinanceSummar
   };
 };
 
-// Derives term progress from /terms + /academic-years, and assessment counts from /assessments/school.
-export const getAcademicSummary = async (schoolId: string): Promise<AcademicSummary | null> => {
-  const [terms, years, assessmentRes] = await Promise.all([
-    getTerms().catch(() => []),
-    getAcademicYears().catch(() => []),
-    assessmentService.getAssessmentsBySchool(1, 200).catch(() => ({ assessments: [] })),
-  ]);
-
+/**
+ * Term progress and assessment counts.
+ *
+ * @param terms - The school's terms, already cached by `useTerms()`.
+ * @param years - The school's academic years, already cached by `useAcademicYears()`.
+ * @returns The academic summary, or `null` when no term is marked current.
+ */
+export const buildAcademicSummary = async (
+  terms: Array<{ name: string; startDate: string; endDate: string; isCurrent: boolean }>,
+  years: Array<{ year: string; isCurrent: boolean }>
+): Promise<AcademicSummary | null> => {
   const currentTerm = terms.find((t) => t.isCurrent);
   if (!currentTerm) return null;
 
@@ -322,6 +413,10 @@ export const getAcademicSummary = async (schoolId: string): Promise<AcademicSumm
   const elapsedMs = Math.max(0, Math.min(now - start, totalMs));
   const elapsedPercent = Math.round((elapsedMs / totalMs) * 100);
   const daysRemaining = Math.max(0, Math.ceil((end - now) / 86400000));
+
+  const assessmentRes = await assessmentService
+    .getAssessmentsBySchool(1, 200)
+    .catch(() => ({ assessments: [] }));
 
   const assessments = assessmentRes?.assessments ?? [];
   const counts = { active: 0, pending: 0, completed: 0, cancelled: 0 };
@@ -344,14 +439,31 @@ export const getAcademicSummary = async (schoolId: string): Promise<AcademicSumm
   };
 };
 
-// Derives pending transfers and leave counts from /transit/dashboard and /leave-requests/school-admin/all.
-export const getPendingActions = async (schoolId: string): Promise<PendingActionsData | null> => {
+/**
+ * Term progress and assessment counts, fetching terms and years itself.
+ *
+ * Prefer `buildAcademicSummary` with the cached reference lists; this wrapper
+ * exists for callers that have no query client.
+ *
+ * @returns The academic summary, or `null` when no term is marked current.
+ */
+export const getAcademicSummary = async (): Promise<AcademicSummary | null> => {
+  const [terms, years] = await Promise.all([
+    getTerms().catch(() => []),
+    getAcademicYears().catch(() => []),
+  ]);
+  return buildAcademicSummary(terms, years);
+};
+
+/**
+ * The queues waiting on an administrator: transfers and promotion runs from
+ * `/transit/dashboard`, pending leave from the school-admin leave list.
+ *
+ * @returns The pending-action counts; zeroes when an endpoint is unavailable.
+ */
+export const getPendingActions = async (): Promise<PendingActionsData> => {
   const [transit, leaveRes] = await Promise.all([
-    safeGet<{
-      pendingIncoming: number;
-      pendingOutgoing: number;
-      openPromotionRuns: number;
-    }>("/transit/dashboard"),
+    safeGet<TransitDashboardBody>("/transit/dashboard"),
     safeGet<{ data: Array<{ status: string }> }>("/leave-requests/school-admin/all"),
   ]);
 
@@ -372,11 +484,14 @@ export const getPendingActions = async (schoolId: string): Promise<PendingAction
   };
 };
 
-export const getRecentPayments = async (
-  schoolId: string,
-  limit = 5
-): Promise<RecentPayment[] | null> => {
-  const res = await safeGet<{ success: boolean; data: any[] }>(
+/**
+ * The newest payment transactions for the recent-payments panel.
+ *
+ * @param limit - How many rows to show.
+ * @returns The rows, or `[]` when the endpoint is unavailable.
+ */
+export const getRecentPayments = async (limit = 5): Promise<RecentPayment[]> => {
+  const res = await safeGet<{ success: boolean; data: PaymentTransactionRow[] }>(
     `/payments/admin/transactions?limit=${limit}`
   );
   if (!res?.data?.length) return [];
@@ -386,25 +501,32 @@ export const getRecentPayments = async (
     amount: t.schoolAmount ?? t.amount ?? 0,
     method: t.paymentChannel ?? t.providerName ?? "Online",
     createdAt: t.paidAt ?? t.createdAt,
-    status: (t.status === "successful"
-      ? "success"
-      : t.status === "pending"
-        ? "pending"
-        : "failed") as "success" | "pending" | "failed",
+    status:
+      t.status === "successful" ? "success" : t.status === "pending" ? "pending" : "failed",
   }));
 };
 
+/**
+ * The newest published announcements. Falls back to the viewer's own
+ * announcements when the school list comes back empty, which is what a
+ * sub-admin who only posts their own sees.
+ *
+ * @param schoolId - School whose announcements to read.
+ * @param userId - Viewer, for the sender fallback; omit to skip it.
+ * @param limit - How many rows to show.
+ * @returns The rows, or `[]` when neither list has anything.
+ */
 export const getRecentAnnouncements = async (
   schoolId: string,
   userId?: string,
   limit = 5
-): Promise<RecentAnnouncement[] | null> => {
-  const bySchool = await safeGet<{ data: any[]; meta: any }>(
+): Promise<RecentAnnouncement[]> => {
+  const bySchool = await safeGet<{ data: AnnouncementRow[] }>(
     `/notifications/announcements/school/${schoolId}?page=1&limit=${limit}&status=PUBLISHED`
   );
   const bySender =
     !bySchool?.data?.length && userId
-      ? await safeGet<{ data: any[]; meta: any }>(
+      ? await safeGet<{ data: AnnouncementRow[] }>(
           `/notifications/announcements/sender/${userId}?page=1&limit=${limit}&status=PUBLISHED`
         )
       : null;
