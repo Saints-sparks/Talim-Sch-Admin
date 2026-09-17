@@ -1,12 +1,16 @@
 /**
- * Sub-Admin Service
- * Handles all API calls related to school sub-admin management.
+ * Sub-admins — the staff a primary school admin grants a restricted slice of
+ * the school admin portal to.
+ *
+ * Every route here is `@Roles(SCHOOL_ADMIN) @Permissions(MANAGE_SUB_ADMINS)`
+ * on the backend: a sub-admin cannot manage other sub-admins even if someone
+ * grants them `manage:sub_admins`, so the UI hides this area from them
+ * entirely rather than letting the API refuse.
  */
-import { apiClient } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+/** A sub-admin account and the permissions it holds. */
 export interface SubAdmin {
   _id: string;
   userId: string;
@@ -15,6 +19,7 @@ export interface SubAdmin {
   lastName: string;
   phoneNumber?: string;
   role: "school_sub_admin";
+  /** Values from the backend `Permission` enum, e.g. `manage:fees`. */
   permissions: string[];
   isActive: boolean;
   userAvatar?: string;
@@ -23,6 +28,7 @@ export interface SubAdmin {
   updatedAt: string;
 }
 
+/** A page of sub-admins. */
 export interface PaginatedSubAdmins {
   data: SubAdmin[];
   meta: {
@@ -33,134 +39,121 @@ export interface PaginatedSubAdmins {
   };
 }
 
+/** Body for `POST /sub-admins` (backend `CreateSubAdminDto`). */
 export interface CreateSubAdminDto {
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber?: string;
+  /** Must be values from the backend `Permission` enum; duplicates are rejected. */
   permissions: string[];
 }
 
+/** Body for `POST /sub-admins/promote-teacher` (backend `PromoteTeacherDto`). */
 export interface PromoteTeacherDto {
+  /** The teacher's user id. */
   userId: string;
+  /** At least one permission; must be `Permission` enum values. */
   permissions: string[];
 }
 
+/** Body for `PATCH /sub-admins/:userId/permissions`. Replaces the whole set. */
 export interface UpdatePermissionsDto {
   permissions: string[];
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+/** A newly created sub-admin, with the temporary password the API generated. */
+export type CreatedSubAdmin = SubAdmin & { temporaryPassword?: string };
+
+/** The envelope the write routes answer with. */
+interface SubAdminEnvelope {
+  message?: string;
+  subAdmin?: SubAdmin;
+  temporaryPassword?: string;
+}
+
+/** Unwraps `{ message, subAdmin }`, tolerating a bare sub-admin body. */
+function unwrap(body: SubAdminEnvelope | SubAdmin): SubAdmin {
+  return (body as SubAdminEnvelope).subAdmin ?? (body as SubAdmin);
+}
 
 export const subAdminService = {
   /**
-   * Fetch paginated list of sub-admins for the authenticated school.
+   * A page of the school's sub-admins.
+   *
+   * @param page - 1-based page number.
+   * @param limit - Rows per page.
+   * @returns The page and its `meta`.
+   * @throws `ApiError` — `FORBIDDEN` for anyone but the primary school admin.
    */
-  async getSubAdmins(
-    page = 1,
-    limit = 10
-  ): Promise<PaginatedSubAdmins> {
-    const url = `${API_ENDPOINTS.SUB_ADMINS}?page=${page}&limit=${limit}`;
-    const res = await apiClient.get(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to fetch sub-admins");
-    }
-    return res.json();
+  async getSubAdmins(page = 1, limit = 10): Promise<PaginatedSubAdmins> {
+    const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+    return api.get<PaginatedSubAdmins>(`${API_ENDPOINTS.SUB_ADMINS}?${query}`);
   },
 
   /**
-   * Get a single sub-admin by their user ID.
+   * One sub-admin by their user id.
+   *
+   * @param id - The sub-admin's user id.
+   * @returns The sub-admin.
+   * @throws `ApiError` — `NOT_FOUND` when no such sub-admin is in this school.
    */
   async getSubAdminById(id: string): Promise<SubAdmin> {
-    const res = await apiClient.get(API_ENDPOINTS.SUB_ADMIN_BY_ID(id));
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Sub-admin not found");
-    }
-    return res.json();
+    return api.get<SubAdmin>(API_ENDPOINTS.SUB_ADMIN_BY_ID(id));
   },
 
   /**
-   * Create a brand-new user as a sub-admin.
-   * BE returns { message, subAdmin, temporaryPassword } — we unwrap subAdmin
-   * and attach temporaryPassword so callers can surface it to the admin.
+   * Creates a brand-new account as a sub-admin. The API generates a temporary
+   * password and returns it so the admin can pass it on out of band.
+   *
+   * @param dto - Name, email and the permissions to grant.
+   * @returns The new sub-admin, plus `temporaryPassword` when the API sent one.
+   * @throws `ApiError` — `CONFLICT` when the email already has an account.
    */
-  async createSubAdmin(
-    dto: CreateSubAdminDto
-  ): Promise<SubAdmin & { temporaryPassword?: string }> {
-    const res = await apiClient.post(API_ENDPOINTS.SUB_ADMIN_CREATE, dto);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to create sub-admin");
-    }
-    const body = await res.json();
-    // BE wraps: { message, subAdmin, temporaryPassword }
-    return { ...(body.subAdmin ?? body), temporaryPassword: body.temporaryPassword };
+  async createSubAdmin(dto: CreateSubAdminDto): Promise<CreatedSubAdmin> {
+    const body = await api.post<SubAdminEnvelope>(API_ENDPOINTS.SUB_ADMIN_CREATE, dto);
+    return { ...unwrap(body), temporaryPassword: body.temporaryPassword };
   },
 
   /**
-   * Promote an existing teacher to sub-admin.
-   * BE returns { message, subAdmin } — we unwrap subAdmin.
+   * Promotes an existing teacher to sub-admin, keeping their account.
+   *
+   * @param dto - The teacher's user id and the permissions to grant.
+   * @returns The promoted sub-admin.
+   * @throws `ApiError` — `NOT_FOUND` when the teacher is not in this school.
    */
   async promoteTeacher(dto: PromoteTeacherDto): Promise<SubAdmin> {
-    const res = await apiClient.post(
-      API_ENDPOINTS.SUB_ADMIN_PROMOTE_TEACHER,
-      dto
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to promote teacher");
-    }
-    const body = await res.json();
-    return body.subAdmin ?? body;
+    return unwrap(await api.post<SubAdminEnvelope>(API_ENDPOINTS.SUB_ADMIN_PROMOTE_TEACHER, dto));
   },
 
   /**
-   * Replace the full permissions set of a sub-admin.
-   * BE returns { message, subAdmin } — we unwrap subAdmin.
+   * Replaces a sub-admin's permissions with exactly the set given.
+   *
+   * @param id - The sub-admin's user id.
+   * @param dto - The full intended permission set.
+   * @returns The updated sub-admin.
    */
-  async updatePermissions(
-    id: string,
-    dto: UpdatePermissionsDto
-  ): Promise<SubAdmin> {
-    const res = await apiClient.patch(
-      API_ENDPOINTS.SUB_ADMIN_PERMISSIONS(id),
-      dto
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to update permissions");
-    }
-    const body = await res.json();
-    return body.subAdmin ?? body;
+  async updatePermissions(id: string, dto: UpdatePermissionsDto): Promise<SubAdmin> {
+    return unwrap(await api.patch<SubAdminEnvelope>(API_ENDPOINTS.SUB_ADMIN_PERMISSIONS(id), dto));
   },
 
   /**
-   * Toggle a sub-admin's active status.
-   * BE returns { message, subAdmin } — we unwrap subAdmin.
+   * Activates or deactivates a sub-admin, whichever they are not.
+   *
+   * @param id - The sub-admin's user id.
+   * @returns The updated sub-admin.
    */
   async toggleStatus(id: string): Promise<SubAdmin> {
-    const res = await apiClient.patch(
-      API_ENDPOINTS.SUB_ADMIN_TOGGLE_STATUS(id),
-      {}
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to toggle status");
-    }
-    const body = await res.json();
-    return body.subAdmin ?? body;
+    return unwrap(await api.patch<SubAdminEnvelope>(API_ENDPOINTS.SUB_ADMIN_TOGGLE_STATUS(id), {}));
   },
 
   /**
-   * Demote a sub-admin back to their previous role (teacher → teacher).
+   * Demotes a sub-admin back to their previous role, keeping their account.
+   *
+   * @param id - The sub-admin's user id.
+   * @returns Nothing.
    */
   async demoteSubAdmin(id: string): Promise<void> {
-    const res = await apiClient.delete(API_ENDPOINTS.SUB_ADMIN_DEMOTE(id));
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Failed to demote sub-admin");
-    }
+    await api.delete(API_ENDPOINTS.SUB_ADMIN_DEMOTE(id));
   },
 };
