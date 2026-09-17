@@ -1,548 +1,275 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Search, User } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "@/components/CustomToast";
-import {
-  createTransfer,
-  getStudentSnapshot,
-  StudentSnapshot,
-} from "@/app/services/transit.service";
-import { apiClient } from "@/lib/apiClient";
+import { Check, Info } from "lucide-react";
+import type { SearchSchoolResult } from "@/app/services/transit.service";
 import {
   dedupeAcademicYearsByName,
   getAcademicYearLabel,
+  type AcademicYearResponse,
 } from "@/app/services/academic.service";
+import { useAcademicYears } from "@/hooks/queries/reference";
+import { useCreateTransfer } from "@/hooks/transit/useTransfers";
+import { useClassOptions, type ClassOption } from "@/hooks/transit/useTransitReference";
+import { toast } from "@/components/CustomToast";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
+import { SkeletonRows, surface, text } from "@/components/transit/ui";
+import { TransferWizardShell } from "@/components/transit/TransferWizard";
+import { SchoolPicker } from "@/components/transit/SchoolPicker";
+import { ReviewRow } from "@/components/transit/ReviewRow";
 
-interface SchoolResult {
-  _id: string;
-  name: string;
-  address?: string;
-}
+/** The wizard's steps, in order. */
+const STEPS = ["Find Current School", "Identify Student", "Class & Year", "Review", "Confirm"];
 
-interface RawStudentResult {
-  _id: string;
-  userId?: { firstName?: string; lastName?: string };
-  firstName?: string;
-  lastName?: string;
-  gradeLevel?: string;
-}
+/** The API validates `studentId` with `@IsMongoId()`; mirror that before submitting. */
+const TALIM_ID = /^[0-9a-fA-F]{24}$/;
 
-interface StudentResult {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  gradeLevel?: string;
-}
-
-function flattenStudent(s: RawStudentResult): StudentResult {
-  return {
-    _id: s._id,
-    firstName: s.userId?.firstName ?? s.firstName ?? "",
-    lastName: s.userId?.lastName ?? s.lastName ?? "",
-    gradeLevel: s.gradeLevel,
-  };
-}
-
-interface ClassItem {
-  _id: string;
-  name: string;
-  gradeLevel: string;
-}
-
-interface AcademicYear {
-  _id: string;
-  name?: string;
-  year?: string;
-  isCurrent?: boolean;
-}
-
-const STEPS = [
-  "Find Source School",
-  "Find Student",
-  "Select Your Class & Year",
-  "Review",
-  "Confirm",
-];
-
-function StepHeader({ step, total }: { step: number; total: number }) {
+/** A choice grid — one button per class or academic year. */
+function OptionGrid<T extends { _id: string }>({
+  label,
+  options,
+  selectedId,
+  onSelect,
+  renderOption,
+  emptyMessage,
+  loading,
+}: {
+  label: string;
+  options: T[];
+  selectedId?: string;
+  onSelect: (option: T) => void;
+  renderOption: (option: T) => React.ReactNode;
+  emptyMessage: string;
+  loading: boolean;
+}) {
   return (
-    <div className="flex items-center gap-2 mb-6">
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className="flex items-center gap-2 flex-1">
-          <div
-            className={cn(
-              "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-              i < step
-                ? "bg-[#003366] text-white"
-                : i === step
-                ? "bg-[#003366] text-white ring-2 ring-[#003366]/30"
-                : "bg-gray-100 text-[#929292]"
-            )}
-          >
-            {i < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
-          </div>
-          {i < total - 1 && (
-            <div
-              className={cn("h-0.5 flex-1 transition-colors", i < step ? "bg-[#003366]" : "bg-gray-100")}
-            />
-          )}
+    <div>
+      <span className={cn("mb-2 block text-xs font-medium", text.muted)}>
+        {label} <span className="text-red-500">*</span>
+      </span>
+      {loading ? (
+        <SkeletonRows count={2} height="h-11" />
+      ) : options.length === 0 ? (
+        <p className={cn("text-sm", text.muted)}>{emptyMessage}</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {options.map((option) => (
+            <button
+              key={option._id}
+              type="button"
+              onClick={() => onSelect(option)}
+              className={cn(
+                "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                selectedId === option._id
+                  ? "border-[#003366] dark:border-sky-500 bg-[#003366]/5 dark:bg-sky-500/10 font-medium text-[#003366] dark:text-sky-300"
+                  : cn(
+                      "border-gray-200 dark:border-slate-700 hover:border-[#003366]/30 dark:hover:border-sky-500/40",
+                      text.body
+                    )
+              )}
+            >
+              {renderOption(option)}
+            </button>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
-async function handleRes<T>(res: Response): Promise<T> {
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || "Request failed");
-  return data as T;
-}
-
-function academicYearArray(data: AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }): AcademicYear[] {
-  if (Array.isArray(data)) return data;
-  return data.academicYears ?? data.data ?? [];
-}
-
+/**
+ * Pull transfer: this school asks another Talim school to release one of its
+ * students.
+ *
+ * The student is identified by their Talim ID rather than picked from a list:
+ * the API deliberately exposes no way to browse another school's students, and
+ * releases nothing about this one until the source school approves. So this
+ * wizard collects the id the family or the current school provides, and shows
+ * no academic detail until the transfer reaches the detail page released.
+ */
 export default function TargetTransferWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Step 0 — find source school
-  const [schoolSearch, setSchoolSearch] = useState("");
-  const [schools, setSchools] = useState<SchoolResult[]>([]);
-  const [loadingSchools, setLoadingSchools] = useState(false);
-  const [selectedSourceSchool, setSelectedSourceSchool] = useState<SchoolResult | null>(null);
-
-  // Step 1 — find student in that school
-  const [studentSearch, setStudentSearch] = useState("");
-  const [allStudents, setAllStudents] = useState<StudentResult[]>([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(null);
-  const [snapshot, setSnapshot] = useState<StudentSnapshot | null>(null);
-
-  // Step 2 — your own class & year
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
-  const [selectedYear, setSelectedYear] = useState<AcademicYear | null>(null);
+  const [sourceSchool, setSourceSchool] = useState<SearchSchoolResult | null>(null);
+  const [studentId, setStudentId] = useState("");
+  const [selectedClass, setSelectedClass] = useState<ClassOption | null>(null);
+  const [selectedYear, setSelectedYear] = useState<AcademicYearResponse | null>(null);
   const [reason, setReason] = useState("");
 
-  // Search schools
-  useEffect(() => {
-    if (!schoolSearch || schoolSearch.length < 2) {
-      setSchools([]);
-      return;
-    }
-    const t = setTimeout(async () => {
-      setLoadingSchools(true);
-      try {
-        const res = await apiClient.get(`/schools/search?query=${encodeURIComponent(schoolSearch)}`);
-        const raw = await handleRes<{ data?: SchoolResult[] } | SchoolResult[]>(res);
-        setSchools(Array.isArray(raw) ? raw : ((raw as { data?: SchoolResult[] }).data ?? []));
-      } catch {
-        setSchools([]);
-      } finally {
-        setLoadingSchools(false);
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [schoolSearch]);
+  const { classes, isLoading: classesLoading } = useClassOptions();
+  const years = useAcademicYears();
+  const createTransfer = useCreateTransfer();
 
-  // Load students for the selected source school
-  useEffect(() => {
-    if (!selectedSourceSchool) {
-      setAllStudents([]);
-      return;
-    }
-    setLoadingStudents(true);
-    apiClient
-      .get(`/students/by-school?page=1&limit=500`)
-      .then((r) => handleRes<{ data: RawStudentResult[] } | RawStudentResult[]>(r))
-      .then((data) => {
-        const raw = Array.isArray(data) ? data : (data as { data: RawStudentResult[] }).data ?? [];
-        setAllStudents(raw.map(flattenStudent));
-      })
-      .catch(() => setAllStudents([]))
-      .finally(() => setLoadingStudents(false));
-  }, [selectedSourceSchool]);
+  const academicYears = useMemo(
+    () => dedupeAcademicYearsByName(years.data ?? []),
+    [years.data]
+  );
 
-  // Fetch snapshot when student selected
-  useEffect(() => {
-    if (!selectedStudent) return;
-    getStudentSnapshot(selectedStudent._id).then(setSnapshot).catch(() => setSnapshot(null));
-  }, [selectedStudent]);
-
-  // Load your own school classes & years
-  useEffect(() => {
-    if (step !== 2) return;
-    Promise.all([
-      apiClient.get("/classes").then((r) => handleRes<ClassItem[]>(r)),
-      apiClient
-        .get("/academic-year-term/academic-year/school")
-        .then((r) => handleRes<AcademicYear[] | { academicYears?: AcademicYear[]; data?: AcademicYear[] }>(r)),
-    ])
-      .then(([cls, yrs]) => {
-        setClasses(Array.isArray(cls) ? cls : []);
-        setAcademicYears(dedupeAcademicYearsByName(academicYearArray(yrs)));
-      })
-      .catch(() => {});
-  }, [step]);
+  const trimmedId = studentId.trim();
+  const idLooksValid = TALIM_ID.test(trimmedId);
+  const idError = trimmedId && !idLooksValid ? "That doesn't look like a Talim student ID." : "";
 
   async function submit() {
-    if (!selectedStudent || !selectedClass || !selectedYear) return;
-    setSubmitting(true);
+    if (!idLooksValid || !selectedClass || !selectedYear) return;
     try {
-      await createTransfer({
-        studentId: selectedStudent._id,
+      await createTransfer.mutateAsync({
+        studentId: trimmedId,
         targetClassId: selectedClass._id,
         targetAcademicYearId: selectedYear._id,
-        reason: reason || undefined,
+        reason: reason.trim() || undefined,
         initiatedBy: "target",
       });
-      toast.success("Pull transfer request submitted successfully");
+      toast.success("Pull request submitted");
       router.push("/transit/transfers");
-    } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to submit transfer request");
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      logger.error("transit", "pull transfer submit failed", err);
+      toast.error(getErrorMessage(err, "Couldn't submit the pull request"));
     }
   }
 
-  const canNext = [
-    !!selectedSourceSchool,
-    !!selectedStudent,
-    !!(selectedClass && selectedYear),
-    true,
-  ][step];
+  const ready = Boolean(idLooksValid && selectedClass && selectedYear);
+  const canContinue = [Boolean(sourceSchool), idLooksValid, ready, true, ready][step];
 
   return (
-    <div className="p-6">
-      <button
-        onClick={() => (step === 0 ? router.back() : setStep(step - 1))}
-        className="flex items-center gap-2 text-sm text-[#929292] hover:text-[#030E18] mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        {step === 0 ? "Back" : "Previous Step"}
-      </button>
+    <TransferWizardShell
+      title="Pull Transfer"
+      description="Request a student from another Talim school to join your school"
+      steps={STEPS}
+      step={step}
+      onStepChange={setStep}
+      canContinue={Boolean(canContinue)}
+      submitting={createTransfer.isPending}
+      submitLabel="Submit Pull Request"
+      onSubmit={submit}
+      onExit={() => router.push("/transit/transfers")}
+    >
+      {step === 0 && (
+        <SchoolPicker
+          placeholder="Search for the student's current school..."
+          selected={sourceSchool}
+          onSelect={setSourceSchool}
+        />
+      )}
 
-      <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#030E18] mb-1">Pull Transfer</h1>
-      <p className="text-sm text-[#929292] mb-6">
-        Request a student from another Talim school to join your school
-      </p>
-
-      <StepHeader step={step} total={STEPS.length} />
-
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#030E18] mb-4">{STEPS[step]}</h2>
-
-        {/* Step 0: Source School */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929292]" />
-              <input
-                type="text"
-                placeholder="Search for the student's current school..."
-                value={schoolSearch}
-                onChange={(e) => setSchoolSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] transition-colors"
-              />
-            </div>
-
-            {loadingSchools && (
-              <div className="space-y-2">
-                {[1, 2].map((i) => (
-                  <div key={i} className="h-12 bg-gray-50 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            )}
-
-            {!loadingSchools && schools.length > 0 && (
-              <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                {schools.map((s) => (
-                  <button
-                    key={s._id}
-                    onClick={() => setSelectedSourceSchool(s)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors",
-                      selectedSourceSchool?._id === s._id && "bg-[#003366]/5"
-                    )}
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-[#030E18]">{s.name}</p>
-                      {s.address && <p className="text-xs text-[#929292]">{s.address}</p>}
-                    </div>
-                    {selectedSourceSchool?._id === s._id && (
-                      <Check className="w-4 h-4 text-[#003366] ml-auto" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {selectedSourceSchool && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-100 text-sm text-green-700">
-                Selected: <span className="font-semibold">{selectedSourceSchool.name}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 1: Find Student */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <p className="text-sm text-[#929292]">
-              Searching students at{" "}
-              <span className="font-medium text-[#030E18]">{selectedSourceSchool?.name}</span>
-            </p>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929292]" />
-              <input
-                type="text"
-                placeholder="Search by name or student ID..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] transition-colors"
-              />
-            </div>
-
-            {loadingStudents && (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-gray-50 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            )}
-
-            {!loadingStudents && (() => {
-              const q = studentSearch.toLowerCase();
-              const filtered = allStudents.filter(
-                (s) =>
-                  !q ||
-                  `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
-                  s.gradeLevel?.toLowerCase().includes(q)
-              );
-              return filtered.length > 0 ? (
-                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-                  {filtered.map((s) => (
-                    <button
-                      key={s._id}
-                      onClick={() => setSelectedStudent(s)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors",
-                        selectedStudent?._id === s._id && "bg-[#003366]/5"
-                      )}
-                    >
-                      <div className="w-8 h-8 bg-[#003366]/10 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-[#003366]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#030E18]">
-                          {s.firstName} {s.lastName}
-                        </p>
-                        <p className="text-xs text-[#929292]">
-                          {s.gradeLevel ?? ""}
-                        </p>
-                      </div>
-                      {selectedStudent?._id === s._id && (
-                        <Check className="w-4 h-4 text-[#003366] ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : allStudents.length > 0 && studentSearch ? (
-                <p className="text-sm text-[#929292] text-center py-4">No students match your search</p>
-              ) : allStudents.length === 0 ? (
-                <p className="text-sm text-[#929292] text-center py-4">No students found at this school</p>
-              ) : null;
-            })()}
-
-            {selectedStudent && snapshot && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-xs font-semibold text-[#003366] mb-2">Academic Snapshot</p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-[#4A5568]">
-                  <span>Current class: {snapshot.student.currentClass?.name ?? "—"}</span>
-                  <span>
-                    Attendance:{" "}
-                    {Object.entries(snapshot.attendanceSummary)
-                      .map(([k, v]) => `${k}: ${v}`)
-                      .join(", ") || "—"}
-                  </span>
-                  <span>Recent grades: {snapshot.recentGrades.length} records</span>
-                  <span>Enrollment history: {snapshot.enrollmentHistory.length} records</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 2: Your Class & Year */}
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <label className="block text-xs font-medium text-[#929292] mb-2">
-                Class to enroll student in
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {classes.length === 0 ? (
-                  <p className="col-span-2 text-sm text-[#929292]">No classes found</p>
-                ) : (
-                  classes.map((c) => (
-                    <button
-                      key={c._id}
-                      onClick={() => setSelectedClass(c)}
-                      className={cn(
-                        "px-3 py-2.5 text-left text-sm rounded-lg border transition-colors",
-                        selectedClass?._id === c._id
-                          ? "border-[#003366] bg-[#003366]/5 text-[#003366] font-medium"
-                          : "border-gray-200 text-[#4A5568] hover:border-[#003366]/30"
-                      )}
-                    >
-                      <p className="font-medium">{c.name}</p>
-                      <p className="text-xs opacity-70">{c.gradeLevel}</p>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#929292] mb-2">Academic Year</label>
-              <div className="grid grid-cols-2 gap-2">
-                {academicYears.length === 0 ? (
-                  <p className="col-span-2 text-sm text-[#929292]">No academic years found</p>
-                ) : (
-                  academicYears.map((y) => (
-                    <button
-                      key={y._id}
-                      onClick={() => setSelectedYear(y)}
-                      className={cn(
-                        "px-3 py-2.5 text-sm rounded-lg border transition-colors",
-                        selectedYear?._id === y._id
-                          ? "border-[#003366] bg-[#003366]/5 text-[#003366] font-medium"
-                          : "border-gray-200 text-[#4A5568] hover:border-[#003366]/30"
-                      )}
-                    >
-                      {getAcademicYearLabel(y)}
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#929292] mb-2">
-                Reason for Transfer <span className="font-normal">(optional)</span>
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-                placeholder="Why are you requesting this student?"
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#003366] transition-colors resize-none"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Review */}
-        {step === 3 && selectedStudent && selectedSourceSchool && selectedClass && selectedYear && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-[#929292]">Student</span>
-                <span className="text-sm font-medium text-[#030E18]">
-                  {selectedStudent.firstName} {selectedStudent.lastName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-[#929292]">From School</span>
-                <span className="text-sm font-medium text-[#030E18]">{selectedSourceSchool.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-[#929292]">Enroll Into</span>
-                <span className="text-sm font-medium text-[#030E18]">
-                  {selectedClass.name} ({selectedClass.gradeLevel})
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-[#929292]">Academic Year</span>
-                <span className="text-sm font-medium text-[#030E18]">{getAcademicYearLabel(selectedYear)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-[#929292]">Transfer Type</span>
-                <span className="text-sm font-medium text-indigo-600">Pull (target initiated)</span>
-              </div>
-              {reason && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-[#929292]">Reason</span>
-                  <span className="text-sm font-medium text-[#030E18] text-right max-w-[60%]">
-                    {reason}
-                  </span>
-                </div>
+      {step === 1 && (
+        <div className="space-y-4">
+          <p className={cn("flex items-start gap-2 rounded-lg p-3 text-sm", surface.inset, text.body)}>
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              A student&apos;s record stays private to {sourceSchool?.name ?? "their school"} until
+              that school releases them, so we can&apos;t list their students here. Ask the family
+              or the school for the student&apos;s Talim ID.
+            </span>
+          </p>
+          <div>
+            <label htmlFor="pull-student-id" className={cn("block text-xs font-medium mb-2", text.muted)}>
+              Student&apos;s Talim ID <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="pull-student-id"
+              value={studentId}
+              onChange={(event) => setStudentId(event.target.value)}
+              placeholder="e.g. 65f1c0a9b2d4e8f0a1b2c3d4"
+              aria-invalid={Boolean(idError)}
+              aria-describedby={idError ? "pull-student-id-error" : undefined}
+              className={cn(
+                "w-full px-3 py-2.5 text-sm rounded-lg font-mono",
+                surface.input,
+                idError && "border-red-400 dark:border-red-500"
               )}
-            </div>
-            <p className="text-sm text-[#929292]">
-              Submitting this request will notify the source school ({selectedSourceSchool.name}).
-              The transfer will proceed once both schools have approved.
+            />
+            {idError && (
+              <p id="pull-student-id-error" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+                {idError}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-5">
+          <OptionGrid
+            label="Class to enrol the student in"
+            options={classes}
+            selectedId={selectedClass?._id}
+            onSelect={setSelectedClass}
+            loading={classesLoading}
+            emptyMessage="No classes in this school yet."
+            renderOption={(option) => (
+              <>
+                <span className="block font-medium">{option.name}</span>
+                {option.gradeLevel && (
+                  <span className="block text-xs opacity-70">{option.gradeLevel}</span>
+                )}
+              </>
+            )}
+          />
+          <OptionGrid
+            label="Academic Year"
+            options={academicYears}
+            selectedId={selectedYear?._id}
+            onSelect={setSelectedYear}
+            loading={years.isLoading}
+            emptyMessage="No academic years set up yet."
+            renderOption={(option) => getAcademicYearLabel(option)}
+          />
+          <div>
+            <label htmlFor="pull-reason" className={cn("block text-xs font-medium mb-2", text.muted)}>
+              Reason for Transfer <span className="font-normal">(optional)</span>
+            </label>
+            <textarea
+              id="pull-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={3}
+              placeholder="Why are you requesting this student?"
+              className={cn("w-full px-3 py-2.5 text-sm rounded-lg resize-none", surface.input)}
+            />
+          </div>
+        </div>
+      )}
+
+      {step === 3 && sourceSchool && selectedClass && selectedYear && (
+        <div className="space-y-4">
+          <div className="rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-slate-800/50">
+            <ReviewRow label="Student's Talim ID" value={<span className="font-mono">{trimmedId}</span>} />
+            <ReviewRow label="Current School" value={sourceSchool.name} />
+            <ReviewRow
+              label="Enrol Into"
+              value={
+                selectedClass.gradeLevel
+                  ? `${selectedClass.name} (${selectedClass.gradeLevel})`
+                  : selectedClass.name
+              }
+            />
+            <ReviewRow label="Academic Year" value={getAcademicYearLabel(selectedYear)} />
+            <ReviewRow label="Transfer Type" value="Pull (target initiated)" />
+            {reason && <ReviewRow label="Reason" value={reason} />}
+          </div>
+          <p className={cn("text-sm", text.muted)}>
+            {sourceSchool.name} is asked to release the student. Their record reaches you only once
+            that school approves; you then approve and accept to complete the transfer.
+          </p>
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="text-center py-4 space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-500/15">
+            <Check className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h3 className={cn("text-lg font-semibold", text.strong)}>Ready to Submit</h3>
+            <p className={cn("text-sm mt-1", text.muted)}>
+              This pull request goes to {sourceSchool?.name} for approval
             </p>
           </div>
-        )}
-
-        {/* Step 4: Confirm */}
-        {step === 4 && (
-          <div className="text-center py-4 space-y-4">
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto">
-              <Check className="w-8 h-8 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[#030E18]">Ready to Submit</h3>
-              <p className="text-sm text-[#929292] mt-1">
-                This pull request will be sent to {selectedSourceSchool?.name} for approval
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between mt-6">
-        <button
-          onClick={() => setStep(Math.max(0, step - 1))}
-          disabled={step === 0}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-[#929292] hover:text-[#030E18] disabled:opacity-30 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-
-        {step < STEPS.length - 1 ? (
-          <button
-            disabled={!canNext}
-            onClick={() => setStep(step + 1)}
-            className="flex items-center gap-2 px-5 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#003366]/90 disabled:opacity-40 transition-colors"
-          >
-            Next
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            disabled={submitting}
-            onClick={submit}
-            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 transition-colors"
-          >
-            {submitting ? "Submitting..." : "Submit Pull Request"}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-      </div>
-    </div>
+        </div>
+      )}
+    </TransferWizardShell>
   );
 }
