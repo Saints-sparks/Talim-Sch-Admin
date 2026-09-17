@@ -21,6 +21,10 @@ export function formatNaira(amount: number): string {
 /**
  * Formats a date for a table cell or summary row.
  *
+ * Due dates are calendar dates, stored as UTC midnight, so they are rendered
+ * in UTC: formatting them locally turned "1 September" into "31 August" for
+ * anyone west of Greenwich, and disagreed with the date the edit form showed.
+ *
  * @param value - An ISO date string, or nothing.
  * @param fallback - What to show when there is no date. Defaults to `—`.
  * @returns e.g. `01 Sep 2026`.
@@ -29,7 +33,12 @@ export function formatDate(value?: string | null, fallback = "—"): string {
   if (!value) return fallback;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 /**

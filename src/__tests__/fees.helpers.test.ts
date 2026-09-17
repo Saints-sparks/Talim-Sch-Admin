@@ -70,8 +70,9 @@ describe("formatters", () => {
   });
 
   it("reads references whether they are populated or not", () => {
+    const populatedCategory = { _id: "cat-1", name: "Tuition" };
     expect(refId("cat-1")).toBe("cat-1");
-    expect(refId({ _id: "cat-1", name: "Tuition" })).toBe("cat-1");
+    expect(refId(populatedCategory)).toBe("cat-1");
     expect(refId(undefined)).toBe("");
     expect(refName({ _id: "c1", name: "JSS 1" })).toBe("JSS 1");
     expect(refName("c1")).toBe("—");
