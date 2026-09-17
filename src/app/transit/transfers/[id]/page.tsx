@@ -296,14 +296,14 @@ export default function TransferDetailPage() {
       </div>
 
       {/* Documents */}
-      {transfer.documents?.length > 0 && (
+      {(transfer.documents?.length ?? 0) > 0 && (
         <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <FileText className="w-4 h-4 text-[#003366]" />
             <h2 className="text-sm font-semibold text-[#030E18]">Attached Documents</h2>
           </div>
           <div className="space-y-2">
-            {transfer.documents.map((url, i) => (
+            {(transfer.documents ?? []).map((url, i) => (
               <a
                 key={i}
                 href={url}

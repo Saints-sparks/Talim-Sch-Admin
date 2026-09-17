@@ -43,7 +43,7 @@ function studentName(s: TransferRequest["studentId"]): string {
 
 function schoolName(s: TransferRequest["sourceSchoolId"]): string {
   if (typeof s === "string") return s;
-  return s.name;
+  return s.name ?? "—";
 }
 
 function className(c: TransferRequest["targetClassId"]): string {
