@@ -101,7 +101,11 @@ export const API_URLS = {
   },
   COMPLAINTS: {
     CREATE_COMPLAINT: "/complaints",
-    GET_COMPLAINTS: "/complaints/by-user",
+    /** School staff: every complaint raised from their school. */
+    GET_COMPLAINTS_BY_SCHOOL: "/complaints/by-school",
+    /** Anyone: the complaints they raised themselves. */
+    GET_COMPLAINTS_BY_USER: "/complaints/by-user",
+    /** One complaint, by its id or its ticket number. */
     GET_COMPLAINT_BY_TICKET: "/complaints/:ticket",
   },
   LEAVE_REQUESTS: {
@@ -192,7 +196,8 @@ export const API_ENDPOINTS = {
       entryId
     )}`,
   CREATE_COMPLAINT: `${API_BASE_URL}${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
-  GET_COMPLAINTS: `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINTS}`,
+  GET_COMPLAINTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_SCHOOL}`,
+  GET_COMPLAINTS_BY_USER: `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_USER}`,
   GET_COMPLAINT_BY_TICKET: (ticket: string) =>
     `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINT_BY_TICKET.replace(
       ":ticket",

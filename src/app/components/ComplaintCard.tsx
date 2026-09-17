@@ -48,9 +48,7 @@ const ComplaintCard: React.FC<ComplaintCardProps> = ({ complaint, onComplaintCli
       </div>
       <div className="flex justify-between items-center text-sm">
         <div className="flex items-center space-x-2">
-          <span className="text-gray-500">
-            {complaint.userId.firstName} {complaint.userId.lastName}
-          </span>
+          <span className="text-gray-500 dark:text-slate-400">{raisedBy(complaint.userId)}</span>
           <span className="text-gray-400">•</span>
           <span className="text-gray-500">#{complaint.ticket}</span>
         </div>
@@ -68,5 +66,19 @@ const ComplaintCard: React.FC<ComplaintCardProps> = ({ complaint, onComplaintCli
     </div>
   );
 };
+
+/**
+ * Who raised the complaint. The API populates the author on most records but
+ * leaves a bare id (or nothing) where it could not resolve one, so neither
+ * shape may be assumed.
+ *
+ * @param user - The complaint's `userId`, populated or not.
+ * @returns A display name, or "Unknown" when there is nothing to show.
+ */
+function raisedBy(user: Complaint["userId"]): string {
+  if (!user || typeof user === "string") return "Unknown";
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return name || user.email || "Unknown";
+}
 
 export default ComplaintCard;
