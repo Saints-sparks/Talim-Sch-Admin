@@ -43,12 +43,13 @@ const EMPTY_FORM: ProfileForm = { physicalAddress: "", contactName: "", contactP
 export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
   const { data: school, isLoading, isError, error, refetch } = useSchoolProfile();
   const { save, saving } = useUpdateSchoolProfile();
+  const logo = useUpdateSchoolProfile("School logo updated");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { uploading, onFileChange } = useImageUpload("settings/school-logo", (logo) =>
-    save({ logo })
+  const { uploading, onFileChange } = useImageUpload("settings/school-logo", (url) =>
+    logo.save({ logo: url })
   );
 
   // Seed the form from the loaded school, and re-seed whenever it changes.
