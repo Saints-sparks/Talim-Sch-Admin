@@ -6,7 +6,7 @@ import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
 import { ApiError } from "@/lib/apiError";
 import { apiClient } from "@/lib/apiClient";
-import { sessionStore } from "@/lib/session";
+import { sessionStore, extractSchoolId } from "@/lib/session";
 
 /** All roles allowed to access the school admin portal */
 const ADMIN_PORTAL_ROLES = ["school_admin", "school_sub_admin"] as const;
@@ -41,6 +41,8 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  /** The signed-in administrator's school id — the one source of school context for React code. */
+  schoolId: string | null;
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -384,6 +386,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    schoolId: extractSchoolId(user?.schoolId),
     accessToken,
     isAuthenticated: !!accessToken && !!user,
     isLoading,

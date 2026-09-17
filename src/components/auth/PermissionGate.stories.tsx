@@ -110,6 +110,7 @@ const subAdminBlockedAuth = {
     permissions: ["manage:students"] as string[],
     isSubAdmin: true,
   },
+  schoolId: "school-1",
   accessToken: "mock-token",
   isAuthenticated: true,
   isLoading: false,

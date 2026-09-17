@@ -32,6 +32,7 @@ function makeMockAuthValue(user = mockAdmin) {
     isAuthenticated: true,
     isLoading: false,
     isFullAdmin: user.role === "school_admin",
+    schoolId: user.schoolId ?? null,
     isSubAdmin: user.role === "school_sub_admin",
     hasPermission: (permission: string) =>
       user.role === "school_admin" || user.permissions.includes(permission),
@@ -53,10 +54,17 @@ function AllProviders({
   children: React.ReactNode;
   user?: typeof mockAdmin;
 }) {
+  // A fresh QueryClient per render: no cache leaks between tests, and
+  // failures surface immediately instead of being retried.
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+  });
   return (
-    <AuthContext.Provider value={makeMockAuthValue(user)}>
-      <ThemeProvider>{children}</ThemeProvider>
-    </AuthContext.Provider>
+    <QueryClientProvider client={client}>
+      <AuthContext.Provider value={makeMockAuthValue(user)}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </AuthContext.Provider>
+    </QueryClientProvider>
   );
 }
 
@@ -74,5 +82,6 @@ function renderWithProviders(
 }
 
 // Re-export everything so tests can import from one place
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 export * from "@testing-library/react";
 export { renderWithProviders as render };
