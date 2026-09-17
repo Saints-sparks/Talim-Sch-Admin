@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UserCog,
-  BookOpen,
   Receipt,
   MessageSquare,
   Bell,
@@ -70,6 +69,8 @@ import { SchoolProfileSection } from "@/components/settings/SchoolProfileSection
 import { AdminAccountSection } from "@/components/settings/AdminAccountSection";
 import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
 import { AcademicSetupSection } from "@/components/settings/AcademicSetupSection";
+import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculumSection";
+import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
 import { uploadToCloudinary } from "@/app/utils/cloudinary";
 import { api } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
@@ -84,175 +85,6 @@ import { Permission } from "@/lib/permissions";
 
 
 
-// ─── Classes & Curriculum Section ─────────────────────────────────────────────
-
-function ClassesCurriculumSection() {
-  const router = useRouter();
-  const cards = [
-    {
-      title: "Manage Classes",
-      desc: "Add, edit and manage class levels for your school",
-      icon: Users,
-      link: "/classes",
-      action: "Go to Classes",
-    },
-    {
-      title: "Manage Subjects",
-      desc: "Add, edit and assign subjects to classes",
-      icon: BookOpen,
-      link: "/subject",
-      action: "Go to Subjects",
-    },
-    {
-      title: "Curriculum Library",
-      desc: "View and manage curriculum content linked to classes",
-      icon: FileText,
-      link: "/curriculum",
-      action: "Go to Curriculum",
-    },
-    {
-      title: "Class Promotion Settings",
-      desc: "Configure promotion rules and criteria",
-      icon: ChevronRight,
-      link: "/classes",
-      action: "Configure",
-    },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader
-        title="Classes & Curriculum"
-        desc="Quick access to class and curriculum management"
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {cards.map((c) => (
-          <Card
-            key={c.title}
-            className="p-5 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => router.push(c.link)}
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#EBF0F7] flex items-center justify-center shrink-0">
-                <c.icon className="w-5 h-5 text-[#003366]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
-              </div>
-              <button
-                onClick={() => router.push(c.link)}
-                className="text-xs text-[#003366] font-medium hover:underline shrink-0 flex items-center gap-1"
-              >
-                {c.action} <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Assessment Settings Section ──────────────────────────────────────────────
-
-const GRADING_SCALE = [
-  { grade: "A+", min: 90, max: 100 },
-  { grade: "A", min: 80, max: 89 },
-  { grade: "B+", min: 75, max: 79 },
-  { grade: "B", min: 70, max: 74 },
-  { grade: "C+", min: 65, max: 69 },
-  { grade: "C", min: 60, max: 64 },
-  { grade: "D+", min: 55, max: 59 },
-  { grade: "D", min: 50, max: 54 },
-  { grade: "E", min: 45, max: 49 },
-  { grade: "F", min: 0, max: 44 },
-];
-
-function AssessmentSettingsSection() {
-  const [allowDecimals, setAllowDecimals] = useState(true);
-  const [autoCalculate, setAutoCalculate] = useState(true);
-  const [publishToParents, setPublishToParents] = useState(false);
-
-  return (
-    <div className="space-y-5">
-      <SectionHeader title="Assessment Settings" desc="Grading rules and assessment preferences" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card>
-          <CardHeader title="Grading Scale" />
-          <div className="p-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Grade</th>
-                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Min (%)</th>
-                  <th className="py-2 text-left text-xs font-semibold text-gray-500">Max (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {GRADING_SCALE.map((g) => (
-                  <tr key={g.grade} className="border-b border-gray-50">
-                    <td className="py-2 font-semibold text-[#003366]">{g.grade}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.min}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.max}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-        <div className="space-y-4">
-          <Card>
-            <CardHeader title="Score Weighting" />
-            <div className="p-5 space-y-3">
-              {[
-                { label: "Test Score (CA)", value: 30 },
-                { label: "Exam Score", value: 70 },
-              ].map((s) => (
-                <div key={s.label} className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{s.label}</p>
-                  <span className="text-sm font-bold text-[#003366]">{s.value}%</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card>
-            <CardHeader title="Other Settings" />
-            <div className="p-5 space-y-1">
-              <ToggleRow
-                label="Allow decimals in scores"
-                checked={allowDecimals}
-                onChange={setAllowDecimals}
-              />
-              <ToggleRow
-                label="Auto-calculate results"
-                desc="Automatically compute final scores from CA and exam"
-                checked={autoCalculate}
-                onChange={setAutoCalculate}
-              />
-              <ToggleRow
-                label="Publish results to parents"
-                desc="Make results visible in the parent portal"
-                checked={publishToParents}
-                onChange={setPublishToParents}
-              />
-            </div>
-          </Card>
-        </div>
-      </div>
-      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-blue-700">
-          Full assessment configuration is available in the{" "}
-          <a href="/assessments" className="underline font-medium">
-            Assessments module
-          </a>
-          .
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Fees & Receipts Section ──────────────────────────────────────────────────
 
