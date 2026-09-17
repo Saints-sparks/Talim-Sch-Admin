@@ -50,4 +50,21 @@ export const settingsKeys = {
    */
   notificationPrefs: (userId: string) =>
     [...queryKeys.settings.all, "notification-preferences", userId] as const,
+  /**
+   * The bank list for one country — the same for every school, so it is not
+   * school-scoped.
+   *
+   * @param country - Country slug, e.g. "nigeria".
+   * @returns The query key.
+   */
+  banks: (country: string) => [...queryKeys.settings.all, "banks", country] as const,
+  /**
+   * The name a bank holds for one account number.
+   *
+   * @param bankCode - The bank's code.
+   * @param accountNumber - The account number being checked.
+   * @returns The query key.
+   */
+  bankAccountName: (bankCode: string, accountNumber: string) =>
+    [...queryKeys.settings.all, "bank-account-name", bankCode, accountNumber] as const,
 } as const;
