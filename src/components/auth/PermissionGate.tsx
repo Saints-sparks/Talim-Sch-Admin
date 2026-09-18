@@ -36,7 +36,7 @@ export function PermissionGate({
   children,
   fallback = null,
 }: PermissionGateProps) {
-  const { hasPermission, hasAllPermissions, hasAnyPermission, isFullAdmin } =
+  const { hasAllPermissions, hasAnyPermission, isFullAdmin } =
     usePermissions();
 
   // Full admins always pass

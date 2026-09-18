@@ -27,7 +27,6 @@ export const logger = {
    */
   error(scope: string, message: string, error?: unknown): void {
     if (!enabled) return;
-    // eslint-disable-next-line no-console
     console.error(prefix(scope), message, error ?? "");
   },
 
@@ -40,7 +39,6 @@ export const logger = {
    */
   warn(scope: string, message: string, detail?: unknown): void {
     if (!enabled) return;
-    // eslint-disable-next-line no-console
     console.warn(prefix(scope), message, detail ?? "");
   },
 
@@ -53,7 +51,6 @@ export const logger = {
    */
   debug(scope: string, message: string, detail?: unknown): void {
     if (!enabled) return;
-    // eslint-disable-next-line no-console
     console.debug(prefix(scope), message, detail ?? "");
   },
 };
