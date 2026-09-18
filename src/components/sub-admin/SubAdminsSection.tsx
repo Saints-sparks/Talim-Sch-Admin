@@ -1,39 +1,70 @@
+/**
+ * Sub-Admins — the staff a primary school admin delegates part of the portal
+ * to.
+ *
+ * The backend puts `@Roles(SCHOOL_ADMIN) @Permissions(MANAGE_SUB_ADMINS)` on
+ * every route here, so the section gates itself on both rather than relying on
+ * the Settings tab or the route guard that renders it: a role that cannot
+ * manage sub-admins is told so instead of being shown buttons the API refuses.
+ *
+ * Data comes from a paginated TanStack Query; the modals and the two confirm
+ * dialogs invalidate it rather than patching a local array, so a change made
+ * here and a change made in another tab agree.
+ */
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
-  UserPlus,
-  GraduationCap,
-  ShieldCheck,
-  Trash2,
-  ToggleLeft,
-  ToggleRight,
-  Loader2,
-  RefreshCw,
-  Users,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import { subAdminService, SubAdmin } from "@/app/services/sub-admin.service";
+import { type SubAdmin } from "@/app/services/sub-admin.service";
 import { CreateSubAdminModal } from "./CreateSubAdminModal";
 import { PromoteTeacherModal } from "./PromoteTeacherModal";
 import { EditPermissionsModal } from "./EditPermissionsModal";
 import { PERMISSION_GROUPS } from "./PermissionSelector";
-import { toast } from "@/components/CustomToast";
+import {
+  useCanManageSubAdmins,
+  useSubAdminActions,
+  useSubAdmins,
+} from "./useSubAdmins";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { getErrorMessage } from "@/lib/apiError";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * The human label for a permission value.
+ *
+ * @param value - A backend permission value, e.g. `manage:fees`.
+ * @returns Its label, or the raw value when it is not one the UI knows.
+ */
 function getPermissionLabel(value: string): string {
   for (const group of PERMISSION_GROUPS) {
-    const perm = group.permissions.find((p) => p.value === value);
-    if (perm) return perm.label;
+    const permission = group.permissions.find((p) => p.value === value);
+    if (permission) return permission.label;
   }
   return value;
 }
 
+/**
+ * @param props.sub - The sub-admin to picture.
+ * @returns Their photo, or their initials when they have none.
+ */
 function Avatar({ sub }: { sub: SubAdmin }) {
   if (sub.userAvatar) {
+    // A plain <img>: avatars are arbitrary remote hosts, which next/image
+    // would need configured domains for.
     return (
       <img
         src={sub.userAvatar}
@@ -44,14 +75,15 @@ function Avatar({ sub }: { sub: SubAdmin }) {
   }
   const initials = `${sub.firstName?.[0] ?? ""}${sub.lastName?.[0] ?? ""}`.toUpperCase();
   return (
-    <div className="w-10 h-10 rounded-full bg-[#003366]/10 text-[#003366] flex items-center justify-center text-sm font-semibold shrink-0">
+    <div className="w-10 h-10 rounded-full bg-[#003366]/10 text-[#003366] flex items-center justify-center text-sm font-semibold shrink-0 dark:bg-blue-900/30 dark:text-blue-200">
       {initials}
     </div>
   );
 }
 
-// ─── Confirm Dialog ───────────────────────────────────────────────────────────
+// ─── Confirm dialog ───────────────────────────────────────────────────────────
 
+/** Props for {@link ConfirmDialog}. */
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
@@ -63,6 +95,10 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
+/**
+ * @param props - See {@link ConfirmDialogProps}.
+ * @returns A yes/no dialog, or `null` when closed.
+ */
 function ConfirmDialog({
   isOpen,
   title,
@@ -73,9 +109,15 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  useBodyScrollLock(isOpen);
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-start gap-3 mb-4">
           <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
@@ -88,6 +130,7 @@ function ConfirmDialog({
         </div>
         <div className="flex gap-3 justify-end">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
             className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
@@ -95,6 +138,7 @@ function ConfirmDialog({
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={isLoading}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${confirmClass}`}
@@ -108,99 +152,48 @@ function ConfirmDialog({
   );
 }
 
-// ─── SubAdminsSection ─────────────────────────────────────────────────────────
+// ─── Section ──────────────────────────────────────────────────────────────────
 
+/**
+ * @returns The sub-admin management section.
+ */
 export function SubAdminsSection() {
-  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const PAGE_SIZE = 10;
+  const canManage = useCanManageSubAdmins();
 
-  // Modal state
+  const [page, setPage] = useState(1);
+  const list = useSubAdmins(page, canManage);
+  const { refreshList, toggleStatus, demote, isActioning } = useSubAdminActions();
+
   const [showCreate, setShowCreate] = useState(false);
   const [showPromote, setShowPromote] = useState(false);
   const [editTarget, setEditTarget] = useState<SubAdmin | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<SubAdmin | null>(null);
   const [toggleTarget, setToggleTarget] = useState<SubAdmin | null>(null);
 
-  // Loading state for confirm dialogs
-  const [isActioning, setIsActioning] = useState(false);
+  const subAdmins = list.data?.data ?? [];
+  const totalPages = list.data?.meta.lastPage ?? 1;
 
-  const load = useCallback(async (p: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await subAdminService.getSubAdmins(p, PAGE_SIZE);
-      setSubAdmins(result.data);
-      setTotalPages(result.meta.lastPage);
-    } catch (err: any) {
-      setError(err.message || "Failed to load sub-admins");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load(page);
-  }, [page, load]);
-
-  // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const handleCreated = (sa: SubAdmin) => {
-    setSubAdmins((prev) => [sa, ...prev]);
-  };
-
-  const handlePromoted = (sa: SubAdmin) => {
-    setSubAdmins((prev) => [sa, ...prev]);
-  };
-
-  const handlePermissionsUpdated = (updated: SubAdmin) => {
-    setSubAdmins((prev) => prev.map((s) => (s.userId === updated.userId ? updated : s)));
-    setEditTarget(null);
-  };
-
-  const handleToggleStatus = async () => {
-    if (!toggleTarget) return;
-    setIsActioning(true);
-    try {
-      const updated = await subAdminService.toggleStatus(toggleTarget.userId);
-      setSubAdmins((prev) => prev.map((s) => (s.userId === updated.userId ? updated : s)));
-      toast.success(
-        `${updated.firstName} ${updated.lastName} is now ${updated.isActive ? "active" : "suspended"}`
-      );
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update status");
-    } finally {
-      setIsActioning(false);
-      setToggleTarget(null);
-    }
-  };
-
-  const handleDemote = async () => {
-    if (!demoteTarget) return;
-    setIsActioning(true);
-    try {
-      await subAdminService.demoteSubAdmin(demoteTarget.userId);
-      setSubAdmins((prev) => prev.filter((s) => s.userId !== demoteTarget.userId));
-      toast.success(
-        `${demoteTarget.firstName} ${demoteTarget.lastName} has been removed as sub-admin`
-      );
-    } catch (err: any) {
-      toast.error(err.message || "Failed to remove sub-admin");
-    } finally {
-      setIsActioning(false);
-      setDemoteTarget(null);
-    }
-  };
-
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // Only the primary school admin may act here, whatever their permissions.
+  if (!canManage) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+          <ShieldCheck className="w-7 h-7 text-gray-400" />
+        </div>
+        <h3 className="text-base font-semibold text-gray-700 dark:text-slate-300 mb-1">
+          Reserved for the school administrator
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm">
+          Only the school&apos;s primary administrator can create, edit or remove sub-admins.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Sub-Admins</h2>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
@@ -209,13 +202,17 @@ export function SubAdminsSection() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => load(page)}
-            className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            type="button"
+            onClick={refreshList}
+            disabled={list.isFetching}
+            className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
             title="Refresh"
+            aria-label="Refresh sub-admins"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${list.isFetching ? "animate-spin" : ""}`} />
           </button>
           <button
+            type="button"
             onClick={() => setShowPromote(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
           >
@@ -223,6 +220,7 @@ export function SubAdminsSection() {
             Promote Teacher
           </button>
           <button
+            type="button"
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
           >
@@ -233,18 +231,21 @@ export function SubAdminsSection() {
       </div>
 
       {/* Content */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400">
+      {list.isLoading ? (
+        <div className="flex items-center justify-center py-16 text-gray-400 dark:text-slate-500">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
           Loading sub-admins…
         </div>
-      ) : error ? (
+      ) : list.isError ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">{error}</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+            {getErrorMessage(list.error, "Failed to load sub-admins")}
+          </p>
           <button
-            onClick={() => load(page)}
-            className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            type="button"
+            onClick={() => void list.refetch()}
+            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
           >
             Try Again
           </button>
@@ -263,12 +264,14 @@ export function SubAdminsSection() {
           </p>
           <div className="flex gap-3 mt-5">
             <button
+              type="button"
               onClick={() => setShowPromote(true)}
               className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
             >
               Promote a Teacher
             </button>
             <button
+              type="button"
               onClick={() => setShowCreate(true)}
               className="px-4 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
             >
@@ -278,9 +281,9 @@ export function SubAdminsSection() {
         </div>
       ) : (
         <>
-          {/* Table */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-            <table className="w-full">
+          {/* Table — scrolls inside its own container on narrow screens */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
@@ -303,7 +306,6 @@ export function SubAdminsSection() {
                     key={sub.userId}
                     className="hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
                   >
-                    {/* Name + email */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <Avatar sub={sub} />
@@ -316,7 +318,6 @@ export function SubAdminsSection() {
                       </div>
                     </td>
 
-                    {/* Permissions */}
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {sub.permissions.slice(0, 3).map((p) => (
@@ -335,7 +336,6 @@ export function SubAdminsSection() {
                       </div>
                     </td>
 
-                    {/* Status */}
                     <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -353,22 +353,23 @@ export function SubAdminsSection() {
                       </span>
                     </td>
 
-                    {/* Actions */}
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Edit permissions */}
                         <button
+                          type="button"
                           onClick={() => setEditTarget(sub)}
                           title="Edit permissions"
+                          aria-label={`Edit permissions for ${sub.firstName} ${sub.lastName}`}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         >
                           <ShieldCheck className="w-4 h-4" />
                         </button>
 
-                        {/* Toggle active status */}
                         <button
+                          type="button"
                           onClick={() => setToggleTarget(sub)}
                           title={sub.isActive ? "Suspend" : "Activate"}
+                          aria-label={`${sub.isActive ? "Suspend" : "Activate"} ${sub.firstName} ${sub.lastName}`}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                         >
                           {sub.isActive ? (
@@ -378,10 +379,11 @@ export function SubAdminsSection() {
                           )}
                         </button>
 
-                        {/* Remove / demote */}
                         <button
+                          type="button"
                           onClick={() => setDemoteTarget(sub)}
                           title="Remove sub-admin"
+                          aria-label={`Remove ${sub.firstName} ${sub.lastName} as sub-admin`}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -402,15 +404,19 @@ export function SubAdminsSection() {
               </p>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
+                  disabled={page === 1 || list.isFetching}
+                  aria-label="Previous page"
                   className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
+                  disabled={page === totalPages || list.isFetching}
+                  aria-label="Next page"
                   className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -421,27 +427,29 @@ export function SubAdminsSection() {
         </>
       )}
 
-      {/* Modals */}
+      {/* Modals — each invalidates the list rather than patching it locally */}
       <CreateSubAdminModal
         isOpen={showCreate}
         onClose={() => setShowCreate(false)}
-        onSuccess={handleCreated}
+        onSuccess={refreshList}
       />
       <PromoteTeacherModal
         isOpen={showPromote}
         onClose={() => setShowPromote(false)}
-        onSuccess={handlePromoted}
+        onSuccess={refreshList}
       />
       <EditPermissionsModal
-        isOpen={!!editTarget}
+        isOpen={Boolean(editTarget)}
         onClose={() => setEditTarget(null)}
         subAdmin={editTarget}
-        onSuccess={handlePermissionsUpdated}
+        onSuccess={() => {
+          refreshList();
+          setEditTarget(null);
+        }}
       />
 
-      {/* Toggle status confirm */}
       <ConfirmDialog
-        isOpen={!!toggleTarget}
+        isOpen={Boolean(toggleTarget)}
         title={toggleTarget?.isActive ? "Suspend Sub-Admin?" : "Activate Sub-Admin?"}
         description={
           toggleTarget?.isActive
@@ -455,18 +463,25 @@ export function SubAdminsSection() {
             : "bg-green-600 hover:bg-green-700 text-white"
         }
         isLoading={isActioning}
-        onConfirm={handleToggleStatus}
+        onConfirm={() => {
+          const target = toggleTarget;
+          if (!target) return;
+          void toggleStatus(target).finally(() => setToggleTarget(null));
+        }}
         onCancel={() => setToggleTarget(null)}
       />
 
-      {/* Demote confirm */}
       <ConfirmDialog
-        isOpen={!!demoteTarget}
+        isOpen={Boolean(demoteTarget)}
         title="Remove Sub-Admin?"
         description={`${demoteTarget?.firstName} ${demoteTarget?.lastName} will lose all admin access. If they were promoted from teacher, they will revert to their teacher role.`}
         confirmLabel="Remove Sub-Admin"
         isLoading={isActioning}
-        onConfirm={handleDemote}
+        onConfirm={() => {
+          const target = demoteTarget;
+          if (!target) return;
+          void demote(target).finally(() => setDemoteTarget(null));
+        }}
         onCancel={() => setDemoteTarget(null)}
       />
     </div>
