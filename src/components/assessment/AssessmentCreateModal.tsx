@@ -1,26 +1,79 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Calendar, Clock, FileText, AlertCircle, Target } from "lucide-react";
+/**
+ * Creates or edits an assessment.
+ *
+ * Presentational apart from its own validation: the page owns the mutation and
+ * throws back a message, which the modal shows above the form so the draft
+ * survives a failed save.
+ */
+import React, { useEffect, useState } from "react";
+import { AlertCircle, Calendar, Clock, FileText, Target } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
-import {
-  Assessment,
-  AssessmentForm,
-  Term,
-} from "@/components/assessment/AssessmentForm.types";
-import TermSelector from "./TermSelector";
-import { assessmentService } from "@/app/services/assessment.service";
+import TermSelector from "@/components/assessment/TermSelector";
 import { Tooltip } from "@/components/ui/Tooltip";
+import {
+  isWithinAssessmentPeriod,
+  validateAssessmentForm,
+  type AssessmentFormErrors,
+} from "@/components/assessment/assessment.form";
+import { assessmentService, ASSESSMENT_STATUSES } from "@/app/services/assessment.service";
+import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Saves the assessment; rejects with a message the modal displays. */
   onSubmit: (assessmentData: AssessmentForm) => Promise<void>;
   terms: Term[];
   editingAssessment?: Assessment | null;
   loading?: boolean;
 }
 
+const EMPTY_FORM: AssessmentForm = {
+  name: "",
+  description: "",
+  termId: "",
+  startDate: "",
+  endDate: "",
+  status: "pending",
+};
+
+const labelClass = "flex items-center text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3";
+
+/** Input classes, tinted when the field is in error. */
+function inputClass(hasError: boolean): string {
+  const base =
+    "w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100";
+  return hasError
+    ? `${base} border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30`
+    : `${base} border-gray-200 dark:border-slate-700 focus:border-blue-300`;
+}
+
+/** The message under a field, or nothing. */
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-950/30 p-2 rounded-lg">
+      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+      {message}
+    </p>
+  );
+}
+
+/** A date as the assessment period is described to the administrator. */
+function readableDate(value: string): string {
+  return value ? new Date(value).toLocaleDateString() : "Not set";
+}
+
+/**
+ * Renders the create/edit modal.
+ *
+ * @param props - See {@link AssessmentCreateModalProps}.
+ * @returns The modal.
+ */
 const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   isOpen,
   onClose,
@@ -29,113 +82,70 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   editingAssessment,
   loading = false,
 }) => {
-  const [formData, setFormData] = useState<AssessmentForm>({
-    name: "",
-    description: "",
-    termId: "",
-    startDate: "",
-    endDate: "",
-    status: "pending",
-  });
-
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof AssessmentForm, string>>
-  >({});
+  const [formData, setFormData] = useState<AssessmentForm>(EMPTY_FORM);
+  const [errors, setErrors] = useState<AssessmentFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  /** The failure from the last save, shown above the form. */
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Helper function to check if assessment is currently active (within date range)
-  const isAssessmentCurrentlyActive = (): boolean => {
-    if (!formData.startDate || !formData.endDate) return false;
+  const isEditing = Boolean(editingAssessment);
+  const isRunning = isWithinAssessmentPeriod(formData.startDate, formData.endDate);
 
-    const today = new Date();
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-
-    // Set time to midnight for accurate date comparison
-    today.setHours(0, 0, 0, 0);
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    return today >= startDate && today <= endDate;
-  };
-
+  // Reload the form every time the modal opens or switches assessment.
   useEffect(() => {
-    if (editingAssessment) {
-      setFormData({
-        name: editingAssessment.name,
-        description: editingAssessment.description || "",
-        termId: editingAssessment.termId._id,
-        startDate: editingAssessment.startDate.split("T")[0], // Convert to YYYY-MM-DD format
-        endDate: editingAssessment.endDate.split("T")[0],
-        status: editingAssessment.status,
-      });
-    } else {
-      // Reset form for new assessment
-      setFormData({
-        name: "",
-        description: "",
-        termId: "",
-        startDate: "",
-        endDate: "",
-        status: "pending",
-      });
-    }
+    setFormData(
+      editingAssessment
+        ? {
+            name: editingAssessment.name,
+            description: editingAssessment.description || "",
+            termId: editingAssessment.termId._id,
+            // The inputs are `type="date"`, which only understands YYYY-MM-DD.
+            startDate: editingAssessment.startDate.split("T")[0],
+            endDate: editingAssessment.endDate.split("T")[0],
+            status: editingAssessment.status,
+          }
+        : EMPTY_FORM,
+    );
     setErrors({});
+    setSubmitError(null);
   }, [editingAssessment, isOpen]);
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof AssessmentForm, string>> = {};
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = event.target;
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Assessment name is required";
-    }
-
-    if (!formData.termId) {
-      newErrors.termId = "Term selection is required";
-    }
-
-    if (!formData.startDate) {
-      newErrors.startDate = "Start date is required";
-    } else if (!editingAssessment) {
-      // Only validate past dates for new assessments
-      const today = new Date().toISOString().split("T")[0];
-      if (formData.startDate < today) {
-        newErrors.startDate = "Start date cannot be in the past";
+    setFormData((previous) => {
+      const next = { ...previous, [name]: value } as AssessmentForm;
+      // Moving the dates out from around today makes "active" illegal; drop
+      // back to pending rather than letting the server reject the save.
+      if (
+        (name === "startDate" || name === "endDate") &&
+        previous.status === "active" &&
+        !isWithinAssessmentPeriod(next.startDate, next.endDate)
+      ) {
+        next.status = "pending";
       }
-    }
+      return next;
+    });
 
-    if (!formData.endDate) {
-      newErrors.endDate = "End date is required";
-    }
-
-    if (formData.startDate && formData.endDate) {
-      const validation = assessmentService.validateAssessmentDates(
-        formData.startDate,
-        formData.endDate
-      );
-      if (!validation.isValid) {
-        newErrors.endDate = validation.error;
-      }
-    }
-
-    // Validate status - cannot be active if not within date range
-    if (formData.status === "active" && !isAssessmentCurrentlyActive()) {
-      newErrors.status =
-        "Assessment can only be set to 'Active' during its scheduled period";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors((previous) => ({ ...previous, [name]: undefined }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTermSelect = (termId: string) => {
+    setFormData((previous) => ({ ...previous, termId }));
+    setErrors((previous) => ({ ...previous, termId: undefined }));
+  };
 
-    if (!validateForm()) {
-      return;
-    }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const found = validateAssessmentForm(formData, { isEditing });
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
 
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await onSubmit({
         ...formData,
@@ -144,87 +154,39 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
       });
       onClose();
     } catch (error) {
-      console.error("Error submitting assessment:", error);
+      // The draft stays on screen: the administrator can correct it and
+      // resubmit rather than retyping the whole form.
+      logger.error("assessments", "Assessment form submission failed", error);
+      setSubmitError(getErrorMessage(error, "Could not save the assessment. Please try again."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => {
-      const newFormData = { ...prev, [name]: value };
-
-      // If dates are being changed and status is active, check if it should remain active
-      if (
-        (name === "startDate" || name === "endDate") &&
-        prev.status === "active"
-      ) {
-        const tempFormData = { ...newFormData };
-
-        // Check if assessment would still be active with new dates
-        if (tempFormData.startDate && tempFormData.endDate) {
-          const today = new Date();
-          const startDate = new Date(tempFormData.startDate);
-          const endDate = new Date(tempFormData.endDate);
-
-          today.setHours(0, 0, 0, 0);
-          startDate.setHours(0, 0, 0, 0);
-          endDate.setHours(23, 59, 59, 999);
-
-          const isStillActive = today >= startDate && today <= endDate;
-
-          // If assessment is no longer within active period, change status to pending
-          if (!isStillActive) {
-            newFormData.status = "pending";
-          }
-        }
-      }
-
-      return newFormData;
-    });
-    // Clear error when user starts typing
-    if (errors[name as keyof AssessmentForm]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleTermSelect = (termId: string) => {
-    setFormData((prev) => ({ ...prev, termId }));
-    if (errors.termId) {
-      setErrors((prev) => ({ ...prev, termId: undefined }));
-    }
-  };
-
   if (!isOpen) return null;
 
-  const modalFooter = (
+  const footer = (
     <div className="flex justify-end space-x-4">
       <button
         type="button"
         onClick={onClose}
-        className="px-6 py-2.5 text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-all duration-300"
         disabled={submitting}
+        className="px-6 py-2.5 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-all duration-300 disabled:opacity-50"
       >
         Cancel
       </button>
       <button
         type="submit"
         form="assessment-form"
-        className="px-8 py-2.5 text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         disabled={submitting}
+        className="px-8 py-2.5 text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
       >
         {submitting ? (
-          <div className="flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            {editingAssessment ? "Updating..." : "Creating..."}
-          </div>
-        ) : editingAssessment ? (
+          <span className="flex items-center">
+            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            {isEditing ? "Updating..." : "Creating..."}
+          </span>
+        ) : isEditing ? (
           "Update Assessment"
         ) : (
           "Create Assessment"
@@ -237,72 +199,78 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
     <TalimModal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingAssessment ? "Edit Assessment" : "Create New Assessment"}
+      title={isEditing ? "Edit Assessment" : "Create New Assessment"}
       subtitle={
-        editingAssessment
+        isEditing
           ? "Update assessment details and settings"
           : "Set up a new assessment for your students"
       }
       icon={<Target className="h-6 w-6 text-white" />}
-      footer={modalFooter}
+      footer={footer}
       isSubmitting={submitting}
     >
-      <form id="assessment-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* Assessment Name */}
+      <form id="assessment-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {submitError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50"
+          >
+            <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+          </div>
+        )}
+
         <div>
-          <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-              <FileText className="h-4 w-4 text-blue-600" />
-            </div>
+          <label className={labelClass} htmlFor="assessment-name">
+            <span className="w-8 h-8 bg-blue-100 dark:bg-blue-950/50 rounded-lg flex items-center justify-center mr-3">
+              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+            </span>
             Assessment Name *
           </label>
           <input
+            id="assessment-name"
             type="text"
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
-              errors.name
-                ? "border-red-300 bg-red-50"
-                : "border-gray-200 focus:border-blue-300"
-            }`}
+            className={inputClass(Boolean(errors.name))}
             placeholder="e.g., First Term Examination 2025"
             disabled={submitting}
           />
-          {errors.name && (
-            <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg">
-              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-              {errors.name}
-            </p>
-          )}
+          <FieldError message={errors.name} />
         </div>
 
-        {/* Description */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+          <label
+            className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3"
+            htmlFor="assessment-description"
+          >
             Description (Optional)
           </label>
           <textarea
+            id="assessment-description"
             name="description"
             value={formData.description}
             onChange={handleInputChange}
             rows={4}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all duration-300 resize-none"
+            className={`${inputClass(false)} resize-none`}
             placeholder="Provide additional details about this assessment..."
             disabled={submitting}
           />
         </div>
 
-        {/* Term Selection */}
         <div>
-          <Tooltip content="Filter assessments by academic term. Set the current term in Settings." side="right">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Term *
-          </label>
+          <Tooltip
+            content="Filter assessments by academic term. Set the current term in Settings."
+            side="right"
+          >
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3">
+              Term *
+            </label>
           </Tooltip>
           <div
             className={`rounded-xl border-2 ${
-              errors.termId ? "border-red-300" : "border-gray-200"
+              errors.termId ? "border-red-300 dark:border-red-800" : "border-gray-200 dark:border-slate-700"
             }`}
           >
             <TermSelector
@@ -314,126 +282,89 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               className="border-0 rounded-xl"
             />
           </div>
-          {errors.termId && (
-            <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg">
-              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-              {errors.termId}
-            </p>
-          )}
+          <FieldError message={errors.termId} />
         </div>
 
-        {/* Date Range */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
-                <Calendar className="h-4 w-4 text-emerald-600" />
-              </div>
+            <label className={labelClass} htmlFor="assessment-start">
+              <span className="w-8 h-8 bg-emerald-100 dark:bg-emerald-950/50 rounded-lg flex items-center justify-center mr-3">
+                <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+              </span>
               Start Date *
             </label>
             <input
+              id="assessment-start"
               type="date"
               name="startDate"
               value={formData.startDate}
               onChange={handleInputChange}
-              min={
-                !editingAssessment
-                  ? new Date().toISOString().split("T")[0]
-                  : undefined
-              }
-              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
-                errors.startDate
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200 focus:border-blue-300"
-              }`}
+              // An assessment already under way keeps its start date; only a
+              // new one is held to today.
+              min={isEditing ? undefined : new Date().toISOString().split("T")[0]}
+              className={inputClass(Boolean(errors.startDate))}
               disabled={submitting}
             />
-            {errors.startDate && (
-              <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg">
-                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                {errors.startDate}
-              </p>
-            )}
+            <FieldError message={errors.startDate} />
           </div>
 
           <div>
-            <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
-                <Clock className="h-4 w-4 text-amber-600" />
-              </div>
+            <label className={labelClass} htmlFor="assessment-end">
+              <span className="w-8 h-8 bg-amber-100 dark:bg-amber-950/50 rounded-lg flex items-center justify-center mr-3">
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+              </span>
               End Date *
             </label>
             <input
+              id="assessment-end"
               type="date"
               name="endDate"
               value={formData.endDate}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
-                errors.endDate
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200 focus:border-blue-300"
-              }`}
+              min={formData.startDate || undefined}
+              className={inputClass(Boolean(errors.endDate))}
               disabled={submitting}
             />
-            {errors.endDate && (
-              <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg">
-                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                {errors.endDate}
-              </p>
-            )}
+            <FieldError message={errors.endDate} />
           </div>
         </div>
 
-        {/* Status (only for editing) */}
-        {editingAssessment && (
+        {isEditing && (
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label
+              className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3"
+              htmlFor="assessment-status"
+            >
               Status
             </label>
             <select
+              id="assessment-status"
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all duration-300"
+              className={inputClass(Boolean(errors.status))}
               disabled={submitting}
             >
-              <option value="pending">Pending</option>
-              <option value="active" disabled={!isAssessmentCurrentlyActive()}>
-                Active{" "}
-                {!isAssessmentCurrentlyActive()
-                  ? "(Only available during assessment period)"
-                  : ""}
-              </option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              {ASSESSMENT_STATUSES.map((status) => (
+                <option
+                  key={status}
+                  value={status}
+                  disabled={status === "active" && !isRunning}
+                  className="capitalize"
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {status === "active" && !isRunning
+                    ? " (only during the assessment period)"
+                    : ""}
+                </option>
+              ))}
             </select>
-            {errors.status && (
-              <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg">
-                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                {errors.status}
-              </p>
-            )}
-            {!isAssessmentCurrentlyActive() && formData.status === "active" && (
-              <p className="mt-2 text-sm text-amber-600 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                Assessment can only be set to "Active" during its scheduled
-                period ({new Date(
-                  formData.startDate
-                ).toLocaleDateString()} -{" "}
-                {new Date(formData.endDate).toLocaleDateString()})
-              </p>
-            )}
-            {!isAssessmentCurrentlyActive() && (
-              <p className="mt-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4 inline mr-1" />
-                Assessment period:{" "}
-                {formData.startDate
-                  ? new Date(formData.startDate).toLocaleDateString()
-                  : "Not set"}{" "}
-                -{" "}
-                {formData.endDate
-                  ? new Date(formData.endDate).toLocaleDateString()
-                  : "Not set"}
+            <FieldError message={errors.status} />
+            {!isRunning && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-slate-400 flex items-center">
+                <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                Assessment period: {readableDate(formData.startDate)} –{" "}
+                {readableDate(formData.endDate)}
               </p>
             )}
           </div>

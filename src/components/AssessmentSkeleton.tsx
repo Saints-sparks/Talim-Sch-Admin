@@ -1,8 +1,16 @@
 import React from "react";
 
+/**
+ * The assessments screen's loading state.
+ *
+ * Mirrors the real screen — banner, four counters, filter bar and card grid —
+ * so nothing shifts when the data lands.
+ *
+ * @returns The skeleton.
+ */
 const AssessmentSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col h-screen bg-gray-50 animate-pulse">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950 animate-pulse">
       {/* Header — matches bg-[#003366] m-6 rounded-2xl */}
       <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl opacity-80">
         <div className="px-6 py-6">
@@ -37,15 +45,15 @@ const AssessmentSkeleton: React.FC = () => {
               ].map((accent, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+                  className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 p-6"
                 >
                   <div className="flex items-center justify-between">
                     <div className="space-y-2">
-                      <div className="h-3.5 w-28 bg-gray-200 rounded" />
-                      <div className="h-8 w-12 bg-gray-200 rounded" />
+                      <div className="h-3.5 w-28 bg-gray-200 dark:bg-slate-800 rounded" />
+                      <div className="h-8 w-12 bg-gray-200 dark:bg-slate-800 rounded" />
                     </div>
                     <div className={`p-3 ${accent} rounded-xl`}>
-                      <div className="h-6 w-6 bg-gray-200 rounded" />
+                      <div className="h-6 w-6 bg-gray-200 dark:bg-slate-800 rounded" />
                     </div>
                   </div>
                 </div>
@@ -53,22 +61,22 @@ const AssessmentSkeleton: React.FC = () => {
             </div>
 
             {/* Search + filter row */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-4">
-                <div className="h-9 flex-1 bg-gray-200 rounded-xl" />
-                <div className="h-9 w-32 bg-gray-200 rounded-xl" />
-                <div className="h-9 w-24 bg-gray-200 rounded-xl" />
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-4">
+                <div className="h-9 flex-1 bg-gray-200 dark:bg-slate-800 rounded-xl" />
+                <div className="h-9 w-32 bg-gray-200 dark:bg-slate-800 rounded-xl" />
+                <div className="h-9 w-24 bg-gray-200 dark:bg-slate-800 rounded-xl" />
               </div>
 
               {/* Table header */}
-              <div className="flex items-center px-6 py-3 border-b border-gray-100 bg-gray-50 gap-4">
-                <div className="w-8 h-4 bg-gray-200 rounded" />
-                <div className="flex-1 h-4 bg-gray-200 rounded" />
-                <div className="w-24 h-4 bg-gray-200 rounded" />
-                <div className="w-24 h-4 bg-gray-200 rounded" />
-                <div className="w-20 h-4 bg-gray-200 rounded" />
-                <div className="w-20 h-4 bg-gray-200 rounded" />
-                <div className="w-24 h-4 bg-gray-200 rounded" />
+              <div className="flex items-center px-6 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 gap-4">
+                <div className="w-8 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="flex-1 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="w-24 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="w-24 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="w-20 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="w-20 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
+                <div className="w-24 h-4 bg-gray-200 dark:bg-slate-800 rounded" />
               </div>
 
               {/* 8 assessment rows */}
@@ -77,34 +85,34 @@ const AssessmentSkeleton: React.FC = () => {
                   key={i}
                   className="flex items-center px-6 py-4 border-b border-gray-50 gap-4"
                 >
-                  <div className="w-8 h-4 bg-gray-100 rounded" />
+                  <div className="w-8 h-4 bg-gray-100 dark:bg-slate-800 rounded" />
                   {/* Name + description */}
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                    <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 dark:bg-slate-800 rounded w-1/2" />
                   </div>
-                  <div className="w-24 h-5 bg-gray-100 rounded-full" />
-                  <div className="w-24 h-4 bg-gray-100 rounded" />
-                  <div className="w-20 h-4 bg-gray-100 rounded" />
-                  <div className="w-20 h-4 bg-gray-100 rounded" />
+                  <div className="w-24 h-5 bg-gray-100 dark:bg-slate-800 rounded-full" />
+                  <div className="w-24 h-4 bg-gray-100 dark:bg-slate-800 rounded" />
+                  <div className="w-20 h-4 bg-gray-100 dark:bg-slate-800 rounded" />
+                  <div className="w-20 h-4 bg-gray-100 dark:bg-slate-800 rounded" />
                   {/* Actions */}
                   <div className="w-24 flex gap-2">
-                    <div className="h-8 w-8 bg-gray-100 rounded-lg" />
-                    <div className="h-8 w-8 bg-gray-100 rounded-lg" />
-                    <div className="h-8 w-8 bg-gray-100 rounded-lg" />
+                    <div className="h-8 w-8 bg-gray-100 dark:bg-slate-800 rounded-lg" />
+                    <div className="h-8 w-8 bg-gray-100 dark:bg-slate-800 rounded-lg" />
+                    <div className="h-8 w-8 bg-gray-100 dark:bg-slate-800 rounded-lg" />
                   </div>
                 </div>
               ))}
 
               {/* Pagination */}
               <div className="flex items-center justify-between px-6 py-4">
-                <div className="h-4 w-40 bg-gray-200 rounded" />
+                <div className="h-4 w-40 bg-gray-200 dark:bg-slate-800 rounded" />
                 <div className="flex gap-2">
-                  <div className="h-8 w-20 bg-gray-200 rounded-lg" />
+                  <div className="h-8 w-20 bg-gray-200 dark:bg-slate-800 rounded-lg" />
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className="h-8 w-8 bg-gray-200 rounded-lg" />
+                    <div key={n} className="h-8 w-8 bg-gray-200 dark:bg-slate-800 rounded-lg" />
                   ))}
-                  <div className="h-8 w-20 bg-gray-200 rounded-lg" />
+                  <div className="h-8 w-20 bg-gray-200 dark:bg-slate-800 rounded-lg" />
                 </div>
               </div>
             </div>

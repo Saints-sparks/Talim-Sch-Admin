@@ -1,322 +1,135 @@
 "use client";
 
-import React, { useState } from "react";
+/**
+ * The assessment list: a filter bar, a grid of assessment cards and the pager.
+ *
+ * The page it renders comes from the server; the filters narrow that page
+ * client-side. Edit and deactivate are only rendered when the signed-in
+ * administrator holds `manage:assessments`.
+ */
+import React, { useMemo, useState } from "react";
+import { FiAlertCircle, FiCalendar, FiCheckCircle, FiClock, FiEdit, FiTrash2 } from "react-icons/fi";
 import {
-  FiSearch,
-  FiFilter,
-  FiChevronLeft,
-  FiChevronRight,
-  FiEdit,
-  FiTrash2,
-  FiCalendar,
-  FiClock,
-  FiCheckCircle,
-  FiAlertCircle,
-} from "react-icons/fi";
-import { Assessment, AssessmentStatus, Term } from "@/components/assessment/AssessmentForm.types";
-import TermSelector from "./TermSelector";
+  AssessmentFilters,
+  EMPTY_FILTERS,
+  filterAssessments,
+  hasActiveFilters,
+  type AssessmentFilterState,
+} from "@/components/assessment/AssessmentFilters";
+import {
+  AssessmentPagination,
+  type PaginationState,
+} from "@/components/assessment/AssessmentPagination";
+import type { Assessment, AssessmentStatus, Term } from "@/components/assessment/AssessmentForm.types";
+
+/** Milliseconds in a day, for the duration label. */
+const DAY_MS = 1000 * 60 * 60 * 24;
 
 interface AssessmentListProps {
   assessments: Assessment[];
   terms: Term[];
   loading: boolean;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalCount: number;
-    limit: number;
-  };
+  /** True when the signed-in administrator may edit and deactivate. */
+  canManage: boolean;
+  pagination: PaginationState;
   onPageChange: (page: number) => void;
   onEdit: (assessment: Assessment) => void;
   onDelete: (assessment: Assessment) => void;
-  onView: (assessment: Assessment) => void;
-  onRefresh: () => void;
 }
 
-interface FilterState {
-  search: string;
-  termId: string;
-  status: AssessmentStatus | "";
+/** The icon beside a status badge. */
+function statusIcon(status: AssessmentStatus) {
+  if (status === "active") return <FiCheckCircle className="h-4 w-4 text-green-500" />;
+  if (status === "pending") return <FiClock className="h-4 w-4 text-yellow-500" />;
+  if (status === "completed") return <FiCheckCircle className="h-4 w-4 text-blue-500" />;
+  return <FiAlertCircle className="h-4 w-4 text-gray-500" />;
 }
 
+/** Badge classes per status, in both themes. */
+function statusBadge(status: AssessmentStatus): string {
+  const base = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+  const byStatus: Record<AssessmentStatus, string> = {
+    active: "bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-300",
+    pending: "bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-300",
+    completed: "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300",
+    cancelled: "bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300",
+  };
+  return `${base} ${byStatus[status] ?? "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200"}`;
+}
+
+/** How long an assessment runs, in whole days. */
+function durationLabel(assessment: Assessment): string {
+  const days = Math.ceil(
+    (new Date(assessment.endDate).getTime() - new Date(assessment.startDate).getTime()) / DAY_MS,
+  );
+  if (!Number.isFinite(days)) return "Unknown";
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+/**
+ * Renders the filter bar, the grid and the pager.
+ *
+ * @param props - See {@link AssessmentListProps}.
+ * @returns The list.
+ */
 const AssessmentList: React.FC<AssessmentListProps> = ({
   assessments,
   terms,
   loading,
+  canManage,
   pagination,
   onPageChange,
   onEdit,
   onDelete,
-  onView,
-  onRefresh,
 }) => {
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    termId: "",
-    status: "",
-  });
-
+  const [filters, setFilters] = useState<AssessmentFilterState>(EMPTY_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: "",
-      termId: "",
-      status: "",
-    });
-  };
-
-  const getFilteredAssessments = () => {
-    return assessments.filter((assessment) => {
-      const matchesSearch =
-        !filters.search ||
-        assessment.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        assessment.description?.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesTerm = !filters.termId || assessment.termId._id === filters.termId;
-      const matchesStatus = !filters.status || assessment.status === filters.status;
-
-      return matchesSearch && matchesTerm && matchesStatus;
-    });
-  };
-
-  const filteredAssessments = getFilteredAssessments();
-  const hasActiveFilters = filters.search || filters.termId || filters.status;
-
-  const renderPagination = () => {
-    if (pagination.totalPages <= 1) return null;
-
-    return (
-      <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center text-sm text-gray-600">
-          <span>
-            Showing{" "}
-            <span className="font-medium">
-              {(pagination.currentPage - 1) * pagination.limit + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
-              {Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)}
-            </span>{" "}
-            of <span className="font-medium">{pagination.totalCount}</span> assessments
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onPageChange(pagination.currentPage - 1)}
-            disabled={pagination.currentPage === 1}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FiChevronLeft className="h-4 w-4 mr-1" />
-            Previous
-          </button>
-
-          <div className="flex space-x-1">
-            {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-              let page;
-              if (pagination.totalPages <= 5) {
-                page = i + 1;
-              } else if (pagination.currentPage <= 3) {
-                page = i + 1;
-              } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                page = pagination.totalPages - 4 + i;
-              } else {
-                page = pagination.currentPage - 2 + i;
-              }
-
-              return (
-                <button
-                  key={page}
-                  onClick={() => onPageChange(page)}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
-                    page === pagination.currentPage
-                      ? "bg-blue-600 text-white shadow-lg"
-                      : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-300"
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => onPageChange(pagination.currentPage + 1)}
-            disabled={pagination.currentPage === pagination.totalPages}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-            <FiChevronRight className="h-4 w-4 ml-1" />
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const getStatusIcon = (status: AssessmentStatus) => {
-    switch (status) {
-      case "active":
-        return <FiCheckCircle className="h-4 w-4 text-green-500" />;
-      case "pending":
-        return <FiClock className="h-4 w-4 text-yellow-500" />;
-      case "completed":
-        return <FiCheckCircle className="h-4 w-4 text-blue-500" />;
-      default:
-        return <FiAlertCircle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: AssessmentStatus) => {
-    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-
-    switch (status) {
-      case "active":
-        return `${baseClasses} bg-green-100 text-green-800`;
-      case "pending":
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
-      case "completed":
-        return `${baseClasses} bg-blue-100 text-blue-800`;
-      case "cancelled":
-        return `${baseClasses} bg-red-100 text-red-800`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-800`;
-    }
-  };
+  const filtered = useMemo(() => filterAssessments(assessments, filters), [assessments, filters]);
+  const isFiltered = hasActiveFilters(filters);
 
   return (
     <div className="space-y-6 p-6">
-      {/* Search and Filter Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search Bar */}
-          <div className="flex-1">
-            <div className="relative group">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white text-gray-900 placeholder-gray-500"
-                placeholder="Search assessments by name or description..."
-              />
-            </div>
-          </div>
+      <AssessmentFilters
+        filters={filters}
+        onChange={setFilters}
+        terms={terms}
+        isOpen={showFilters}
+        onToggle={() => setShowFilters((open) => !open)}
+      />
 
-          {/* Filter Controls */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center bg-white border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-3 border text-sm font-medium rounded-lg transition-all duration-300"
-            >
-              <FiFilter className="h-4 w-4 mr-2" />
-              Filters
-            </button>
-          </div>
-        </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Term Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Term
-                </label>
-                <div className="border border-gray-300 rounded-lg">
-                  <TermSelector
-                    terms={terms}
-                    selectedTermId={filters.termId}
-                    onTermSelect={(termId) => handleFilterChange("termId", termId)}
-                    placeholder="All terms"
-                    allowEmpty
-                  />
-                </div>
-              </div>
-
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Status
-                </label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white"
-                >
-                  <option value="">All statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              {/* Clear Filters */}
-              <div className="flex items-end">
-                <button
-                  onClick={clearFilters}
-                  disabled={!hasActiveFilters}
-                  className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Clear All Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Enhanced Assessment Content */}
       <div>
-        {loading ? (
+        {loading && assessments.length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                  </div>
-                  <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-                </div>
-                <div className="space-y-3">
-                  <div className="h-3 bg-gray-200 rounded w-full"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-                <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  <div className="flex gap-2">
-                    <div className="h-8 bg-gray-200 rounded w-8"></div>
-                    <div className="h-8 bg-gray-200 rounded w-8"></div>
-                    <div className="h-8 bg-gray-200 rounded w-8"></div>
-                  </div>
-                </div>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6 animate-pulse h-56"
+              >
+                <div className="h-5 bg-gray-200 dark:bg-slate-800 rounded w-3/4 mb-3" />
+                <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-1/2 mb-2" />
+                <div className="h-3 bg-gray-200 dark:bg-slate-800 rounded w-1/3 mb-6" />
+                <div className="h-3 bg-gray-200 dark:bg-slate-800 rounded w-full mb-2" />
+                <div className="h-3 bg-gray-200 dark:bg-slate-800 rounded w-2/3" />
               </div>
             ))}
           </div>
-        ) : filteredAssessments.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FiCalendar className="h-10 w-10 text-gray-400" />
+        ) : filtered.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-12 text-center">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiCalendar className="h-10 w-10 text-gray-400 dark:text-slate-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              {hasActiveFilters ? "No assessments match your criteria" : "No assessments found"}
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-3">
+              {isFiltered ? "No assessments match your criteria" : "No assessments found"}
             </h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              {hasActiveFilters
+            <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+              {isFiltered
                 ? "Try adjusting your search terms or clearing some filters to see more results."
                 : "Create your first assessment to start evaluating student performance and track academic progress."}
             </p>
-            {hasActiveFilters && (
+            {isFiltered && (
               <button
-                onClick={clearFilters}
+                onClick={() => setFilters(EMPTY_FILTERS)}
                 className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300"
               >
                 Clear All Filters
@@ -325,73 +138,55 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
           </div>
         ) : (
           <>
-            {/* Assessment Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAssessments.map((assessment, index) => {
-                const duration = Math.ceil(
-                  (new Date(assessment.endDate).getTime() -
-                    new Date(assessment.startDate).getTime()) /
-                    (1000 * 60 * 60 * 24)
-                );
-                const durationText = duration === 1 ? "1 day" : `${duration} days`;
+              {filtered.map((assessment) => (
+                <div
+                  key={assessment._id}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate mb-2">
+                          {assessment.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-slate-400 mb-2">
+                          <FiCalendar className="h-4 w-4 flex-shrink-0" />
+                          <span>{new Date(assessment.startDate).toLocaleDateString()}</span>
+                          <span>-</span>
+                          <span>{new Date(assessment.endDate).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
+                          {assessment.description || "No description provided"}
+                        </p>
+                      </div>
+                      <span className={`${statusBadge(assessment.status)} ml-4 flex-shrink-0`}>
+                        {statusIcon(assessment.status)}
+                        <span className="ml-1 capitalize">{assessment.status}</span>
+                      </span>
+                    </div>
 
-                return (
-                  <div
-                    key={assessment._id}
-                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
-                    style={{
-                      animationDelay: `${index * 100}ms`,
-                      animation: "fadeInUp 0.6s ease-out forwards",
-                    }}
-                  >
-                    <div className="p-6">
-                      {/* Assessment Header */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">
-                            {assessment.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                            <FiCalendar className="h-4 w-4" />
-                            <span>{new Date(assessment.startDate).toLocaleDateString()}</span>
-                            <span>-</span>
-                            <span>{new Date(assessment.endDate).toLocaleDateString()}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {assessment.description || "No description provided"}
-                          </p>
-                        </div>
-                        <div className="flex items-center ml-4">
-                          <span className={getStatusBadge(assessment.status)}>
-                            {getStatusIcon(assessment.status)}
-                            <span className="ml-1 capitalize">{assessment.status}</span>
-                          </span>
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500 dark:text-slate-400">Term:</span>
+                        <span className="font-medium text-gray-900 dark:text-slate-100">
+                          {assessment.termId?.name ?? "Unknown Term"}
+                        </span>
                       </div>
 
-                      {/* Assessment Details */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Term:</span>
-                          <span className="font-medium text-gray-900">
-                            {typeof assessment.termId === "object"
-                              ? assessment.termId.name
-                              : "Unknown Term"}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Duration:</span>
-                          <span className="font-medium text-gray-900">{durationText}</span>
-                        </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500 dark:text-slate-400">Duration:</span>
+                        <span className="font-medium text-gray-900 dark:text-slate-100">
+                          {durationLabel(assessment)}
+                        </span>
                       </div>
+                    </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-center space-x-2 pt-4 mt-4 border-t border-gray-100">
+                    {canManage && (
+                      <div className="flex justify-center space-x-2 pt-4 mt-4 border-t border-gray-100 dark:border-slate-800">
                         <button
                           onClick={() => onEdit(assessment)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-all duration-300"
-                          title="Edit Assessment"
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/50 transition-all duration-300"
                         >
                           <FiEdit className="h-4 w-4 mr-1" />
                           Edit
@@ -399,45 +194,24 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
 
                         <button
                           onClick={() => onDelete(assessment)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-300"
-                          title="Delete Assessment"
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg hover:bg-red-100 dark:hover:bg-red-950/50 transition-all duration-300"
                         >
                           <FiTrash2 className="h-4 w-4 mr-1" />
-                          Delete
+                          Deactivate
                         </button>
                       </div>
-                    </div>
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Enhanced Pagination */}
-            {pagination.totalPages > 1 && <div className="mt-8">{renderPagination()}</div>}
+            <div className="mt-8">
+              <AssessmentPagination pagination={pagination} onPageChange={onPageChange} />
+            </div>
           </>
         )}
       </div>
-
-      {/* Add CSS for animations */}
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      `}</style>
     </div>
   );
 };

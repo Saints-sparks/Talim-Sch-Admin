@@ -1,649 +1,301 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+/**
+ * Assessment management — the exam and test windows a school runs inside a
+ * term.
+ *
+ * The list is a cached, server-paged query: changing page is cached, and every
+ * write invalidates the list rather than refetching it by hand. Creating,
+ * editing and deactivating are gated on `manage:assessments`, which is what
+ * the endpoints check.
+ */
+import React, { useState } from "react";
+import { FiAlertTriangle, FiClipboard, FiPlus, FiRefreshCw, FiTarget } from "react-icons/fi";
 import AssessmentSkeleton from "@/components/AssessmentSkeleton";
-import {
-  FiPlus,
-  FiRefreshCw,
-  FiAlertTriangle,
-  FiClipboard,
-  FiTrendingUp,
-  FiCalendar,
-  FiUsers,
-  FiTarget,
-} from "react-icons/fi";
-import { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
-import {
-  assessmentService,
-  AssessmentHasGradesError,
-  GradedCourseInfo,
-} from "@/app/services/assessment.service";
 import AssessmentList from "@/components/assessment/AssessmentList";
 import AssessmentCreateModal from "@/components/assessment/AssessmentCreateModal";
+import { AssessmentGradesConflictModal } from "@/components/assessment/AssessmentGradesConflictModal";
+import { AssessmentStatCards } from "@/components/assessment/AssessmentStatCards";
+import { ConfirmDialog } from "@/components/curriculum/ConfirmDialog";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { toast } from "@/components/CustomToast";
+import { useAssessments, useAssessmentMutations } from "@/hooks/assessments/queries";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  AssessmentHasGradesError,
+  type GradedCourseInfo,
+} from "@/app/services/assessment.service";
+import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import { Permission } from "@/lib/permissions";
+
+/** Rows the API is asked for per page. */
+const PAGE_SIZE = 10;
 
 interface AssessmentManagementPageProps {
-  terms: Term[] | any[]; // Allow both Term[] and TermResponse[]
+  terms: Term[];
 }
 
+/**
+ * Renders the assessments screen.
+ *
+ * @param props - The terms an assessment can belong to.
+ * @returns The screen.
+ */
 const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({ terms }) => {
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission(Permission.MANAGE_ASSESSMENTS);
 
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalCount: 0,
-    limit: 10,
-  });
+  const [page, setPage] = useState(1);
+  const assessmentsQuery = useAssessments(page, PAGE_SIZE);
+  const { create, update, deactivate } = useAssessmentMutations();
 
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    isOpen: boolean;
-    assessment: Assessment | null;
-    loading: boolean;
-  }>({
-    isOpen: false,
-    assessment: null,
-    loading: false,
-  });
-
+  const [editing, setEditing] = useState<Assessment | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [toDeactivate, setToDeactivate] = useState<Assessment | null>(null);
   const [gradesConflict, setGradesConflict] = useState<{
-    isOpen: boolean;
-    assessmentName: string;
+    name: string;
     courses: GradedCourseInfo[];
-  }>({
-    isOpen: false,
-    assessmentName: "",
-    courses: [],
-  });
+  } | null>(null);
 
-  // Filter assessments based on search and status
-  const filteredAssessments = assessments.filter((assessment) => {
-    const matchesSearch =
-      assessment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || assessment.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Calculate stats for dashboard cards
-  const assessmentStats = {
-    total: assessments.length,
-    active: assessments.filter((a) => a.status === "active").length,
-    pending: assessments.filter((a) => a.status === "pending").length,
-    completed: assessments.filter((a) => a.status === "completed").length,
+  const assessments = assessmentsQuery.data?.assessments ?? [];
+  const apiPagination = assessmentsQuery.data?.pagination;
+  const pagination = {
+    currentPage: apiPagination?.currentPage ?? page,
+    totalPages: apiPagination?.totalPages ?? 1,
+    totalCount: apiPagination?.totalItems ?? assessments.length,
+    limit: apiPagination?.itemsPerPage ?? PAGE_SIZE,
   };
 
-  // Load assessments with improved error handling
-  const loadAssessments = async (page: number = 1, showLoadingState: boolean = true) => {
-    try {
-      if (showLoadingState) {
-        setLoading(true);
-      }
-      setError(null); // Clear any previous errors
-
-      const response = await assessmentService.getAssessmentsBySchool(page, pagination.limit);
-
-      // Validate response structure
-      if (!response || !response.assessments) {
-        throw new Error("Invalid response format from server");
-      }
-
-      setAssessments(response.assessments);
-      setPagination({
-        currentPage: response.pagination?.currentPage || page,
-        totalPages: response.pagination?.totalPages || 1,
-        totalCount: response.pagination?.totalItems || response.assessments.length,
-        limit: response.pagination?.itemsPerPage || pagination.limit,
-      });
-
-      setRetryCount(0); // Reset retry count on success
-      setIsRetrying(false);
-    } catch (err) {
-      console.error("Error loading assessments:", err);
-
-      // Determine error message based on error type
-      let errorMessage = "Failed to load assessments. Please try again.";
-
-      if (err instanceof Error) {
-        if (err.message.includes("Network")) {
-          errorMessage = "Network error. Please check your connection and try again.";
-        } else if (err.message.includes("401") || err.message.includes("Unauthorized")) {
-          errorMessage = "Authentication error. Please log in again.";
-        } else if (err.message.includes("403") || err.message.includes("Forbidden")) {
-          errorMessage = "You do not have permission to view assessments.";
-        } else if (err.message.includes("404")) {
-          errorMessage = "Assessment service not found. Please contact support.";
-        } else if (err.message.includes("500")) {
-          errorMessage = "Server error. Please try again later.";
-        }
-      }
-
-      setError(errorMessage);
-
-      // Keep existing assessments if this is a refresh
-      if (page === 1 && assessments.length === 0) {
-        setAssessments([]);
-      }
-    } finally {
-      setLoading(false);
-      setIsRetrying(false);
-    }
+  const openCreate = () => {
+    setEditing(null);
+    setIsFormOpen(true);
   };
 
-  useEffect(() => {
-    loadAssessments();
-  }, []);
-
-  // Handle create assessment with proper error handling
-  const handleCreateAssessment = async (assessmentData: AssessmentForm) => {
-    try {
-      const newAssessment = await assessmentService.createAssessment({
-        name: assessmentData.name,
-        description: assessmentData.description,
-        termId: assessmentData.termId,
-        startDate: assessmentData.startDate,
-        endDate: assessmentData.endDate,
-        status: assessmentData.status || "pending",
-      });
-
-      // Refresh the assessments list
-      await loadAssessments(pagination.currentPage, false);
-      setShowCreateModal(false);
-
-      // Clear any existing errors
-      setError(null);
-    } catch (err) {
-      console.error("Error creating assessment:", err);
-
-      // Let the modal handle specific error display
-      let errorMessage = "Failed to create assessment.";
-      if (err instanceof Error) {
-        if (err.message.includes("duplicate") || err.message.includes("already exists")) {
-          errorMessage = "An assessment with this name already exists.";
-        } else if (err.message.includes("validation")) {
-          errorMessage = "Please check your input and try again.";
-        } else if (err.message.includes("term")) {
-          errorMessage = "Invalid term selected. Please choose a valid term.";
-        }
-      }
-
-      throw new Error(errorMessage);
-    }
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditing(null);
   };
 
-  // Handle edit assessment with proper error handling
-  const handleEditAssessment = async (assessmentData: AssessmentForm) => {
-    if (!editingAssessment) return;
-
+  /**
+   * Saves the form. Throws so the modal keeps the draft on screen and can show
+   * the failure next to the fields.
+   */
+  const handleSubmit = async (form: AssessmentForm) => {
     try {
-      await assessmentService.updateAssessment(editingAssessment._id, {
-        name: assessmentData.name,
-        description: assessmentData.description,
-        startDate: assessmentData.startDate,
-        endDate: assessmentData.endDate,
-        status: assessmentData.status,
-      });
-
-      // Refresh the assessments list
-      await loadAssessments(pagination.currentPage, false);
-      setEditingAssessment(null);
-      setShowCreateModal(false);
-
-      // Clear any existing errors
-      setError(null);
-    } catch (err) {
-      console.error("Error updating assessment:", err);
-
-      let errorMessage = "Failed to update assessment.";
-      if (err instanceof Error) {
-        if (err.message.includes("not found")) {
-          errorMessage = "Assessment not found. It may have been deleted.";
-        } else if (err.message.includes("permission")) {
-          errorMessage = "You do not have permission to edit this assessment.";
-        } else if (err.message.includes("validation")) {
-          errorMessage = "Please check your input and try again.";
-        }
-      }
-
-      throw new Error(errorMessage);
-    }
-  };
-
-  // Handle delete assessment with proper error handling
-  const handleDeleteAssessment = async () => {
-    if (!deleteConfirm.assessment) return;
-
-    const assessmentName = deleteConfirm.assessment.name;
-
-    try {
-      setDeleteConfirm((prev) => ({ ...prev, loading: true }));
-      await assessmentService.deleteAssessment(deleteConfirm.assessment._id);
-
-      await loadAssessments(pagination.currentPage, false);
-      setDeleteConfirm({ isOpen: false, assessment: null, loading: false });
-      setError(null);
-    } catch (err) {
-      setDeleteConfirm({ isOpen: false, assessment: null, loading: false });
-
-      if (err instanceof AssessmentHasGradesError) {
-        setGradesConflict({
-          isOpen: true,
-          assessmentName,
-          courses: err.coursesWithGrades,
+      if (editing) {
+        await update.mutateAsync({
+          id: editing._id,
+          payload: {
+            name: form.name,
+            description: form.description,
+            startDate: form.startDate,
+            endDate: form.endDate,
+            status: form.status,
+          },
         });
+        toast.success("Assessment updated successfully!");
+      } else {
+        await create.mutateAsync({
+          name: form.name,
+          description: form.description,
+          termId: form.termId,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          status: form.status ?? "pending",
+        });
+        toast.success("Assessment created successfully!");
+      }
+      closeForm();
+    } catch (error) {
+      logger.error("assessments", `Failed to ${editing ? "update" : "create"} assessment`, error);
+      throw new Error(
+        getErrorMessage(
+          error,
+          editing ? "Failed to update assessment." : "Failed to create assessment.",
+        ),
+      );
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!toDeactivate) return;
+    const name = toDeactivate.name;
+
+    try {
+      await deactivate.mutateAsync(toDeactivate._id);
+      setToDeactivate(null);
+      toast.success(`"${name}" has been deactivated.`);
+    } catch (error) {
+      setToDeactivate(null);
+
+      // A CONFLICT here is not a failure to report as one: it lists the
+      // courses whose grades block the change.
+      if (error instanceof AssessmentHasGradesError) {
+        setGradesConflict({ name, courses: error.coursesWithGrades });
         return;
       }
 
-      console.error("Error deleting assessment:", err);
-      let errorMessage = "Failed to deactivate assessment.";
-      if (err instanceof Error) {
-        if (err.message.includes("not found")) {
-          errorMessage = "Assessment not found. It may have already been deactivated.";
-        } else if (err.message.includes("permission")) {
-          errorMessage = "You do not have permission to deactivate this assessment.";
-        }
-      }
-      setError(errorMessage);
+      logger.error("assessments", "Failed to deactivate assessment", error);
+      toast.error(getErrorMessage(error, "Failed to deactivate assessment."));
     }
   };
 
-  // Handle page change with error handling
-  const handlePageChange = (page: number) => {
-    setError(null); // Clear errors when changing pages
-    loadAssessments(page);
-  };
-
-  // Retry mechanism
-  const handleRetry = async () => {
-    setIsRetrying(true);
-    setRetryCount((prev) => prev + 1);
-    await loadAssessments(pagination.currentPage);
-  };
-
-  // Clear error
-  const clearError = () => {
-    setError(null);
-  };
-
-  // Open edit modal
-  const openEditModal = (assessment: Assessment) => {
-    setEditingAssessment(assessment);
-    setShowCreateModal(true);
-  };
-
-  // Open delete confirmation
-  const openDeleteConfirm = (assessment: Assessment) => {
-    setDeleteConfirm({ isOpen: true, assessment, loading: false });
-  };
-
-  // Handle view assessment (navigate to assessment details)
-  const handleViewAssessment = (assessment: Assessment) => {
-    // TODO: Navigate to assessment details page
-  };
-
-  if (loading) return <AssessmentSkeleton />;
+  if (assessmentsQuery.isLoading && assessments.length === 0) return <AssessmentSkeleton />;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <>
-        {/* Enhanced Header with Talim Styling */}
-        <div className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl" data-guide="assessments-header">
-          <div className="px-6 py-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <FiTarget className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-white">Assessment Management</h1>
-                  <p className="text-blue-100 mt-1">Create, manage and track student assessments</p>
-                </div>
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950">
+      <div
+        className="flex-shrink-0 bg-[#003366] m-6 rounded-2xl"
+        data-guide="assessments-header"
+      >
+        <div className="px-6 py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FiTarget className="h-7 w-7 text-white" />
               </div>
-
-              <div className="flex items-center space-x-3">
-                <Tooltip
-                  content="Set up an exam, test, or project for the selected term."
-                  side="top"
-                >
-                  <button
-                    data-guide="assessments-create"
-                    onClick={() => {
-                      setEditingAssessment(null);
-                      setShowCreateModal(true);
-                    }}
-                    className="inline-flex items-center px-6 py-2.5 bg-white text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    <FiPlus className="h-4 w-4 mr-2" />
-                    Create Assessment
-                  </button>
-                </Tooltip>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Assessment Management</h1>
+                <p className="text-blue-100 mt-1">Create, manage and track student assessments</p>
               </div>
             </div>
+
+            <PermissionGate permission={Permission.MANAGE_ASSESSMENTS}>
+              <Tooltip content="Set up an exam, test, or project for the selected term." side="top">
+                <button
+                  data-guide="assessments-create"
+                  onClick={openCreate}
+                  className="inline-flex items-center px-6 py-2.5 bg-white text-[#003366] text-sm font-semibold rounded-xl hover:bg-blue-50 transition-all duration-300 shadow-lg"
+                >
+                  <FiPlus className="h-4 w-4 mr-2" />
+                  Create Assessment
+                </button>
+              </Tooltip>
+            </PermissionGate>
           </div>
         </div>
+      </div>
 
-        {/* Enhanced Content Area */}
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto">
-            <div className="px-6 ">
-              {/* Enhanced Stats Dashboard Cards */}
-              <div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-                data-guide="assessments-stats"
-              >
-                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Total Assessments</p>
-                      <p className="text-3xl font-bold text-[#003366]">{assessmentStats.total}</p>
-                    </div>
-                    <div className="p-3 bg-[#003366] rounded-xl shadow-lg group-hover:shadow-blue-200">
-                      <FiClipboard className="h-6 w-6 text-white" />
-                    </div>
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
+          <div className="px-6 pb-6">
+            <AssessmentStatCards
+              assessments={assessments}
+              isLoading={assessmentsQuery.isFetching && assessments.length === 0}
+            />
+
+            {assessmentsQuery.isError && (
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-2xl p-6 mb-8 shadow-sm">
+                <div className="flex items-start">
+                  <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-xl flex-shrink-0">
+                    <FiAlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                   </div>
-                </div>
-
-                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Active</p>
-                      <p className="text-3xl font-bold text-[#154473]">{assessmentStats.active}</p>
-                    </div>
-                    <div className="p-3 bg-[#154473] rounded-xl shadow-lg">
-                      <FiTrendingUp className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Pending</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
-                        {assessmentStats.pending}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg group-hover:shadow-amber-200">
-                      <FiCalendar className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
-                      <p className="text-3xl font-bold text-[#003366]">
-                        {assessmentStats.completed}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-[#003366] rounded-xl shadow-lg">
-                      <FiUsers className="h-6 w-6 text-white" />
-                    </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                      Something went wrong
+                    </h3>
+                    <p className="text-red-700 dark:text-red-300 mb-4">
+                      {getErrorMessage(
+                        assessmentsQuery.error,
+                        "Failed to load assessments. Please try again.",
+                      )}
+                    </p>
+                    <button
+                      onClick={() => assessmentsQuery.refetch()}
+                      disabled={assessmentsQuery.isFetching}
+                      className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 shadow-lg"
+                    >
+                      <FiRefreshCw
+                        className={`h-4 w-4 mr-2 ${assessmentsQuery.isFetching ? "animate-spin" : ""}`}
+                      />
+                      {assessmentsQuery.isFetching ? "Retrying..." : "Try Again"}
+                    </button>
                   </div>
                 </div>
               </div>
+            )}
 
-              {error && (
-                <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-sm">
-                  <div className="flex items-start">
-                    <div className="p-2 bg-red-100 rounded-xl">
-                      <FiAlertTriangle className="h-6 w-6 text-red-600" />
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <h3 className="text-lg font-semibold text-red-800 mb-2">
-                        Something went wrong
-                      </h3>
-                      <p className="text-red-700 mb-4">{error}</p>
-
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          onClick={handleRetry}
-                          disabled={isRetrying}
-                          className="inline-flex items-center px-5 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 shadow-lg"
-                        >
-                          {isRetrying ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Retrying...
-                            </>
-                          ) : (
-                            <>
-                              <FiRefreshCw className="h-4 w-4 mr-2" />
-                              Try Again
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={clearError}
-                          className="px-5 py-2.5 text-red-600 hover:text-red-800 font-medium bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-300"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-
-                      {retryCount > 0 && (
-                        <p className="mt-3 text-sm text-red-600 bg-red-100 px-3 py-1 rounded-lg inline-block">
-                          Retry attempts: {retryCount}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+            {!assessmentsQuery.isError && assessments.length === 0 ? (
+              <div
+                className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 p-16 text-center"
+                data-guide="assessments-list"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-950/50 dark:to-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-8">
+                  <FiClipboard className="h-12 w-12 text-blue-600 dark:text-blue-300" />
                 </div>
-              )}
-
-              {/* Enhanced Assessment Content */}
-              {!error && filteredAssessments.length === 0 ? (
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">
+                  No assessments created yet
+                </h3>
+                <p className="text-gray-600 dark:text-slate-400 mb-10 max-w-md mx-auto text-lg">
+                  {canManage
+                    ? "Get started by creating your first assessment to evaluate student performance and track academic progress."
+                    : "Assessments created for this school will appear here."}
+                </p>
+                <PermissionGate permission={Permission.MANAGE_ASSESSMENTS}>
+                  <button
+                    onClick={openCreate}
+                    className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl"
+                  >
+                    <FiPlus className="h-5 w-5 mr-3" />
+                    Create Your First Assessment
+                  </button>
+                </PermissionGate>
+              </div>
+            ) : (
+              !assessmentsQuery.isError && (
                 <div
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center"
-                  data-guide="assessments-list"
-                >
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <FiClipboard className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    {searchQuery || filterStatus !== "all"
-                      ? "No assessments found"
-                      : "No assessments created yet"}
-                  </h3>
-                  <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
-                    {searchQuery || filterStatus !== "all"
-                      ? "Try adjusting your search or filter criteria to find what you're looking for."
-                      : "Get started by creating your first assessment to evaluate student performance and track academic progress."}
-                  </p>
-                  {!searchQuery && filterStatus === "all" && (
-                    <button
-                      onClick={() => {
-                        setEditingAssessment(null);
-                        setShowCreateModal(true);
-                      }}
-                      className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-                    >
-                      <FiPlus className="h-5 w-5 mr-3" />
-                      Create Your First Assessment
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                  className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden"
                   data-guide="assessments-list"
                 >
                   <AssessmentList
-                    assessments={filteredAssessments}
+                    assessments={assessments}
                     terms={terms}
-                    loading={false}
+                    loading={assessmentsQuery.isFetching}
+                    canManage={canManage}
                     pagination={pagination}
-                    onPageChange={handlePageChange}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteConfirm}
-                    onView={handleViewAssessment}
-                    onRefresh={() => {
-                      setError(null);
-                      loadAssessments(pagination.currentPage);
+                    onPageChange={setPage}
+                    onEdit={(assessment) => {
+                      setEditing(assessment);
+                      setIsFormOpen(true);
                     }}
+                    onDelete={setToDeactivate}
                   />
                 </div>
-              )}
-            </div>
+              )
+            )}
           </div>
         </div>
-      </>
+      </div>
 
-      {/* Create/Edit Assessment Modal */}
       <AssessmentCreateModal
-        isOpen={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setEditingAssessment(null);
-        }}
-        onSubmit={editingAssessment ? handleEditAssessment : handleCreateAssessment}
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        onSubmit={handleSubmit}
         terms={terms}
-        editingAssessment={editingAssessment}
-        loading={loading}
+        editingAssessment={editing}
+        loading={create.isPending || update.isPending}
       />
 
-      {/* Grades Conflict Modal — shown when an assessment with recorded grades is deactivated */}
-      {gradesConflict.isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100">
-            <div className="p-8">
-              {/* Header */}
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center mr-4 flex-shrink-0">
-                  <FiAlertTriangle className="h-7 w-7 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Cannot Deactivate Assessment</h3>
-                  <p className="text-gray-500 mt-1 text-sm">Grades have already been recorded</p>
-                </div>
-              </div>
+      <ConfirmDialog
+        isOpen={Boolean(toDeactivate)}
+        title="Deactivate Assessment"
+        message={`Are you sure you want to deactivate "${toDeactivate?.name}"? It will be hidden from teachers and no longer available for grading.`}
+        confirmLabel="Deactivate Assessment"
+        pendingLabel="Deactivating..."
+        isPending={deactivate.isPending}
+        onConfirm={handleDeactivate}
+        onCancel={() => setToDeactivate(null)}
+      />
 
-              {/* Explanation */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <p className="text-amber-800 text-sm">
-                  <span className="font-semibold">"{gradesConflict.assessmentName}"</span> cannot be
-                  deactivated because the following courses already have grades recorded against it.
-                  Deactivating would cause those grades to disappear from reports.
-                </p>
-              </div>
-
-              {/* Course + Teacher list */}
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Courses with recorded grades:
-                </p>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {gradesConflict.courses.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-[#003366] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <FiUsers className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {item.courseName}
-                        </p>
-                        <p className="text-xs text-gray-600 truncate">
-                          {item.teacherName}
-                          {item.teacherEmail && (
-                            <span className="text-gray-400"> &middot; {item.teacherEmail}</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() =>
-                    setGradesConflict({
-                      isOpen: false,
-                      assessmentName: "",
-                      courses: [],
-                    })
-                  }
-                  className="px-8 py-3 bg-[#003366] text-white font-semibold rounded-xl hover:bg-[#154473] transition-all duration-300 shadow-lg"
-                >
-                  Understood
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Delete Confirmation Modal with Talim Styling */}
-      {deleteConfirm.isOpen && deleteConfirm.assessment && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100">
-            <div className="p-8">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mr-4">
-                  <FiAlertTriangle className="h-7 w-7 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Deactivate Assessment</h3>
-                  <p className="text-gray-500 mt-1">The assessment will be hidden from teachers</p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 mb-8">
-                <p className="text-gray-700">
-                  Are you sure you want to deactivate{" "}
-                  <span className="font-bold text-gray-900">
-                    "{deleteConfirm.assessment?.name}"
-                  </span>
-                  ? It will be hidden from teachers and no longer available for grading.
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={() =>
-                    setDeleteConfirm({
-                      isOpen: false,
-                      assessment: null,
-                      loading: false,
-                    })
-                  }
-                  className="px-6 py-3 text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-all duration-300"
-                  disabled={deleteConfirm.loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAssessment}
-                  className="px-8 py-3 text-white bg-gradient-to-r from-red-600 to-red-700 rounded-xl hover:from-red-700 hover:to-red-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                  disabled={deleteConfirm.loading}
-                >
-                  {deleteConfirm.loading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Deactivating...
-                    </div>
-                  ) : (
-                    "Deactivate Assessment"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssessmentGradesConflictModal
+        isOpen={Boolean(gradesConflict)}
+        assessmentName={gradesConflict?.name ?? ""}
+        courses={gradesConflict?.courses ?? []}
+        onClose={() => setGradesConflict(null)}
+      />
     </div>
   );
 };
