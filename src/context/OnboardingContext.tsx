@@ -1,3 +1,15 @@
+/**
+ * Onboarding progress — which setup steps this school has finished.
+ *
+ * Progress lives in `localStorage` under the school id, not on the server:
+ * the only thing the API records is whether phase 1 is done. A server "true"
+ * is authoritative; a server "false" is not trusted over local state, because
+ * the PATCH that records it is fire-and-forget and may not have landed.
+ *
+ * `useOnboardingSync` is what keeps this honest — it re-derives phase-2 steps
+ * from the school's real data, so a step done from another device or another
+ * page is ticked off here too.
+ */
 "use client";
 
 import React, {
@@ -10,6 +22,7 @@ import React, {
 import { API_URLS } from "@/app/lib/api/config";
 import { api } from "@/lib/apiClient";
 
+/** Every step of the two onboarding phases. */
 export type OnboardingStepId =
   | "school-profile"
   | "personal-profile"
@@ -23,15 +36,22 @@ export type OnboardingStepId =
   | "timetable-entry"
   | "create-assessment";
 
+/** One step of the checklist. */
 export interface OnboardingStep {
   id: OnboardingStepId;
+  /** Shown in the rail and the card header. */
   label: string;
+  /** One sentence under the label. */
   description: string;
+  /** Whether full access waits on it; optional steps can be skipped. */
   required: boolean;
+  /** 1 = profile setup before the portal opens, 2 = the setup checklist. */
   phase: 1 | 2;
+  /** Steps that must be done first; until they are, this one is locked. */
   deps: OnboardingStepId[];
 }
 
+/** The checklist, in the order it is shown. */
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "school-profile",
@@ -123,6 +143,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ];
 
+/** What is persisted per school. */
 interface OnboardingState {
   completedSteps: OnboardingStepId[];
   phase1Completed: boolean;
@@ -150,14 +171,22 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(
   undefined
 );
 
-export const useOnboarding = () => {
+/**
+ * Onboarding progress for the signed-in school.
+ *
+ * @returns The checklist state and the actions that change it.
+ * @throws When used outside `OnboardingProvider`.
+ */
+export const useOnboarding = (): OnboardingContextType => {
   const ctx = useContext(OnboardingContext);
   if (!ctx) throw new Error("useOnboarding must be used within OnboardingProvider");
   return ctx;
 };
 
+/** Where one school's progress is stored. */
 const storageKey = (schoolId: string) => `onboarding_${schoolId}`;
 
+/** Reads a school's stored progress, falling back to "nothing done". */
 const loadState = (schoolId: string): OnboardingState => {
   if (typeof window === "undefined") {
     return { completedSteps: [], phase1Completed: false, setupDismissed: false };
@@ -171,6 +200,7 @@ const loadState = (schoolId: string): OnboardingState => {
   return { completedSteps: [], phase1Completed: false, setupDismissed: false };
 };
 
+/** Writes a school's progress; a full or blocked store is not fatal. */
 const saveState = (schoolId: string, state: OnboardingState) => {
   try {
     localStorage.setItem(storageKey(schoolId), JSON.stringify(state));
@@ -181,6 +211,13 @@ const saveState = (schoolId: string, state: OnboardingState) => {
 
 const PHASE_1_STEP_IDS: OnboardingStepId[] = ["school-profile", "personal-profile"];
 
+/**
+ * Marks the cached user as onboarded in whichever storage holds it.
+ *
+ * Both are written because "keep me signed in" decides which one the session
+ * was put in, and the app shell reads `onboardingCompleted` from there to
+ * decide whether to send the admin back into onboarding on the next load.
+ */
 const markStoredUserOnboardingComplete = () => {
   if (typeof window === "undefined") return;
 
@@ -200,6 +237,16 @@ const markStoredUserOnboardingComplete = () => {
   });
 };
 
+/**
+ * Provides onboarding progress to the app.
+ *
+ * @param props.schoolId - The signed-in school; progress is stored per school.
+ * @param props.serverOnboardingCompleted - The account's `onboardingCompleted`
+ *   flag, trusted only when it is `true`.
+ * @param props.isAuthLoading - True while the session is still being read, so
+ *   a signed-out render is not mistaken for "nothing done".
+ * @returns The provider.
+ */
 export const OnboardingProvider: React.FC<{
   children: React.ReactNode;
   schoolId: string | null;
