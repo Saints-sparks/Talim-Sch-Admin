@@ -1,23 +1,45 @@
-import { API_ENDPOINTS } from "../lib/api/config";
-import { apiClient } from "@/lib/apiClient";
+/**
+ * Assessments — the examination and test windows a school runs inside a term.
+ *
+ * Every endpoint scopes itself to the caller's school from the bearer token, so
+ * nothing here sends or compares a school id. Writes require
+ * `manage:assessments`; a sub-admin without it gets `FORBIDDEN`.
+ */
+import { API_URLS } from "../lib/api/config";
+import { api, apiClient } from "@/lib/apiClient";
+import { ApiError } from "@/lib/apiError";
 
+/** Where an assessment sits in its lifecycle. Mirrors the backend enum. */
+export type AssessmentStatus = "pending" | "active" | "completed" | "cancelled";
+
+/** Every status, in the order the UI offers them. */
+export const ASSESSMENT_STATUSES: readonly AssessmentStatus[] = [
+  "pending",
+  "active",
+  "completed",
+  "cancelled",
+] as const;
+
+/** Body for `POST /assessments`, mirroring `CreateAssessmentDto`. */
 export interface CreateAssessmentRequest {
   name: string;
   description?: string;
   termId: string;
   startDate: string;
   endDate: string;
-  status?: "pending" | "active" | "completed" | "cancelled";
+  status?: AssessmentStatus;
 }
 
+/** Body for `PUT /assessments/:id`, mirroring `UpdateAssessmentDto`. */
 export interface UpdateAssessmentRequest {
   name?: string;
   description?: string;
   startDate?: string;
   endDate?: string;
-  status?: "pending" | "active" | "completed" | "cancelled";
+  status?: AssessmentStatus;
 }
 
+/** An assessment with its term and author populated. */
 export interface AssessmentResponse {
   _id: string;
   name: string;
@@ -31,7 +53,7 @@ export interface AssessmentResponse {
   schoolId: string;
   startDate: string;
   endDate: string;
-  status: "pending" | "active" | "completed" | "cancelled";
+  status: AssessmentStatus;
   createdBy: {
     _id: string;
     name: string;
@@ -41,205 +63,202 @@ export interface AssessmentResponse {
   updatedAt: string;
 }
 
-export interface AssessmentsResponse {
-  assessments: AssessmentResponse[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-  };
+/** Pagination meta as the assessments list returns it. */
+export interface AssessmentPagination {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
 }
 
+/** One page of the school's assessments. */
+export interface AssessmentsResponse {
+  assessments: AssessmentResponse[];
+  pagination: AssessmentPagination;
+}
+
+/** A course that already has grades recorded against an assessment. */
 export interface GradedCourseInfo {
   courseName: string;
   teacherName: string;
   teacherEmail: string;
 }
 
-export class AssessmentHasGradesError extends Error {
-  coursesWithGrades: GradedCourseInfo[];
-  constructor(message: string, courses: GradedCourseInfo[]) {
-    super(message);
+/**
+ * The `CONFLICT` raised when an assessment cannot be deactivated because
+ * grades already exist for it.
+ *
+ * Extends `ApiError` so callers that only know about `ApiError` still read the
+ * right `code` and `message`; the extra `coursesWithGrades` lets the page name
+ * the teachers who have already graded.
+ */
+export class AssessmentHasGradesError extends ApiError {
+  readonly coursesWithGrades: GradedCourseInfo[];
+
+  constructor(message: string, coursesWithGrades: GradedCourseInfo[]) {
+    super("CONFLICT", message, 409);
     this.name = "AssessmentHasGradesError";
-    this.coursesWithGrades = courses;
+    this.coursesWithGrades = coursesWithGrades;
   }
 }
 
-class AssessmentService {
-  // Note: Authorization headers are now handled automatically by apiClient
+/** The assessments collection; sub-paths are built from it. */
+const ASSESSMENTS = API_URLS.ASSESSMENTS.CREATE_ASSESSMENT;
 
+/**
+ * The school list route takes no id — the backend reads the school from the
+ * token — so the `:schoolId` placeholder in `API_URLS` is not interpolated.
+ */
+const ASSESSMENTS_BY_SCHOOL = `${ASSESSMENTS}/school/`;
+
+/** Envelope `POST` and `PUT` wrap the saved assessment in. */
+interface AssessmentEnvelope {
+  message?: string;
+  assessment: AssessmentResponse;
+}
+
+/** Extra fields Nest attaches to the 409 body when grades block a delete. */
+interface ConflictBody {
+  coursesWithGrades?: GradedCourseInfo[];
+}
+
+export const assessmentService = {
   /**
-   * Create a new assessment
+   * Creates an assessment in a term.
+   *
+   * @param data - The assessment to create; dates must be ISO strings.
+   * @returns The created assessment.
+   * @throws `ApiError` — `VALIDATION_FAILED` when the dates or term are
+   *   rejected, `FORBIDDEN` without `manage:assessments`.
    */
   async createAssessment(data: CreateAssessmentRequest): Promise<AssessmentResponse> {
-    try {
-      const response = await apiClient.post(`${API_ENDPOINTS.BASE_URL}/assessments`, data);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create assessment");
-      }
-
-      const result = await response.json();
-      return result.assessment;
-    } catch (error) {
-      console.error("Error creating assessment:", error);
-      throw error;
-    }
-  }
+    const result = await api.post<AssessmentEnvelope>(ASSESSMENTS, data);
+    return result.assessment;
+  },
 
   /**
-   * Get assessments by school with pagination
+   * A page of the school's assessments.
+   *
+   * @param page - 1-based page number.
+   * @param limit - Rows per page.
+   * @returns The page and its pagination meta.
    */
-  async getAssessmentsBySchool(page: number = 1, limit: number = 10): Promise<AssessmentsResponse> {
-    try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.BASE_URL}/assessments/school/?page=${page}&limit=${limit}`
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch assessments");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching assessments:", error);
-      throw error;
-    }
-  }
+  async getAssessmentsBySchool(page = 1, limit = 10): Promise<AssessmentsResponse> {
+    const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+    return api.get<AssessmentsResponse>(`${ASSESSMENTS_BY_SCHOOL}?${query}`);
+  },
 
   /**
-   * Get assessments by term
+   * Every assessment in one term.
+   *
+   * @param termId - Term to list assessments for.
+   * @returns The term's assessments.
    */
   async getAssessmentsByTerm(termId: string): Promise<AssessmentResponse[]> {
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.BASE_URL}/assessments/term/${termId}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch assessments for term");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching assessments by term:", error);
-      throw error;
-    }
-  }
+    return api.get<AssessmentResponse[]>(
+      API_URLS.ASSESSMENTS.GET_ASSESSMENTS_BY_TERM.replace(":termId", encodeURIComponent(termId)),
+    );
+  },
 
   /**
-   * Get assessment by ID
+   * One assessment.
+   *
+   * @param id - Assessment id.
+   * @returns The assessment.
+   * @throws `ApiError` with code `NOT_FOUND` when it belongs to another school.
    */
   async getAssessmentById(id: string): Promise<AssessmentResponse> {
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch assessment");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching assessment:", error);
-      throw error;
-    }
-  }
+    return api.get<AssessmentResponse>(
+      API_URLS.ASSESSMENTS.GET_ASSESSMENT_BY_ID.replace(":id", encodeURIComponent(id)),
+    );
+  },
 
   /**
-   * Update an assessment
+   * Updates an assessment.
+   *
+   * @param id - Assessment to update.
+   * @param data - Fields to change; every field is optional.
+   * @returns The updated assessment.
    */
   async updateAssessment(id: string, data: UpdateAssessmentRequest): Promise<AssessmentResponse> {
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`, data);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update assessment");
-      }
-
-      const result = await response.json();
-      return result.assessment;
-    } catch (error) {
-      console.error("Error updating assessment:", error);
-      throw error;
-    }
-  }
+    const result = await api.put<AssessmentEnvelope>(
+      API_URLS.ASSESSMENTS.UPDATE_ASSESSMENT.replace(":id", encodeURIComponent(id)),
+      data,
+    );
+    return result.assessment;
+  },
 
   /**
-   * Deactivate an assessment (soft-delete).
-   * Throws AssessmentHasGradesError (with course/teacher details) when grades exist.
+   * Deactivates an assessment (a soft delete on the backend).
+   *
+   * @param id - Assessment to deactivate.
+   * @throws `AssessmentHasGradesError` when grades already exist for it, so the
+   *   page can list the courses and teachers that block the change; any other
+   *   failure throws a plain `ApiError`.
    */
   async deleteAssessment(id: string): Promise<void> {
-    try {
-      const response = await apiClient.delete(`${API_ENDPOINTS.BASE_URL}/assessments/${id}`);
+    // The raw client rather than `api.delete`: the 409 body carries
+    // `coursesWithGrades`, which `ApiError` has no field for, so the body has
+    // to be read here before it is turned into an error.
+    const response = await apiClient.delete(
+      API_URLS.ASSESSMENTS.DELETE_ASSESSMENT.replace(":id", encodeURIComponent(id)),
+    );
+    if (response.ok) return;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 409) {
-          throw new AssessmentHasGradesError(
-            errorData.message || "Cannot deactivate assessment with existing grades",
-            errorData.coursesWithGrades ?? []
-          );
-        }
-        throw new Error(errorData.message || "Failed to delete assessment");
-      }
-    } catch (error) {
-      console.error("Error deleting assessment:", error);
-      throw error;
+    const body = (await response.json().catch(() => null)) as (ConflictBody & { message?: string }) | null;
+    const error = ApiError.fromResponse(response, body);
+    if (response.status === 409) {
+      throw new AssessmentHasGradesError(error.message, body?.coursesWithGrades ?? []);
     }
-  }
+    throw error;
+  },
 
   /**
-   * Date validation utilities
+   * Mirrors the server's date rules so the form can refuse before the request.
+   *
+   * @param startDate - Start date, any value `Date` parses.
+   * @param endDate - End date.
+   * @returns `{ isValid: true }`, or the first problem found.
    */
-  validateAssessmentDates(
-    startDate: string,
-    endDate: string
-  ): { isValid: boolean; error?: string } {
+  validateAssessmentDates(startDate: string, endDate: string): { isValid: boolean; error?: string } {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (start >= end) {
-      return { isValid: false, error: "End date must be after start date" };
-    }
-
-    if (start < today) {
-      return { isValid: false, error: "Start date cannot be in the past" };
-    }
-
+    if (start >= end) return { isValid: false, error: "End date must be after start date" };
+    if (start < today) return { isValid: false, error: "Start date cannot be in the past" };
     return { isValid: true };
-  }
+  },
 
   /**
-   * Format date for API
+   * Converts a date input's value to the ISO string the API expects.
+   *
+   * @param dateString - Value from a `<input type="date">`.
+   * @returns The ISO 8601 string.
    */
   formatDateForAPI(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toISOString();
-  }
+    return new Date(dateString).toISOString();
+  },
 
   /**
-   * Get status color for UI
+   * Tailwind classes for a status badge, in both themes.
+   *
+   * @param status - The assessment status.
+   * @returns Background and text classes.
    */
   getStatusColor(status: string): string {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
       case "active":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-300";
     }
-  }
-}
-
-export const assessmentService = new AssessmentService();
+  },
+};

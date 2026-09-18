@@ -93,9 +93,7 @@ const EditClass: React.FC = () => {
     return `${teacher.firstName} ${teacher.lastName}`;
   };
 
-  const getTeacherEmail = (teacher: Teacher): string => {
-    return teacher.email;
-  };
+  const getTeacherEmail = (teacher: Teacher): string => teacher.email ?? "";
 
   const getCurrentTeacherName = (): string => {
     if (!classData?.classTeacherId) return "No teacher assigned";

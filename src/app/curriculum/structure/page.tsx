@@ -925,8 +925,6 @@ const CurriculumStructureMain: React.FC = () => {
         subjectId={activeSubjectForCourse?._id}
         subjectName={activeSubjectForCourse?.name}
         initialClassId={activeSubjectForCourse?.classId || ""}
-        preloadedTeachers={teachers}
-        preloadedClasses={classes}
       />
     </div>
   );

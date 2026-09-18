@@ -1,7 +1,18 @@
-import { assessmentService } from "@/app/services/assessment.service";
-import { apiClient } from "@/lib/apiClient";
+import {
+  assessmentService,
+  AssessmentHasGradesError,
+} from "@/app/services/assessment.service";
+import { api, apiClient } from "@/lib/apiClient";
+import { ApiError } from "@/lib/apiError";
 
 jest.mock("@/lib/apiClient", () => ({
+  api: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
+  },
   apiClient: {
     get: jest.fn(),
     post: jest.fn(),
@@ -11,16 +22,13 @@ jest.mock("@/lib/apiClient", () => ({
   },
 }));
 
-const mockGet = apiClient.get as jest.Mock;
-const mockPost = apiClient.post as jest.Mock;
-const mockPut = apiClient.put as jest.Mock;
-const mockDelete = apiClient.delete as jest.Mock;
+const mockGet = api.get as jest.Mock;
+const mockPost = api.post as jest.Mock;
+const mockPut = api.put as jest.Mock;
+const mockRawDelete = apiClient.delete as jest.Mock;
 
-function ok(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200 });
-}
-function err(message: string, status = 400) {
-  return new Response(JSON.stringify({ message }), { status });
+function response(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status });
 }
 
 beforeEach(() => jest.clearAllMocks());
@@ -30,20 +38,23 @@ beforeEach(() => jest.clearAllMocks());
 describe("createAssessment", () => {
   it("posts to /assessments and returns assessment from result.assessment", async () => {
     const assessment = { _id: "a1", name: "Mid Term", status: "pending" };
-    mockPost.mockResolvedValueOnce(ok({ assessment }));
+    mockPost.mockResolvedValueOnce({ assessment });
     const payload = { name: "Mid Term", termId: "tm1", startDate: "2025-10-01", endDate: "2025-10-15" };
     await expect(assessmentService.createAssessment(payload)).resolves.toEqual(assessment);
+    expect(mockPost).toHaveBeenCalledWith("/assessments", payload);
   });
 
-  it("throws on server error", async () => {
-    mockPost.mockResolvedValueOnce(err("Term not found", 404));
-    await expect(assessmentService.createAssessment({ name: "X", termId: "tm0", startDate: "", endDate: "" })).rejects.toThrow("Term not found");
+  it("propagates the ApiError the client throws", async () => {
+    mockPost.mockRejectedValueOnce(new ApiError("NOT_FOUND", "Term not found", 404));
+    await expect(
+      assessmentService.createAssessment({ name: "X", termId: "tm0", startDate: "", endDate: "" }),
+    ).rejects.toThrow("Term not found");
   });
 });
 
 describe("getAssessmentsBySchool", () => {
   it("requests with default pagination", async () => {
-    mockGet.mockResolvedValueOnce(ok({ assessments: [], pagination: {} }));
+    mockGet.mockResolvedValueOnce({ assessments: [], pagination: {} });
     await assessmentService.getAssessmentsBySchool();
     const url = mockGet.mock.calls[0][0] as string;
     expect(url).toContain("page=1");
@@ -51,51 +62,78 @@ describe("getAssessmentsBySchool", () => {
   });
 
   it("uses provided page and limit", async () => {
-    mockGet.mockResolvedValueOnce(ok({ assessments: [], pagination: {} }));
+    mockGet.mockResolvedValueOnce({ assessments: [], pagination: {} });
     await assessmentService.getAssessmentsBySchool(3, 25);
     const url = mockGet.mock.calls[0][0] as string;
     expect(url).toContain("page=3");
     expect(url).toContain("limit=25");
   });
+
+  it("sends no school id — the API reads it from the token", async () => {
+    mockGet.mockResolvedValueOnce({ assessments: [], pagination: {} });
+    await assessmentService.getAssessmentsBySchool();
+    expect(mockGet.mock.calls[0][0]).not.toContain(":schoolId");
+  });
 });
 
 describe("getAssessmentsByTerm", () => {
   it("calls the correct endpoint", async () => {
-    mockGet.mockResolvedValueOnce(ok([]));
+    mockGet.mockResolvedValueOnce([]);
     await assessmentService.getAssessmentsByTerm("tm1");
-    const url = mockGet.mock.calls[0][0] as string;
-    expect(url).toContain("/assessments/term/tm1");
+    expect(mockGet.mock.calls[0][0]).toBe("/assessments/term/tm1");
   });
 });
 
 describe("getAssessmentById", () => {
   it("calls the correct endpoint", async () => {
-    mockGet.mockResolvedValueOnce(ok({ _id: "a1" }));
+    mockGet.mockResolvedValueOnce({ _id: "a1" });
     await assessmentService.getAssessmentById("a1");
-    const url = mockGet.mock.calls[0][0] as string;
-    expect(url).toContain("/assessments/a1");
+    expect(mockGet.mock.calls[0][0]).toBe("/assessments/a1");
   });
 });
 
 describe("updateAssessment", () => {
   it("puts update payload and returns assessment from result.assessment", async () => {
     const updated = { _id: "a1", name: "Final Exam" };
-    mockPut.mockResolvedValueOnce(ok({ assessment: updated }));
+    mockPut.mockResolvedValueOnce({ assessment: updated });
     await expect(assessmentService.updateAssessment("a1", { name: "Final Exam" })).resolves.toEqual(updated);
+    expect(mockPut).toHaveBeenCalledWith("/assessments/a1", { name: "Final Exam" });
   });
 });
 
 describe("deleteAssessment", () => {
   it("calls delete endpoint", async () => {
-    mockDelete.mockResolvedValueOnce(ok({}));
+    mockRawDelete.mockResolvedValueOnce(response({}));
     await assessmentService.deleteAssessment("a1");
-    const url = mockDelete.mock.calls[0][0] as string;
-    expect(url).toContain("/assessments/a1");
+    expect(mockRawDelete.mock.calls[0][0]).toBe("/assessments/a1");
   });
 
-  it("throws when delete fails", async () => {
-    mockDelete.mockResolvedValueOnce(err("Not found", 404));
+  it("throws an ApiError when delete fails", async () => {
+    mockRawDelete.mockResolvedValueOnce(response({ message: "Not found" }, 404));
     await expect(assessmentService.deleteAssessment("a999")).rejects.toThrow("Not found");
+  });
+
+  it("throws AssessmentHasGradesError carrying the blocking courses on 409", async () => {
+    const coursesWithGrades = [
+      { courseName: "Algebra", teacherName: "Ada Lovelace", teacherEmail: "ada@example.com" },
+    ];
+    mockRawDelete.mockResolvedValueOnce(
+      response({ message: "Grades already recorded", coursesWithGrades }, 409),
+    );
+
+    await expect(assessmentService.deleteAssessment("a1")).rejects.toMatchObject({
+      name: "AssessmentHasGradesError",
+      code: "CONFLICT",
+      coursesWithGrades,
+    });
+  });
+
+  it("gives AssessmentHasGradesError an empty list when the body carries none", async () => {
+    mockRawDelete.mockResolvedValueOnce(response({ message: "Blocked" }, 409));
+    const error = await assessmentService.deleteAssessment("a1").catch((e) => e);
+    expect(error).toBeInstanceOf(AssessmentHasGradesError);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.coursesWithGrades).toEqual([]);
   });
 });
 
@@ -145,5 +183,11 @@ describe("getStatusColor", () => {
 
   it("returns gray for unknown status", () => {
     expect(assessmentService.getStatusColor("unknown")).toContain("gray");
+  });
+
+  it("carries a dark-theme variant for every status", () => {
+    for (const status of ["pending", "active", "completed", "cancelled", "unknown"]) {
+      expect(assessmentService.getStatusColor(status)).toContain("dark:");
+    }
   });
 });
