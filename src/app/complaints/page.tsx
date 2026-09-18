@@ -107,10 +107,10 @@ const Complaints: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100">
+    <div className="p-6 bg-gray-100 dark:bg-slate-800">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Complaints</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 dark:text-slate-100">Complaints</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="px-4 py-2 bg-[#154473] text-white rounded-md hover:bg-blue-700"
@@ -120,7 +120,7 @@ const Complaints: React.FC = () => {
       </div>
 
       {/* Complaints List */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-6">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -168,10 +168,10 @@ const Complaints: React.FC = () => {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-slate-100">
               No Complaints Found
             </h3>
-            <div className="mt-1 text-sm text-gray-500">
+            <div className="mt-1 text-sm text-gray-500 dark:text-slate-400">
               You haven't submitted any complaints yet.
             </div>
             <div className="mt-6">
@@ -203,17 +203,17 @@ const Complaints: React.FC = () => {
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="bg-white rounded-lg w-1/2 shadow-lg"
+            className="bg-white dark:bg-slate-900 rounded-lg w-1/2 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-700 dark:text-slate-200">
                 Submit Complaint
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-slate-400 hover:text-gray-700"
               >
                 ✕
               </button>
@@ -225,7 +225,7 @@ const Complaints: React.FC = () => {
               <div>
                 <label
                   htmlFor="subject"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
                   Subject
                 </label>
@@ -244,7 +244,7 @@ const Complaints: React.FC = () => {
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
                   Description
                 </label>
@@ -263,7 +263,7 @@ const Complaints: React.FC = () => {
               <div>
                 <label
                   htmlFor="attachment"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-slate-200"
                 >
                   Attachment (optional)
                 </label>
@@ -273,16 +273,16 @@ const Complaints: React.FC = () => {
                   name="attachment"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-500"
+                  className="mt-1 block w-full text-sm text-gray-500 dark:text-slate-400"
                 />
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
+              <div className="px-6 py-3 border-t border-gray-200 dark:border-slate-700 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 mr-2"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 dark:text-slate-200 rounded-md hover:bg-gray-400 mr-2"
                 >
                   Cancel
                 </button>

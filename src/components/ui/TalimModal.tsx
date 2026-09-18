@@ -28,7 +28,7 @@ const TalimModal: React.FC<TalimModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative overflow-hidden flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
@@ -65,7 +65,7 @@ const TalimModal: React.FC<TalimModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-8 py-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex-shrink-0 px-8 py-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
             {footer}
           </div>
         )}
