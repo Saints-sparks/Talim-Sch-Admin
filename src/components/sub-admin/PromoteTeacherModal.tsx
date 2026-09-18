@@ -7,6 +7,7 @@ import { PermissionSelector } from "./PermissionSelector";
 import { subAdminService, PromoteTeacherDto, SubAdmin } from "@/app/services/sub-admin.service";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
+import { getErrorMessage } from "@/lib/apiError";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
 
 interface Teacher {
@@ -92,8 +93,8 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
       toast.success(`${promoted.firstName} ${promoted.lastName} has been promoted to sub-admin`);
       onSuccess(promoted);
       handleClose();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to promote teacher");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to promote teacher"));
     } finally {
       setIsSubmitting(false);
     }

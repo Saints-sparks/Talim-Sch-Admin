@@ -5,6 +5,7 @@ import { ShieldCheck, Loader2 } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
 import { PermissionSelector } from "./PermissionSelector";
 import { subAdminService, SubAdmin } from "@/app/services/sub-admin.service";
+import { getErrorMessage } from "@/lib/apiError";
 import { toast } from "@/components/CustomToast";
 
 interface EditPermissionsModalProps {
@@ -52,8 +53,8 @@ export function EditPermissionsModal({
       );
       onSuccess(updated);
       handleClose();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update permissions");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update permissions"));
     } finally {
       setIsSubmitting(false);
     }

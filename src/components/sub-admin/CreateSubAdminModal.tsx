@@ -9,6 +9,7 @@ import {
   CreateSubAdminDto,
   SubAdmin,
 } from "@/app/services/sub-admin.service";
+import { getErrorMessage } from "@/lib/apiError";
 import { toast } from "@/components/CustomToast";
 
 interface CreateSubAdminModalProps {
@@ -80,8 +81,8 @@ export function CreateSubAdminModal({
       }
       onSuccess(created);
       handleClose();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create sub-admin");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create sub-admin"));
     } finally {
       setIsSubmitting(false);
     }
