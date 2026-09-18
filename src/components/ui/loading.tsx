@@ -9,7 +9,7 @@ type BoxProps = {
 };
 
 export function SkeletonBox({ className }: BoxProps) {
-  return <div className={cn("animate-pulse rounded bg-gray-200", className)} />;
+  return <div className={cn("animate-pulse rounded bg-gray-200 dark:bg-slate-700", className)} />;
 }
 
 type SectionSkeletonProps = {

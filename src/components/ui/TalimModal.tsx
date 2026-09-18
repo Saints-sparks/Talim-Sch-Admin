@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { X } from "lucide-react";
 
 interface TalimModalProps {
@@ -24,6 +25,9 @@ const TalimModal: React.FC<TalimModalProps> = ({
   footer,
   isSubmitting = false,
 }) => {
+  // The modal owns the lock, so no caller has to remember it.
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

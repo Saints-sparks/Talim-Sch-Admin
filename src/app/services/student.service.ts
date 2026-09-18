@@ -42,6 +42,19 @@ interface AssignedCourse {
   id: string;
 }
 
+/**
+ * Body for `POST /classes`, mirroring the backend `CreateClassDto`. The API
+ * runs whitelist + forbidNonWhitelisted, so nothing else may be sent — the old
+ * `Omit<Class, "_id">` asked callers for a populated school and course list
+ * that the endpoint would have rejected.
+ */
+export interface CreateClassPayload {
+  name: string;
+  gradeLevel: string;
+  classDescription: string;
+  classCapacity: string;
+}
+
 /** A class as the `/classes` endpoint returns it to the student and class pages. */
 export interface Class {
   _id: string;
@@ -104,12 +117,8 @@ export interface Class {
     __v: number;
   };
   // The class endpoints return extra populated fields (students, courses,
-  // subjects) whose shape differs per route, and the /classes pages — owned by
-  // another track — read them directly. Narrowing this to `unknown` breaks
-  // those callers, so the escape hatch stays until the class helpers move out
-  // of this service.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  // subjects) whose shape differs per route; callers narrow what they read.
+  [key: string]: unknown;
 }
 
 interface UpdateClassData {
@@ -308,7 +317,7 @@ export const getClasses = async (): Promise<Class[]> =>
  * @param payload - The class to create.
  * @returns The created class.
  */
-export const createClass = async (payload: Omit<Class, "_id">): Promise<Class> =>
+export const createClass = async (payload: CreateClassPayload): Promise<Class> =>
   api.post<Class>(API_ENDPOINTS.CREATE_CLASS, payload);
 
 /**
@@ -319,10 +328,7 @@ export const createClass = async (payload: Omit<Class, "_id">): Promise<Class> =
  * @returns The class.
  * @throws `ApiError` or `Error` when the class is in neither place.
  */
-// The /classes pages assign this straight into their own richer `ClassDetails`
-// type; keeping the loose return preserves that until the class helpers move.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getClass = async (classId: string): Promise<any> => {
+export const getClass = async (classId: string): Promise<Class> => {
   try {
     return await api.get<Class>(`${API_ENDPOINTS.GET_CLASS}/${encodeURIComponent(classId)}`);
   } catch {

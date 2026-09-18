@@ -31,10 +31,9 @@ export function useClassDetail(classId: string | undefined): UseQueryResult<Clas
   const schoolId = useSchoolId();
   return useQuery({
     queryKey: queryKeys.classes.detail(schoolId ?? "none", classId ?? "none"),
-    // `getClass` is still loosely typed in the service; the shape the class
-    // screens rely on is `ClassDetail`, asserted once here rather than in
-    // every component.
-    queryFn: () => getClass(classId as string) as Promise<ClassDetail>,
+    // The service returns the populated class; `ClassDetail` names the fields
+    // these screens read from it.
+    queryFn: () => getClass(classId as string) as unknown as Promise<ClassDetail>,
     enabled: Boolean(schoolId && classId),
     staleTime: staleTimes.list,
   });
