@@ -256,16 +256,20 @@ export default function AppGuide() {
     setIsOpen(false);
   }, [config?.id, isLoading, userId, user, config]);
 
+  // Only the target selector matters for the highlight; depending on the whole
+  // step object would re-register the listeners on every render.
+  const currentTarget = currentStep?.target;
+
   useEffect(() => {
-    if (!isOpen || !currentStep) return;
+    if (!isOpen || !currentTarget) return;
 
     let frame = 0;
     const update = () => {
-      const nextRect = getTargetRect(currentStep.target);
+      const nextRect = getTargetRect(currentTarget);
       setRect(nextRect);
       if (nextRect) {
         document
-          .querySelector<HTMLElement>(`[data-guide="${currentStep.target}"]`)
+          .querySelector<HTMLElement>(`[data-guide="${currentTarget}"]`)
           ?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
       }
     };
@@ -279,7 +283,7 @@ export default function AppGuide() {
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [isOpen, currentStep?.target]);
+  }, [isOpen, currentTarget]);
 
   const close = (markDone = false) => {
     localStorage.setItem(getAutoOpenStorageKey(userId), "done");

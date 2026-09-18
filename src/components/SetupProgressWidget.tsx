@@ -1,3 +1,10 @@
+/**
+ * The dashboard's setup card: how far through the checklist the school is, the
+ * next few steps, and the way back into setup.
+ *
+ * It reads progress straight from the onboarding context, so it stays in step
+ * with the setup screen without a request of its own.
+ */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -5,10 +12,12 @@ import { CheckCircle2, Circle, ArrowRight, Trophy, X, Zap, Rocket } from "lucide
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useOnboarding, ONBOARDING_STEPS } from "@/context/OnboardingContext";
 
+/**
+ * @returns The setup progress card, or `null` once setup is done and dismissed.
+ */
 export default function SetupProgressWidget() {
   const router = useRouter();
   const {
-    completedSteps,
     progressPercent,
     completedCount,
     totalCount,
@@ -45,17 +54,17 @@ export default function SetupProgressWidget() {
   // Show a minimal "all done" badge once fully complete
   if (isFullyComplete) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-[#EAF2FB] flex items-center justify-center shrink-0">
-          <Trophy className="h-5 w-5 text-[#003366]" />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 dark:bg-slate-900 dark:border-slate-700">
+        <div className="w-10 h-10 rounded-full bg-[#EAF2FB] flex items-center justify-center shrink-0 dark:bg-blue-900/30">
+          <Trophy className="h-5 w-5 text-[#003366] dark:text-blue-200" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900">School setup complete!</p>
-          <p className="text-xs text-gray-500 mt-0.5">All {totalCount} steps done. Your school is fully configured.</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">School setup complete!</p>
+          <p className="text-xs text-gray-500 mt-0.5 dark:text-slate-400">All {totalCount} steps done. Your school is fully configured.</p>
         </div>
         <button
           onClick={dismissSetup}
-          className="text-gray-300 hover:text-gray-500 transition-colors shrink-0"
+          className="text-gray-300 hover:text-gray-500 transition-colors shrink-0 dark:text-slate-600 dark:hover:text-slate-400"
           aria-label="Dismiss"
         >
           <X className="h-4 w-4" />
@@ -71,28 +80,28 @@ export default function SetupProgressWidget() {
   const visibleSteps = [...recentDone, ...pending.slice(0, 3)];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-700">
       {/* Header */}
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Tooltip content="Your school setup checklist. Complete all required steps to unlock the full experience." side="right">
-            <Zap className="h-4 w-4 text-[#003366]" />
+            <Zap className="h-4 w-4 text-[#003366] dark:text-blue-300" />
             </Tooltip>
-            <span className="text-sm font-bold text-gray-900">Setup progress</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">Setup progress</span>
           </div>
-          <span className="text-sm font-bold text-[#003366]">{progressPercent}%</span>
+          <span className="text-sm font-bold text-[#003366] dark:text-blue-300">{progressPercent}%</span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-2 dark:bg-slate-700">
           <div
             className="h-2 rounded-full bg-[#003366] transition-all duration-700 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <p className="text-xs text-gray-400 mt-2">
+        <p className="text-xs text-gray-400 mt-2 dark:text-slate-500">
           {completedCount} of {totalCount} steps complete
         </p>
       </div>
@@ -104,19 +113,21 @@ export default function SetupProgressWidget() {
           return (
             <li key={step.id} className="flex items-center gap-3">
               {done ? (
-                <CheckCircle2 className="h-4 w-4 text-[#003366] shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-[#003366] shrink-0 dark:text-blue-300" />
               ) : (
-                <Circle className="h-4 w-4 text-gray-300 shrink-0" />
+                <Circle className="h-4 w-4 text-gray-300 shrink-0 dark:text-slate-600" />
               )}
               <span
                 className={`text-sm leading-tight ${
-                  done ? "line-through text-gray-400" : "text-gray-700 font-medium"
+                  done
+                    ? "line-through text-gray-400 dark:text-slate-500"
+                    : "text-gray-700 font-medium dark:text-slate-300"
                 }`}
               >
                 {step.label}
               </span>
               {!step.required && !done && (
-                <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full shrink-0">
+                <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full shrink-0 dark:bg-slate-800 dark:text-slate-500">
                   Optional
                 </span>
               )}
@@ -126,11 +137,11 @@ export default function SetupProgressWidget() {
       </ul>
 
       {/* CTA */}
-      <div className="border-t border-gray-100 px-5 py-3">
+      <div className="border-t border-gray-100 px-5 py-3 dark:border-slate-800">
         <Tooltip content="Resume where you left off in the setup checklist." side="top">
         <button
           onClick={() => router.push("/onboarding/setup")}
-          className="flex items-center gap-2 text-sm font-semibold text-[#003366] hover:underline"
+          className="flex items-center gap-2 text-sm font-semibold text-[#003366] hover:underline dark:text-blue-300"
         >
           Continue setup <ArrowRight className="h-4 w-4" />
         </button>
