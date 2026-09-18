@@ -59,7 +59,12 @@ function CurriculumStructureMain() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("all");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // `?subject=` deep links from the dashboard's subject grid: that subject
+  // opens with its courses already showing.
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const subjectId = searchParams?.get("subject");
+    return new Set(subjectId ? [subjectId] : []);
+  });
 
   const [subjectModal, setSubjectModal] = useState<{
     isOpen: boolean;

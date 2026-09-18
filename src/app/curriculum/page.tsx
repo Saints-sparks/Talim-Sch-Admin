@@ -188,7 +188,7 @@ function CurriculumDashboardMain() {
                 onRetry={() => subjectsQuery.refetch()}
                 isFiltered={searchTerm.trim().length > 0}
                 onOpenSubject={(subjectId) =>
-                  router.push(`/curriculum/structure/subject/${subjectId}`)
+                  router.push(`/curriculum/structure?subject=${encodeURIComponent(subjectId)}`)
                 }
                 onAddSubject={() => router.push("/curriculum/structure?action=add-subject")}
               />
