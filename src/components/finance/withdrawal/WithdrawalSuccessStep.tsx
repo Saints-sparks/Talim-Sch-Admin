@@ -40,8 +40,8 @@ export function WithdrawalSuccessStep({
           <CheckCircle size={40} className="text-green-500" />
         </div>
 
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Withdrawal Request Submitted!</h3>
-        <p className="text-sm text-gray-500 mb-5">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-2">Withdrawal Request Submitted!</h3>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
           Your withdrawal request of{" "}
           <span className="font-bold text-[#003366]">{formatNaira(withdrawal.amount)}</span> has
           been submitted successfully.
@@ -53,11 +53,11 @@ export function WithdrawalSuccessStep({
           We will send you an email once your withdrawal request has been reviewed.
         </p>
 
-        <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2 mb-6">
+        <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 text-left space-y-2 mb-6">
           {rows.map(([label, value]) => (
             <div key={label} className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-500">{label}</span>
-              <span className="font-semibold text-gray-800 text-right">{value}</span>
+              <span className="text-gray-500 dark:text-slate-400">{label}</span>
+              <span className="font-semibold text-gray-800 dark:text-slate-100 text-right">{value}</span>
             </div>
           ))}
         </div>
@@ -76,7 +76,7 @@ export function WithdrawalSuccessStep({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600"
+            className="flex-1 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
           >
             Back to Finance
           </button>

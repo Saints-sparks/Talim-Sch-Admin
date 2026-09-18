@@ -114,7 +114,7 @@ export function WithdrawAmountStep({
       {verifiedAccounts.length === 0 ? (
         <div className="p-8 text-center">
           <AlertCircle size={40} className="text-orange-400 mx-auto mb-3" />
-          <p className="font-semibold text-gray-700">No verified payout accounts</p>
+          <p className="font-semibold text-gray-700 dark:text-slate-200">No verified payout accounts</p>
           <p className="text-sm text-gray-400 mt-1">
             Add a bank account and verify it before withdrawing
           </p>
@@ -127,7 +127,7 @@ export function WithdrawAmountStep({
           </div>
 
           <div>
-            <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Withdraw to</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block">Withdraw to</span>
             <div className="space-y-2">
               {verifiedAccounts.map((account) => (
                 <label
@@ -146,14 +146,14 @@ export function WithdrawAmountStep({
                     onChange={() => setAccountId(account._id)}
                     className="sr-only"
                   />
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                    <Building2 size={15} className="text-gray-600" />
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                    <Building2 size={15} className="text-gray-600 dark:text-slate-300" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
                       {account.bankName} · {account.accountNumber}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{account.accountName}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{account.accountName}</p>
                   </div>
                   {account.isDefault && (
                     <span className="text-xs bg-[#003366] text-white px-2 py-0.5 rounded-full shrink-0">
@@ -174,12 +174,12 @@ export function WithdrawAmountStep({
           <div>
             <label
               htmlFor="withdrawal-amount"
-              className="text-sm font-semibold text-gray-700 mb-1.5 block"
+              className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block"
             >
               Amount to Withdraw
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-bold text-sm">
                 ₦
               </span>
               <input
@@ -191,7 +191,7 @@ export function WithdrawAmountStep({
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 placeholder="0.00"
-                className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-3 text-lg font-semibold bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl pl-7 pr-3 py-3 text-lg font-semibold bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
                 required
               />
             </div>
@@ -215,16 +215,16 @@ export function WithdrawAmountStep({
             )}
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-3 space-y-1">
-            <p className="text-xs text-gray-500">
+          <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 space-y-1">
+            <p className="text-xs text-gray-500 dark:text-slate-400">
               Minimum withdrawal:{" "}
-              <span className="font-semibold text-gray-700">
+              <span className="font-semibold text-gray-700 dark:text-slate-200">
                 {formatNaira(WITHDRAWAL_LIMITS.min)}
               </span>
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-slate-400">
               Daily withdrawal limit:{" "}
-              <span className="font-semibold text-gray-700">
+              <span className="font-semibold text-gray-700 dark:text-slate-200">
                 {formatNaira(WITHDRAWAL_LIMITS.daily)}
               </span>
             </p>
@@ -233,8 +233,8 @@ export function WithdrawAmountStep({
           {amountValue > 0 && (
             <div className="bg-[#003366]/5 rounded-xl p-4 space-y-2 border border-[#003366]/10">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Platform charge</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-gray-500 dark:text-slate-400">Platform charge</span>
+                <span className="font-medium text-gray-800 dark:text-slate-100">
                   {formatNaira(PLATFORM_CHARGE_PREVIEW)}
                 </span>
               </div>
@@ -248,7 +248,7 @@ export function WithdrawAmountStep({
           <div>
             <label
               htmlFor="withdrawal-note"
-              className="text-sm font-semibold text-gray-700 mb-1.5 block"
+              className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block"
             >
               Note <span className="text-gray-400 font-normal">(optional)</span>
             </label>
@@ -259,7 +259,7 @@ export function WithdrawAmountStep({
               placeholder="e.g. Monthly operational expenses"
               maxLength={250}
               rows={2}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 resize-none"
+              className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 resize-none"
             />
           </div>
 

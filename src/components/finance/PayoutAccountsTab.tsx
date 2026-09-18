@@ -84,7 +84,7 @@ export function PayoutAccountsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-slate-400">
           {accounts.length} account{accounts.length === 1 ? "" : "s"}
         </p>
         <PermissionGate permission={Permission.MANAGE_FINANCE}>
@@ -101,9 +101,9 @@ export function PayoutAccountsTab() {
       {query.isPending ? (
         <CardListSkeleton />
       ) : accounts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 py-16 text-center">
           <Building2 size={36} className="text-gray-300 mx-auto mb-3" />
-          <p className="font-semibold text-gray-600">No payout accounts added</p>
+          <p className="font-semibold text-gray-600 dark:text-slate-300">No payout accounts added</p>
           <p className="text-sm text-gray-400 mt-1">
             Add a verified business account to receive withdrawals
           </p>
@@ -115,7 +115,7 @@ export function PayoutAccountsTab() {
             return (
               <div
                 key={account._id}
-                className={`bg-white rounded-2xl border-2 p-5 ${
+                className={`bg-white dark:bg-slate-900 rounded-2xl border-2 p-5 ${
                   account.isDefault ? "border-[#003366]" : "border-gray-100"
                 }`}
               >
@@ -126,7 +126,7 @@ export function PayoutAccountsTab() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <p className="font-semibold text-gray-800">{account.bankName}</p>
+                        <p className="font-semibold text-gray-800 dark:text-slate-100">{account.bankName}</p>
                         {account.isDefault && (
                           <span className="text-xs bg-[#003366] text-white px-2 py-0.5 rounded-full">
                             Default
@@ -142,8 +142,8 @@ export function PayoutAccountsTab() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">{account.accountName}</p>
-                      <p className="font-mono text-sm text-gray-500">
+                      <p className="text-sm text-gray-600 dark:text-slate-300">{account.accountName}</p>
+                      <p className="font-mono text-sm text-gray-500 dark:text-slate-400">
                         ·· {account.accountNumber.slice(-4)}
                       </p>
                     </div>
@@ -180,7 +180,7 @@ export function PayoutAccountsTab() {
                             )
                           }
                           disabled={busy}
-                          className="text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+                          className="text-xs px-3 py-1.5 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
                         >
                           {busy ? "Working…" : "Set Default"}
                         </button>

@@ -146,7 +146,7 @@ export function SecurityTab() {
       }
     >
       <div className="max-w-xl space-y-5">
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -154,9 +154,9 @@ export function SecurityTab() {
                   size={18}
                   className={security.twoFactorEnabled ? "text-green-500" : "text-gray-400"}
                 />
-                <h3 className="font-bold text-gray-800">Two-Factor Authentication</h3>
+                <h3 className="font-bold text-gray-800 dark:text-slate-100">Two-Factor Authentication</h3>
               </div>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                 {security.twoFactorEnabled
                   ? `Enabled since ${formatDate(security.twoFactorEnabledAt)}`
                   : "Not enabled. Add an extra layer of security to your account."}
@@ -177,8 +177,8 @@ export function SecurityTab() {
           )}
 
           {setupData && (
-            <div className="space-y-4 mt-4 border-t border-gray-100 pt-4">
-              <p className="text-sm font-medium text-gray-700">
+            <div className="space-y-4 mt-4 border-t border-gray-100 dark:border-slate-800 pt-4">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
                 1. Scan this QR code with your authenticator app
               </p>
               <div className="flex justify-center">
@@ -189,10 +189,10 @@ export function SecurityTab() {
                   alt="Two-factor QR code"
                   width={192}
                   height={192}
-                  className="w-48 h-48 border border-gray-200 rounded-xl bg-white"
+                  className="w-48 h-48 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900"
                 />
               </div>
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-gray-500 dark:text-slate-400 text-center">
                 Can&apos;t scan?{" "}
                 <button
                   type="button"
@@ -205,7 +205,7 @@ export function SecurityTab() {
                   Copy URL <Copy size={12} />
                 </button>
               </p>
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
                 2. Enter the 6-digit code from your app
               </p>
               <form onSubmit={handleEnable} className="flex gap-2">
@@ -217,7 +217,7 @@ export function SecurityTab() {
                   value={enableCode}
                   onChange={(event) => setEnableCode(onlyCode(event.target.value))}
                   placeholder="000000"
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                  className="flex-1 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
                 />
                 <button
                   type="submit"
@@ -241,8 +241,8 @@ export function SecurityTab() {
           )}
 
           {showDisable && (
-            <form onSubmit={handleDisable} className="mt-4 border-t border-gray-100 pt-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700">
+            <form onSubmit={handleDisable} className="mt-4 border-t border-gray-100 dark:border-slate-800 pt-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
                 Enter your current 2FA code to disable
               </p>
               <div className="flex gap-2 flex-wrap">
@@ -254,7 +254,7 @@ export function SecurityTab() {
                   value={disableCode}
                   onChange={(event) => setDisableCode(onlyCode(event.target.value))}
                   placeholder="000000"
-                  className="flex-1 min-w-[140px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  className="flex-1 min-w-[140px] border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-200"
                 />
                 <button
                   type="submit"
@@ -269,7 +269,7 @@ export function SecurityTab() {
                     setShowDisable(false);
                     setDisableCode("");
                   }}
-                  className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600"
+                  className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
                 >
                   Cancel
                 </button>
@@ -279,11 +279,11 @@ export function SecurityTab() {
         </div>
 
         {security.twoFactorEnabled && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-bold text-gray-800">Require 2FA for Withdrawals</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <h3 className="font-bold text-gray-800 dark:text-slate-100">Require 2FA for Withdrawals</h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                   When enabled, every withdrawal will require a valid 2FA code.
                 </p>
               </div>
@@ -299,7 +299,7 @@ export function SecurityTab() {
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  className={`absolute top-0.5 w-5 h-5 bg-white dark:bg-slate-900 rounded-full shadow transition-transform ${
                     security.requireTwoFactorForWithdrawals ? "translate-x-5 left-0" : "left-0.5"
                   }`}
                 />
@@ -314,7 +314,7 @@ export function SecurityTab() {
                   void handleToggleRequire();
                 }}
               >
-                <label className="flex-1 min-w-[180px] text-sm text-gray-600">
+                <label className="flex-1 min-w-[180px] text-sm text-gray-600 dark:text-slate-300">
                   Enter the code from your authenticator app to turn this off
                   <input
                     inputMode="numeric"
@@ -322,7 +322,7 @@ export function SecurityTab() {
                     maxLength={CODE_LENGTH}
                     value={requireOffCode}
                     onChange={(event) => setRequireOffCode(onlyCode(event.target.value))}
-                    className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm tracking-widest bg-white text-gray-800"
+                    className="mt-1 w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100"
                     aria-label="Authenticator code"
                   />
                 </label>
@@ -339,7 +339,7 @@ export function SecurityTab() {
                     setAskRequireOffCode(false);
                     setRequireOffCode("");
                   }}
-                  className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600"
+                  className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
                 >
                   Cancel
                 </button>

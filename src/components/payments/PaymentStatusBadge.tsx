@@ -24,7 +24,7 @@ export function PaymentStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
-        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-500"
+        STATUS_STYLES[status] ?? "bg-gray-100 text-gray-500 dark:text-slate-400"
       }`}
     >
       {status}

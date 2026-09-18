@@ -107,7 +107,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     <ModalShell title="Record Manual Payment" onClose={onClose}>
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div>
-          <label htmlFor="manual-class" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-class" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Class
           </label>
           <select
@@ -128,7 +128,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-student" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-student" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Student
           </label>
           <select
@@ -161,7 +161,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <span className="text-sm font-medium text-gray-700 mb-1 block">Fees being paid</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">Fees being paid</span>
           {!classId ? (
             <p className="text-xs text-gray-400">Pick a class to see its fees.</p>
           ) : assignments.isPending ? (
@@ -175,7 +175,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
               against.
             </p>
           ) : (
-            <div className="max-h-44 overflow-y-auto rounded-xl border border-gray-200 divide-y divide-gray-100">
+            <div className="max-h-44 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100">
               {(assignments.data ?? []).map((assignment) => (
                 <label
                   key={assignment._id}
@@ -188,14 +188,14 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
                     className="w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
                   />
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm text-gray-800 truncate">
+                    <span className="block text-sm text-gray-800 dark:text-slate-100 truncate">
                       {refLabel(assignment.feeItemId, (item) => item.name)}
                     </span>
                     <span className="block text-xs text-gray-400">
                       Due {formatDate(assignment.dueDate)}
                     </span>
                   </span>
-                  <span className="text-sm font-semibold text-gray-700 shrink-0">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 shrink-0">
                     {formatNaira(assignment.amount)}
                   </span>
                 </label>
@@ -205,7 +205,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-amount" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-amount" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Amount (₦)
           </label>
           <input
@@ -233,7 +233,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-method" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-method" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Payment Method
           </label>
           <select
@@ -251,7 +251,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-reference" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-reference" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Reference <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
@@ -265,7 +265,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-notes" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="manual-notes" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Notes <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
@@ -282,7 +282,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600"
+            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
           >
             Cancel
           </button>

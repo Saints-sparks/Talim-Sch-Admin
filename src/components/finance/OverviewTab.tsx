@@ -76,10 +76,10 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="col-span-2 lg:col-span-1 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div className="col-span-2 lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Wallet size={16} className="text-[#003366]" />
-            <p className="text-sm text-gray-500">Wallet Balance</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Wallet Balance</p>
           </div>
           <p className="text-3xl font-bold text-[#003366]">{formatNaira(summary.availableBalance)}</p>
           <p className="text-xs text-gray-400 mt-1">Available for withdrawal</p>
@@ -139,7 +139,7 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-800 truncate">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">
                   {entry.description || entry.reference}
                 </p>
                 <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
@@ -156,9 +156,9 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
           ))}
         </RecentPanel>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-bold text-gray-800">Wallet Balance Trend</h3>
+            <h3 className="font-bold text-gray-800 dark:text-slate-100">Wallet Balance Trend</h3>
             <span className="text-xs text-gray-400">Latest activity</span>
           </div>
           {trend.length === 0 ? (
@@ -166,7 +166,7 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
               No trend data yet
             </div>
           ) : (
-            <div className="h-48 flex items-end gap-2 border-b border-l border-gray-100 px-2 pt-4">
+            <div className="h-48 flex items-end gap-2 border-b border-l border-gray-100 dark:border-slate-800 px-2 pt-4">
               {trend.map((point, index) => (
                 <div
                   key={`${point.label}-${index}`}
@@ -206,7 +206,7 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
                   <Building2 size={17} className="text-[#003366]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-800">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
                     {formatNaira(item.amountToReceive || item.amount)}
                   </p>
                   <p className="text-xs text-gray-400 truncate">
@@ -221,8 +221,8 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
           })}
         </RecentPanel>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="font-bold text-gray-800 mb-4">Withdrawals Summary</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
+          <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4">Withdrawals Summary</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
               ["Total Withdrawn", formatNaira(summary.withdrawnBalance), "text-[#003366]"],
@@ -230,16 +230,16 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
               ["Pending", formatNaira(summary.pendingBalance), "text-orange-600"],
               ["Failed/Cancelled", formatNaira(sumOf(unsuccessful)), "text-red-500"],
             ].map(([label, value, color]) => (
-              <div key={label} className="rounded-xl border border-gray-100 p-4">
-                <p className="text-xs text-gray-500">{label}</p>
+              <div key={label} className="rounded-xl border border-gray-100 dark:border-slate-800 p-4">
+                <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
                 <p className={`mt-2 text-lg font-bold ${color}`}>{value}</p>
               </div>
             ))}
           </div>
-          <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center justify-between">
+          <div className="mt-4 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Wallet Status</p>
-              <p className="font-bold text-gray-800 capitalize mt-1">{summary.status}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">Wallet Status</p>
+              <p className="font-bold text-gray-800 dark:text-slate-100 capitalize mt-1">{summary.status}</p>
             </div>
             <LedgerStatusBadge status={summary.status} />
           </div>
@@ -279,9 +279,9 @@ function RecentPanel({
   children,
 }: RecentPanelProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 className="font-bold text-gray-800">{title}</h3>
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+        <h3 className="font-bold text-gray-800 dark:text-slate-100">{title}</h3>
         <button type="button" onClick={onViewAll} className="text-sm font-semibold text-[#003366]">
           View All
         </button>

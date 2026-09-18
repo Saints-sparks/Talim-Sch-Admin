@@ -38,7 +38,7 @@ export function StatCard({
       }
       role={interactive ? "button" : undefined}
       tabIndex={interactive ? 0 : undefined}
-      className={`bg-white rounded-2xl border border-gray-100 p-5 flex gap-4 items-start shadow-sm ${
+      className={`bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 flex gap-4 items-start shadow-sm ${
         interactive ? "cursor-pointer hover:shadow-md transition-shadow" : ""
       }`}
     >
@@ -47,7 +47,7 @@ export function StatCard({
       </div>
       <div className="min-w-0">
         <p className={`text-xl font-bold ${color}`}>{value}</p>
-        <p className="text-sm text-gray-600 font-medium">{label}</p>
+        <p className="text-sm text-gray-600 dark:text-slate-300 font-medium">{label}</p>
         {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>
     </div>

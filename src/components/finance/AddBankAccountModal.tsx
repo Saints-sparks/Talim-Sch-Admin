@@ -80,7 +80,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
     <ModalShell title="Add Payout Account" onClose={onClose}>
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div>
-          <label htmlFor="bank-select" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="bank-select" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Bank
           </label>
           {manualBankEntry ? (
@@ -91,7 +91,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
                 value={manualBankName}
                 onChange={(event) => setManualBankName(event.target.value)}
                 placeholder="Bank name"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
                 required
               />
               <input
@@ -99,7 +99,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
                 value={bankCode}
                 onChange={(event) => setBankCode(event.target.value.replace(/\D/g, ""))}
                 placeholder="Bank code"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
                 required
               />
               <p className="text-xs text-amber-600 flex items-start gap-1">
@@ -114,7 +114,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
               value={bankCode}
               onChange={(event) => setBankCode(event.target.value)}
               disabled={banks.isPending}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 disabled:opacity-60"
+              className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 disabled:opacity-60"
               required
             >
               <option value="">{banks.isPending ? "Loading banks…" : "Select bank"}</option>
@@ -128,7 +128,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="account-number" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="account-number" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Account Number
           </label>
           <input
@@ -139,13 +139,13 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
             value={accountNumber}
             onChange={(event) => setAccountNumber(event.target.value.replace(/\D/g, ""))}
             placeholder="0000000000"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
             required
           />
         </div>
 
         <div>
-          <label htmlFor="account-name" className="text-sm font-medium text-gray-700 mb-1 block">
+          <label htmlFor="account-name" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
             Account Name
           </label>
           <input
@@ -157,7 +157,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
               setAccountName(event.target.value);
             }}
             placeholder="As registered with the bank"
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
             required
           />
           {resolved.isFetching && (
@@ -183,7 +183,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600"
+            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
           >
             Cancel
           </button>

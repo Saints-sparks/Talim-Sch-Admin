@@ -65,7 +65,7 @@ export function OtpInput({ value, onChange, disabled }: OtpInputProps) {
           onKeyDown={(event) => handleKeyDown(index, event)}
           // Filled boxes take the brand border; the colours are Tailwind
           // classes rather than an inline style so dark mode can reach them.
-          className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl bg-white text-gray-900 focus:outline-none focus:border-[#003366] transition-colors disabled:opacity-40 ${
+          className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:border-[#003366] transition-colors disabled:opacity-40 ${
             digit ? "border-[#003366]" : "border-gray-200"
           }`}
         />

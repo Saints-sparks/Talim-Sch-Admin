@@ -7,7 +7,7 @@
 
 /** One shimmering block. */
 function Shimmer({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded bg-gray-100 ${className}`} />;
+  return <div className={`animate-pulse rounded bg-gray-100 dark:bg-slate-800 ${className}`} />;
 }
 
 /**
@@ -20,7 +20,7 @@ export function StatCardsSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div key={index} className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
           <Shimmer className="h-4 w-24" />
           <Shimmer className="h-7 w-32 mt-3" />
           <Shimmer className="h-3 w-20 mt-3" />
@@ -62,7 +62,7 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div key={index} className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
           <Shimmer className="h-4 w-40" />
           <Shimmer className="h-3 w-56 mt-3" />
           <Shimmer className="h-3 w-24 mt-2" />

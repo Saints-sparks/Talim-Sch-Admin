@@ -83,14 +83,14 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-gray-800">Withdrawals</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">Withdrawals</h2>
         <p className="text-sm text-gray-400 mt-0.5">
           Track all withdrawal requests and their status.
         </p>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-6 overflow-x-auto border-b border-gray-100">
+        <div className="flex items-center gap-6 overflow-x-auto border-b border-gray-100 dark:border-slate-800">
           {STATUS_FILTERS.map((filter) => (
             <button
               key={filter.value || "all"}
@@ -102,7 +102,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
               className={`py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2 ${
                 status === filter.value
                   ? "border-[#003366] text-[#003366]"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700"
               }`}
             >
               {filter.label}
@@ -114,7 +114,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
             type="button"
             onClick={() => void query.refetch()}
             aria-label="Refresh withdrawals"
-            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+            className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
           >
             <RefreshCw
               size={15}
@@ -133,15 +133,15 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[820px]">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
               <tr>
                 {COLUMNS.map((column) => (
                   <th
                     key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
                   >
                     {column}
                   </th>
@@ -155,7 +155,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
                 <tr>
                   <td colSpan={COLUMNS.length} className="px-4 py-16 text-center">
                     <Banknote size={36} className="text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium">No withdrawals found</p>
+                    <p className="text-gray-500 dark:text-slate-400 font-medium">No withdrawals found</p>
                     <p className="text-gray-400 text-xs mt-1">
                       {status
                         ? "No withdrawals with this status"
@@ -173,10 +173,10 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
                       <td className="px-4 py-3 font-mono text-xs font-semibold text-[#003366]">
                         {withdrawal.reference}
                       </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">
+                      <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100">
                         {formatNaira(withdrawal.amount)}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
                         {account
                           ? `${account.bankName} · ${maskAccountNumber(account.accountNumber)}`
                           : "—"}
@@ -184,7 +184,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
                       <td className="px-4 py-3">
                         <WithdrawalStatusBadge status={withdrawal.status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap text-xs">
                         {formatDateTime(withdrawal.createdAt)}
                       </td>
                       <td className="px-4 py-3">
@@ -197,7 +197,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
                               type="button"
                               onClick={() => setPendingCancel(withdrawal)}
                               disabled={cancel.isPending}
-                              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:text-red-500 hover:border-red-100 disabled:opacity-40"
+                              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:text-red-500 hover:border-red-100 disabled:opacity-40"
                             >
                               <X size={13} /> Cancel
                             </button>

@@ -36,9 +36,9 @@ export function ProvidersTab() {
 
   if (providers.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 py-16 text-center">
         <Shield size={36} className="text-gray-300 mx-auto mb-3" />
-        <p className="font-semibold text-gray-600">No payment providers enabled</p>
+        <p className="font-semibold text-gray-600 dark:text-slate-300">No payment providers enabled</p>
         <p className="text-sm text-gray-400 mt-1">
           Contact your platform administrator to configure payment providers
         </p>
@@ -48,13 +48,13 @@ export function ProvidersTab() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500">Payment providers configured for this platform</p>
+      <p className="text-sm text-gray-500 dark:text-slate-400">Payment providers configured for this platform</p>
       {providers.map((provider) => (
-        <div key={provider.providerName} className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div key={provider.providerName} className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="font-semibold text-gray-800">
+                <p className="font-semibold text-gray-800 dark:text-slate-100">
                   {PROVIDER_LABELS[provider.providerName] ?? provider.providerName}
                 </p>
                 {provider.isDefault && (
@@ -63,7 +63,7 @@ export function ProvidersTab() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-500 capitalize">
+              <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">
                 Environment: {provider.environment}
               </p>
               {provider.supportedChannels?.length > 0 && (
@@ -71,7 +71,7 @@ export function ProvidersTab() {
                   {provider.supportedChannels.map((channel) => (
                     <span
                       key={channel}
-                      className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full capitalize"
+                      className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-2 py-0.5 rounded-full capitalize"
                     >
                       {channel.replace(/_/g, " ")}
                     </span>

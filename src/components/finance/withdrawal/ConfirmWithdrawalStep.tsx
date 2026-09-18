@@ -39,8 +39,8 @@ function SummaryRow({
   highlight?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
-      <span className="text-sm text-gray-500">{label}</span>
+    <div className="flex justify-between items-center py-2.5 border-b border-gray-100 dark:border-slate-800 last:border-0">
+      <span className="text-sm text-gray-500 dark:text-slate-400">{label}</span>
       <span className={`text-sm font-semibold ${highlight ? "text-[#003366]" : "text-gray-800"}`}>
         {value}
       </span>
@@ -103,8 +103,8 @@ export function ConfirmWithdrawalStep({
     <ModalShell title="Confirm Withdrawal" onClose={onClose}>
       <div className="p-6 space-y-5">
         <div>
-          <p className="text-sm font-bold text-gray-700 mb-3">Withdrawal Summary</p>
-          <div className="bg-gray-50 rounded-xl p-4">
+          <p className="text-sm font-bold text-gray-700 dark:text-slate-200 mb-3">Withdrawal Summary</p>
+          <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
             {summary.bankAccount && (
               <>
                 <SummaryRow
@@ -144,14 +144,14 @@ export function ConfirmWithdrawalStep({
             onChange={(event) => setAgreed(event.target.checked)}
             className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-slate-300">
             I confirm that the information above is correct and I want to proceed with this
             withdrawal.
           </span>
         </label>
 
         {requiresTwoFactor && (
-          <label className="block text-sm text-gray-600">
+          <label className="block text-sm text-gray-600 dark:text-slate-300">
             Authenticator code
             <input
               inputMode="numeric"
@@ -163,7 +163,7 @@ export function ConfirmWithdrawalStep({
               }
               placeholder="6-digit code"
               aria-label="Authenticator code"
-              className="mt-1 w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm tracking-widest bg-white text-gray-800"
+              className="mt-1 w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100"
             />
             <span className="mt-1 block text-xs text-gray-400">
               Your school requires two-factor authentication for withdrawals.
@@ -176,7 +176,7 @@ export function ConfirmWithdrawalStep({
             type="button"
             onClick={onBack}
             disabled={confirm.isPending}
-            className="flex-1 py-3 border border-gray-200 rounded-xl text-sm text-gray-600 flex items-center justify-center gap-1 disabled:opacity-40"
+            className="flex-1 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 flex items-center justify-center gap-1 disabled:opacity-40"
           >
             <ArrowLeft size={15} /> Back
           </button>

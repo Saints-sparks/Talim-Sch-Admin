@@ -33,18 +33,18 @@ export function TablePager({ page, pageSize, total, busy = false, onChange }: Ta
         type="button"
         disabled={current <= 1 || busy}
         onClick={() => onChange(current - 1)}
-        className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 disabled:opacity-40"
+        className="px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
       >
         Previous
       </button>
-      <span className="text-sm text-gray-500">
+      <span className="text-sm text-gray-500 dark:text-slate-400">
         Page {current} of {pages}
       </span>
       <button
         type="button"
         disabled={current >= pages || busy}
         onClick={() => onChange(current + 1)}
-        className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 disabled:opacity-40"
+        className="px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
       >
         Next
       </button>

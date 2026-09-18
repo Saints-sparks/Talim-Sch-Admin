@@ -42,14 +42,14 @@ export function ReceiptsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-slate-400">
           {total} receipt{total === 1 ? "" : "s"}
         </p>
         <button
           type="button"
           onClick={() => void query.refetch()}
           aria-label="Refresh receipts"
-          className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+          className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
         >
           <RefreshCw
             size={15}
@@ -58,15 +58,15 @@ export function ReceiptsTab() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[720px]">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
               <tr>
                 {COLUMNS.map((column) => (
                   <th
                     key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
                   >
                     {column}
                   </th>
@@ -88,13 +88,13 @@ export function ReceiptsTab() {
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-[#003366]">
                       {receipt.receiptNumber}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-800">
+                    <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100">
                       {formatNaira(receipt.totalPaid)}
                     </td>
-                    <td className="px-4 py-3 capitalize text-gray-600">
+                    <td className="px-4 py-3 capitalize text-gray-600 dark:text-slate-300">
                       {receipt.paymentMethod?.replace(/_/g, " ")}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap">
                       {formatDate(receipt.paymentDate)}
                     </td>
                     <td className="px-4 py-3">
@@ -143,11 +143,11 @@ function ReceiptDetail({ receipt, onClose }: { receipt: Receipt; onClose: () => 
       <div className="p-6 space-y-4">
         <p className="text-sm text-gray-400 -mt-2">{formatDate(receipt.paymentDate)}</p>
 
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+        <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 space-y-2">
           {receipt.feeItems.map((item, index) => (
             <div key={`${item.feeName}-${index}`} className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-600">{item.feeName}</span>
-              <span className="font-medium text-gray-800">{formatNaira(item.amount)}</span>
+              <span className="text-gray-600 dark:text-slate-300">{item.feeName}</span>
+              <span className="font-medium text-gray-800 dark:text-slate-100">{formatNaira(item.amount)}</span>
             </div>
           ))}
           {receipt.lateFee > 0 && (
@@ -162,7 +162,7 @@ function ReceiptDetail({ receipt, onClose }: { receipt: Receipt; onClose: () => 
               <span>-{formatNaira(receipt.discount)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-[#003366] border-t border-gray-200 pt-2 mt-2">
+          <div className="flex justify-between font-bold text-[#003366] border-t border-gray-200 dark:border-slate-700 pt-2 mt-2">
             <span>Total Paid</span>
             <span>{formatNaira(receipt.totalPaid)}</span>
           </div>
@@ -171,25 +171,25 @@ function ReceiptDetail({ receipt, onClose }: { receipt: Receipt; onClose: () => 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-gray-400 text-xs mb-0.5">Payment Method</p>
-            <p className="font-medium capitalize text-gray-800">
+            <p className="font-medium capitalize text-gray-800 dark:text-slate-100">
               {receipt.paymentMethod?.replace(/_/g, " ")}
             </p>
           </div>
           <div>
             <p className="text-gray-400 text-xs mb-0.5">Provider</p>
-            <p className="font-medium text-gray-800">
+            <p className="font-medium text-gray-800 dark:text-slate-100">
               {PROVIDER_LABELS[receipt.paymentProvider] ?? receipt.paymentProvider}
             </p>
           </div>
           <div className="min-w-0">
             <p className="text-gray-400 text-xs mb-0.5">Reference</p>
-            <p className="font-mono text-xs text-gray-700 break-all">
+            <p className="font-mono text-xs text-gray-700 dark:text-slate-200 break-all">
               {receipt.transactionReference}
             </p>
           </div>
           <div className="min-w-0">
             <p className="text-gray-400 text-xs mb-0.5">Verification</p>
-            <p className="font-mono text-xs text-gray-700 break-all">{receipt.verificationCode}</p>
+            <p className="font-mono text-xs text-gray-700 dark:text-slate-200 break-all">{receipt.verificationCode}</p>
           </div>
         </div>
 

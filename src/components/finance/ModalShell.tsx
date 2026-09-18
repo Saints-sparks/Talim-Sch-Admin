@@ -73,11 +73,11 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`bg-white rounded-2xl shadow-2xl w-full ${maxWidthClass} max-h-[90vh] overflow-y-auto`}
+        className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full ${maxWidthClass} max-h-[90vh] overflow-y-auto`}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">{title}</h3>
             <button
               type="button"
               onClick={onClose}
@@ -126,13 +126,13 @@ export function ConfirmDialog({
   return (
     <ModalShell title={title} onClose={busy ? () => undefined : onCancel} maxWidthClass="max-w-sm">
       <div className="p-6 space-y-5">
-        <p className="text-sm text-gray-600">{message}</p>
+        <p className="text-sm text-gray-600 dark:text-slate-300">{message}</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 disabled:opacity-40"
+            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
           >
             Cancel
           </button>

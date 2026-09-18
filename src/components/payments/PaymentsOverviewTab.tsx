@@ -62,13 +62,13 @@ export function PaymentsOverviewTab() {
         color="text-yellow-600"
       />
       <StatCard label="Failed" value={String(totalFailed)} icon={XCircle} color="text-red-500" />
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm flex items-center gap-3">
         <div className="w-11 h-11 rounded-xl bg-[#E8EDF3] flex items-center justify-center shrink-0">
           <Shield size={20} className="text-[#003366]" />
         </div>
         <div>
-          <p className="text-sm text-gray-500">Currency</p>
-          <p className="font-bold text-gray-800">{currency || "NGN"}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Currency</p>
+          <p className="font-bold text-gray-800 dark:text-slate-100">{currency || "NGN"}</p>
         </div>
       </div>
     </div>
