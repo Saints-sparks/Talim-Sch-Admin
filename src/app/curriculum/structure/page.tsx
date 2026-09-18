@@ -1,441 +1,186 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useRef } from "react";
-
+/**
+ * Curriculum structure — the school's subjects and the courses inside them.
+ *
+ * Subjects, classes and teachers all come from the shared caches, so the
+ * screen opens with whatever the dashboard already loaded, and every write
+ * invalidates those caches rather than refetching by hand. Writes are rendered
+ * only for an administrator holding `manage:curriculum`.
+ */
+import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, ChevronLeft, Loader2, Plus } from "lucide-react";
 import { toast } from "@/components/CustomToast";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  BookOpen,
-  GraduationCap,
-  ChevronLeft,
-  Users,
-  Filter,
-  Loader2,
-  ChevronDown,
-  ChevronRight,
-  LayoutList,
-} from "lucide-react";
-import { getSchoolId } from "@/app/services/school.service";
-import {
-  getClasses,
-  getTeachers,
-  getSubjectsWithCourses,
-  deleteCourseService,
-  createSubject,
-  updateSubject,
-  deleteSubject,
-  Class,
-  Subject,
-  Teacher,
-  Course,
-} from "@/app/services/subjects.service";
 import CourseModal from "@/components/CourseModal";
-import TalimModal from "@/components/ui/TalimModal";
-import DeleteConfirmModal from "@/components/curricula/DeleteConfirmModal";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { ConfirmDialog } from "@/components/curriculum/ConfirmDialog";
+import { StructureToolbar } from "@/components/curriculum/StructureToolbar";
+import { SubjectAccordion } from "@/components/curriculum/SubjectAccordion";
+import { SubjectFormModal } from "@/components/curriculum/SubjectFormModal";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { useClasses, useSubjects } from "@/hooks/queries/reference";
+import { useCourseMutations, useSubjectMutations, useTeacherOptions } from "@/hooks/curriculum/queries";
+import { useStructureUrlAction, type StructureAction } from "@/hooks/curriculum/useStructureUrlAction";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getErrorMessage } from "@/lib/apiError";
+import { logger } from "@/lib/logger";
+import { Permission } from "@/lib/permissions";
+import type { Course, Subject } from "@/app/services/subjects.service";
 
-interface NewSubject {
-  name: string;
-  code: string;
-  classId?: string;
+/** Shown while the subject list loads, and as the Suspense fallback. */
+function StructureLoading() {
+  return (
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-[#003366] dark:text-blue-400" />
+        <p className="text-sm text-gray-500 dark:text-slate-400">Loading curriculum structure...</p>
+      </div>
+    </div>
+  );
 }
 
-// Loading component for Suspense fallback
-const LoadingSpinner = () => (
-  <div className="flex flex-col h-screen bg-background">
-    <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-      <Loader2 className="h-8 w-8 animate-spin text-[#003366]" />
-      <p className="text-sm text-muted-foreground">Loading curriculum structure...</p>
-    </div>
-  </div>
-);
-
-// Main component that uses useSearchParams
-const CurriculumStructureMain: React.FC = () => {
+/** The structure screen; separate so `useSearchParams` sits inside `<Suspense>`. */
+function CurriculumStructureMain() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialAction = searchParams?.get("action");
-  const handledActionRef = useRef<string | null>(null);
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission(Permission.MANAGE_CURRICULUM);
 
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const subjectsQuery = useSubjects();
+  const classesQuery = useClasses();
+  const teachersQuery = useTeacherOptions();
+  const { remove: removeSubject } = useSubjectMutations();
+  const { remove: removeCourse } = useCourseMutations();
+
+  const subjects = useMemo(() => subjectsQuery.data ?? [], [subjectsQuery.data]);
+  const classes = useMemo(() => classesQuery.data ?? [], [classesQuery.data]);
+  const teachers = useMemo(() => teachersQuery.data ?? [], [teachersQuery.data]);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClass, setSelectedClass] = useState<string>("all");
-  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
+  const [selectedClass, setSelectedClass] = useState("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  // Subject Modal States
-  const [showSubjectModal, setShowSubjectModal] = useState(false);
-  const [subjectMode, setSubjectMode] = useState<"add" | "edit">("add");
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [isSubmittingSubject, setIsSubmittingSubject] = useState(false);
-  const [newSubject, setNewSubject] = useState<NewSubject>({
-    name: "",
-    code: "",
-    classId: "",
-  });
+  const [subjectModal, setSubjectModal] = useState<{
+    isOpen: boolean;
+    mode: "add" | "edit";
+    subject: Subject | null;
+  }>({ isOpen: false, mode: "add", subject: null });
 
-  // Delete Modal States
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [courseModal, setCourseModal] = useState<{
+    isOpen: boolean;
+    mode: "add" | "edit";
+    course: Course | null;
+    subject: Subject | null;
+  }>({ isOpen: false, mode: "add", course: null, subject: null });
+
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
-  // Course Modal States
-  const [showCourseModal, setShowCourseModal] = useState(false);
-  const [courseModalMode, setCourseModalMode] = useState<"add" | "edit">("add");
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [activeSubjectForCourse, setActiveSubjectForCourse] = useState<Subject | null>(null);
+  /** Clears the `?action=` query once its modal has been dealt with. */
+  const clearUrlAction = useCallback(() => {
+    if (searchParams?.get("action")) router.replace("/curriculum/structure");
+  }, [router, searchParams]);
 
-  useEffect(() => {
-    setMounted(true);
+  const handleUrlAction = useCallback((action: StructureAction) => {
+    if (action.type === "add-subject") {
+      setSubjectModal({ isOpen: true, mode: "add", subject: null });
+    } else if (action.type === "add-course") {
+      setCourseModal({ isOpen: true, mode: "add", course: null, subject: action.subject });
+    } else if (action.type === "edit-course") {
+      setCourseModal({ isOpen: true, mode: "edit", course: action.course, subject: null });
+    } else {
+      toast.error(action.reason);
+    }
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      fetchAllData();
+  useStructureUrlAction({
+    action: searchParams?.get("action") ?? null,
+    courseId: searchParams?.get("courseId") ?? null,
+    subjects,
+    isLoading: subjectsQuery.isLoading,
+    onAction: handleUrlAction,
+  });
 
-      // Handle initial action from URL
-      if (initialAction === "add-subject") {
-        openAddSubjectModal();
-      }
-    }
-  }, [mounted, initialAction]);
-
-  // Handle URL action after data is loaded
-  useEffect(() => {
-    if (
-      !loading &&
-      subjects.length > 0 &&
-      initialAction &&
-      handledActionRef.current !== initialAction
-    ) {
-      handledActionRef.current = initialAction;
-      if (initialAction === "add-course") {
-        const firstSubject = subjects[0];
-        if (firstSubject) {
-          openAddCourseModal(firstSubject);
-        } else {
-          toast.error("No subjects available. Please create a subject first.");
-        }
-      } else if (initialAction === "edit-course") {
-        const courseId = searchParams?.get("courseId");
-        if (courseId) {
-          let foundCourse: Course | null = null;
-          for (const subject of subjects) {
-            if (subject.courses) {
-              foundCourse = subject.courses.find((c) => c._id === courseId) || null;
-              if (foundCourse) break;
-            }
-          }
-
-          if (foundCourse) {
-            openEditCourseModal(foundCourse);
-          } else {
-            toast.error("Course not found.");
-          }
-        }
-      }
-    }
-  }, [loading, initialAction, subjects, searchParams]);
-
-  const fetchAllData = async () => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    setLoading(true);
-    try {
-      await Promise.all([fetchClasses(), fetchSubjects(), fetchTeachers()]);
-    } catch (error) {
-      console.error("Error in fetchAllData:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchClasses = async () => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    try {
-      const data = await getClasses();
-      setClasses(data);
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      toast.error("Failed to load classes");
-    }
-  };
-
-  const fetchSubjects = async () => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    try {
-      const data = await getSubjectsWithCourses();
-      setSubjects(data);
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-      toast.error("Failed to load subjects");
-    }
-  };
-
-  const fetchTeachers = async () => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    try {
-      const data = await getTeachers();
-      setTeachers(data);
-    } catch (error) {
-      console.error("Error fetching teachers:", error);
-      toast.error("Failed to load teachers");
-    }
-  };
-
-  // Subject Functions
-  const openAddSubjectModal = () => {
-    setSubjectMode("add");
-    setSelectedSubject(null);
-    setNewSubject({ name: "", code: "", classId: "" });
-    setShowSubjectModal(true);
-  };
-
-  const openEditSubjectModal = (subject: Subject) => {
-    setSubjectMode("edit");
-    setSelectedSubject(subject);
-    setNewSubject({
-      name: subject.name,
-      code: subject.code,
-      classId: subject.classId || "",
+  const filteredSubjects = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return subjects.filter((subject) => {
+      const matchesSearch =
+        !query ||
+        subject.name.toLowerCase().includes(query) ||
+        subject.code.toLowerCase().includes(query);
+      // A subject has no class of its own — it reaches a class through its
+      // courses, so that is what the filter matches on.
+      const matchesClass =
+        selectedClass === "all" ||
+        (subject.courses ?? []).some((course) => course.classId === selectedClass);
+      return matchesSearch && matchesClass;
     });
-    setShowSubjectModal(true);
-  };
+  }, [subjects, searchTerm, selectedClass]);
 
-  const handleSubjectSubmit = async () => {
-    if (!newSubject.name || !newSubject.code) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
+  const totalCourses = useMemo(
+    () => subjects.reduce((total, subject) => total + (subject.courses?.length ?? 0), 0),
+    [subjects],
+  );
 
-    setIsSubmittingSubject(true);
-
-    try {
-      if (typeof window === "undefined" || !mounted) return;
-
-      const schoolId = getSchoolId();
-      if (!schoolId) {
-        toast.error("School ID not found");
-        return;
-      }
-
-      if (subjectMode === "add") {
-        await createSubject({
-          name: newSubject.name,
-          code: newSubject.code,
-          schoolId: schoolId,
-        });
-      } else if (selectedSubject) {
-        await updateSubject(selectedSubject._id, {
-          name: newSubject.name,
-          code: newSubject.code,
-          schoolId: schoolId,
-        });
-      }
-
-      toast.success(`Subject ${subjectMode === "add" ? "created" : "updated"} successfully!`);
-      setShowSubjectModal(false);
-      fetchSubjects();
-    } catch (error: any) {
-      console.error(`Error ${subjectMode}ing subject:`, error);
-      toast.error(error.message || `Failed to ${subjectMode} subject`);
-    } finally {
-      setIsSubmittingSubject(false);
-    }
-  };
-
-  // Delete Subject Functions
-  const handleDeleteSubject = (subject: Subject) => {
-    setSubjectToDelete(subject);
-    setShowDeleteModal(true);
-  };
+  const toggleSubject = (subjectId: string) =>
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
 
   const confirmDeleteSubject = async () => {
     if (!subjectToDelete) return;
-
     try {
-      await deleteSubject(subjectToDelete._id);
+      await removeSubject.mutateAsync(subjectToDelete._id);
       toast.success(`"${subjectToDelete.name}" deleted successfully!`);
-      setShowDeleteModal(false);
       setSubjectToDelete(null);
-      await fetchSubjects();
-    } catch (error: any) {
-      console.error("Error deleting subject:", error);
-      toast.error(error.message || "Failed to delete subject");
+    } catch (error) {
+      logger.error("curriculum", "Failed to delete subject", error);
+      toast.error(getErrorMessage(error, "Failed to delete subject"));
     }
   };
 
-  const cancelDeleteSubject = () => {
-    setShowDeleteModal(false);
-    setSubjectToDelete(null);
-  };
-
-  // Course Functions
-  const openAddCourseModal = async (subject: Subject) => {
-    setCourseModalMode("add");
-    setSelectedCourse(null);
-    setActiveSubjectForCourse(subject);
-    setShowCourseModal(true);
-  };
-
-  const openEditCourseModal = async (course: Course) => {
-    setCourseModalMode("edit");
-    setSelectedCourse(course);
-    setActiveSubjectForCourse(null);
-    setShowCourseModal(true);
-  };
-
-  const handleCourseModalSuccess = () => {
-    setShowCourseModal(false);
-    if (initialAction) {
-      handledActionRef.current = null;
-      router.replace("/curriculum/structure");
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    try {
+      await removeCourse.mutateAsync(courseToDelete._id);
+      toast.success("Course deleted successfully!");
+      setCourseToDelete(null);
+    } catch (error) {
+      logger.error("curriculum", "Failed to delete course", error);
+      toast.error(getErrorMessage(error, "Failed to delete course"));
     }
-    fetchSubjects();
   };
 
   const closeCourseModal = () => {
-    setShowCourseModal(false);
-    if (initialAction) {
-      handledActionRef.current = null;
-      router.replace("/curriculum/structure");
-    }
+    setCourseModal({ isOpen: false, mode: "add", course: null, subject: null });
+    clearUrlAction();
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (typeof window === "undefined" || !mounted) return;
-
-    if (!window.confirm("Are you sure you want to delete this course?")) {
-      return;
-    }
-
-    try {
-      await deleteCourseService(courseId);
-      toast.success("Course deleted successfully!");
-      fetchSubjects();
-    } catch (error: any) {
-      console.error("Error deleting course:", error);
-      toast.error(error.message || "Failed to delete course");
-    }
+  const closeSubjectModal = () => {
+    setSubjectModal({ isOpen: false, mode: "add", subject: null });
+    clearUrlAction();
   };
 
-  // Toggle accordion
-  const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) => {
-      const next = new Set(prev);
-      if (next.has(subjectId)) {
-        next.delete(subjectId);
-      } else {
-        next.add(subjectId);
-      }
-      return next;
-    });
-  };
+  if (subjectsQuery.isLoading && subjects.length === 0) return <StructureLoading />;
 
-  // Helper Functions
-  const getClassName = (classId: string) => {
-    const classItem = classes.find((c) => c._id === classId);
-    return classItem ? classItem.name : null;
-  };
-
-  const getPersonName = (person?: { firstName?: string; lastName?: string; email?: string }) => {
-    const firstName = person?.firstName || "";
-    const lastName = person?.lastName || "";
-    return firstName || lastName ? `${firstName} ${lastName}`.trim() : person?.email || "";
-  };
-
-  const getTeacherName = (teacherRef?: unknown) => {
-    if (!teacherRef) return "No teacher";
-
-    if (typeof teacherRef === "object") {
-      const teacherObject = teacherRef as {
-        _id?: string;
-        firstName?: string;
-        lastName?: string;
-        email?: string;
-        userId?:
-          | string
-          | {
-              _id?: string;
-              firstName?: string;
-              lastName?: string;
-              email?: string;
-            };
-      };
-      const directName = getPersonName(teacherObject);
-      if (directName) return directName;
-
-      if (typeof teacherObject.userId === "object") {
-        const userName = getPersonName(teacherObject.userId);
-        if (userName) return userName;
-      }
-    }
-
-    const teacherObject =
-      typeof teacherRef === "object"
-        ? (teacherRef as {
-            _id?: string;
-            userId?: string | { _id?: string };
-          })
-        : null;
-
-    const teacherId =
-      typeof teacherRef === "string"
-        ? teacherRef
-        : typeof teacherObject?.userId === "string"
-          ? teacherObject.userId
-          : teacherObject?.userId?._id || teacherObject?._id || "";
-
-    const teacher = teachers.find((t) => {
-      const teacherWithUser = t as any;
-      const userId =
-        typeof teacherWithUser.userId === "string"
-          ? teacherWithUser.userId
-          : teacherWithUser.userId?._id;
-      return t._id === teacherId || userId === teacherId;
-    });
-
-    const teacherName = getPersonName(teacher);
-    return teacherName || "No teacher";
-  };
-
-  const filteredSubjects = subjects.filter((subject) => {
-    const matchesSearch =
-      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subject.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass === "all" || subject.classId === selectedClass;
-    return matchesSearch && matchesClass;
-  });
-
-  const totalCourses = subjects.reduce((sum, s) => sum + (s.courses?.length || 0), 0);
-
-  if (!mounted || loading) {
-    return <LoadingSpinner />;
-  }
+  const isFiltered = searchTerm.trim().length > 0 || selectedClass !== "all";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Page Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <div
-        className="bg-white border-b border-gray-200 px-6 py-5"
+        className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-5"
         data-guide="curriculum-structure-header"
       >
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/curriculum")}
-              className="flex items-center justify-center w-9 h-9 text-gray-500 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
-              title="Back to Curriculum"
+              className="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-slate-400 hover:text-[#003366] dark:hover:text-blue-300 hover:bg-[#003366]/5 dark:hover:bg-slate-800 rounded-lg transition-all"
+              aria-label="Back to Curriculum"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -443,338 +188,101 @@ const CurriculumStructureMain: React.FC = () => {
               <BookOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Curriculum Structure</h1>
-              <p className="text-sm text-gray-500">Manage subjects and their associated courses</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                Curriculum Structure
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Manage subjects and their associated courses
+              </p>
             </div>
           </div>
-          <Tooltip
-            content="Create a new subject area. You can add courses to it afterwards."
-            side="top"
-          >
-            <button
-              onClick={openAddSubjectModal}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+          <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
+            <Tooltip
+              content="Create a new subject area. You can add courses to it afterwards."
+              side="top"
             >
-              <Plus className="w-4 h-4" />
-              Add Subject
-            </button>
-          </Tooltip>
+              <button
+                onClick={() => setSubjectModal({ isOpen: true, mode: "add", subject: null })}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Subject
+              </button>
+            </Tooltip>
+          </PermissionGate>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
-        {/* Stats Row */}
-        <div
-          className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-          data-guide="curriculum-structure-stats"
-        >
-          <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
-              <LayoutList className="w-4 h-4 text-[#003366]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{subjects.length}</p>
-              <p className="text-xs text-gray-500">Total Subjects</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-[#003366]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{totalCourses}</p>
-              <p className="text-xs text-gray-500">Total Courses</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 flex items-center gap-3 col-span-2 sm:col-span-1">
-            <div className="w-9 h-9 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
-              <Users className="w-4 h-4 text-[#003366]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{classes.length}</p>
-              <p className="text-xs text-gray-500">Classes</p>
-            </div>
-          </div>
-        </div>
+        <StructureToolbar
+          totalSubjects={subjects.length}
+          totalCourses={totalCourses}
+          totalClasses={classes.length}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          classes={classes}
+          selectedClass={selectedClass}
+          onClassChange={setSelectedClass}
+        />
 
-        {/* Search & Filter Bar */}
-        <div
-          className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex flex-col sm:flex-row gap-3"
-          data-guide="curriculum-structure-filters"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search subjects by name or code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] text-sm text-gray-900 placeholder-gray-400 transition-all"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] text-sm text-gray-900 transition-all min-w-[160px]"
-            >
-              <option value="all">All Classes</option>
-              {classes.map((cls) => (
-                <option key={cls._id} value={cls._id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Subjects List */}
         <div data-guide="curriculum-structure-list">
-          {filteredSubjects.length > 0 ? (
-            <div className="space-y-2">
-              {filteredSubjects.map((subject) => {
-                const isExpanded = expandedSubjects.has(subject._id);
-                const courseCount = subject.courses?.length || 0;
-                const className = getClassName(subject.classId || "");
-
-                return (
-                  <div
-                    key={subject._id}
-                    className="bg-white rounded-xl border border-gray-100 overflow-hidden"
-                  >
-                    {/* Subject Row */}
-                    <div className="flex items-center gap-3 px-4 py-3.5">
-                      {/* Expand toggle */}
-                      <Tooltip
-                        content="Expand the subject to view its courses, teachers, and course actions."
-                        side="right"
-                      >
-                        <button
-                          onClick={() => toggleSubject(subject._id)}
-                          className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
-                          title={isExpanded ? "Collapse" : "Expand"}
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-500" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-500" />
-                          )}
-                        </button>
-                      </Tooltip>
-
-                      {/* Subject icon */}
-                      <div className="w-8 h-8 rounded-lg bg-[#003366]/10 flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-4 h-4 text-[#003366]" />
-                      </div>
-
-                      {/* Subject info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-gray-900 text-sm truncate">
-                            {subject.name}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#003366]/10 text-[#003366]">
-                            {subject.code}
-                          </span>
-                          {className && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
-                              {className}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Course count badge */}
-                      <span className="text-xs text-gray-500 flex-shrink-0 hidden sm:block">
-                        {courseCount} {courseCount === 1 ? "course" : "courses"}
-                      </span>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Tooltip
-                          content="Create a course within the selected subject. Choose which class it belongs to."
-                          side="top"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openAddCourseModal(subject);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-xs font-medium"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Add Course</span>
-                          </button>
-                        </Tooltip>
-                        <Tooltip
-                          content="Edit the subject name or code used across courses, reports, and timetables."
-                          side="top"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditSubjectModal(subject);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
-                            title="Edit subject"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip
-                          content="Deleting a subject removes all its courses. This cannot be undone."
-                          side="top"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSubject(subject);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Delete subject"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-
-                    {/* Courses panel (accordion) */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-100 bg-gray-50/50">
-                        {courseCount > 0 ? (
-                          <div className="divide-y divide-gray-100">
-                            {subject.courses!.map((course) => (
-                              <div
-                                key={course._id}
-                                className="flex items-center gap-3 px-5 py-3 hover:bg-white transition-colors"
-                              >
-                                <div className="w-7 h-7 rounded-md bg-[#003366]/5 flex items-center justify-center flex-shrink-0">
-                                  <GraduationCap className="w-3.5 h-3.5 text-[#003366]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-medium text-gray-900 text-sm truncate">
-                                      {course.title}
-                                    </span>
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                                      {course.courseCode}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1 mt-0.5">
-                                    <Users className="w-3 h-3 text-gray-400" />
-                                    <span className="text-xs text-gray-500 truncate">
-                                      {getTeacherName((course as any).teacherId)}
-                                    </span>
-                                  </div>
-                                </div>
-                                {course.description && (
-                                  <p className="text-xs text-gray-500 line-clamp-1 hidden md:block max-w-xs flex-shrink-0">
-                                    {course.description}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  <Tooltip
-                                    content="Update the course class, teacher, code, or description."
-                                    side="top"
-                                  >
-                                    <button
-                                      onClick={() => openEditCourseModal(course)}
-                                      className="p-1.5 text-gray-400 hover:text-[#003366] hover:bg-[#003366]/5 rounded-lg transition-all"
-                                      title="Edit course"
-                                    >
-                                      <Edit className="w-3.5 h-3.5" />
-                                    </button>
-                                  </Tooltip>
-                                  <Tooltip
-                                    content="Remove this course from the curriculum structure."
-                                    side="top"
-                                  >
-                                    <button
-                                      onClick={() => handleDeleteCourse(course._id)}
-                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                      title="Delete course"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </Tooltip>
-                                </div>
-                              </div>
-                            ))}
-                            {/* Add course row */}
-                            <div className="px-5 py-2.5">
-                              <Tooltip
-                                content="Add another class-level course under this subject."
-                                side="top"
-                              >
-                                <button
-                                  onClick={() => openAddCourseModal(subject)}
-                                  className="flex items-center gap-1.5 text-xs text-[#003366] hover:text-[#002244] font-medium transition-colors"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  Add another course
-                                </button>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="py-8 flex flex-col items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-[#003366]/10 flex items-center justify-center">
-                              <GraduationCap className="w-5 h-5 text-[#003366]" />
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-gray-700">No courses yet</p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                Add the first course to this subject
-                              </p>
-                            </div>
-                            <Tooltip
-                              content="Create the first course for this subject so it can be assigned to classes and teachers."
-                              side="top"
-                            >
-                              <button
-                                onClick={() => openAddCourseModal(subject)}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors text-sm font-medium"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Add Course
-                              </button>
-                            </Tooltip>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          {subjectsQuery.isError ? (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 py-12 text-center">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {getErrorMessage(subjectsQuery.error, "Could not load subjects.")}
+              </p>
+              <button
+                onClick={() => subjectsQuery.refetch()}
+                className="mt-4 px-5 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244]"
+              >
+                Try again
+              </button>
             </div>
+          ) : filteredSubjects.length > 0 ? (
+            <SubjectAccordion
+              subjects={filteredSubjects}
+              classes={classes}
+              teachers={teachers}
+              expanded={expanded}
+              onToggle={toggleSubject}
+              canManage={canManage}
+              deletingCourseId={removeCourse.isPending ? (courseToDelete?._id ?? null) : null}
+              onAddCourse={(subject) =>
+                setCourseModal({ isOpen: true, mode: "add", course: null, subject })
+              }
+              onEditSubject={(subject) => setSubjectModal({ isOpen: true, mode: "edit", subject })}
+              onDeleteSubject={setSubjectToDelete}
+              onEditCourse={(course) =>
+                setCourseModal({ isOpen: true, mode: "edit", course, subject: null })
+              }
+              onDeleteCourse={setCourseToDelete}
+            />
           ) : (
-            <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 py-16">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700 py-16">
               <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#003366]/10 flex items-center justify-center">
-                  <BookOpen className="w-7 h-7 text-[#003366]" />
+                <div className="w-14 h-14 rounded-xl bg-[#003366]/10 dark:bg-blue-900/30 flex items-center justify-center">
+                  <BookOpen className="w-7 h-7 text-[#003366] dark:text-blue-300" />
                 </div>
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {searchTerm || selectedClass !== "all"
-                      ? "No subjects found"
-                      : "No subjects yet"}
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                    {isFiltered ? "No subjects found" : "No subjects yet"}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-                    {searchTerm || selectedClass !== "all"
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                    {isFiltered
                       ? "Try adjusting your search or filters to find what you're looking for."
                       : "Get started by creating your first subject to begin building your curriculum structure."}
                   </p>
                 </div>
-                {!searchTerm && selectedClass === "all" && (
-                  <button
-                    onClick={openAddSubjectModal}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add First Subject
-                  </button>
+                {!isFiltered && (
+                  <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
+                    <button
+                      onClick={() => setSubjectModal({ isOpen: true, mode: "add", subject: null })}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add First Subject
+                    </button>
+                  </PermissionGate>
                 )}
               </div>
             </div>
@@ -782,161 +290,54 @@ const CurriculumStructureMain: React.FC = () => {
         </div>
       </div>
 
-      {/* Subject Modal */}
-      <TalimModal
-        isOpen={showSubjectModal}
-        onClose={() => setShowSubjectModal(false)}
-        title={subjectMode === "add" ? "Add New Subject" : "Edit Subject"}
-        subtitle={
-          subjectMode === "add"
-            ? "Create a new subject to organize your courses"
-            : "Update the subject information"
-        }
-        icon={<BookOpen className="w-5 h-5 text-white" />}
-        isSubmitting={isSubmittingSubject}
-        footer={
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3">
-            <button
-              type="button"
-              onClick={() => setShowSubjectModal(false)}
-              disabled={isSubmittingSubject}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubjectSubmit}
-              disabled={isSubmittingSubject || !newSubject.name || !newSubject.code}
-              className="px-6 py-3 bg-[#003366] text-white rounded-xl hover:bg-[#002244] transition-all duration-200 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmittingSubject ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {subjectMode === "add" ? "Creating..." : "Updating..."}
-                </>
-              ) : (
-                <>{subjectMode === "add" ? "Create Subject" : "Update Subject"}</>
-              )}
-            </button>
-          </div>
-        }
-      >
-        {/* Subject Information Section */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wide flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#003366]" />
-            Subject Information
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
-              <input
-                type="text"
-                value={newSubject.name}
-                onChange={(e) => setNewSubject((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Mathematics"
-                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all text-gray-900 placeholder-gray-400"
-                required
-              />
-            </div>
-
-            <div>
-              <Tooltip
-                content="A short unique identifier for the subject (e.g. MTH, ENG). Used on reports and timetables."
-                side="right"
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subject Code *
-                </label>
-              </Tooltip>
-              <input
-                type="text"
-                value={newSubject.code}
-                onChange={(e) => setNewSubject((prev) => ({ ...prev, code: e.target.value }))}
-                placeholder="e.g., MATH"
-                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all text-gray-900 placeholder-gray-400"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class (Optional)
-              </label>
-              <div className="relative">
-                <select
-                  value={newSubject.classId || "none"}
-                  onChange={(e) =>
-                    setNewSubject((prev) => ({
-                      ...prev,
-                      classId: e.target.value === "none" ? "" : e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all text-gray-900 appearance-none cursor-pointer"
-                >
-                  <option value="none">No class assigned</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>
-                      {cls.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Optionally assign this subject to a specific class
-              </p>
-            </div>
-          </div>
-        </div>
-      </TalimModal>
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={showDeleteModal}
-        onClose={cancelDeleteSubject}
-        onConfirm={confirmDeleteSubject}
-        message={`Are you sure you want to delete "${subjectToDelete?.name}"? This will also delete all associated courses.`}
+      <SubjectFormModal
+        isOpen={subjectModal.isOpen}
+        mode={subjectModal.mode}
+        subject={subjectModal.subject}
+        onClose={closeSubjectModal}
       />
 
-      {/* Course Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(subjectToDelete)}
+        title="Delete subject"
+        message={`Are you sure you want to delete "${subjectToDelete?.name}"? This will also delete all associated courses.`}
+        isPending={removeSubject.isPending}
+        onConfirm={confirmDeleteSubject}
+        onCancel={() => setSubjectToDelete(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(courseToDelete)}
+        title="Delete course"
+        message={`Are you sure you want to delete "${courseToDelete?.title}"? This cannot be undone.`}
+        isPending={removeCourse.isPending}
+        onConfirm={confirmDeleteCourse}
+        onCancel={() => setCourseToDelete(null)}
+      />
+
       <CourseModal
-        isOpen={showCourseModal}
+        isOpen={courseModal.isOpen}
         onClose={closeCourseModal}
-        onSuccess={handleCourseModalSuccess}
-        mode={courseModalMode}
-        course={selectedCourse}
-        subjectId={activeSubjectForCourse?._id}
-        subjectName={activeSubjectForCourse?.name}
-        initialClassId={activeSubjectForCourse?.classId || ""}
+        onSuccess={closeCourseModal}
+        mode={courseModal.mode}
+        course={courseModal.course}
+        subjectId={courseModal.subject?._id ?? undefined}
+        subjectName={courseModal.subject?.name}
+        initialClassId=""
       />
     </div>
   );
-};
+}
 
-// Main wrapper component with Suspense
-const CurriculumStructurePage: React.FC = () => {
+/**
+ * The curriculum structure route.
+ *
+ * @returns The page, suspended until the search params are available.
+ */
+export default function CurriculumStructurePage() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<StructureLoading />}>
       <CurriculumStructureMain />
     </Suspense>
   );
-};
-
-export default CurriculumStructurePage;
+}
