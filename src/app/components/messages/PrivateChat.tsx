@@ -12,6 +12,7 @@ import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
+import type { ReplyTarget } from "@/types/chat.types";
 import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
 type MsgAttachment = ChatAttachment;
@@ -38,8 +39,8 @@ interface Message {
 }
 
 interface PrivateChatProps {
-  replyingMessage: { sender: string; text: string } | null;
-  setReplyingMessage: (msg: any) => void;
+  replyingMessage: ReplyTarget | null;
+  setReplyingMessage: (msg: ReplyTarget | null) => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
   room: DisplayChatRoom;

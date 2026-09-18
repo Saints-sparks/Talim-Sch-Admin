@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 
 /**
@@ -15,7 +16,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 
   useEffect(() => {
     // Keep a trace for support; the UI never shows the stack.
-    console.error("[app error]", error);
+    logger.error("app", "Unhandled error reached the root boundary", error);
   }, [error]);
 
   const requestId = error instanceof ApiError ? error.requestId : undefined;

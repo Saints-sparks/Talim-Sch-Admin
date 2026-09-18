@@ -9,14 +9,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import type { ReplyTarget } from "@/types/chat.types";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 interface MessageOptionsDropdownProps {
   index: number;
-  msg: any;
+  msg: ReplyTarget;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
-  setReplyingMessage: (msg: any) => void;
+  setReplyingMessage: (msg: ReplyTarget) => void;
 }
 
 export default function MessageOptionsDropdown({

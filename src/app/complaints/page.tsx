@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { complaintService } from "@/app/services/complaint.service";
 import { toast } from "@/components/CustomToast";
 import ComplaintCard from "../components/ComplaintCard";
+import { logger } from "@/lib/logger";
 import { Complaint as ComplaintService } from "../services/complaint.service";
 
 interface Complaint extends ComplaintService {
@@ -66,7 +67,7 @@ const Complaints: React.FC = () => {
       setIsModalOpen(false);
       setNewComplaint({ subject: "", description: "", attachment: undefined });
     } catch (error) {
-      console.error("Error creating complaint:", error);
+      logger.error("complaints", "Creating a complaint failed", error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
@@ -95,7 +96,7 @@ const Complaints: React.FC = () => {
       setError(
         err instanceof Error ? err.message : "Failed to fetch complaints"
       );
-      console.error("Error fetching complaints:", err);
+      logger.error("complaints", "Loading complaints failed", err);
     } finally {
       setIsLoading(false);
     }

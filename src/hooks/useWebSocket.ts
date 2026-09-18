@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { sessionStore } from "@/lib/session";
 import { apiClient } from "@/lib/apiClient";
+import { logger } from "@/lib/logger";
 import { API_BASE_URL } from "@/app/lib/api/config";
 
 // WebSocket connection configuration
@@ -24,6 +25,7 @@ export type ChatAck<T = Record<string, unknown>> =
       clientMessageId?: string;
     };
 
+/** A notification as the socket delivers it. */
 export interface NotificationData {
   _id: string;
   userId?: string;
@@ -37,6 +39,7 @@ export interface NotificationData {
   read?: boolean;
 }
 
+/** A page of messages pushed for one room, with its paging cursors. */
 export interface MessagesUpdatePayload {
   roomId: string;
   messages: unknown[];
@@ -50,6 +53,7 @@ export interface MessagesUpdatePayload {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Handler = (...args: any[]) => void;
 
+/** What the WebSocket context exposes to components. */
 export interface WebSocketContextType {
   socket: Socket | null;
   isConnected: boolean;
@@ -134,7 +138,7 @@ export const useWebSocket = ({ enabled, userId, refreshToken }: UseWebSocketOpti
         try {
           handler(...args);
         } catch (error) {
-          console.error(`WebSocket "${event}" handler failed:`, error);
+          logger.error("socket", `A "${event}" handler threw`, error);
         }
       }
     };

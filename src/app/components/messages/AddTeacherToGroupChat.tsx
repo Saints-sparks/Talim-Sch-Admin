@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { teacherService } from "@/app/services/teacher.service";
 import { generateColorFromString } from "@/lib/colorUtils";
+import { logger } from "@/lib/logger";
 import { useChatsContext } from "@/context/ChatsContext";
 
 // Define the interface to match the API response (flat structure)
@@ -19,8 +20,8 @@ interface TeacherWithUser {
   role: string;
   specialization?: string;
   employmentRole?: string;
-  assignedClasses?: any[];
-  assignedCourses?: any[];
+  assignedClasses?: unknown[];
+  assignedCourses?: unknown[];
   schoolId: string;
   isActive: boolean;
 }
@@ -103,7 +104,7 @@ export default function AddTeacherToGroupChatModal({
       setTeachers(teachersData as TeacherWithUser[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teachers");
-      console.error("Error fetching teachers:", err);
+      logger.error("chat", "Error fetching teachers", err);
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +144,7 @@ export default function AddTeacherToGroupChatModal({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add teachers");
-      console.error("Error adding teachers:", err);
+      logger.error("chat", "Error adding teachers", err);
     } finally {
       setIsAdding(false);
     }

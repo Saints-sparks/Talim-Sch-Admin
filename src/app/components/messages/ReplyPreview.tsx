@@ -1,12 +1,10 @@
 // ReplyPreview.tsx
 import React from "react";
+import type { ReplyTarget } from "@/types/chat.types";
 import { X } from "lucide-react";
 
 interface ReplyPreviewProps {
-  replyingMessage: {
-    sender: string;
-    text: string;
-  };
+  replyingMessage: ReplyTarget;
   onCancel: () => void;
 }
 

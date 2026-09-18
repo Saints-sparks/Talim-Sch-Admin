@@ -8,6 +8,11 @@
 import { useAuth } from "@/context/AuthContext";
 import { normalizePermission } from "@/lib/permissions";
 
+/**
+ * Permission helpers for the signed-in administrator.
+ *
+ * @returns Checks plus `isFullAdmin` / `isSubAdmin` and the raw permission list.
+ */
 export function usePermissions() {
   const { hasPermission: rawHasPermission, isFullAdmin, isSubAdmin, user } = useAuth();
 

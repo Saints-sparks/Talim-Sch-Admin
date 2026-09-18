@@ -173,3 +173,21 @@ export interface SearchChatRoomsParams {
   searchTerm?: string;
   type?: ChatRoomType;
 }
+
+/** The parts of a message the reply preview shows — what "Reply" hands upward. */
+export interface ReplyTarget {
+  sender: string;
+  text?: string;
+}
+
+/** A chat room member, normalised from whichever shape the API or socket sent. */
+export interface ChatParticipant {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email?: string;
+  avatar?: string | null;
+  role?: string;
+  isOnline?: boolean;
+}

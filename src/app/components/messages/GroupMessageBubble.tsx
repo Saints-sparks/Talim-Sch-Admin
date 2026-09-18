@@ -5,6 +5,7 @@ import { AttachmentGrid } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
+import type { ReplyTarget } from "@/types/chat.types";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 interface Attachment {
@@ -45,7 +46,7 @@ interface MessageBubbleProps {
   onDelete?: () => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
-  setReplyingMessage: (msg: any) => void;
+  setReplyingMessage: (msg: ReplyTarget) => void;
 }
 
 export default function GroupMessageBubble({

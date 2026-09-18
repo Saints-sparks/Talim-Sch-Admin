@@ -1,13 +1,11 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import type { ReplyTarget } from "@/types/chat.types";
 import MessagesLayout from "../components/messages/MessagesLayout";
 
 export default function AdminChatUI() {
-  const [replyingMessage, setReplyingMessage] = useState<{
-    sender: string;
-    text: string;
-  } | null>(null);
+  const [replyingMessage, setReplyingMessage] = useState<ReplyTarget | null>(null);
 
   const [openSubMenu, setOpenSubMenu] = useState<{
     index: number;

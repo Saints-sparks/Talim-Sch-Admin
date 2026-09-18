@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { parentService } from "@/app/services/parent.service";
 import { generateColorFromString } from "@/lib/colorUtils";
+import { logger } from "@/lib/logger";
 import { useChatsContext } from "@/context/ChatsContext";
 
 // Define the interface to match the API response
@@ -19,7 +20,7 @@ interface ApiParent {
     email?: string;
     phoneNumber?: string;
   } | null;
-  children: any[];
+  children: unknown[];
   schoolId: string;
 }
 
@@ -32,7 +33,7 @@ interface ParentWithUser {
     email?: string;
     phoneNumber?: string;
   } | null;
-  children: any[];
+  children: unknown[];
   schoolId: string;
 }
 
@@ -109,7 +110,7 @@ export default function AddParentToGroupChatModal({
       setParents(parentsData as ParentWithUser[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch parents");
-      console.error("Error fetching parents:", err);
+      logger.error("chat", "Error fetching parents", err);
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +160,7 @@ export default function AddParentToGroupChatModal({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add parents");
-      console.error("Error adding parents:", err);
+      logger.error("chat", "Error adding parents", err);
     } finally {
       setIsAdding(false);
     }

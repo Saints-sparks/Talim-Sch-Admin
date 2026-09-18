@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, Mail, Phone, Loader2 } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { parentService } from "@/app/services/parent.service";
+import { logger } from "@/lib/logger";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 
 // Extend the Parent interface to match API response
@@ -79,7 +80,7 @@ export default function Parents({ chatRoomId, onAddParentSuccess }: ParentsProps
       setFilteredParents(parentsData as unknown as ApiParent[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch parents");
-      console.error("Error fetching parents:", err);
+      logger.error("chat", "Error fetching parents", err);
     } finally {
       setIsLoading(false);
     }

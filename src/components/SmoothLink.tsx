@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { logger } from "@/lib/logger";
 import { useRouter, usePathname } from 'next/navigation';
 
 interface SmoothLinkProps {
@@ -40,7 +41,7 @@ const SmoothLink: React.FC<SmoothLinkProps> = ({
         router.push(href);
       }
     } catch (error) {
-      console.error('Navigation error:', error);
+      logger.error("navigation", `Could not navigate to ${href}`, error);
     }
   };
 

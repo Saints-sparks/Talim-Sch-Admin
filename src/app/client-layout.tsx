@@ -47,7 +47,7 @@ function OnboardingSyncEffect() {
 // Inner shell — sits inside AuthProvider so it can read the user's schoolId
 function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, schoolId } = useAuth();
   const { toasts, removeToast } = useToast();
 
   const noSidebarRoutes = [
@@ -58,13 +58,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
     "/set-password",
   ];
   const showSidebar = !noSidebarRoutes.includes(pathname);
-
-  const schoolId =
-    user?.schoolId
-      ? typeof user.schoolId === "string"
-        ? user.schoolId
-        : (user.schoolId as any)?._id ?? null
-      : null;
 
   return (
     <OnboardingProvider

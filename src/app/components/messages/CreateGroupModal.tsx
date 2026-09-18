@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { getClasses, getCoursesBySchool } from "@/app/services/subjects.service";
+import type { CreateGroupChatDto } from "@/types/chat.types";
 import { getErrorMessage } from "@/lib/apiError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -165,7 +166,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
     setSubmitting(true);
     try {
       let chatRoomType: string;
-      const payload: Record<string, any> = { name: groupName.trim() };
+      const payload: CreateGroupChatDto = { type: "", name: groupName.trim() };
 
       switch (selectedKind) {
         case "parent":
@@ -185,7 +186,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
           break;
       }
 
-      const newGroup = await createGroupChat({ ...payload, type: chatRoomType as any });
+      const newGroup = await createGroupChat({ ...payload, type: chatRoomType });
 
       if (newGroup) {
         const labels: Record<GroupKind, string> = {
@@ -199,7 +200,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
         onClose();
         onSuccess?.(newGroup);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast.error(getErrorMessage(err, "Failed to create group"));
     } finally {
       setSubmitting(false);

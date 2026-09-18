@@ -32,6 +32,7 @@ export const Permission = {
   MANAGE_SUB_ADMINS:    'manage:sub_admins',
 } as const;
 
+/** Any one of the permission values the API compares against. */
 export type PermissionValue = typeof Permission[keyof typeof Permission];
 
 /**

@@ -8,6 +8,7 @@
  * Nothing here decodes tokens: the introspected user is the source of truth.
  */
 
+/** The signed-in user, as stored for non-React code to read. */
 export interface SessionUser {
   _id?: string;
   userId: string;

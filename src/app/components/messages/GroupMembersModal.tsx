@@ -4,31 +4,21 @@ import { X, Circle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { useChatsContext } from "@/context/ChatsContext";
+import type { ChatParticipant } from "@/types/chat.types";
 import GroupMemberList from "./GroupMemberList";
-
-interface Participant {
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-  email?: string;
-  avatar?: string;
-  role?: string;
-  isOnline?: boolean;
-}
 
 interface GroupMembersModalProps {
   isOpen: boolean;
   onClose: () => void;
   groupName: string;
-  participants: Participant[];
+  participants: ChatParticipant[];
   currentUserId?: string;
   /** With a room from the list, members are live and managers can remove them. */
   chatRoomId?: string;
   canManage?: boolean;
 }
 
-function getDisplayName(participant: Participant): string {
+function getDisplayName(participant: ChatParticipant): string {
   if (participant.name && participant.name.trim()) return participant.name.trim();
   const composed = `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
   if (composed) return composed;
@@ -90,7 +80,7 @@ export default function GroupMembersModal({
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={participant.avatar} />
+                      <AvatarImage src={participant.avatar ?? undefined} />
                       <AvatarFallback
                         className="text-white text-xs"
                         style={{ backgroundColor: generateColorFromString(displayName) }}

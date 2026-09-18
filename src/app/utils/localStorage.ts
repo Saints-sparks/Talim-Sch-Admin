@@ -1,10 +1,19 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { parse, serialize } from "cookie";
 
 const isBrowser = typeof window !== "undefined";
 
-export const getLocalStorageItem = (key: string): any | null => {
+/**
+ * Reads a JSON value previously stored under `key`, falling back to the
+ * cookie copy when localStorage is unavailable (private windows, blocked
+ * site data).
+ *
+ * @param key - Storage key.
+ * @returns The parsed value, or `null` when absent or unreadable.
+ */
+export const getLocalStorageItem = <T = unknown>(key: string): T | null => {
   if (!isBrowser) return null;
 
   try {
@@ -61,7 +70,7 @@ export const getLocalStorageItem = (key: string): any | null => {
             key === "refreshToken") &&
           cookieData.startsWith("eyJ")
         ) {
-          return cookieData; // Return raw token if it's a JWT token key
+          return cookieData as T; // a raw JWT, not JSON
         }
         // For user data and other keys, always try to parse as JSON
         try {
@@ -73,24 +82,28 @@ export const getLocalStorageItem = (key: string): any | null => {
             key === "token" ||
             key === "refreshToken"
           ) {
-            return cookieData;
+            return cookieData as T;
           }
           return null;
         }
       }
     }
   } catch (error) {
-    console.error(
-      `Error accessing localStorage/cookies for key '${key}':`,
-      error
-    );
+    logger.error("storage", `Could not read '${key}' from localStorage or cookies`, error);
     return null;
   }
 
   return null;
 };
 
-export const setLocalStorageItem = (key: string, value: any) => {
+/**
+ * Stores a JSON value under `key`, mirroring it into a cookie so a reload
+ * before hydration can still read it.
+ *
+ * @param key - Storage key.
+ * @param value - Any JSON-serialisable value.
+ */
+export const setLocalStorageItem = (key: string, value: unknown) => {
   if (!isBrowser) return;
 
   try {
@@ -112,6 +125,6 @@ export const setLocalStorageItem = (key: string, value: any) => {
       });
     }
   } catch (error) {
-    console.error("Error setting storage:", error);
+    logger.error("storage", `Could not store '${key}'`, error);
   }
 };

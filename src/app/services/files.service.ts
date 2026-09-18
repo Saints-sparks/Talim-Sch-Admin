@@ -76,11 +76,25 @@ const uploadWithProgress = (
   });
 };
 
+/**
+ * Uploads an image and returns its hosted URL.
+ *
+ * @param imageFile - The file the user chose.
+ * @param onProgress - Called with 0-100 as the upload proceeds.
+ * @returns The URL to store on the record.
+ */
 export const uploadImage = async (
   imageFile: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => uploadWithProgress(API_ENDPOINTS.UPLOAD_IMAGE, imageFile, onProgress);
 
+/**
+ * Uploads an arbitrary attachment and returns its hosted URL.
+ *
+ * @param file - The file the user chose.
+ * @param onProgress - Called with 0-100 as the upload proceeds.
+ * @returns The URL to store on the record.
+ */
 export const uploadFileAttachment = async (
   file: File,
   onProgress?: (progress: number) => void

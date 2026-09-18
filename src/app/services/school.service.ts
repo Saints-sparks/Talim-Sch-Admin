@@ -20,6 +20,7 @@ export interface Class {
   assignedCourses: Array<string | { _id: string; [key: string]: unknown }>;
 }
 
+/** One named contact on the school's profile. */
 export interface PrimaryContact {
   name: string;
   phone: string;
@@ -27,11 +28,13 @@ export interface PrimaryContact {
   role: string;
 }
 
+/** Where the school is, as the profile stores it. */
 export interface SchoolLocation {
   country: string;
   state: string;
 }
 
+/** Body for `PUT /schools/:id` — only these fields are accepted. */
 export interface UpdateSchoolPayload {
   name?: string;
   email?: string;
@@ -42,6 +45,7 @@ export interface UpdateSchoolPayload {
   logo?: string;
 }
 
+/** The school as the update endpoint returns it. */
 export interface UpdateSchoolResponse {
   _id: string;
   name: string;

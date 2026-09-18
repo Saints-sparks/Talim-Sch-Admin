@@ -40,8 +40,8 @@ export default function SignIn() {
         const userData = userRaw ? JSON.parse(userRaw) : {};
         router.push(resolvePostLoginRoute(userData));
       }
-    } catch (err: any) {
-      const msg: string = err.message || "";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
       if (msg.toLowerCase().includes("access denied") || msg.toLowerCase().includes("registered as")) {
         setLoginError({ kind: "access_denied", message: msg });
       } else if (

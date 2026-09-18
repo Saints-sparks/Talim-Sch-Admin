@@ -25,6 +25,7 @@ import { getSchoolDashboard, type SchoolDashboardData } from "../services/dashbo
 import { getSchoolId, updateSchool, type UpdateSchoolPayload } from "../services/school.service";
 import { uploadToCloudinary, validateImageFile } from "../utils/cloudinary";
 import { getLocalStorageItem } from "../utils/localStorage";
+import type { SessionUser } from "@/lib/session";
 import {
   authService,
   type UserProfile,
@@ -77,7 +78,7 @@ export default function Profile() {
       try {
         setIsLoadingData(true);
 
-        const storedUser = getLocalStorageItem("user");
+        const storedUser = getLocalStorageItem<SessionUser>("user");
         if (storedUser && storedUser.userId) {
           try {
             const userProfile: UserProfile = await authService.getUserProfile(storedUser.userId);
@@ -102,7 +103,12 @@ export default function Profile() {
               }));
             }
           } catch {
-            const fallback = storedUser || {};
+            // Older sessions stored a single `name` and `phone`; read both shapes.
+            const fallback = (storedUser ?? {}) as SessionUser & {
+              name?: string;
+              phone?: string;
+              phoneNumber?: string;
+            };
             setFormData((prev) => ({
               ...prev,
               adminFirstName: fallback.firstName || fallback.name?.split(" ")[0] || "",
@@ -258,7 +264,7 @@ export default function Profile() {
         if (formData.logo) schoolPayload.logo = formData.logo;
         await updateSchool(schoolId, schoolPayload);
       } else {
-        const currentUser = getLocalStorageItem("user");
+        const currentUser = getLocalStorageItem<SessionUser>("user");
         if (!currentUser?.userId)
           throw new Error("User ID not found. Please ensure you're logged in.");
 

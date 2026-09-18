@@ -14,6 +14,7 @@ import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import type { ReplyTarget } from "@/types/chat.types";
 import {
   deliveryState,
   latestOwnStoredMessageId,
@@ -46,8 +47,8 @@ interface Message {
 }
 
 interface GroupChatProps {
-  replyingMessage: { sender: string; text: string } | null;
-  setReplyingMessage: (msg: { sender: string; text: string } | null) => void;
+  replyingMessage: ReplyTarget | null;
+  setReplyingMessage: (msg: ReplyTarget | null) => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
   room: DisplayChatRoom;

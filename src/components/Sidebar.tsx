@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import SmoothLink from "./SmoothLink";
 import { useSidebar } from "@/context/SidebarContext";
+import { logger } from "@/lib/logger";
 import {
   BookOpen,
   Calendar2,
@@ -271,7 +272,7 @@ export default function Sidebar({ className, ...rest }: SidebarProps) {
       }
       router.push("/");
     } catch (error) {
-      console.error("Logout error:", error);
+      logger.error("auth", "Sign-out failed", error);
       toast.error("An error occurred during logout. Please try again.");
     } finally {
       setIsLoggingOut(false);

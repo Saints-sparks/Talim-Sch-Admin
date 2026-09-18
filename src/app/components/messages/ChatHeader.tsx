@@ -21,6 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useChatsContext } from "@/context/ChatsContext";
 import { canManageRoom } from "@/lib/chat/rooms";
 import { ChatRoomType } from "@/types/chat.types";
+import type { ChatParticipant } from "@/types/chat.types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,21 +30,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Define participant type
-interface Participant {
-  id: string;
+// Utility function to process participants data (handle Mongoose documents)
+/**
+ * One participant as the API or the socket sends it: sometimes a plain object,
+ * sometimes a Mongoose document with the real fields under `_doc`.
+ */
+interface RawParticipantFields {
+  userId?: string | { toString(): string };
+  _id?: string | { toString(): string };
+  name?: string;
   firstName?: string;
   lastName?: string;
-  name?: string;
   email?: string;
-  avatar?: string;
+  avatar?: string | null;
+  userAvatar?: string | null;
   role?: string;
-  isOnline: boolean;
+  isOnline?: boolean;
 }
+type RawParticipant = RawParticipantFields & { _doc?: RawParticipantFields };
 
-// Utility function to process participants data (handle Mongoose documents)
-function processParticipants(participants: any[], currentUserId?: string): Participant[] {
+function processParticipants(participants: RawParticipant[], currentUserId?: string): ChatParticipant[] {
   return participants
-    .map((p: any) => {
+    .map((p: RawParticipant) => {
       // Handle Mongoose documents - data might be in _doc property
       const participantData = p._doc || p;
       const participantId = participantData.userId || participantData._id || p.userId || p._id;
@@ -57,17 +65,17 @@ function processParticipants(participants: any[], currentUserId?: string): Parti
       }
       
       return {
-        id: participantId?.toString() || '',
+        id: participantId?.toString() ?? '',
         firstName: participantData.firstName || p.firstName,
         lastName: participantData.lastName || p.lastName,
         name: name || 'Unknown User',
         email: participantData.email || p.email,
-        avatar: participantData.userAvatar || participantData.avatar || p.userAvatar || p.avatar,
+        avatar: participantData.userAvatar ?? participantData.avatar ?? p.userAvatar ?? p.avatar ?? null,
         role: participantData.role || p.role,
         isOnline: participantData.isOnline || p.isOnline || false,
       };
     })
-    .filter((p: Participant) => p.id);
+    .filter((p: ChatParticipant) => p.id);
 }
 
 interface ChatHeaderProps {
@@ -75,7 +83,7 @@ interface ChatHeaderProps {
   name: string;
   status?: string;
   subtext?: string | string[]; // Allow both string and array for group members
-  participants?: any[]; // Real participants data
+  participants?: RawParticipant[]; // Real participants data
   currentUserId?: string; // Current user ID to filter out
   onBack?: () => void; // Navigation back to chat list
   showBackButton?: boolean; // Whether to show back button (mobile)

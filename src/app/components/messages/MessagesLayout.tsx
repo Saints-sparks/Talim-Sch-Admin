@@ -9,11 +9,12 @@ import ThreadNotices from "./ThreadNotices";
 import { useChats } from "@/hooks/useChats";
 import { ChatsProvider } from "@/context/ChatsContext";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
+import type { ReplyTarget } from "@/types/chat.types";
 import { chatRoomUrl } from "@/lib/chat/openRoom";
 
 interface MessagesLayoutProps {
-  replyingMessage: { sender: string; text: string } | null;
-  setReplyingMessage: (msg: any) => void;
+  replyingMessage: ReplyTarget | null;
+  setReplyingMessage: (msg: ReplyTarget | null) => void;
   openSubMenu: { index: number; type: string } | null;
   toggleSubMenu: (index: number, type: string) => void;
 }

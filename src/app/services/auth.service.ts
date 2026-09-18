@@ -1,6 +1,7 @@
 import { API_URLS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
 
+/** Body for `POST /auth/login`. */
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -16,6 +17,7 @@ export interface LoginResponse {
   access_token: string;
 }
 
+/** The signed-in user as `/auth/introspect` returns them. */
 export interface User {
   userId: string;
   email: string;
@@ -32,7 +34,9 @@ export interface User {
   permissions?: string[];
 }
 
+/** Roles the API issues tokens for. */
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT" | "SCHOOL_ADMIN";
+/** Gender values the profile endpoints accept. */
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 
 /**
@@ -51,6 +55,7 @@ export interface UpdateUserProfilePayload {
   userAvatar?: string;
 }
 
+/** A user's full profile, from `GET /auth/profile/:userId`. */
 export interface UserProfile {
   _id: string;
   userId: string;

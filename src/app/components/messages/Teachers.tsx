@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, Mail, Phone, Loader2 } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { teacherService } from "@/app/services/teacher.service";
+import { logger } from "@/lib/logger";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 
 // Extend the Teacher interface to match API response
@@ -87,7 +88,7 @@ export default function Teachers({ chatRoomId, onAddTeacherSuccess }: TeachersPr
       setFilteredTeachers(teachersData as unknown as ApiTeacher[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teachers");
-      console.error("Error fetching teachers:", err);
+      logger.error("chat", "Error fetching teachers", err);
     } finally {
       setIsLoading(false);
     }

@@ -17,7 +17,7 @@ export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const userId = user?.userId || (user as any)?._id;
+    const userId = user?.userId ?? user?._id;
     if (!userId) return;
 
     const fetchUnread = () =>
