@@ -1,4 +1,3 @@
-import { sessionStore } from "@/lib/session";
 import { api } from "@/lib/apiClient";
 import { API_URLS } from "../lib/api/config";
 
@@ -67,13 +66,6 @@ export const getClasses = async (): Promise<Class[]> => {
   const data = Array.isArray(raw) ? raw : raw?.data ?? raw?.classes ?? [];
   return Array.isArray(data) ? data : [];
 };
-
-/**
- * The signed-in user's school id, from the session store (the introspected
- * user), or `null` when signed out. Kept as a named export because ~15
- * services call it; new code should prefer `sessionStore.getSchoolId()`.
- */
-export const getSchoolId = (): string | null => sessionStore.getSchoolId();
 
 /**
  * Updates the school's profile.
