@@ -10,6 +10,15 @@ if (!configuredApiBaseUrl) {
 
 export const API_BASE_URL = configuredApiBaseUrl.replace(/\/+$/, "");
 
+/**
+ * Turns a relative API path into a full URL, for the few callers that cannot
+ * go through `apiClient` (an XMLHttpRequest that reports upload progress).
+ *
+ * @param path - A path from {@link API_URLS}, starting with "/".
+ * @returns The absolute URL.
+ */
+export const absoluteUrl = (path: string): string => `${API_BASE_URL}${path}`;
+
 export const API_URLS = {
   AUTH: {
     LOGIN: "/auth/login",
@@ -122,164 +131,170 @@ export const API_URLS = {
   },
 };
 
+/**
+ * Flat aliases over {@link API_URLS}, kept because many services address
+ * endpoints by a single name. Paths are RELATIVE — `apiClient` prefixes the
+ * API origin — so no deployment URL is ever baked into a service. For the rare
+ * caller that needs a full URL (a raw XHR upload), use {@link absoluteUrl}.
+ */
 export const API_ENDPOINTS = {
   BASE_URL: API_BASE_URL,
-  LOGIN: `${API_BASE_URL}${API_URLS.AUTH.LOGIN}`,
-  INTROSPECT: `${API_BASE_URL}${API_URLS.AUTH.INTROSPECT}`,
-  LOGOUT: `${API_BASE_URL}${API_URLS.AUTH.LOGOUT}`,
-  FORGOT_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.FORGOT_PASSWORD}`,
-  RESET_PASSWORD: `${API_BASE_URL}${API_URLS.AUTH.RESET_PASSWORD}`,
-  REGISTER: `${API_BASE_URL}${API_URLS.AUTH.REGISTER}`,
+  LOGIN: `${API_URLS.AUTH.LOGIN}`,
+  INTROSPECT: `${API_URLS.AUTH.INTROSPECT}`,
+  LOGOUT: `${API_URLS.AUTH.LOGOUT}`,
+  FORGOT_PASSWORD: `${API_URLS.AUTH.FORGOT_PASSWORD}`,
+  RESET_PASSWORD: `${API_URLS.AUTH.RESET_PASSWORD}`,
+  REGISTER: `${API_URLS.AUTH.REGISTER}`,
   GET_USER_PROFILE: (userId: string) =>
-    `${API_BASE_URL}${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
-  UPDATE_USER_PROFILE: `${API_BASE_URL}${API_URLS.AUTH.UPDATE_PROFILE}`,
-  COMPLETE_ONBOARDING: `${API_BASE_URL}${API_URLS.AUTH.COMPLETE_ONBOARDING}`,
-  GET_CLASS: `${API_BASE_URL}/classes`,
-  GET_CLASSES: `${API_BASE_URL}${API_URLS.SCHOOL.GET_CLASSES}`,
-  CREATE_CLASS: `${API_BASE_URL}${API_URLS.SCHOOL.CREATE_CLASS}`,
-  GET_SUBJECTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
-  CREATE_SUBJECT: `${API_BASE_URL}${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
+    `${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
+  UPDATE_USER_PROFILE: `${API_URLS.AUTH.UPDATE_PROFILE}`,
+  COMPLETE_ONBOARDING: `${API_URLS.AUTH.COMPLETE_ONBOARDING}`,
+  GET_CLASS: `/classes`,
+  GET_CLASSES: `${API_URLS.SCHOOL.GET_CLASSES}`,
+  CREATE_CLASS: `${API_URLS.SCHOOL.CREATE_CLASS}`,
+  GET_SUBJECTS_BY_SCHOOL: `${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
+  CREATE_SUBJECT: `${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
   DELETE_SUBJECT: (subjectId: string) =>
-    `${API_BASE_URL}${API_URLS.SUBJECTS.DELETE_SUBJECT.replace(
+    `${API_URLS.SUBJECTS.DELETE_SUBJECT.replace(
       ":subjectId", subjectId )}`,
   UPDATE_COURSES_BY_CLASS: (classId: string) =>
-    `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_COURSES.replace(
+    `${API_URLS.SCHOOL.UPDATE_COURSES.replace(
       ":classId",
       classId
     )}`,
   EDIT_CLASS: (classId: string) =>
-    `${API_BASE_URL}${API_URLS.SCHOOL.EDIT_CLASS.replace(":classId", classId)}`,
-  CREATE_ANNOUNCEMENT: `${API_BASE_URL}${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
-  CREATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENT.CREATE}`,
-  UPLOAD_IMAGE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_IMAGE}`,
-  UPLOAD_FILE: `${API_BASE_URL}${API_URLS.FILES.UPLOAD_FILE}`,
+    `${API_URLS.SCHOOL.EDIT_CLASS.replace(":classId", classId)}`,
+  CREATE_ANNOUNCEMENT: `${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
+  CREATE_STUDENT: `${API_URLS.STUDENT.CREATE}`,
+  UPLOAD_IMAGE: `${API_URLS.FILES.UPLOAD_IMAGE}`,
+  UPLOAD_FILE: `${API_URLS.FILES.UPLOAD_FILE}`,
   GET_ANNOUNCEMENTS_BY_SENDER: (senderId: string) =>
-    `${API_BASE_URL}${API_URLS.NOTIFICATION.GET_ANNOUNCEMENTS_BY_SENDER.replace(
+    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENTS_BY_SENDER.replace(
       ":senderId",
       senderId
     )}`,
   GET_ANNOUNCEMENT_STATS_BY_SENDER: (senderId: string) =>
-    `${API_BASE_URL}${API_URLS.NOTIFICATION.GET_ANNOUNCEMENT_STATS_BY_SENDER.replace(
+    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENT_STATS_BY_SENDER.replace(
       ":senderId",
       senderId
     )}`,
-  CREATE_ACADEMIC_YEAR: `${API_BASE_URL}${API_URLS.ACADEMIC.CREATE_ACADEMIC_YEAR}`,
-  GET_ACADEMIC_YEARS: `${API_BASE_URL}${API_URLS.ACADEMIC.GET_ACADEMIC_YEARS}`,
-  CREATE_TERM: `${API_BASE_URL}${API_URLS.ACADEMIC.CREATE_TERM}`,
-  GET_TERMS: `${API_BASE_URL}${API_URLS.ACADEMIC.GET_TERMS}`,
+  CREATE_ACADEMIC_YEAR: `${API_URLS.ACADEMIC.CREATE_ACADEMIC_YEAR}`,
+  GET_ACADEMIC_YEARS: `${API_URLS.ACADEMIC.GET_ACADEMIC_YEARS}`,
+  CREATE_TERM: `${API_URLS.ACADEMIC.CREATE_TERM}`,
+  GET_TERMS: `${API_URLS.ACADEMIC.GET_TERMS}`,
   SET_CURRENT_TERM: (termId: string) =>
-    `${API_BASE_URL}${API_URLS.ACADEMIC.SET_CURRENT_TERM.replace(
+    `${API_URLS.ACADEMIC.SET_CURRENT_TERM.replace(
       ":termId",
       termId
     )}`,
-  CREATE_TIMETABLE_ENTRY: `${API_BASE_URL}${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
+  CREATE_TIMETABLE_ENTRY: `${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE: (page: number, limit: number) =>
-    `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE.replace(
+    `${API_URLS.TIMETABLE.GET_TIMETABLE.replace(
       ":page",
       page.toString()
     ).replace(":limit", limit.toString())}`,
   GET_TIMETABLE_BY_DAY: (day: string) =>
-    `${API_BASE_URL}${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(
+    `${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(
       ":day",
       day
     )}`,
   GET_TIMETABLE_BY_CLASS: (classId: string) =>
-    `${API_BASE_URL}/timetable/class/${classId}`,
+    `/timetable/class/${classId}`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) =>
-    `${API_BASE_URL}${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(
+    `${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(
       ":entryId",
       entryId
     )}`,
   DELETE_TIMETABLE_ENTRY: (entryId: string) =>
-    `${API_BASE_URL}${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(
+    `${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(
       ":entryId",
       entryId
     )}`,
-  CREATE_COMPLAINT: `${API_BASE_URL}${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
-  GET_COMPLAINTS_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_SCHOOL}`,
-  GET_COMPLAINTS_BY_USER: `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_USER}`,
+  CREATE_COMPLAINT: `${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
+  GET_COMPLAINTS_BY_SCHOOL: `${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_SCHOOL}`,
+  GET_COMPLAINTS_BY_USER: `${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_USER}`,
   GET_COMPLAINT_BY_TICKET: (ticket: string) =>
-    `${API_BASE_URL}${API_URLS.COMPLAINTS.GET_COMPLAINT_BY_TICKET.replace(
+    `${API_URLS.COMPLAINTS.GET_COMPLAINT_BY_TICKET.replace(
       ":ticket",
       ticket
     )}`,
-  GET_STUDENTS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS}`,
-  GET_PARENT: (schoolId: string) => `${API_BASE_URL}${API_URLS.SCHOOL.GET_PARENT.replace(":schoolId", schoolId)}`,
-  CREATE_STUDENT_NEW: `${API_BASE_URL}${API_URLS.STUDENTS.CREATE_STUDENT}`,
-  UPDATE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.UPDATE_STUDENT}`,
-  DELETE_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.DELETE_STUDENT}`,
+  GET_STUDENTS: `${API_URLS.STUDENTS.GET_STUDENTS}`,
+  GET_PARENT: (schoolId: string) => `${API_URLS.SCHOOL.GET_PARENT.replace(":schoolId", schoolId)}`,
+  CREATE_STUDENT_NEW: `${API_URLS.STUDENTS.CREATE_STUDENT}`,
+  UPDATE_STUDENT: `${API_URLS.STUDENTS.UPDATE_STUDENT}`,
+  DELETE_STUDENT: `${API_URLS.STUDENTS.DELETE_STUDENT}`,
 
-  CREATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.CREATE_TEACHER}`,
-  GET_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER}`,
+  CREATE_TEACHER: `${API_URLS.TEACHERS.CREATE_TEACHER}`,
+  GET_TEACHER: `${API_URLS.TEACHERS.GET_TEACHER}`,
   GET_TEACHER_BY_ID: (userId: string) =>
-    `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(
+    `${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(
       ":teacherId",
       userId
     )}`,
-  // GET_TEACHER_BY_ID: (userId: string) => `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(':teacherId', userId)}`,
+  // GET_TEACHER_BY_ID: (userId: string) => `${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(':teacherId', userId)}`,
   UPDATE_TEACHER_BY_COURSE: (userId: string) =>
-    `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER_BY_COURSE.replace(
+    `${API_URLS.TEACHERS.UPDATE_TEACHER_BY_COURSE.replace(
       ":teacherId",
       userId
     )}`,
-  GET_TEACHERS: `${API_BASE_URL}${API_URLS.TEACHERS.GET_TEACHERS}`,
-  REGISTER_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.REGISTER_TEACHER}`,
-  UPDATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.UPDATE_TEACHER}`,
-  DEACTIVATE_TEACHER: `${API_BASE_URL}${API_URLS.TEACHERS.DEACTIVATE_TEACHER}`,
-  GET_STUDENT: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENT}`,
-  STUDENTS: `${API_BASE_URL}/students`,
+  GET_TEACHERS: `${API_URLS.TEACHERS.GET_TEACHERS}`,
+  REGISTER_TEACHER: `${API_URLS.TEACHERS.REGISTER_TEACHER}`,
+  UPDATE_TEACHER: `${API_URLS.TEACHERS.UPDATE_TEACHER}`,
+  DEACTIVATE_TEACHER: `${API_URLS.TEACHERS.DEACTIVATE_TEACHER}`,
+  GET_STUDENT: `${API_URLS.STUDENTS.GET_STUDENT}`,
+  STUDENTS: `/students`,
 
-  CREATE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.CREATE_COURSE}`,
-  GET_COURSES: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES}`,
-  UPDATE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.UPDATE_COURSE}`,
-  DELETE_COURSE: `${API_BASE_URL}${API_URLS.COURSES.DELETE_COURSE}`,
-  GET_COURSE_BY_ID: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSE_BY_ID}`,
-  GET_COURSES_BY_SUBJECT: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SUBJECT}`,
-  GET_COURSES_BY_SCHOOL: `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
+  CREATE_COURSE: `${API_URLS.COURSES.CREATE_COURSE}`,
+  GET_COURSES: `${API_URLS.COURSES.GET_COURSES}`,
+  UPDATE_COURSE: `${API_URLS.COURSES.UPDATE_COURSE}`,
+  DELETE_COURSE: `${API_URLS.COURSES.DELETE_COURSE}`,
+  GET_COURSE_BY_ID: `${API_URLS.COURSES.GET_COURSE_BY_ID}`,
+  GET_COURSES_BY_SUBJECT: `${API_URLS.COURSES.GET_COURSES_BY_SUBJECT}`,
+  GET_COURSES_BY_SCHOOL: `${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
   GET_COURSES_BY_CLASS: (classId: string) =>
-    `${API_BASE_URL}${API_URLS.COURSES.GET_COURSES_BY_CLASS}/${classId}`,
-  GET_STUDENTS_BY_CLASS: `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
+    `${API_URLS.COURSES.GET_COURSES_BY_CLASS}/${classId}`,
+  GET_STUDENTS_BY_CLASS: `${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
   GET_STUDENTS_BY_CLASS_ID: (classId: string) =>
-    `${API_BASE_URL}${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(
+    `${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(
       ":classId",
       classId
     )}`,
 
-  GET_LEAVE_REQUESTS: `${API_BASE_URL}${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
+  GET_LEAVE_REQUESTS: `${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
   UPDATE_SCHOOL: (schoolId: string) =>
-    `${API_BASE_URL}${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
+    `${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
 
   // Transit
-  TRANSIT_DASHBOARD: `${API_BASE_URL}/transit/dashboard`,
-  TRANSIT_LIST_TRANSFERS: `${API_BASE_URL}/transit/transfers`,
-  TRANSIT_GET_TRANSFER: (id: string) => `${API_BASE_URL}/transit/transfers/${id}`,
-  TRANSIT_CREATE_TRANSFER: `${API_BASE_URL}/transit/transfers`,
-  TRANSIT_SOURCE_APPROVE: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/source-approve`,
-  TRANSIT_TARGET_APPROVE: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/target-approve`,
-  TRANSIT_ACCEPT: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/accept`,
-  TRANSIT_REJECT: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/reject`,
-  TRANSIT_CANCEL_TRANSFER: (id: string) => `${API_BASE_URL}/transit/transfers/${id}/cancel`,
-  TRANSIT_STUDENT_SNAPSHOT: (studentId: string) => `${API_BASE_URL}/transit/students/${studentId}/snapshot`,
-  TRANSIT_LIST_PROMOTIONS: `${API_BASE_URL}/transit/promotions`,
-  TRANSIT_GET_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}`,
-  TRANSIT_CREATE_PROMOTION: `${API_BASE_URL}/transit/promotions`,
-  TRANSIT_VALIDATE_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/validate`,
-  TRANSIT_COMMIT_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/commit`,
-  TRANSIT_CANCEL_PROMOTION: (id: string) => `${API_BASE_URL}/transit/promotions/${id}/cancel`,
-  TRANSIT_PRE_CLOSE_SUMMARY: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/pre-close-summary`,
-  TRANSIT_CLOSE_YEAR: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/close`,
-  TRANSIT_CLOSURE_SNAPSHOT: (yearId: string) => `${API_BASE_URL}/transit/academic-years/${yearId}/snapshot`,
-  SCHOOLS_SEARCH: `${API_BASE_URL}/schools/search`,
+  TRANSIT_DASHBOARD: `/transit/dashboard`,
+  TRANSIT_LIST_TRANSFERS: `/transit/transfers`,
+  TRANSIT_GET_TRANSFER: (id: string) => `/transit/transfers/${id}`,
+  TRANSIT_CREATE_TRANSFER: `/transit/transfers`,
+  TRANSIT_SOURCE_APPROVE: (id: string) => `/transit/transfers/${id}/source-approve`,
+  TRANSIT_TARGET_APPROVE: (id: string) => `/transit/transfers/${id}/target-approve`,
+  TRANSIT_ACCEPT: (id: string) => `/transit/transfers/${id}/accept`,
+  TRANSIT_REJECT: (id: string) => `/transit/transfers/${id}/reject`,
+  TRANSIT_CANCEL_TRANSFER: (id: string) => `/transit/transfers/${id}/cancel`,
+  TRANSIT_STUDENT_SNAPSHOT: (studentId: string) => `/transit/students/${studentId}/snapshot`,
+  TRANSIT_LIST_PROMOTIONS: `/transit/promotions`,
+  TRANSIT_GET_PROMOTION: (id: string) => `/transit/promotions/${id}`,
+  TRANSIT_CREATE_PROMOTION: `/transit/promotions`,
+  TRANSIT_VALIDATE_PROMOTION: (id: string) => `/transit/promotions/${id}/validate`,
+  TRANSIT_COMMIT_PROMOTION: (id: string) => `/transit/promotions/${id}/commit`,
+  TRANSIT_CANCEL_PROMOTION: (id: string) => `/transit/promotions/${id}/cancel`,
+  TRANSIT_PRE_CLOSE_SUMMARY: (yearId: string) => `/transit/academic-years/${yearId}/pre-close-summary`,
+  TRANSIT_CLOSE_YEAR: (yearId: string) => `/transit/academic-years/${yearId}/close`,
+  TRANSIT_CLOSURE_SNAPSHOT: (yearId: string) => `/transit/academic-years/${yearId}/snapshot`,
+  SCHOOLS_SEARCH: `/schools/search`,
 
   // Sub-Admin management
-  SUB_ADMINS: `${API_BASE_URL}/sub-admins`,
-  SUB_ADMIN_BY_ID: (id: string) => `${API_BASE_URL}/sub-admins/${id}`,
-  SUB_ADMIN_CREATE: `${API_BASE_URL}/sub-admins`,
-  SUB_ADMIN_PROMOTE_TEACHER: `${API_BASE_URL}/sub-admins/promote-teacher`,
+  SUB_ADMINS: `/sub-admins`,
+  SUB_ADMIN_BY_ID: (id: string) => `/sub-admins/${id}`,
+  SUB_ADMIN_CREATE: `/sub-admins`,
+  SUB_ADMIN_PROMOTE_TEACHER: `/sub-admins/promote-teacher`,
   SUB_ADMIN_PERMISSIONS: (id: string) =>
-    `${API_BASE_URL}/sub-admins/${id}/permissions`,
+    `/sub-admins/${id}/permissions`,
   SUB_ADMIN_TOGGLE_STATUS: (id: string) =>
-    `${API_BASE_URL}/sub-admins/${id}/toggle-status`,
+    `/sub-admins/${id}/toggle-status`,
   SUB_ADMIN_DEMOTE: (id: string) =>
-    `${API_BASE_URL}/sub-admins/${id}/demote`,
+    `/sub-admins/${id}/demote`,
 } as const;

@@ -1,5 +1,5 @@
 import { sessionStore } from "@/lib/session";
-import { API_ENDPOINTS } from "../lib/api/config";
+import { API_ENDPOINTS, absoluteUrl } from "../lib/api/config";
 
 interface UploadResponse {
   url?: string;
@@ -86,7 +86,7 @@ const uploadWithProgress = (
 export const uploadImage = async (
   imageFile: File,
   onProgress?: (progress: number) => void
-): Promise<string> => uploadWithProgress(API_ENDPOINTS.UPLOAD_IMAGE, imageFile, onProgress);
+): Promise<string> => uploadWithProgress(absoluteUrl(API_ENDPOINTS.UPLOAD_IMAGE), imageFile, onProgress);
 
 /**
  * Uploads an arbitrary attachment and returns its hosted URL.
@@ -98,4 +98,4 @@ export const uploadImage = async (
 export const uploadFileAttachment = async (
   file: File,
   onProgress?: (progress: number) => void
-): Promise<string> => uploadWithProgress(API_ENDPOINTS.UPLOAD_FILE, file, onProgress);
+): Promise<string> => uploadWithProgress(absoluteUrl(API_ENDPOINTS.UPLOAD_FILE), file, onProgress);

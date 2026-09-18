@@ -15,7 +15,7 @@
  * The school comes from the bearer token on every call except the two that
  * take a path id. Callers must never compare `schoolId` values by identity.
  */
-import { API_BASE_URL } from "../lib/api/config";
+
 import { api } from "@/lib/apiClient";
 import { getTerms, getAcademicYears } from "./academic.service";
 import { assessmentService } from "./assessment.service";
@@ -293,7 +293,7 @@ function buildMonthlyRevenue(
  * @throws ApiError When the read fails — the page cannot render without it.
  */
 export const getSchoolDashboard = async (schoolId: string): Promise<SchoolDashboardData> => {
-  return api.get<SchoolDashboardData>(`${API_BASE_URL}/schools/${schoolId}/dashboard`);
+  return api.get<SchoolDashboardData>(`/schools/${encodeURIComponent(schoolId)}/dashboard`);
 };
 
 /**
