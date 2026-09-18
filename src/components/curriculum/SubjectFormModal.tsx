@@ -13,6 +13,7 @@ import TalimModal from "@/components/ui/TalimModal";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { toast } from "@/components/CustomToast";
 import { useSubjectMutations } from "@/hooks/curriculum/queries";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import type { Subject } from "@/app/services/subjects.service";
@@ -58,6 +59,10 @@ export function SubjectFormModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const isSubmitting = create.isPending || update.isPending;
+
+  // TalimModal does not lock the page itself; the lock is counted, so doing it
+  // here is safe even with another modal already open.
+  useBodyScrollLock(isOpen);
 
   // Reload the form every time the modal opens, so a cancelled edit never
   // leaks into the next one.

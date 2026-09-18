@@ -21,6 +21,7 @@ import { assessmentService, ASSESSMENT_STATUSES } from "@/app/services/assessmen
 import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;
@@ -90,6 +91,10 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
   const isEditing = Boolean(editingAssessment);
   const isRunning = isWithinAssessmentPeriod(formData.startDate, formData.endDate);
+
+  // TalimModal does not lock the page itself; the lock is counted, so doing it
+  // here is safe even with another modal already open.
+  useBodyScrollLock(isOpen);
 
   // Reload the form every time the modal opens or switches assessment.
   useEffect(() => {
