@@ -47,12 +47,16 @@ export function ChatAlertsProvider({ children }: { children: ReactNode }) {
   pathnameRef.current = pathname;
   const lastToastRef = useRef(new Map<string, number>());
 
+  // The API refuses everything but the password change until a temporary password is replaced.
+  const mustChangePassword = Boolean(user?.mustChangePassword);
+
   // Initial total on sign-in; the socket keeps it current afterwards.
   useEffect(() => {
     if (!userId) {
       setUnreadTotal(0);
       return;
     }
+    if (mustChangePassword) return;
     let active = true;
     chatService
       .getUnreadMessageCount()
@@ -64,7 +68,7 @@ export function ChatAlertsProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, mustChangePassword]);
 
   useEffect(() => {
     const unsubConnect = onConnect(() => fetchUnreadCountViaSocket());

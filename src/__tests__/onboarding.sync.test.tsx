@@ -12,7 +12,7 @@ jest.mock("@/context/OnboardingContext", () => ({
   }),
 }));
 
-let mockUser: { userId: string } | null = { userId: "user-1" };
+let mockUser: { userId: string; mustChangePassword?: boolean } | null = { userId: "user-1" };
 jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ user: mockUser }),
 }));
@@ -161,6 +161,15 @@ describe("useOnboardingSync", () => {
     (getClasses as jest.Mock).mockRejectedValue(new Error("offline"));
     await sync();
     expect(markStepComplete).not.toHaveBeenCalledWith("create-class");
+  });
+
+  it("asks for nothing while a temporary password is still in use", async () => {
+    mockUser = { userId: "user-1", mustChangePassword: true };
+    (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }]);
+    await sync();
+    expect(getClasses).not.toHaveBeenCalled();
+    expect(getAcademicYears).not.toHaveBeenCalled();
+    expect(markStepComplete).not.toHaveBeenCalled();
   });
 
   it("skips the announcement probe when the session carries no user id", async () => {

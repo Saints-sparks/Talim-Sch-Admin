@@ -85,7 +85,8 @@ export function useOnboardingSync(): OnboardingSync {
   isStepCompleteRef.current = isStepComplete;
 
   const syncProgress = useCallback(async () => {
-    if (!user) return;
+    // Every probe would be refused while a temporary password is still in use.
+    if (!user || user.mustChangePassword) return;
     const senderId = user.userId ?? user._id ?? null;
     // The class list answers two probes; ask for it once per sync.
     let classes: ReturnType<typeof getClasses> | undefined;
