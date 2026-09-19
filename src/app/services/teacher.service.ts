@@ -394,17 +394,6 @@ export const teacherService = {
   },
 
   /**
-   * Updates a teacher's profile fields.
-   *
-   * @param teacherId - The teacher's user id.
-   * @param payload - Profile fields to change.
-   * @returns The updated teacher.
-   */
-  async updateTeacher(teacherId: string, payload: Partial<CreateTeacherProfilePayload>): Promise<Teacher> {
-    return api.put<Teacher>(`${API_ENDPOINTS.UPDATE_TEACHER}/${encodeURIComponent(teacherId)}`, payload);
-  },
-
-  /**
    * Activates or deactivates a teacher's account.
    *
    * @param teacherId - The teacher's user id.
