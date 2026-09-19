@@ -153,7 +153,6 @@ export const useWebSocket = ({ enabled, userId, refreshToken }: UseWebSocketOpti
     // on every connect and reconnect, so a refreshed token is always used.
     const s = io(WEBSOCKET_URL, {
       auth: (cb) => cb({ token: apiClient.getAccessToken() ?? sessionStore.getToken() }),
-      query: { userId },
       transports: ["websocket", "polling"],
       timeout: 20000,
       reconnection: true,
