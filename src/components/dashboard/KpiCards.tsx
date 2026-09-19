@@ -118,8 +118,8 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       trend: summary?.notifications.trendPercent,
       icon: <BellRing className="w-4 h-4" />,
       iconCls: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400",
-      href: "/messages",
-      // Every administrator has notifications of their own.
+      href: "/notifications",
+      // Every administrator has notifications of their own (the page is open to all).
     },
   ];
 

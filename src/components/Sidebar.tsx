@@ -28,6 +28,8 @@ export default function Sidebar(_props: SidebarProps) {
   if (!isMobile && isCollapsed) {
     return (
       <motion.div
+        role="navigation"
+        aria-label="Main"
         className="h-screen w-16 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm shrink-0"
         initial={{ x: -288 }}
         animate={{ x: 0 }}
@@ -86,6 +88,8 @@ export default function Sidebar(_props: SidebarProps) {
   if (!isMobile) {
     return (
       <motion.div
+        role="navigation"
+        aria-label="Main"
         className="h-screen w-[266px] bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm shrink-0"
         initial={{ x: -288 }}
         animate={{ x: 0 }}
@@ -116,6 +120,8 @@ export default function Sidebar(_props: SidebarProps) {
         {isMobileOpen && (
           <motion.div
             id="mobile-sidebar"
+            role="navigation"
+            aria-label="Main"
             initial={{ x: -288 }}
             animate={{ x: 0 }}
             exit={{ x: -288 }}

@@ -127,7 +127,7 @@ export function RecentActivity({
               Recent Announcements
             </h3>
             <Link
-              href="/messages"
+              href="/announcements"
               className="text-xs text-[#003366] dark:text-blue-400 hover:underline flex items-center gap-1"
             >
               View all <ArrowRight className="w-3 h-3" />
