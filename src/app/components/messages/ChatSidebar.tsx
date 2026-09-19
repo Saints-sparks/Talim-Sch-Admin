@@ -9,6 +9,7 @@ import {
   Loader2,
   Users,
   MessageCircle,
+  MessageSquarePlus,
   WifiOff,
   Plus,
   Filter,
@@ -22,6 +23,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
+import NewMessageModal from "./NewMessageModal";
 import type { UseChatsReturn } from "@/hooks/useChats";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
 import { getUserInitials } from "@/lib/colorUtils";
@@ -35,6 +37,7 @@ interface ChatSidebarProps {
 
 export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, className = "" }: ChatSidebarProps) {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
   const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
@@ -204,6 +207,23 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto bg-white">
+        {/* New message: start a direct chat with a teacher or parent */}
+        <div className="px-3 sm:px-4 mb-1">
+          <button
+            data-guide="messages-new-message"
+            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 active:bg-gray-100 rounded-xl transition-colors text-left group touch-manipulation"
+            onClick={() => setIsNewMessageOpen(true)}
+          >
+            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
+              <MessageSquarePlus className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 text-sm">New message</p>
+              <p className="text-xs text-gray-500 truncate">Chat with a teacher or parent</p>
+            </div>
+          </button>
+        </div>
+
         {/* Create Group Button */}
         <div className="px-3 sm:px-4 mb-2">
           <button
@@ -339,6 +359,12 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
           })}
         </div>
       </div>
+
+      <NewMessageModal
+        open={isNewMessageOpen}
+        onClose={() => setIsNewMessageOpen(false)}
+        onStarted={(room) => onSelectChat(toDisplayRoom(room, currentUserId))}
+      />
 
       <CreateGroupModal
         open={isCreateGroupModalOpen}

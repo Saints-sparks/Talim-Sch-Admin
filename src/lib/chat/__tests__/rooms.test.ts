@@ -3,6 +3,7 @@
  */
 import {
   applyMessageDeletedToRooms,
+  applyPresenceChanged,
   DELETED_PREVIEW,
   applyRoomActivity,
   clearRoomUnread,
@@ -194,5 +195,22 @@ describe("applyMessageDeletedToRooms", () => {
     const rooms = [withLast("r1", "m9")];
     expect(applyMessageDeletedToRooms(rooms, "r1", "m1")).toBe(rooms);
     expect(applyMessageDeletedToRooms(rooms, "other", "m9")).toBe(rooms);
+  });
+});
+
+describe("applyPresenceChanged", () => {
+  it("updates the person in every room they are in", () => {
+    const rooms = [normalizeRoom(roomView("r1")), normalizeRoom(roomView("r2"))];
+    const next = applyPresenceChanged(rooms, TEACHER, true);
+
+    expect(next[0].participants.find((p) => p.userId === TEACHER)?.isOnline).toBe(true);
+    expect(next[1].participants.find((p) => p.userId === TEACHER)?.isOnline).toBe(true);
+    expect(next[0].participants.find((p) => p.userId === ME)?.isOnline).toBe(true);
+  });
+
+  it("returns the same list when nothing changes or nobody matches", () => {
+    const rooms = [normalizeRoom(roomView("r1"))];
+    expect(applyPresenceChanged(rooms, TEACHER, false)).toBe(rooms);
+    expect(applyPresenceChanged(rooms, "someone-else", true)).toBe(rooms);
   });
 });

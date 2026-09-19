@@ -3,10 +3,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   ArrowLeft,
   MoreVertical,
-  Phone,
-  Search,
-  Video,
-  X,
   Info,
   UserPlus,
   Users,
@@ -109,8 +105,6 @@ export default function ChatHeader({
   chatRoomId,
   onAddParticipants,
 }: ChatHeaderProps) {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
@@ -182,42 +176,17 @@ export default function ChatHeader({
             </p>
             <Info size={14} className="text-gray-400 flex-shrink-0 hidden sm:block" />
           </div>
-          {!isSearching && status && (
+          {status && (
             <p className="text-xs text-gray-500 truncate">{status}</p>
           )}
-          {!isSearching && displaySubtext && (
+          {displaySubtext && (
             <p className="text-xs text-[#7B7B7B] truncate hidden sm:block">{displaySubtext}</p>
           )}
         </div>
 
         {/* Action Icons */}
         <div className="flex items-center gap-1 sm:gap-3">
-          {/* Search */}
-          {isSearching ? (
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="relative flex items-center border border-gray-300 rounded-full px-2 py-1 bg-gray-50 w-32 sm:w-44">
-                <Search size={16} className="text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search"
-                  className="w-full bg-transparent pl-2 text-sm focus:outline-none"
-                  autoFocus
-                />
-                <button
-                  onClick={() => {
-                    setIsSearching(false);
-                    setSearchQuery("");
-                  }}
-                  className="ml-1 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
+          <>
               {/* Add Participants Button - Show directly for group chats on desktop */}
               {canManage && chatRoomId && (
                 <DropdownMenu>
@@ -249,23 +218,8 @@ export default function ChatHeader({
                 </DropdownMenu>
               )}
 
-              {/* Call Icons - Hidden on very small screens */}
-              <button className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
-                <Phone size={18} className="text-gray-600" />
-              </button>
-              <button className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
-                <Video size={18} className="text-gray-600" />
-              </button>
-              
-              {/* Search Button */}
-              <button
-                onClick={() => setIsSearching(true)}
-                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <Search size={18} className="text-gray-600" />
-              </button>
-              
-              {/* More Options Dropdown - Shows different options based on chat type */}
+              {/* More options: group members and adding people (groups only). */}
+              {isGroup && chatRoomId && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
@@ -302,22 +256,10 @@ export default function ChatHeader({
                       )}
                     </>
                   )}
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Phone className="mr-2 h-4 w-4" />
-                    <span>Voice Call</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Video className="mr-2 h-4 w-4" />
-                    <span>Video Call</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Search className="mr-2 h-4 w-4" />
-                    <span>Search in Chat</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )}
+              )}
+          </>
         </div>
 
         {/* Group Info Modal */}

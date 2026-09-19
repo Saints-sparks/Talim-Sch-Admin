@@ -12,6 +12,7 @@ import { useMessageActions } from "./useMessageActions";
 import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
+import { formatDateSeparator } from "@/lib/chat/dates";
 import { Loader2, MessageCircle } from "lucide-react";
 import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
@@ -147,29 +148,6 @@ export default function PrivateChat({
     };
   }, [room, currentUserId]);
 
-  // Format date for message grouping
-  const formatMessageDate = useCallback((date: Date) => {
-    const today = new Date();
-    const messageDate = new Date(date);
-
-    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const messageMidnight = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
-    const yesterday = new Date(todayMidnight);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (messageMidnight.getTime() === todayMidnight.getTime()) {
-      return "Today";
-    }
-    if (messageMidnight.getTime() === yesterday.getTime()) {
-      return "Yesterday";
-    }
-    return messageDate.toLocaleDateString(undefined, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }, []);
 
   // Group messages by date (messages are already in order)
   const groupedMessages = useMemo(() => {
@@ -190,7 +168,7 @@ export default function PrivateChat({
       <ChatHeader
         avatar={otherParticipant.avatar}
         name={otherParticipant.name}
-        subtext={otherParticipant.status}
+        status={otherParticipant.status}
         onBack={onBack}
         showBackButton={true}
         isGroup={false}
@@ -235,9 +213,9 @@ export default function PrivateChat({
           groupedMessages.map((group) => (
             <div key={group.key}>
               {/* Date divider */}
-              <div className="flex justify-center my-4">
-                <div className="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">
-                  {formatMessageDate(new Date(group.key))}
+              <div className="flex items-center justify-center my-3">
+                <div className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
+                  {formatDateSeparator(group.key)}
                 </div>
               </div>
 

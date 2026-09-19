@@ -113,14 +113,8 @@ class ChatService {
     };
   }
   
-  // Debouncing mechanism
+  /** Identical history requests already in flight share one response. */
   private pendingRequests: Map<string, Promise<CursorMessagesResponse>> = new Map();
-  private requestTimeouts: Map<string, NodeJS.Timeout> = new Map();
-  private lastRequestTime: Map<string, number> = new Map();
-  private cachedResponses: Map<string, { data: CursorMessagesResponse; timestamp: number }> = new Map();
-  
-  // Keep message fetches fresh; in-flight requests are still deduplicated below.
-  private readonly DEBOUNCE_DELAY = 0;
 
   /**
    * Create a new chat room
@@ -289,17 +283,6 @@ class ChatService {
   }
 
   /**
-   * Clear timeout for a specific request key
-   */
-  private clearRequestTimeout(key: string): void {
-    const timeout = this.requestTimeouts.get(key);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.requestTimeouts.delete(key);
-    }
-  }
-
-  /**
    * Generate a cache key for the request
    */
   private generateCacheKey(roomId: string, limit: number, cursor?: string, direction?: string): string {
@@ -307,7 +290,9 @@ class ChatService {
   }
 
   /**
-   * Get messages from a chat room with cursor-based pagination - Debounced version
+   * Get messages from a chat room with cursor-based pagination.
+   * Identical requests already in flight are shared; nothing is cached, so a
+   * reopened chat always shows what the server has.
    * GET /chat/rooms/{roomId}/messages/cursor
    */
   async getChatRoomMessagesWithCursor(
@@ -316,80 +301,15 @@ class ChatService {
     cursor?: string,
     direction: 'before' | 'after' = 'before'
   ): Promise<CursorMessagesResponse> {
-    const cacheKey = this.generateCacheKey(roomId, limit, cursor, direction);
-    const now = Date.now();
-    
+    const key = this.generateCacheKey(roomId, limit, cursor, direction);
+    const inFlight = this.pendingRequests.get(key);
+    if (inFlight) return inFlight;
 
-    // Check if there's a cached response that's less than 10 seconds old
-    const cached = this.cachedResponses.get(cacheKey);
-    if (cached && (now - cached.timestamp) < this.DEBOUNCE_DELAY) {
-      return cached.data;
-    }
-
-    // Clear any existing timeout for this key
-    this.clearRequestTimeout(cacheKey);
-
-    // If there's already a pending request for this key, return that promise
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
-    }
-
-    // Check when the last request was made
-    const lastRequest = this.lastRequestTime.get(cacheKey) || 0;
-    const timeSinceLastRequest = now - lastRequest;
-
-    // If we've made a request within the last 10 seconds, wait until 10 seconds have passed
-    if (timeSinceLastRequest < this.DEBOUNCE_DELAY && lastRequest > 0) {
-      const waitTime = this.DEBOUNCE_DELAY - timeSinceLastRequest;
-
-      // Create a delayed promise
-      const delayedPromise = new Promise<CursorMessagesResponse>((resolve, reject) => {
-        const timeout = setTimeout(async () => {
-          try {
-            const result = await this.executeMessagesRequest(roomId, limit, cursor, direction, cacheKey);
-            this.pendingRequests.delete(cacheKey);
-            this.lastRequestTime.set(cacheKey, Date.now());
-            
-            // Cache the result
-            this.cachedResponses.set(cacheKey, {
-              data: result,
-              timestamp: Date.now()
-            });
-            
-            resolve(result);
-          } catch (error) {
-            this.pendingRequests.delete(cacheKey);
-            reject(error);
-          } finally {
-            this.requestTimeouts.delete(cacheKey);
-          }
-        }, waitTime);
-
-        this.requestTimeouts.set(cacheKey, timeout);
-      });
-
-      this.pendingRequests.set(cacheKey, delayedPromise);
-      return delayedPromise;
-    }
-
-    // No recent request, execute immediately
-    const requestPromise = this.executeMessagesRequest(roomId, limit, cursor, direction, cacheKey);
-    this.pendingRequests.set(cacheKey, requestPromise);
-    
-    try {
-      const result = await requestPromise;
-      this.lastRequestTime.set(cacheKey, Date.now());
-      
-      // Cache the result
-      this.cachedResponses.set(cacheKey, {
-        data: result,
-        timestamp: Date.now()
-      });
-      
-      return result;
-    } finally {
-      this.pendingRequests.delete(cacheKey);
-    }
+    const request = this.executeMessagesRequest(roomId, limit, cursor, direction, key).finally(() =>
+      this.pendingRequests.delete(key)
+    );
+    this.pendingRequests.set(key, request);
+    return request;
   }
 
   /**
@@ -423,73 +343,6 @@ class ChatService {
     } catch (error) {
       logger.error('chat', `❌ Error in executeMessagesRequest for ${cacheKey}:`, error);
       throw error;
-    }
-  }
-
-// services/chatServices.ts - Updated sendMessage transformation
-
-async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
-  
-  try {
-    const url = `${this.baseUrl}/messages`;
-    
-    const response = await apiClient.post(url, data);
-    
-    
-    if (!response.ok) {
-      let errorText = '';
-      try {
-        errorText = await response.text();
-        logger.error('chat', '❌ Error response body:', errorText);
-      } catch (e) {
-        logger.error('chat', '❌ Could not read error response body');
-      }
-      
-      throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
-    }
-    
-    const responseData = await response.json();
-
-    const transformedMessage = this.normalizeMessagePayload(
-      responseData,
-      data.chatRoomId
-    );
-    
-    
-    // Clear cache for this room
-    this.clearRoomCache(data.chatRoomId);
-    
-    return transformedMessage;
-  } catch (error) {
-    logger.error('chat', '❌ ChatService.sendMessage - Error:', error);
-    throw error;
-  }
-}
-
-  /**
-   * Clear cache for a specific room
-   */
-  private clearRoomCache(roomId: string): void {
-    
-    // Clear all cached responses that start with this roomId
-    for (const key of this.cachedResponses.keys()) {
-      if (key.startsWith(roomId)) {
-        this.cachedResponses.delete(key);
-      }
-    }
-    
-    // Also clear any pending timeouts for this room
-    for (const key of this.requestTimeouts.keys()) {
-      if (key.startsWith(roomId)) {
-        this.clearRequestTimeout(key);
-      }
-    }
-    
-    // Clear pending requests for this room
-    for (const key of this.pendingRequests.keys()) {
-      if (key.startsWith(roomId)) {
-        this.pendingRequests.delete(key);
-      }
     }
   }
 

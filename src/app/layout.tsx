@@ -114,15 +114,15 @@ export const metadata: Metadata = {
     title: "Talim Admin",
   },
   applicationName: "Talim School Admin",
+  // Required for iOS web push: it only works for an installed (home-screen) web app.
+  manifest: "/manifest.json",
   generator: "Next.js",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icons/talim.svg", type: "image/svg+xml" },
     ],
-    apple: [
-      { url: "/icons/talim.svg", sizes: "180x180", type: "image/svg+xml" },
-    ],
+    apple: [{ url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" }],
     shortcut: "/favicon.ico",
   },
 };

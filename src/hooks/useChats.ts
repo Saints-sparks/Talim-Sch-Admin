@@ -29,6 +29,7 @@ import {
 import {
   applyMessageDeletedToRooms,
   applyParticipantsChanged,
+  applyPresenceChanged,
   applyRoomActivity,
   applyRoomUpdated,
   clearRoomUnread,
@@ -342,7 +343,7 @@ export const useChats = (): UseChatsReturn => {
       try {
         const newRoom = await chatService.createChatRoom(data);
         setChatRooms((prev) => upsertRoom(prev, newRoom));
-        toast.success("Chat room created successfully");
+        toast.success(newRoom.reused ? "Opened your existing chat" : "Chat started");
         return newRoom;
       } catch (err: unknown) {
         toast.error(errorMessage(err, "Failed to create chat room"));
@@ -1026,6 +1027,14 @@ export const useChats = (): UseChatsReturn => {
       setChatRooms((prev) => applyMessageDeletedToRooms(prev, roomId, messageId));
     });
 
+    // Someone I share a room with came online or went offline (first / last device).
+    const unsubPresence = subscribe("presence-changed", (data: { userId?: unknown; isOnline?: unknown }) => {
+      const userId = idOf(data?.userId);
+      if (!userId || typeof data.isOnline !== "boolean") return;
+      const isOnline = data.isOnline;
+      setChatRooms((prev) => applyPresenceChanged(prev, userId, isOnline));
+    });
+
     // I read a room on another device.
     const unsubRoomRead = subscribe("room-read", (data: ReadEvent) => {
       const roomId = idOf(data?.roomId);
@@ -1082,6 +1091,7 @@ export const useChats = (): UseChatsReturn => {
       unsubRooms();
       unsubMessagesRead();
       unsubMessageDeleted();
+      unsubPresence();
       unsubRoomRead();
       unsubRoomUpdated();
       unsubParticipants();

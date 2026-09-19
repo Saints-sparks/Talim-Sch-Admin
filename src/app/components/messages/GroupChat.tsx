@@ -13,6 +13,7 @@ import { useMessageActions } from "./useMessageActions";
 import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
+import { formatDateSeparator } from "@/lib/chat/dates";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import {
@@ -88,27 +89,6 @@ export default function GroupChat({
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
     return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
-  }, []);
-
-  const formatDateSeparator = useCallback((value?: string) => {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-
-    const today = new Date();
-    const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-    const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-    const diffDays = Math.round((todayKey - dateKey) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-
-    return date.toLocaleDateString([], {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   }, []);
 
   const currentUserName = useMemo(() => {

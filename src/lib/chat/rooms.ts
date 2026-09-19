@@ -431,3 +431,24 @@ export function applyMessageDeletedToRooms(rooms: ChatRoom[], roomId: string, me
   next[at] = { ...rooms[at], lastMessage: { ...last, preview: DELETED_PREVIEW, content: DELETED_PREVIEW } };
   return next;
 }
+
+/**
+ * A person came online or went offline: updates them in every room they are in.
+ * Returns the same array when nobody in the list is that person or nothing changes.
+ *
+ * @param rooms - The room list.
+ * @param userId - Who changed.
+ * @param isOnline - Their new state.
+ */
+export function applyPresenceChanged(rooms: ChatRoom[], userId: string, isOnline: boolean): ChatRoom[] {
+  let changed = false;
+  const next = rooms.map((room) => {
+    const at = room.participants.findIndex((p) => p.userId === userId || p._id === userId);
+    if (at === -1 || Boolean(room.participants[at].isOnline) === isOnline) return room;
+    changed = true;
+    const participants = room.participants.slice();
+    participants[at] = { ...participants[at], isOnline };
+    return { ...room, participants };
+  });
+  return changed ? next : rooms;
+}

@@ -9,8 +9,6 @@ import {
   FileText,
   UserPlus,
   Loader2,
-  UserCog,
-  GraduationCap,
   Pencil,
   Camera,
   Trash2,
@@ -19,8 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import Parents from "./Parents";
-import Teachers from "./Teachers";
 import SharedMedia from "./SharedMedia";
 import GroupMemberList from "./GroupMemberList";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
@@ -38,18 +34,13 @@ import { IMAGE_ACCEPT, fileKind, validateFile } from "@/components/chat-kit";
 const NAME_MAX = 80;
 const DESCRIPTION_MAX = 500;
 
-type Section = "" | "Parents" | "Teachers" | "Images" | "Videos" | "Links" | "Documents";
+type Section = "" | "Images" | "Videos" | "Links" | "Documents";
 
 const MEDIA_ITEMS = [
   { name: "Images", icon: Image },
   { name: "Videos", icon: VideoIcon },
   { name: "Links", icon: Link2 },
   { name: "Documents", icon: FileText },
-] as const;
-
-const DIRECTORY_ITEMS = [
-  { name: "Parents", icon: UserCog },
-  { name: "Teachers", icon: GraduationCap },
 ] as const;
 
 const ROOM_TYPE_LABELS: Record<string, string> = {
@@ -159,7 +150,7 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
     }
   };
 
-  const menuItems = [...(isGroup ? DIRECTORY_ITEMS : []), ...MEDIA_ITEMS];
+  const menuItems = MEDIA_ITEMS;
   const memberCount = room?.participants.length ?? 0;
 
   return (
@@ -424,12 +415,6 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
 
             {selectedMenu !== "" && <h2 className="text-lg text-left mb-4 font-medium">{selectedMenu}</h2>}
 
-            {selectedMenu === "Parents" && (
-              <Parents chatRoomId={canManage ? chatRoomId : undefined} />
-            )}
-            {selectedMenu === "Teachers" && (
-              <Teachers chatRoomId={canManage ? chatRoomId : undefined} />
-            )}
             {(selectedMenu === "Images" ||
               selectedMenu === "Videos" ||
               selectedMenu === "Links" ||
