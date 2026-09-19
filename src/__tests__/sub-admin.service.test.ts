@@ -4,7 +4,11 @@
  * subAdminService now goes through the typed `api` facade, so these exercise
  * the real request the client builds and the real `ApiError` it throws.
  */
-import { subAdminService } from "@/app/services/sub-admin.service";
+import {
+  subAdminService,
+  type CreateSubAdminDto,
+  type PromoteTeacherDto,
+} from "@/app/services/sub-admin.service";
 import { ApiError } from "@/lib/apiError";
 
 global.fetch = jest.fn();
@@ -96,7 +100,7 @@ describe("subAdminService.getSubAdminById", () => {
 });
 
 describe("subAdminService.createSubAdmin", () => {
-  const dto = {
+  const dto: CreateSubAdminDto = {
     firstName: "Jane",
     lastName: "Doe",
     email: "jane@school.com",
@@ -136,7 +140,7 @@ describe("subAdminService.createSubAdmin", () => {
 });
 
 describe("subAdminService.promoteTeacher", () => {
-  const dto = { userId: "teacher-001", permissions: ["manage:students"] };
+  const dto: PromoteTeacherDto = { userId: "teacher-001", permissions: ["manage:students"] };
 
   it("POSTs to promote-teacher with the teacher's user id", async () => {
     mockFetch.mockReturnValueOnce(respond(201, { subAdmin: STUB_SUB_ADMIN }));

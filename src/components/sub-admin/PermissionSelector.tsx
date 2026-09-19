@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Check } from "lucide-react";
-import { Permission } from "@/lib/permissions";
+import { Permission, type PermissionValue } from "@/lib/permissions";
 
 // ─── Permission Definitions ───────────────────────────────────────────────────
 // Values MUST match the backend Permission enum (manage:resource format).
@@ -60,8 +60,8 @@ export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface PermissionSelectorProps {
-  selected: string[];
-  onChange: (permissions: string[]) => void;
+  selected: PermissionValue[];
+  onChange: (permissions: PermissionValue[]) => void;
   disabled?: boolean;
 }
 
@@ -70,7 +70,7 @@ export function PermissionSelector({
   onChange,
   disabled = false,
 }: PermissionSelectorProps) {
-  const toggle = (value: string) => {
+  const toggle = (value: PermissionValue) => {
     if (disabled) return;
     onChange(
       selected.includes(value)
@@ -79,7 +79,7 @@ export function PermissionSelector({
     );
   };
 
-  const toggleGroup = (groupPermissions: string[]) => {
+  const toggleGroup = (groupPermissions: PermissionValue[]) => {
     if (disabled) return;
     const allSelected = groupPermissions.every((p) => selected.includes(p));
     if (allSelected) {

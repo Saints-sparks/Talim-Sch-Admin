@@ -9,6 +9,19 @@
  */
 import { api } from "@/lib/apiClient";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
+import type { PermissionValue } from "@/lib/permissions";
+import type {
+  CreateSubAdminPayload,
+  PromoteTeacherPayload,
+  UpdateSubAdminPermissionsPayload,
+} from "@/types/apiPayloads";
+
+/** Body of `POST /sub-admins`, generated from the backend DTO. */
+export type CreateSubAdminDto = CreateSubAdminPayload;
+/** Body of `POST /sub-admins/promote-teacher`, generated from the backend DTO. */
+export type PromoteTeacherDto = PromoteTeacherPayload;
+/** Body of `PATCH /sub-admins/:userId/permissions`, generated from the backend DTO. */
+export type UpdatePermissionsDto = UpdateSubAdminPermissionsPayload;
 
 /** A sub-admin account and the permissions it holds. */
 export interface SubAdmin {
@@ -20,7 +33,7 @@ export interface SubAdmin {
   phoneNumber?: string;
   role: "school_sub_admin";
   /** Values from the backend `Permission` enum, e.g. `manage:fees`. */
-  permissions: string[];
+  permissions: PermissionValue[];
   isActive: boolean;
   userAvatar?: string;
   schoolId: string;
@@ -37,29 +50,6 @@ export interface PaginatedSubAdmins {
     lastPage: number;
     limit: number;
   };
-}
-
-/** Body for `POST /sub-admins` (backend `CreateSubAdminDto`). */
-export interface CreateSubAdminDto {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber?: string;
-  /** Must be values from the backend `Permission` enum; duplicates are rejected. */
-  permissions: string[];
-}
-
-/** Body for `POST /sub-admins/promote-teacher` (backend `PromoteTeacherDto`). */
-export interface PromoteTeacherDto {
-  /** The teacher's user id. */
-  userId: string;
-  /** At least one permission; must be `Permission` enum values. */
-  permissions: string[];
-}
-
-/** Body for `PATCH /sub-admins/:userId/permissions`. Replaces the whole set. */
-export interface UpdatePermissionsDto {
-  permissions: string[];
 }
 
 /** A newly created sub-admin, with the temporary password the API generated. */

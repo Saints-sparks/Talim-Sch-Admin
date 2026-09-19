@@ -9,6 +9,7 @@ import { toast } from "@/components/CustomToast";
 import { apiClient, unwrapEnvelope } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
+import type { PermissionValue } from "@/lib/permissions";
 
 interface Teacher {
   userId: string;
@@ -30,7 +31,7 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<PermissionValue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 

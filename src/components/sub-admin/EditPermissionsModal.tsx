@@ -7,6 +7,7 @@ import { PermissionSelector } from "./PermissionSelector";
 import { subAdminService, SubAdmin } from "@/app/services/sub-admin.service";
 import { getErrorMessage } from "@/lib/apiError";
 import { toast } from "@/components/CustomToast";
+import type { PermissionValue } from "@/lib/permissions";
 
 interface EditPermissionsModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export function EditPermissionsModal({
   subAdmin,
   onSuccess,
 }: EditPermissionsModalProps) {
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<PermissionValue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync permissions when subAdmin changes

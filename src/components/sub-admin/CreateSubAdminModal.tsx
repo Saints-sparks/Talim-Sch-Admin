@@ -11,6 +11,7 @@ import {
 } from "@/app/services/sub-admin.service";
 import { getErrorMessage } from "@/lib/apiError";
 import { toast } from "@/components/CustomToast";
+import type { PermissionValue } from "@/lib/permissions";
 
 interface CreateSubAdminModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export function CreateSubAdminModal({
     email: "",
     phoneNumber: "",
   });
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<PermissionValue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
