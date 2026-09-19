@@ -5,7 +5,6 @@ import {
   getAcademicYearLabel,
   getAcademicYears,
   getTerms,
-  getTimetableEntries,
   setCurrentTerm,
 } from "@/app/services/academic.service";
 import { api } from "@/lib/apiClient";
@@ -183,20 +182,5 @@ describe("setCurrentTerm", () => {
   it("throws on failure", async () => {
     mockPut.mockReturnValueOnce(apiFailure("Term not found", 404));
     await expect(setCurrentTerm("tm999")).rejects.toThrow("Term not found");
-  });
-});
-
-// ─── Timetable ────────────────────────────────────────────────────────────────
-
-describe("getTimetableEntries", () => {
-  it("returns the day-keyed timetable body", async () => {
-    const body = { Monday: [{ time: "08:00 - 09:00", startTime: "08:00", endTime: "09:00" }] };
-    mockGet.mockResolvedValueOnce(body);
-    await expect(getTimetableEntries()).resolves.toEqual(body);
-  });
-
-  it("throws when the timetable request fails", async () => {
-    mockGet.mockReturnValueOnce(apiFailure("No timetable found", 404));
-    await expect(getTimetableEntries()).rejects.toThrow("No timetable found");
   });
 });

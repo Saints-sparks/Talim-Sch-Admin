@@ -4,8 +4,12 @@ import { renderHook, act } from "@testing-library/react";
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 const markStepComplete = jest.fn();
+let mockCompleted: string[] = [];
 jest.mock("@/context/OnboardingContext", () => ({
-  useOnboarding: () => ({ markStepComplete }),
+  useOnboarding: () => ({
+    markStepComplete,
+    isStepComplete: (id: string) => mockCompleted.includes(id),
+  }),
 }));
 
 let mockUser: { userId: string } | null = { userId: "user-1" };
@@ -15,7 +19,9 @@ jest.mock("@/context/AuthContext", () => ({
 
 jest.mock("@/app/services/academic.service", () => ({
   getAcademicYears: jest.fn(),
-  getTimetableEntries: jest.fn(),
+}));
+jest.mock("@/app/services/timetable.service", () => ({
+  getTimetableByClass: jest.fn(),
 }));
 jest.mock("@/app/services/school.service", () => ({ getClasses: jest.fn() }));
 jest.mock("@/app/services/subjects.service", () => ({
@@ -35,7 +41,8 @@ jest.mock("@/app/services/announcement.service", () => ({
   getAnnouncementsBySender: jest.fn(),
 }));
 
-import { getAcademicYears, getTimetableEntries } from "@/app/services/academic.service";
+import { getAcademicYears } from "@/app/services/academic.service";
+import { getTimetableByClass } from "@/app/services/timetable.service";
 import { getClasses } from "@/app/services/school.service";
 import { getSubjectsBySchool, getCoursesBySchool } from "@/app/services/subjects.service";
 import { teacherService } from "@/app/services/teacher.service";
@@ -57,12 +64,13 @@ function everythingEmpty() {
     pagination: { currentPage: 1, totalPages: 0, totalItems: 0, itemsPerPage: 1 },
   });
   (getAnnouncementsBySender as jest.Mock).mockResolvedValue({ data: [], meta: {} });
-  (getTimetableEntries as jest.Mock).mockResolvedValue({});
+  (getTimetableByClass as jest.Mock).mockResolvedValue({});
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { userId: "user-1" };
+  mockCompleted = [];
   everythingEmpty();
 });
 
@@ -95,10 +103,58 @@ describe("useOnboardingSync", () => {
     expect(markStepComplete).toHaveBeenCalledWith("add-teacher");
   });
 
-  it("reads the day-keyed timetable response", async () => {
-    (getTimetableEntries as jest.Mock).mockResolvedValue({ Monday: [], Tuesday: [{ _id: "e1" }] });
-    await sync();
-    expect(markStepComplete).toHaveBeenCalledWith("timetable-entry");
+  describe("timetable step", () => {
+    // The API has no school-wide timetable read, so the answer comes from the
+    // per-class read for each class the school has.
+    it("ticks off when any class has an entry, reading the day-keyed response", async () => {
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }, { _id: "c2" }]);
+      (getTimetableByClass as jest.Mock).mockImplementation(async (classId: string) =>
+        classId === "c2" ? { Monday: [], Tuesday: [{ _id: "e1" }] } : {}
+      );
+      await sync();
+      expect(getTimetableByClass).toHaveBeenCalledWith("c1");
+      expect(getTimetableByClass).toHaveBeenCalledWith("c2");
+      expect(markStepComplete).toHaveBeenCalledWith("timetable-entry");
+    });
+
+    it("stops at the first class that has an entry", async () => {
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }, { _id: "c2" }]);
+      (getTimetableByClass as jest.Mock).mockResolvedValue({ Monday: [{ _id: "e1" }] });
+      await sync();
+      expect(getTimetableByClass).toHaveBeenCalledTimes(1);
+    });
+
+    it("stays open when every class is empty", async () => {
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }]);
+      await sync();
+      expect(getTimetableByClass).toHaveBeenCalledWith("c1");
+      expect(markStepComplete).not.toHaveBeenCalledWith("timetable-entry");
+    });
+
+    it("makes no timetable request for a school without classes", async () => {
+      await sync();
+      expect(getTimetableByClass).not.toHaveBeenCalled();
+    });
+
+    it("does not ask again once the step is already ticked", async () => {
+      mockCompleted = ["timetable-entry"];
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }]);
+      await sync();
+      expect(getTimetableByClass).not.toHaveBeenCalled();
+    });
+
+    it("leaves the step alone when a class's timetable cannot be read", async () => {
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }]);
+      (getTimetableByClass as jest.Mock).mockRejectedValue(new Error("offline"));
+      await sync();
+      expect(markStepComplete).not.toHaveBeenCalledWith("timetable-entry");
+    });
+
+    it("shares one class list with the create-class probe", async () => {
+      (getClasses as jest.Mock).mockResolvedValue([{ _id: "c1" }]);
+      await sync();
+      expect(getClasses).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("leaves a step alone when its probe fails", async () => {

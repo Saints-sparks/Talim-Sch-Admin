@@ -101,7 +101,6 @@ export const API_URLS = {
   },
   TIMETABLE: {
     CREATE_TIMETABLE_ENTRY: "/timetable",
-    GET_TIMETABLE: "/timetable?page=:page&limit=:limit",
     GET_TIMETABLE_BY_DAY: "/timetable/day/:day",
     UPDATE_TIMETABLE_ENTRY: "/timetable/:entryId",
     DELETE_TIMETABLE_ENTRY: "/timetable/:entryId",
@@ -187,11 +186,6 @@ export const API_ENDPOINTS = {
       termId
     )}`,
   CREATE_TIMETABLE_ENTRY: `${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
-  GET_TIMETABLE: (page: number, limit: number) =>
-    `${API_URLS.TIMETABLE.GET_TIMETABLE.replace(
-      ":page",
-      page.toString()
-    ).replace(":limit", limit.toString())}`,
   GET_TIMETABLE_BY_DAY: (day: string) =>
     `${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(
       ":day",

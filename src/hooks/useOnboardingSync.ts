@@ -11,11 +11,12 @@
  */
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useOnboarding, type OnboardingStepId } from "@/context/OnboardingContext";
 import { useAuth } from "@/context/AuthContext";
-import { getAcademicYears, getTimetableEntries } from "@/app/services/academic.service";
+import { getAcademicYears } from "@/app/services/academic.service";
 import { getClasses } from "@/app/services/school.service";
+import { getTimetableByClass } from "@/app/services/timetable.service";
 import { getCoursesBySchool, getSubjectsBySchool } from "@/app/services/subjects.service";
 import { teacherService } from "@/app/services/teacher.service";
 import { studentService } from "@/app/services/student.service";
@@ -49,6 +50,25 @@ export interface OnboardingSync {
 }
 
 /**
+ * Whether any of the given classes has a timetable entry.
+ *
+ * The API has no school-wide timetable read — a timetable is always read for
+ * one class — so the answer is derived class by class, stopping at the first
+ * entry. A class with no entries reads as empty, not as a failure.
+ *
+ * @param classIds - The school's class ids.
+ * @returns True when at least one class has an entry.
+ * @throws ApiError When a class's timetable cannot be read.
+ */
+async function anyClassHasTimetable(classIds: string[]): Promise<boolean> {
+  for (const classId of classIds) {
+    const byDay = await getTimetableByClass(classId);
+    if (Object.values(byDay).some((entries) => (entries?.length ?? 0) > 0)) return true;
+  }
+  return false;
+}
+
+/**
  * Keeps the setup checklist in step with the school's real data.
  *
  * Called on route changes by the app shell, and directly by the setup screen
@@ -57,12 +77,19 @@ export interface OnboardingSync {
  * @returns The `syncProgress` function.
  */
 export function useOnboardingSync(): OnboardingSync {
-  const { markStepComplete } = useOnboarding();
+  const { markStepComplete, isStepComplete } = useOnboarding();
   const { user } = useAuth();
+  // Read through a ref so a tick does not change `syncProgress` and re-run the
+  // effects that depend on it.
+  const isStepCompleteRef = useRef(isStepComplete);
+  isStepCompleteRef.current = isStepComplete;
 
   const syncProgress = useCallback(async () => {
     if (!user) return;
     const senderId = user.userId ?? user._id ?? null;
+    // The class list answers two probes; ask for it once per sync.
+    let classes: ReturnType<typeof getClasses> | undefined;
+    const loadClasses = () => (classes ??= getClasses());
 
     /** One step and the question that decides whether it is done. */
     const checks: Array<{ id: OnboardingStepId; probe: () => Promise<boolean> }> = [
@@ -72,7 +99,7 @@ export function useOnboardingSync(): OnboardingSync {
       },
       {
         id: "create-class",
-        probe: async () => (await getClasses()).length > 0,
+        probe: async () => (await loadClasses()).length > 0,
       },
       {
         id: "add-teacher",
@@ -108,9 +135,10 @@ export function useOnboardingSync(): OnboardingSync {
       {
         id: "timetable-entry",
         probe: async () => {
-          // The response is keyed by day: { Monday: [...], Tuesday: [...] }.
-          const byDay = await getTimetableEntries();
-          return Object.values(byDay).some((entries) => (entries?.length ?? 0) > 0);
+          // Checking costs a request per class, so a step already ticked is not asked again.
+          if (isStepCompleteRef.current("timetable-entry")) return false;
+          const classIds = (await loadClasses()).map((klass) => klass._id);
+          return anyClassHasTimetable(classIds);
         },
       },
     ];

@@ -247,17 +247,3 @@ export const getTerms = async (): Promise<TermResponse[]> => {
 export const setCurrentTerm = async (termId: string): Promise<void> => {
   await api.put<unknown>(API_ENDPOINTS.SET_CURRENT_TERM(termId));
 };
-
-// ─── Timetable ────────────────────────────────────────────────────────────────
-
-/**
- * A page of timetable entries, used only to answer "has this school built a
- * timetable yet?" for the onboarding checklist.
- *
- * @returns The timetable grouped by day.
- * @throws ApiError When the request fails, including the 404 the API returns
- *   for a class with no entries.
- */
-export const getTimetableEntries = async (): Promise<TimetableByDay> => {
-  return api.get<TimetableByDay>(API_ENDPOINTS.GET_TIMETABLE(1, 1));
-};
