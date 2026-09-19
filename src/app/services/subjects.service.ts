@@ -11,6 +11,7 @@
 import { API_URLS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
 import { logger } from "@/lib/logger";
+import type { CreateSubjectContractPayload, UpdateSubjectContractPayload } from "@/types/apiPayloads";
 import { getClasses as getSchoolClasses, type Class as SchoolClass } from "./school.service";
 import { teacherService, type Teacher } from "./teacher.service";
 
@@ -70,6 +71,11 @@ export interface Course {
 /**
  * Body for `POST /subjects-courses/courses`, mirroring `CreateCourseDto`.
  * `schoolId` is accepted but ignored by the API — the token decides the school.
+ *
+ * Hand-typed on purpose: the generated contract for this endpoint is wrong (its
+ * `@ApiBody` documents `subjectName` and `teacherRole`, while the validated DTO
+ * needs `subjectId`), and `UpdateCourseDto` is generated as an empty object.
+ * Both are read from `talimBE-V2/src/modules/academic/data/dtos/courses.ts`.
  */
 export interface CreateCoursePayload {
   title: string;
@@ -90,13 +96,12 @@ export interface UpdateCoursePayload {
   classId?: string;
 }
 
-/** Body for `POST /subjects-courses/subjects`, mirroring `CreateSubjectDto`. */
-export interface SubjectPayload {
-  name: string;
-  code: string;
-  /** Accepted but ignored by the API; kept because existing callers send it. */
-  schoolId?: string;
-}
+/**
+ * Body of `POST` / `PUT /subjects-courses/subjects` (the backend DTOs). The
+ * contract types `schoolId` as an object (a raw ObjectId), which no string
+ * satisfies, so it is restated as a string. The API accepts and ignores it.
+ */
+export type SubjectPayload = Omit<CreateSubjectContractPayload, "schoolId"> & { schoolId?: string };
 
 /** A curriculum entry: what a teacher published for one course in one term. */
 export interface CurriculumContent {
@@ -200,7 +205,7 @@ export const createSubject = async (payload: SubjectPayload): Promise<Subject> =
  * @returns The updated subject.
  */
 export const updateSubject = async (subjectId: string, payload: SubjectPayload): Promise<Subject> =>
-  api.put<Subject>(API_URLS.SUBJECTS.UPDATE_SUBJECT.replace(":subjectId", encodeURIComponent(subjectId)), payload);
+  api.put<Subject>(API_URLS.SUBJECTS.UPDATE_SUBJECT.replace(":subjectId", encodeURIComponent(subjectId)), payload satisfies UpdateSubjectContractPayload);
 
 /**
  * Deletes a subject.

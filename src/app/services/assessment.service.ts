@@ -8,6 +8,7 @@
 import { API_URLS } from "../lib/api/config";
 import { api, apiClient } from "@/lib/apiClient";
 import { ApiError } from "@/lib/apiError";
+import type { CreateAssessmentPayload, UpdateAssessmentPayload } from "@/types/apiPayloads";
 
 /** Where an assessment sits in its lifecycle. Mirrors the backend enum. */
 export type AssessmentStatus = "pending" | "active" | "completed" | "cancelled";
@@ -21,23 +22,10 @@ export const ASSESSMENT_STATUSES: readonly AssessmentStatus[] = [
 ] as const;
 
 /** Body for `POST /assessments`, mirroring `CreateAssessmentDto`. */
-export interface CreateAssessmentRequest {
-  name: string;
-  description?: string;
-  termId: string;
-  startDate: string;
-  endDate: string;
-  status?: AssessmentStatus;
-}
+export type CreateAssessmentRequest = CreateAssessmentPayload;
 
 /** Body for `PUT /assessments/:id`, mirroring `UpdateAssessmentDto`. */
-export interface UpdateAssessmentRequest {
-  name?: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: AssessmentStatus;
-}
+export type UpdateAssessmentRequest = UpdateAssessmentPayload;
 
 /** An assessment with its term and author populated. */
 export interface AssessmentResponse {

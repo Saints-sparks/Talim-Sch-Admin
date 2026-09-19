@@ -1,4 +1,5 @@
 import type { ChatReplyTo } from "@/components/chat-kit";
+import type { CreateChatRoomPayload, CreateGroupChatPayload } from "@/types/apiPayloads";
 // types/chat.types.ts
 
 export interface User {
@@ -141,23 +142,21 @@ export interface SendMessageDto {
   attachments?: ChatAttachment[];
 }
 
-export interface CreateChatRoomDto {
-  type: ChatRoomType;
-  participants: string[];
-  classId?: string;
-  courseId?: string;
-  termId?: string;
-  name?: string;
-}
+/**
+ * Body of `POST /chat/rooms` (the backend DTO); `type` is the app's enum, whose
+ * values are the DTO's literals. The DTO has no `name`: a group's name is set
+ * through `POST /chat/groups` or `PATCH /chat/rooms/:id`.
+ */
+export type CreateChatRoomDto = Omit<CreateChatRoomPayload, "type"> & { type: ChatRoomType };
 
-export interface CreateGroupChatDto {
-  type: ChatRoomType.CLASS_GROUP | ChatRoomType.COURSE_GROUP | ChatRoomType.ADMIN_PARENT_GROUP | string;
-  classId?: string;
-  courseId?: string;
-  termId?: string;
-  name?: string;
-  participants?: string[];
-}
+/**
+ * Body of `POST /chat/groups` (the backend DTO). The generated `type` omits
+ * `custom_group` because the DTO's `@ApiProperty` enum does, but its
+ * `@IsEnum` accepts it and the "custom group" form sends it.
+ */
+export type CreateGroupChatDto = Omit<CreateGroupChatPayload, "type"> & {
+  type: CreateGroupChatPayload["type"] | ChatRoomType.CUSTOM_GROUP;
+};
 
 export interface MessagesResponse {
   messages: ChatMessage[];

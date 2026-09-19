@@ -1,5 +1,13 @@
 import { API_URLS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type {
+  ChangePasswordPayload,
+  ForgotPasswordPayload,
+  LoginPayload,
+  ResetPasswordPayload,
+  UpdateProfilePayload,
+  VerifyResetCodePayload,
+} from "@/types/apiPayloads";
 
 /** Body for `POST /auth/login`. */
 export interface LoginCredentials {
@@ -44,16 +52,7 @@ export type Gender = "MALE" | "FEMALE" | "OTHER";
  * exactly — the API rejects any other field. Email and password are not
  * editable here; passwords change through {@link authService.changePassword}.
  */
-export interface UpdateUserProfilePayload {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  /** ISO date string. */
-  dateOfBirth?: string;
-  gender?: "male" | "female" | "other";
-  /** Hosted image URL; an empty string removes the avatar. */
-  userAvatar?: string;
-}
+export type UpdateUserProfilePayload = UpdateProfilePayload;
 
 /** A user's full profile, from `GET /auth/profile/:userId`. */
 export interface UserProfile {
@@ -123,8 +122,10 @@ export const authService = {
    * @param credentials - Email, password and optional device fields.
    * @returns The access token.
    */
-  login: (credentials: LoginCredentials): Promise<LoginResponse> =>
-    api.post<LoginResponse>(API_URLS.AUTH.LOGIN, { platform: "web", ...credentials }, { skipAuth: true }),
+  login: (credentials: LoginCredentials): Promise<LoginResponse> => {
+    const body: LoginPayload = { platform: "web", ...credentials };
+    return api.post<LoginResponse>(API_URLS.AUTH.LOGIN, body, { skipAuth: true });
+  },
 
   /**
    * Resolves an access token to its user.
@@ -152,8 +153,10 @@ export const authService = {
    *
    * @param email - Account email.
    */
-  forgotPassword: (email: string): Promise<{ message: string }> =>
-    api.post<{ message: string }>(API_URLS.AUTH.FORGOT_PASSWORD, { email }, { skipAuth: true }),
+  forgotPassword: (email: string): Promise<{ message: string }> => {
+    const body: ForgotPasswordPayload = { email };
+    return api.post<{ message: string }>(API_URLS.AUTH.FORGOT_PASSWORD, body, { skipAuth: true });
+  },
 
   /**
    * Checks a reset code before asking for a new password. Wrong codes count
@@ -162,8 +165,10 @@ export const authService = {
    * @param email - Account email.
    * @param token - The 6-digit code from the email.
    */
-  verifyResetCode: (email: string, token: string): Promise<{ valid: boolean; message?: string }> =>
-    api.post<{ valid: boolean; message?: string }>(API_URLS.AUTH.VERIFY_RESET_CODE, { email, token }, { skipAuth: true }),
+  verifyResetCode: (email: string, token: string): Promise<{ valid: boolean; message?: string }> => {
+    const body: VerifyResetCodePayload = { email, token };
+    return api.post<{ valid: boolean; message?: string }>(API_URLS.AUTH.VERIFY_RESET_CODE, body, { skipAuth: true });
+  },
 
   /**
    * Sets a new password with a reset code.
@@ -172,8 +177,10 @@ export const authService = {
    * @param token - The 6-digit code from the email.
    * @param newPassword - Must satisfy the password policy.
    */
-  resetPassword: (email: string, token: string, newPassword: string): Promise<{ message: string }> =>
-    api.post<{ message: string }>(API_URLS.AUTH.RESET_PASSWORD, { email, token, newPassword }, { skipAuth: true }),
+  resetPassword: (email: string, token: string, newPassword: string): Promise<{ message: string }> => {
+    const body: ResetPasswordPayload = { email, token, newPassword };
+    return api.post<{ message: string }>(API_URLS.AUTH.RESET_PASSWORD, body, { skipAuth: true });
+  },
 
   /**
    * Changes the signed-in user's password (also replaces a temporary one).
@@ -183,8 +190,10 @@ export const authService = {
    * @param newPassword - Must satisfy the password policy.
    * @param confirmPassword - Must equal `newPassword`.
    */
-  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string): Promise<ChangePasswordResponse> =>
-    api.post<ChangePasswordResponse>(API_URLS.AUTH.CHANGE_PASSWORD, { currentPassword, newPassword, confirmPassword }),
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string): Promise<ChangePasswordResponse> => {
+    const body: ChangePasswordPayload = { currentPassword, newPassword, confirmPassword };
+    return api.post<ChangePasswordResponse>(API_URLS.AUTH.CHANGE_PASSWORD, body);
+  },
 
   /** Ends the session on the server and clears the refresh cookie. */
   logout: (): Promise<unknown> => api.post(API_URLS.AUTH.LOGOUT),

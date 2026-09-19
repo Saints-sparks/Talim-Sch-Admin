@@ -17,6 +17,7 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type { CreateTimetableContractPayload } from "@/types/apiPayloads";
 import type { TimetableByDay, TimetableDay, TimetableEntryResponse } from "./academic.service";
 
 export type { TimetableByDay, TimetableDay, TimetableEntryResponse };
@@ -64,16 +65,15 @@ export interface TeacherDirectoryEntry {
   userId?: string | { _id?: string; firstName?: string; lastName?: string; email?: string };
 }
 
-/** Body for `POST /timetable` (`CreateTimetableDto`). */
-export interface CreateTimetableEntryPayload {
+/**
+ * Body of `POST /timetable` (the backend DTO). The contract types the two ids as
+ * a raw ObjectId (`Record<string, never>`), which no string satisfies, so they
+ * are restated as strings; every other field still comes from the DTO.
+ */
+export type CreateTimetableEntryPayload = Omit<CreateTimetableContractPayload, "classId" | "courseId"> & {
   classId: string;
   courseId: string;
-  day: TimetableDay;
-  /** 24-hour `HH:mm`, e.g. "08:00". */
-  startTime: string;
-  /** 24-hour `HH:mm`, e.g. "09:00". */
-  endTime: string;
-}
+};
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
 

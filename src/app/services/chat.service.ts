@@ -14,6 +14,11 @@ import {
 } from '@/types/chat.types';
 import { normalizeMessage } from '@/lib/chat/messages';
 import { normalizeRoom } from '@/lib/chat/rooms';
+import type {
+  AddParticipantsPayload,
+  CreateChatRoomPayload,
+  UpdateChatRoomPayload,
+} from '@/types/apiPayloads';
 
 /**
  * A server payload before it has been narrowed. The chat endpoints wrap their
@@ -122,7 +127,7 @@ class ChatService {
   async createChatRoom(data: CreateChatRoomDto): Promise<ChatRoom> {
     try {
       
-      const response = await apiClient.post(`${this.baseUrl}/rooms`, data);
+      const response = await apiClient.post(`${this.baseUrl}/rooms`, data satisfies CreateChatRoomPayload);
       
       
       if (!response.ok) {
@@ -469,7 +474,7 @@ class ChatService {
    */
   async updateRoomDetails(
     roomId: string,
-    patch: { name?: string; description?: string | null; avatarUrl?: string | null }
+    patch: UpdateChatRoomPayload
   ): Promise<ChatRoom> {
     const response = await apiClient.patch(`${this.baseUrl}/rooms/${roomId}`, patch);
     if (!response.ok) {
@@ -490,7 +495,7 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
   try {
     const response = await apiClient.post(
       `${this.baseUrl}/rooms/${roomId}/participants/batch`,
-      { participantIds: userIds }
+      { participantIds: userIds } satisfies AddParticipantsPayload
     );
 
     if (!response.ok) {

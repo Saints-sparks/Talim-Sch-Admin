@@ -12,6 +12,17 @@
  * record before the source school has released it.
  */
 import { api } from "@/lib/apiClient";
+import type {
+  CancelTransferPayload,
+  CreateEnrollmentPayload as CreateEnrollmentDto,
+  CreatePromotionRunPayload,
+  CreateTransferPayload,
+  RejectTransferPayload,
+} from "@/types/apiPayloads";
+
+// Request payloads are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
+// for the callers that already import them from here.
+export type { CreatePromotionRunPayload, CreateTransferPayload } from "@/types/apiPayloads";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,19 +120,6 @@ export interface TransferRequest {
   updatedAt: string;
 }
 
-/** Body of `POST /transit/transfers`, matching `CreateStudentTransferRequestDto`. */
-export interface CreateTransferPayload {
-  studentId: string;
-  targetSchoolId?: string;
-  targetClassId?: string;
-  targetAcademicYearId?: string;
-  targetTermId?: string;
-  reason?: string;
-  notes?: string;
-  documents?: string[];
-  initiatedBy?: TransferInitiator;
-}
-
 /** One student's promotion decision inside a run. */
 export interface PromotionDecision {
   studentId: string;
@@ -129,14 +127,6 @@ export interface PromotionDecision {
   toClassId: string;
   targetGradeLevel?: string;
   repeatClass?: boolean;
-}
-
-/** Body of `POST /transit/promotions`, matching `CreatePromotionRunDto`. */
-export interface CreatePromotionRunPayload {
-  fromAcademicYearId: string;
-  toAcademicYearId: string;
-  targetTermId?: string;
-  decisions: PromotionDecision[];
 }
 
 /** A validation problem on a run — a plain sentence today, an object on older runs. */
@@ -187,14 +177,13 @@ export interface StudentEnrollment {
   updatedAt: string;
 }
 
-/** Body of `POST /transit/enrollments`, matching `CreateEnrollmentDto`. */
-export interface CreateEnrollmentPayload {
-  studentId: string;
-  classId: string;
-  academicYearId: string;
-  termId?: string;
+/**
+ * Body of `POST /transit/enrollments` (the backend DTO); `source` is narrowed to
+ * the values {@link EnrollmentSource} lists.
+ */
+export type CreateEnrollmentPayload = Omit<CreateEnrollmentDto, "source"> & {
   source?: EnrollmentSource;
-}
+};
 
 /** Filters accepted by `GET /transit/enrollments`. */
 export interface EnrollmentFilters {
@@ -522,7 +511,7 @@ export function acceptTransfer(id: string): Promise<TransferRequest> {
  * @throws `ApiError` when this school is not the target.
  */
 export function rejectTransfer(id: string, reason?: string): Promise<TransferRequest> {
-  return api.post<TransferRequest>(`/transit/transfers/${id}/reject`, { reason });
+  return api.post<TransferRequest>(`/transit/transfers/${id}/reject`, { reason } satisfies RejectTransferPayload);
 }
 
 /**
@@ -534,7 +523,7 @@ export function rejectTransfer(id: string, reason?: string): Promise<TransferReq
  * @throws `ApiError` when this school is not the source, or it is too late to cancel.
  */
 export function cancelTransfer(id: string, reason?: string): Promise<TransferRequest> {
-  return api.post<TransferRequest>(`/transit/transfers/${id}/cancel`, { reason });
+  return api.post<TransferRequest>(`/transit/transfers/${id}/cancel`, { reason } satisfies CancelTransferPayload);
 }
 
 /**
@@ -765,7 +754,7 @@ export function getClosureSnapshot(academicYearId: string): Promise<Record<strin
  * @throws `ApiError` — `CONFLICT` when the student already has an active enrollment.
  */
 export function createEnrollment(payload: CreateEnrollmentPayload): Promise<StudentEnrollment> {
-  return api.post<StudentEnrollment>("/transit/enrollments", payload);
+  return api.post<StudentEnrollment>("/transit/enrollments", payload satisfies CreateEnrollmentDto);
 }
 
 /**
