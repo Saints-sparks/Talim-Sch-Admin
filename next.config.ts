@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const nextConfig: NextConfig = {
+  // The Playwright suite sets NEXT_DIST_DIR so its dev server never shares `.next` with a build or `next dev` running elsewhere.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Your Next.js configuration options
   env: {
     // Explicitly expose environment variables to the client-side
