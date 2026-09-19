@@ -103,12 +103,52 @@ describe("getDashboardSummary", () => {
     expect(summary?.fees.collectionRate).toBe(0);
   });
 
+  it("does not request a money endpoint the viewer may not read", async () => {
+    routeGet({ "/finance/wallet/summary": { success: true, summary: { availableBalance: 9 } } });
+    const summary = await getDashboardSummary("user-1", undefined, { fees: false, wallet: true });
+    const paths = mockGet.mock.calls.map((call) => call[0]);
+    expect(paths).toContain("/finance/wallet/summary");
+    expect(paths).not.toContain("/fees/dashboard/summary");
+    expect(summary?.wallet.balance).toBe(9);
+  });
+
+  it("still builds a summary for a viewer with no money access at all", async () => {
+    routeGet({});
+    mockUnread.mockResolvedValue(3);
+    const summary = await getDashboardSummary("user-1", { totalStudents: 5, totalTeachers: 1, totalClasses: 2 }, {
+      fees: false,
+      wallet: false,
+    });
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(summary?.students.total).toBe(5);
+    expect(summary?.notifications.unreadTotal).toBe(3);
+  });
+
   it("skips the unread count when there is no viewer", async () => {
     routeGet({
       "/finance/wallet/summary": { success: true, summary: { availableBalance: 1 } },
     });
     await getDashboardSummary(undefined);
     expect(mockUnread).not.toHaveBeenCalled();
+  });
+});
+
+// ─── getPendingActions ────────────────────────────────────────────────────────
+
+describe("getPendingActions", () => {
+  it("reads only the queues the viewer governs", async () => {
+    routeGet({ "/transit/dashboard": { pendingIncoming: 2, pendingOutgoing: 1, openPromotionRuns: 4 } });
+    const actions = await getPendingActions({ transit: true, leave: false });
+    const paths = mockGet.mock.calls.map((call) => call[0]);
+    expect(paths).toEqual(["/transit/dashboard"]);
+    expect(actions.transfers).toEqual({ incoming: 2, outgoing: 1 });
+    expect(actions.leaveRequests.pending).toBe(0);
+  });
+
+  it("sends neither request when the viewer governs neither area", async () => {
+    routeGet({});
+    await getPendingActions({ transit: false, leave: false });
+    expect(mockGet).not.toHaveBeenCalled();
   });
 });
 

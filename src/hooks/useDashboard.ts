@@ -113,10 +113,17 @@ export function useDashboardOverview(): DashboardOverview {
   }, [hasPermission, isFullAdmin]);
 
   const base = useSchoolDashboardQuery();
-  const summary = useDashboardSummaryQuery(userId);
+  // Ask only for what the viewer may read: a refused request is a 403 in the console, not a hidden card.
+  const summary = useDashboardSummaryQuery(userId, {
+    fees: isFullAdmin || hasPermission(Permission.MANAGE_FEES),
+    wallet: isFullAdmin || hasPermission(Permission.MANAGE_FINANCE),
+  });
   const finance = useFinanceSummaryQuery(visibility.finance);
   const academic = useAcademicSummaryQuery(visibility.academics);
-  const pendingActions = usePendingActionsQuery(visibility.pendingActions);
+  const pendingActions = usePendingActionsQuery(visibility.pendingActions, {
+    transit: isFullAdmin || hasPermission(Permission.MANAGE_TRANSIT),
+    leave: isFullAdmin || hasPermission(Permission.MANAGE_LEAVE_REQUESTS),
+  });
   const recentPayments = useRecentPaymentsQuery(visibility.recentPayments);
   const recentAnnouncements = useRecentAnnouncementsQuery(
     userId,

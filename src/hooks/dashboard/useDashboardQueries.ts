@@ -31,6 +31,8 @@ import {
   getRecentPayments,
   getSchoolDashboard,
   type AcademicSummary,
+  type PendingAccess,
+  type SummaryAccess,
   type DashboardSummary,
   type FinanceSummary,
   type PendingActionsData,
@@ -92,15 +94,17 @@ export function useSchoolDashboardQuery(): UseQueryResult<SchoolDashboardData> {
  * The KPI card numbers that come from money and notifications.
  *
  * @param userId - Viewer whose unread notification count is included.
- * @returns Query result; `data` is `null` when every source is unavailable.
+ * @param access - Which money reads the viewer may make; the others are not sent.
+ * @returns Query result; `data` is `null` when every source that was asked for is unavailable.
  */
 export function useDashboardSummaryQuery(
-  userId?: string
+  userId?: string,
+  access: SummaryAccess = {}
 ): UseQueryResult<DashboardSummary | null> {
   const schoolId = useSchoolId();
   return useQuery({
     queryKey: dashboardKeys.summary(schoolId ?? "none", userId),
-    queryFn: () => getDashboardSummary(userId),
+    queryFn: () => getDashboardSummary(userId, undefined, access),
     enabled: Boolean(schoolId),
     staleTime: staleTimes.list,
   });
@@ -149,13 +153,17 @@ export function useAcademicSummaryQuery(
  * Transfer, leave and promotion queues waiting on an administrator.
  *
  * @param enabled - False when the viewer governs none of those areas.
+ * @param access - Which queues the viewer may read; the others are not requested.
  * @returns Query result.
  */
-export function usePendingActionsQuery(enabled: boolean): UseQueryResult<PendingActionsData> {
+export function usePendingActionsQuery(
+  enabled: boolean,
+  access: PendingAccess = {}
+): UseQueryResult<PendingActionsData> {
   const schoolId = useSchoolId();
   return useQuery({
     queryKey: dashboardKeys.pendingActions(schoolId ?? "none"),
-    queryFn: getPendingActions,
+    queryFn: () => getPendingActions(access),
     enabled: Boolean(schoolId) && enabled,
     staleTime: staleTimes.list,
   });

@@ -296,6 +296,14 @@ export const getSchoolDashboard = async (schoolId: string): Promise<SchoolDashbo
   return api.get<SchoolDashboardData>(`/schools/${encodeURIComponent(schoolId)}/dashboard`);
 };
 
+/** Which money reads the viewer may make; a read they may not make is never sent. */
+export interface SummaryAccess {
+  /** Holds `manage:fees` (fee collection totals). */
+  fees?: boolean;
+  /** Holds `manage:finance` (wallet balance). */
+  wallet?: boolean;
+}
+
 /**
  * The KPI card numbers: fee collection from `/fees/dashboard/summary`, wallet
  * balance from `/finance/wallet/summary`, unread count from notifications, and
@@ -303,19 +311,26 @@ export const getSchoolDashboard = async (schoolId: string): Promise<SchoolDashbo
  *
  * @param userId - Viewer, for their unread notification count; omit to skip it.
  * @param baseStats - Student, teacher and class totals already loaded.
- * @returns The summary, or `null` when both money endpoints are unavailable.
+ * @param access - Which money reads the viewer may make (default: both). A
+ *   sub-admin without `manage:fees` used to send the request anyway and log a 403.
+ * @returns The summary, or `null` when every money endpoint that was asked for is unavailable.
  */
 export const getDashboardSummary = async (
   userId?: string,
-  baseStats?: Pick<SchoolDashboardData, "totalStudents" | "totalTeachers" | "totalClasses">
+  baseStats?: Pick<SchoolDashboardData, "totalStudents" | "totalTeachers" | "totalClasses">,
+  access: SummaryAccess = {}
 ): Promise<DashboardSummary | null> => {
+  const wantFees = access.fees ?? true;
+  const wantWallet = access.wallet ?? true;
   const [fees, wallet, unreadCount] = await Promise.all([
-    safeGet<FeesDashboardBody>("/fees/dashboard/summary"),
-    safeGet<WalletSummaryBody>("/finance/wallet/summary"),
+    wantFees ? safeGet<FeesDashboardBody>("/fees/dashboard/summary") : Promise.resolve(null),
+    wantWallet ? safeGet<WalletSummaryBody>("/finance/wallet/summary") : Promise.resolve(null),
     userId ? getUnreadNotificationCount(userId).catch(() => 0) : Promise.resolve(0),
   ]);
 
-  if (!fees && !wallet) return null;
+  // Nothing answered although money was asked for: there is no summary. A viewer with no
+  // money access at all still gets the head counts and their unread notifications.
+  if ((wantFees || wantWallet) && !fees && !wallet) return null;
 
   const totalExpected = fees?.totalExpectedAmount ?? 0;
   const paid = fees?.paidAmount ?? 0;
@@ -455,16 +470,28 @@ export const getAcademicSummary = async (): Promise<AcademicSummary | null> => {
   return buildAcademicSummary(terms, years);
 };
 
+/** Which queues the viewer may read; a queue they may not read is never requested. */
+export interface PendingAccess {
+  /** Holds `manage:transit`. */
+  transit?: boolean;
+  /** Holds `manage:leave_requests`. */
+  leave?: boolean;
+}
+
 /**
  * The queues waiting on an administrator: transfers and promotion runs from
  * `/transit/dashboard`, pending leave from the school-admin leave list.
  *
- * @returns The pending-action counts; zeroes when an endpoint is unavailable.
+ * @param access - Which queues the viewer may read (default: both). Each read
+ *   the viewer may not make is skipped rather than sent and refused with a 403.
+ * @returns The pending-action counts; zeroes when an endpoint is unavailable or not permitted.
  */
-export const getPendingActions = async (): Promise<PendingActionsData> => {
+export const getPendingActions = async (access: PendingAccess = {}): Promise<PendingActionsData> => {
   const [transit, leaveRes] = await Promise.all([
-    safeGet<TransitDashboardBody>("/transit/dashboard"),
-    safeGet<{ data: Array<{ status: string }> }>("/leave-requests/school-admin/all"),
+    access.transit ?? true ? safeGet<TransitDashboardBody>("/transit/dashboard") : Promise.resolve(null),
+    access.leave ?? true
+      ? safeGet<{ data: Array<{ status: string }> }>("/leave-requests/school-admin/all")
+      : Promise.resolve(null),
   ]);
 
   const leaveData = leaveRes?.data ?? [];
