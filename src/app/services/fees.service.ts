@@ -2,8 +2,8 @@
  * Fees API — categories, fee items, class assignments, receipt settings and the
  * fees dashboard summary.
  *
- * Every payload here mirrors a backend DTO in
- * `talimBE-V2/src/modules/fees/data/dtos`. The API validates with
+ * Every request payload is the backend DTO itself, generated into
+ * `src/types/apiPayloads.ts` from `talimBE-V2` (`npm run types:api`). The API validates with
  * `whitelist: true, forbidNonWhitelisted: true`, so an unknown property is a
  * 400 rather than a silently ignored field — that is why the update payloads
  * are explicit types and not `Partial<FeeItem>`.
@@ -12,6 +12,27 @@
  * school id. Every function throws `ApiError` on a non-2xx response.
  */
 import { api } from "@/lib/apiClient";
+import type {
+  AssignFeePayload,
+  CreateFeeCategoryPayload,
+  CreateFeeItemPayload,
+  UpdateFeeAssignmentPayload,
+  UpdateFeeCategoryPayload,
+  UpdateFeeItemPayload,
+  UpdateFeeReceiptSettingsPayload,
+} from "@/types/apiPayloads";
+
+// Request payloads come straight from the backend contract, so `tsc` fails when
+// a DTO changes; re-exported here for the callers that already import them.
+export type {
+  AssignFeePayload,
+  ClassAssignmentOverride,
+  CreateFeeCategoryPayload,
+  CreateFeeItemPayload,
+  UpdateFeeAssignmentPayload,
+  UpdateFeeCategoryPayload,
+  UpdateFeeItemPayload,
+} from "@/types/apiPayloads";
 
 const BASE = "/fees";
 
@@ -83,26 +104,6 @@ export interface FeeAssignment {
   updatedAt: string;
 }
 
-/** One class's terms inside an assign request (`ClassAssignmentOverrideDto`). */
-export interface ClassAssignmentOverride {
-  classId: string;
-  /** Minimum 0 on the backend. */
-  amount: number;
-  /** ISO date string, e.g. `2026-09-01`. */
-  dueDate: string;
-  lateFeeAmount?: number;
-  isVisibleToParents?: boolean;
-}
-
-/** Body of `POST /fees/assignments` (`AssignFeeToClassesDto`). */
-export interface AssignFeePayload {
-  feeItemId: string;
-  academicYearId?: string;
-  termId?: string;
-  /** At least one class; the backend rejects an empty array. */
-  classes: ClassAssignmentOverride[];
-}
-
 /** What `POST /fees/assignments` returns. */
 export interface AssignFeeResult {
   assigned: number;
@@ -145,56 +146,6 @@ export interface DashboardSummary {
   outstandingAmount: number;
   feeCategories: number;
   activeAssignments: number;
-}
-
-/** Body of `POST /fees/categories` (`CreateFeeCategoryDto`). */
-export interface CreateFeeCategoryPayload {
-  /** Required, 1–100 characters. */
-  name: string;
-  /** Up to 500 characters. */
-  description?: string;
-}
-
-/** Body of `PATCH /fees/categories/:id` (`UpdateFeeCategoryDto`). */
-export interface UpdateFeeCategoryPayload {
-  name?: string;
-  description?: string;
-  status?: FeeCategoryStatus;
-}
-
-/** Body of `POST /fees/items` (`CreateFeeItemDto`). */
-export interface CreateFeeItemPayload {
-  /** Required, 1–150 characters. */
-  name: string;
-  /** Required; must be a fee category id of this school. */
-  categoryId: string;
-  /** Up to 500 characters. */
-  description?: string;
-  academicYearId?: string;
-  termId?: string;
-  feeType: FeeType;
-  /** Minimum 0. */
-  defaultAmount: number;
-  /** ISO date string. */
-  defaultDueDate?: string;
-  /** Minimum 0. */
-  lateFeeAmount?: number;
-  allowPartialPayment?: boolean;
-  isVisibleToParents?: boolean;
-  includeInCollection?: boolean;
-  status?: FeeItemStatus;
-}
-
-/** Body of `PATCH /fees/items/:id` (`UpdateFeeItemDto`) — every field optional. */
-export type UpdateFeeItemPayload = Partial<CreateFeeItemPayload>;
-
-/** Body of `PATCH /fees/assignments/:id` (`UpdateFeeAssignmentDto`). */
-export interface UpdateFeeAssignmentPayload {
-  amount?: number;
-  dueDate?: string;
-  lateFeeAmount?: number;
-  isVisibleToParents?: boolean;
-  status?: FeeAssignmentStatus;
 }
 
 /** Query for `GET /fees/items` (`FeeItemQueryDto`). `limit` is capped at 100. */
@@ -530,7 +481,7 @@ export async function getReceiptSettings(): Promise<ReceiptSettings> {
  * @throws ApiError - On any non-2xx response.
  */
 export async function updateReceiptSettings(
-  payload: Partial<ReceiptSettings>
+  payload: UpdateFeeReceiptSettingsPayload
 ): Promise<ReceiptSettings> {
   return api.patch<ReceiptSettings>(`${BASE}/receipt-settings`, payload);
 }

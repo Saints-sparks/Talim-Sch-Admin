@@ -12,6 +12,24 @@
  * school id comes from the caller's session, never from a payload.
  */
 import { api } from "@/lib/apiClient";
+import type {
+  AddBankAccountPayload,
+  ConfirmWithdrawalPayload,
+  Disable2faPayload,
+  InitiateWithdrawalPayload,
+  Require2faPayload,
+  ResendWithdrawalOtpPayload,
+  Verify2faPayload,
+  VerifyWithdrawalOtpPayload,
+} from "@/types/apiPayloads";
+
+// Request payloads are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
+// for the callers that already import them from here.
+export type {
+  AddBankAccountPayload,
+  ConfirmWithdrawalPayload,
+  InitiateWithdrawalPayload,
+} from "@/types/apiPayloads";
 
 const BASE = "/finance";
 
@@ -199,30 +217,6 @@ export interface WithdrawalQuery {
   limit?: number;
 }
 
-/** Body of `POST /finance/bank-accounts` (`AddBankAccountDto`). */
-export interface AddBankAccountPayload {
-  bankName: string;
-  bankCode: string;
-  accountNumber: string;
-  accountName: string;
-  country?: string;
-}
-
-/** Body of `POST /finance/withdrawals/initiate` (`InitiateWithdrawalDto`). */
-export interface InitiateWithdrawalPayload {
-  bankAccountId: string;
-  amount: number;
-  note?: string;
-}
-
-/** Body of `POST /finance/withdrawals/confirm` (`ConfirmWithdrawalDto`). */
-export interface ConfirmWithdrawalPayload {
-  withdrawalDraftId: string;
-  confirmationAccepted: boolean;
-  /** Required when "Require 2FA for withdrawals" is on: the 6-digit authenticator code. */
-  twoFactorCode?: string;
-}
-
 /**
  * Drops undefined entries and renders the rest as a query string.
  *
@@ -380,8 +374,10 @@ export const initiateWithdrawal = (
  */
 export const resendWithdrawalOtp = (
   withdrawalDraftId: string
-): Promise<{ success: boolean; maskedEmail: string; expiresIn: number; message: string }> =>
-  api.post(`${BASE}/withdrawals/resend-otp`, { withdrawalDraftId });
+): Promise<{ success: boolean; maskedEmail: string; expiresIn: number; message: string }> => {
+  const body: ResendWithdrawalOtpPayload = { withdrawalDraftId };
+  return api.post(`${BASE}/withdrawals/resend-otp`, body);
+};
 
 /**
  * Step 2b — verifies the emailed code and returns the confirmation figures.
@@ -390,10 +386,9 @@ export const resendWithdrawalOtp = (
  * @returns The summary shown on the confirm step.
  * @throws ApiError (`UNAUTHENTICATED`) on a wrong code, (`BAD_REQUEST`) once it expires.
  */
-export const verifyWithdrawalOtp = (data: {
-  withdrawalDraftId: string;
-  otp: string;
-}): Promise<{ success: boolean; verified: boolean; summary: WithdrawalSummary }> =>
+export const verifyWithdrawalOtp = (
+  data: VerifyWithdrawalOtpPayload
+): Promise<{ success: boolean; verified: boolean; summary: WithdrawalSummary }> =>
   api.post(`${BASE}/withdrawals/verify-otp`, data);
 
 /**
@@ -476,8 +471,10 @@ export const setup2fa = (): Promise<{ otpauthUrl: string; qrCode: string }> =>
  * @returns The success acknowledgement.
  * @throws ApiError (`UNAUTHENTICATED`) when the code is wrong or already used.
  */
-export const verify2fa = (token: string): Promise<{ success: boolean }> =>
-  api.post<{ success: boolean }>(`${BASE}/security/2fa/verify`, { token });
+export const verify2fa = (token: string): Promise<{ success: boolean }> => {
+  const body: Verify2faPayload = { token };
+  return api.post<{ success: boolean }>(`${BASE}/security/2fa/verify`, body);
+};
 
 /**
  * Disables two-factor.
@@ -486,8 +483,10 @@ export const verify2fa = (token: string): Promise<{ success: boolean }> =>
  * @returns The success acknowledgement.
  * @throws ApiError (`UNAUTHENTICATED`) when the code is wrong.
  */
-export const disable2fa = (token: string): Promise<{ success: boolean }> =>
-  api.post<{ success: boolean }>(`${BASE}/security/2fa/disable`, { token });
+export const disable2fa = (token: string): Promise<{ success: boolean }> => {
+  const body: Disable2faPayload = { token };
+  return api.post<{ success: boolean }>(`${BASE}/security/2fa/disable`, body);
+};
 
 /**
  * Turns "Require 2FA for withdrawals" on or off. Turning it OFF needs a
@@ -502,8 +501,7 @@ export const disable2fa = (token: string): Promise<{ success: boolean }> =>
 export const setRequire2faForWithdrawals = (
   require: boolean,
   token?: string
-): Promise<{ success: boolean }> =>
-  api.patch<{ success: boolean }>(
-    `${BASE}/security/withdrawals/require-2fa`,
-    token ? { require, token } : { require }
-  );
+): Promise<{ success: boolean }> => {
+  const body: Require2faPayload = token ? { require, token } : { require };
+  return api.patch<{ success: boolean }>(`${BASE}/security/withdrawals/require-2fa`, body);
+};

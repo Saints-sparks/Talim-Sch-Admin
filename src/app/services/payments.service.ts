@@ -12,6 +12,10 @@
  * taken from the caller's session server-side and is never sent in a payload.
  */
 import { api } from "@/lib/apiClient";
+import type { ManualPaymentPayload } from "@/types/apiPayloads";
+
+// The request payload is the backend DTO (`src/types/apiPayloads.ts`).
+export type { ManualPaymentPayload } from "@/types/apiPayloads";
 
 const BASE = "/payments";
 
@@ -155,18 +159,6 @@ export interface AdminReceiptQuery {
   termId?: string;
   page?: number;
   limit?: number;
-}
-
-/** Body of `POST /payments/admin/manual-payment` (`ManualPaymentDto`). */
-export interface ManualPaymentPayload {
-  /** Mongo id of the student the fees belong to. */
-  studentId: string;
-  /** At least one fee-assignment id; each must be a Mongo id. */
-  feeAssignmentIds: string[];
-  amount: number;
-  paymentMethod: ManualPaymentMethod | string;
-  reference?: string;
-  notes?: string;
 }
 
 /**
