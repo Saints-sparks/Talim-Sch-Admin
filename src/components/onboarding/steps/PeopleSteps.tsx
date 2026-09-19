@@ -15,6 +15,8 @@ import AddStudentModal from "@/components/AddStudentModal";
 import { StepCard } from "@/components/onboarding/steps/StepCard";
 import { useInvalidateReference } from "@/hooks/queries/reference";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { Permission } from "@/lib/permissions";
 
 /**
  * @param props.onComplete - Marks the step done and moves the checklist on.
@@ -30,12 +32,21 @@ export function AddTeacherStep({ onComplete }: { onComplete: () => void }) {
         Register a teacher account. They will receive a login email and can be assigned to classes
         and courses.
       </p>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+      <PermissionGate
+        permission={Permission.MANAGE_TEACHERS}
+        fallback={
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Your role can&apos;t add teachers. Ask an administrator who can manage teachers.
+          </p>
+        }
       >
-        <UserRound className="h-4 w-4" /> Add Teacher
-      </button>
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+        >
+          <UserRound className="h-4 w-4" /> Add Teacher
+        </button>
+      </PermissionGate>
       {open && (
         <AddTeacherModal
           onClose={() => setOpen(false)}
@@ -65,12 +76,21 @@ export function AddStudentStep({ onComplete }: { onComplete: () => void }) {
         Enrol your first student and assign them to a class. You can always add more from the
         Students section.
       </p>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+      <PermissionGate
+        permission={Permission.MANAGE_STUDENTS}
+        fallback={
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Your role can&apos;t add students. Ask an administrator who can manage students.
+          </p>
+        }
       >
-        <Users className="h-4 w-4" /> Add Student
-      </button>
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+        >
+          <Users className="h-4 w-4" /> Add Student
+        </button>
+      </PermissionGate>
       {open && (
         <AddStudentModal
           onClose={() => setOpen(false)}

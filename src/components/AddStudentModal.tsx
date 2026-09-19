@@ -1,733 +1,96 @@
 "use client";
 
-import React, { useState } from "react";
-import { toast } from "@/components/CustomToast";
-import { Tooltip } from "@/components/ui/Tooltip";
-import { useSchoolId } from "@/hooks/useSchoolId";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { classSchoolId, useRosterClasses } from "@/hooks/users/useRosterClasses";
-import { useCreateStudent } from "@/hooks/users/useStudents";
-import { ApiError, getErrorMessage } from "@/lib/apiError";
-import { logger } from "@/lib/logger";
-import type { ParentRelationship } from "@/app/services/student.service";
+import React from "react";
+import { useAddStudentForm } from "@/hooks/users/useAddStudentForm";
+import { CreateModalFrame } from "@/components/users/create/CreateModalFrame";
+import { InfoNotice } from "@/components/users/create/InfoNotice";
+import { WizardFooter } from "@/components/users/create/WizardFooter";
+import { bodyTextClass, guideCardClass, navyTextClass } from "@/components/users/create/ui";
+import { STUDENT_LAST_STEP } from "@/components/users/students/create/studentForm";
+import { StudentAccountStep } from "@/components/users/students/create/StudentAccountStep";
+import { StudentModalHeader } from "@/components/users/students/create/StudentModalHeader";
+import { StudentProfileStep } from "@/components/users/students/create/StudentProfileStep";
+
+const TITLE_ID = "add-student-title";
 
 interface AddStudentModalProps {
   /** Closes the dialog. */
   onClose: () => void;
   /** Called after a student has been created, so the caller can refresh. */
-  onSuccess?: () => void;
+  onSuccess?: () => unknown;
 }
 
+/**
+ * Two-step dialog that enrols a student: the login account, then class
+ * placement and the parent contact the API links or creates. Only renders for
+ * administrators holding `MANAGE_STUDENTS`. The server generates the temporary
+ * password; the form never asks for one.
+ *
+ * @param props - Close and success callbacks.
+ * @returns The dialog, or nothing when the admin may not add students.
+ */
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose, onSuccess }) => {
-  const schoolId = useSchoolId();
-  const { classes } = useRosterClasses();
-  const createStudent = useCreateStudent();
-  const isLoading = createStudent.isPending;
-  const [currentStep, setCurrentStep] = useState(0);
-  useBodyScrollLock(true);
-  const [formData, setFormData] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-    classId: "",
-    gradeLevel: "",
-    parentContact: {
-      firstName: "",
-      lastName: "",
-      phoneNumber: "",
-      email: "",
-      relationship: "",
-    },
-  });
+  const wizard = useAddStudentForm({ onClose, onSuccess });
+  const { form, errors, setField, step, pending } = wizard;
 
-  const isBlank = (value: string) => value.trim().length === 0;
-
-  const getAccountMissingFields = () => {
-    const missing: string[] = [];
-    if (isBlank(formData.email)) missing.push("student email");
-    if (isBlank(formData.firstName)) missing.push("student first name");
-    if (isBlank(formData.lastName)) missing.push("student last name");
-    if (isBlank(formData.phoneNumber)) missing.push("student phone number");
-    return missing;
-  };
-
-  const getProfileMissingFields = () => {
-    const missing: string[] = [];
-    if (isBlank(formData.classId)) missing.push("class");
-    if (isBlank(formData.gradeLevel)) missing.push("grade level");
-    if (isBlank(formData.parentContact.firstName)) missing.push("parent first name");
-    if (isBlank(formData.parentContact.lastName)) missing.push("parent last name");
-    if (isBlank(formData.parentContact.relationship)) missing.push("relationship");
-    if (isBlank(formData.parentContact.phoneNumber)) missing.push("parent phone number");
-    if (isBlank(formData.parentContact.email)) missing.push("parent email");
-    return missing;
-  };
-
-  const showMissingFieldsToast = (missingFields: string[]) => {
-    toast.error(`Please complete: ${missingFields.join(", ")}`);
-  };
-
-  const handleSubmit = async () => {
-    if (!schoolId) {
-      toast.error("We couldn't tell which school you're signed in to. Please sign in again.");
-      return;
-    }
-
-    if (currentStep === 0) {
-      const missingFields = getAccountMissingFields();
-      if (missingFields.length > 0) {
-        showMissingFieldsToast(missingFields);
-        return;
-      }
-      setCurrentStep(1);
-      return;
-    }
-
-    const missingFields = getProfileMissingFields();
-    if (missingFields.length > 0) {
-      showMissingFieldsToast(missingFields);
-      return;
-    }
-
-    // A class carries its own school; prefer it so a class shared with another
-    // campus is enrolled against the right school.
-    const selectedClass = classes.find((c) => c._id === formData.classId);
-    const targetSchoolId = classSchoolId(selectedClass) || schoolId;
-
-    try {
-      // No password is sent: the API generates a temporary one, emails a
-      // set-password link, and hands it back so the onboarding email quotes
-      // the password the student can actually sign in with.
-      await createStudent.mutateAsync({
-        account: {
-          email: formData.email.trim(),
-          role: "student",
-          schoolId: targetSchoolId,
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          phoneNumber: formData.phoneNumber.trim(),
-        },
-        profile: {
-          classId: formData.classId,
-          gradeLevel: formData.gradeLevel,
-          parentContact: {
-            fullName: `${formData.parentContact.firstName} ${formData.parentContact.lastName}`.trim(),
-            phoneNumber: formData.parentContact.phoneNumber.trim(),
-            email: formData.parentContact.email.trim(),
-            relationship: formData.parentContact.relationship as ParentRelationship,
-          },
-        },
-      });
-
-      toast.success("Student profile created successfully!");
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      logger.error("students", "Failed to create student", error);
-      if (error instanceof ApiError && error.code === "CONFLICT") {
-        toast.error("An account with that email already exists.");
-        setCurrentStep(0);
-        return;
-      }
-      toast.error(getErrorMessage(error, "We couldn't create this student. Please try again."));
-    }
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    if (name === "parentContact") return;
-
-    if (name === "classId") {
-      const selectedClass = classes.find((c) => c._id === value);
-      setFormData({
-        ...formData,
-        classId: value,
-        gradeLevel: selectedClass?.gradeLevel ?? formData.gradeLevel,
-      });
-      return;
-    }
-
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleParentContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      parentContact: { ...formData.parentContact, [name]: value },
-    });
-  };
-
-  const renderPageContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <div className="space-y-6">
-            {/* Login Credentials Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <svg
-                    className="w-5 h-5 text-[#003366]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
-                <h4 className="text-base font-semibold text-gray-900">Login Credentials</h4>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="student@example.com"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Personal Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <svg
-                    className="w-5 h-5 text-[#003366]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-                <h4 className="text-base font-semibold text-gray-900">Personal Information</h4>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    placeholder="Enter first name"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Last Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    placeholder="Enter last name"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  placeholder="+234 XXX XXX XXXX"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <div className="flex gap-3">
-                <svg
-                  className="w-5 h-5 text-[#003366] mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-sm text-blue-900 leading-relaxed">
-                    A secure password will be automatically generated for the student's account. The
-                    login credentials will be sent to the provided email address.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 1:
-        const profileMissingFields = getProfileMissingFields();
-        const isProfileComplete = profileMissingFields.length === 0;
-
-        return (
-          <div className="space-y-6">
-            {/* Academic Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <svg
-                    className="w-5 h-5 text-[#003366]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                </div>
-                <h4 className="text-base font-semibold text-gray-900">Academic Information</h4>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Class <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="classId"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
-                    value={formData.classId}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="" disabled>
-                      Select a class
-                    </option>
-                    {classes.map((classItem) => (
-                      <option key={classItem._id} value={classItem._id}>
-                        {classItem.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Grade Level <span className="text-red-500">*</span>
-                  </label>
-                  <div
-                    className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
-                      formData.gradeLevel
-                        ? "bg-gray-50 border-gray-200 text-gray-700"
-                        : "bg-gray-50 border-gray-200 text-gray-400"
-                    }`}
-                  >
-                    {formData.gradeLevel || "Auto-filled when a class is selected"}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Inherited from the selected class</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Parent/Guardian Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <svg
-                    className="w-5 h-5 text-[#003366]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <h4 className="text-base font-semibold text-gray-900">
-                  Parent/Guardian Information
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.parentContact.firstName}
-                    onChange={handleParentContactChange}
-                    placeholder="Enter parent/guardian first name"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Last Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.parentContact.lastName}
-                    onChange={handleParentContactChange}
-                    placeholder="Enter parent/guardian last name"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Relationship <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="relationship"
-                    value={formData.parentContact.relationship}
-                    onChange={handleParentContactChange}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
-                    required
-                  >
-                    <option value="" disabled>
-                      Select relationship
-                    </option>
-                    <option value="FATHER">Father</option>
-                    <option value="MOTHER">Mother</option>
-                    <option value="GUARDIAN">Guardian</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={formData.parentContact.phoneNumber}
-                    onChange={handleParentContactChange}
-                    placeholder="+234 XXX XXX XXXX"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.parentContact.email}
-                    onChange={handleParentContactChange}
-                    placeholder="parent@example.com"
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Status Box */}
-            <div
-              className={`rounded-lg border p-4 ${
-                isProfileComplete ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100"
-              }`}
-            >
-              <div className="flex gap-3">
-                <svg
-                  className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                    isProfileComplete ? "text-green-600" : "text-amber-600"
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {isProfileComplete ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v3.75m0 3.75h.008v.008H12V16.5zm9-4.5a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  )}
-                </svg>
-                <div>
-                  <p
-                    className={`text-sm leading-relaxed ${
-                      isProfileComplete ? "text-green-900" : "text-amber-900"
-                    }`}
-                  >
-                    {isProfileComplete
-                      ? 'All required information has been collected. Click "Create Student" to finalize the account setup.'
-                      : `Still needed: ${profileMissingFields.join(", ")}.`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const handleBackClick = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  if (!wizard.canCreate) return null;
 
   return (
-    <div
-      id="modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if ((e.target as Element).id === "modal-overlay") {
-          onClose();
-        }
-      }}
+    <CreateModalFrame
+      onClose={onClose}
+      busy={pending}
+      labelledBy={TITLE_ID}
+      dataGuide="student-create-modal"
+      overlayClassName="p-4"
+      panelClassName="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl"
     >
-      <div
-        className="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300"
-        data-guide="student-create-modal"
-      >
-        {/* Header */}
-        <div className="bg-[#003366] px-6 py-5 text-white flex-shrink-0">
-          <div className="flex justify-between items-start mb-5">
-            <div className="flex items-start gap-3">
-              <div className="bg-white bg-opacity-20 p-2.5 rounded-lg mt-0.5">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Add New Student</h2>
-                <p className="text-blue-100 text-sm mt-0.5">
-                  {currentStep === 0 ? "Setup account credentials" : "Complete student profile"}
-                </p>
-              </div>
+      <StudentModalHeader step={step} titleId={TITLE_ID} onClose={onClose} busy={pending} />
+
+      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
+        <div className="p-6" data-guide="student-create-fields">
+          <div className={guideCardClass}>
+            <p className={`text-sm font-semibold ${navyTextClass}`}>Student setup guide</p>
+            <p className={`mt-1 text-sm leading-6 ${bodyTextClass}`}>
+              Talim creates the learner account first, then links academic details and guardian
+              information for communication and records.
+            </p>
+          </div>
+
+          {wizard.formError && (
+            <div className="mb-5">
+              <InfoNotice tone="danger" alert rounded="lg">
+                {wizard.formError}
+              </InfoNotice>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+          )}
 
-          {/* Progress Steps */}
-          <div className="relative" data-guide="student-create-progress">
-            <Tooltip
-              content="Student setup has two stages: account credentials first, then class placement and parent contact details."
-              side="bottom"
-            >
-              <div className="flex items-center justify-between">
-                {/* Progress Line */}
-                <div className="absolute top-5 left-0 right-0 h-0.5 bg-blue-400"></div>
-                <div
-                  className="absolute top-5 left-0 h-0.5 bg-white transition-all duration-300"
-                  style={{ width: currentStep === 0 ? "0%" : "100%" }}
-                ></div>
-
-                {[
-                  { step: 0, title: "Account", icon: "1" },
-                  { step: 1, title: "Profile", icon: "2" },
-                ].map((step) => (
-                  <div key={step.step} className="relative z-10 flex flex-col items-center">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                        currentStep >= step.step
-                          ? "bg-white text-blue-600 shadow-lg"
-                          : "bg-blue-500 text-white"
-                      }`}
-                    >
-                      {currentStep > step.step ? (
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        step.icon
-                      )}
-                    </div>
-                    <div className="mt-2 text-center">
-                      <div
-                        className={`text-xs font-medium ${
-                          currentStep >= step.step ? "text-white" : "text-blue-200"
-                        }`}
-                      >
-                        {step.title}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="p-6" data-guide="student-create-fields">
-            <div className="mb-5 rounded-2xl border border-[#F4B740]/30 bg-gradient-to-r from-[#FFF8E8] to-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-[#003366]">Student setup guide</p>
-              <p className="mt-1 text-sm leading-6 text-gray-600">
-                Talim creates the learner account first, then links academic details and guardian
-                information for communication and records.
-              </p>
-            </div>
-            {renderPageContent()}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0">
-          <div className="flex justify-between items-center gap-4">
-            <button
-              onClick={handleBackClick}
-              disabled={currentStep === 0}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
-                currentStep === 0
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back
-            </button>
-
-            <Tooltip
-              content={
-                currentStep === 1
-                  ? "Create the student profile and connect it to the selected class and parent details."
-                  : "Save the account details and continue to the student profile step."
-              }
-              side="top"
-            >
-              <button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#003366] text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {currentStep === 1 ? "Create Student" : "Continue"}
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </>
-                )}
-              </button>
-            </Tooltip>
-          </div>
+          {step === 0 ? (
+            <StudentAccountStep form={form} errors={errors} setField={setField} />
+          ) : (
+            <StudentProfileStep
+              form={form}
+              errors={errors}
+              setField={setField}
+              classes={wizard.classes}
+              selectedClass={wizard.selectedClass}
+              onSelectClass={wizard.selectClass}
+            />
+          )}
         </div>
       </div>
-    </div>
+
+      <WizardFooter
+        size="md"
+        step={step}
+        lastStep={STUDENT_LAST_STEP}
+        pending={pending}
+        onBack={wizard.back}
+        onNext={wizard.submit}
+        submitLabel="Create Student"
+        continueHint="Save the account details and continue to the student profile step."
+        submitHint="Create the student profile and connect it to the selected class and parent details."
+      />
+    </CreateModalFrame>
   );
 };
 
