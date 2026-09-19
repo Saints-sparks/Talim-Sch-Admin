@@ -51,6 +51,23 @@ export default {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
+  		// Text colours that miss WCAG AA (4.5:1) on white in the stock palette: the
+  		// 400/500 greys (~2.5-4.8:1) and the 600 status colours (~3-4.4:1). Light mode
+  		// reads them from variables (globals.css); dark mode keeps the stock values.
+  		// Only text is affected: bg-, border- and ring- still use the stock palette.
+  		textColor: {
+  			gray: {
+  				'400': 'rgb(var(--text-gray-400) / <alpha-value>)',
+  				'500': 'rgb(var(--text-gray-500) / <alpha-value>)'
+  			},
+  			slate: {
+  				'400': 'rgb(var(--text-slate-400) / <alpha-value>)',
+  				'500': 'rgb(var(--text-slate-500) / <alpha-value>)'
+  			},
+  			green: { '600': 'rgb(var(--text-green-600) / <alpha-value>)' },
+  			yellow: { '600': 'rgb(var(--text-yellow-600) / <alpha-value>)' },
+  			red: { '600': 'rgb(var(--text-red-600) / <alpha-value>)' }
+  		},
   		fontFamily: {
   			sans: [
   				'var(--font-manrope)',

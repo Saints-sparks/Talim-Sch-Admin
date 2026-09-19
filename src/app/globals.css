@@ -77,8 +77,27 @@ a[href] {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    /* Text colours as RGB channels (tailwind.config.ts textColor). Each is AA
+       (>= 4.5:1) on white and on the light tints it sits on (gray-50/100, the
+       green/red-50 badges), and keeps its rank: gray/slate 400 lighter than 500,
+       500 lighter than the stock 600. */
+    --text-gray-400: 99 107 120;
+    --text-gray-500: 90 99 112;
+    --text-slate-400: 94 108 134;
+    --text-slate-500: 84 98 122;
+    --text-green-600: 21 128 61;
+    --text-yellow-600: 161 98 7;
+    --text-red-600: 200 30 30;
   }
   .dark {
+    /* The stock Tailwind values: already 6-7:1 on the dark surfaces. */
+    --text-gray-400: 156 163 175;
+    --text-gray-500: 107 114 128;
+    --text-slate-400: 148 163 184;
+    --text-slate-500: 100 116 139;
+    --text-green-600: 22 163 74;
+    --text-yellow-600: 202 138 4;
+    --text-red-600: 220 38 38;
     --background: 222 47% 5%;
     --foreground: 213 31% 91%;
     --card: 217 33% 10%;
