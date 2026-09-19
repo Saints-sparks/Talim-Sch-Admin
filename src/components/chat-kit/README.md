@@ -117,3 +117,15 @@ const { upload, isUploading, progress } = useAttachmentUpload(uploadFn);
 
 Sending a reply: put `replyToId` (the quoted message's `_id`) in the `send-chat-message`
 payload and clear the reply once the bubble exists. The server returns the quote as `message.replyTo`.
+
+## Keeping the copies in sync
+
+This directory is the canonical kit. It is copied into Talim-Teachers and
+Talim-students-web (byte for byte) and ported to TypeScript in talim-parents.
+Until it is a published package (that needs a package registry decision), a fix
+made in one copy and not the others is the failure to avoid:
+
+- Change the kit **here**, then copy the files to the others.
+- `node scripts/check-chat-kit-drift.mjs` compares the sibling checkouts against
+  this one and exits non-zero when a byte-for-byte copy has drifted (the Parents
+  port is reported, and fails only with `--strict`).
