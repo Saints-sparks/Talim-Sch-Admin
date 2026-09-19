@@ -105,18 +105,35 @@ export function useStudentAttendance(
   });
 }
 
+/** The account an earlier attempt already created for this student. */
+export interface CreatedStudentAccount {
+  /** The new user id. */
+  userId: string;
+  /** The server-generated password, forwarded so the onboarding email quotes it. */
+  temporaryPassword?: string;
+}
+
 /** What `useCreateStudent` needs to enrol one student. */
 export interface CreateStudentInput {
   /** Account fields for `POST /auth/register` (no password — the API makes one). */
   account: RegisterStudentPayload;
   /** Class, grade level and parent contact for `POST /students`. */
   profile: Omit<CreateStudentProfilePayload, "userId" | "password">;
+  /**
+   * The account made by an earlier attempt whose student record failed.
+   * Registration is skipped, so the retry cannot hit a `CONFLICT` on the email
+   * it already created.
+   */
+  existingAccount?: CreatedStudentAccount;
+  /** Called the moment the account exists, before the student record is written. */
+  onAccountCreated?: (account: CreatedStudentAccount) => void;
 }
 
 /**
  * Enrols a student: creates the account, then the student record. The
  * server-generated temporary password is forwarded to the second call so the
  * onboarding email quotes the password the student can actually sign in with.
+ * Invalidates the student, parent and class lists.
  *
  * @returns Mutation that resolves to the created student.
  */
@@ -124,17 +141,23 @@ export function useCreateStudent(): UseMutationResult<StudentById, Error, Create
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ account, profile }: CreateStudentInput) => {
-      const registration = await registerStudent(account);
+    mutationFn: async ({ account, profile, existingAccount, onAccountCreated }: CreateStudentInput) => {
+      let created = existingAccount;
+      if (!created) {
+        const registration = await registerStudent(account);
+        created = { userId: registration.userId, temporaryPassword: registration.temporaryPassword };
+        onAccountCreated?.(created);
+      }
       return createStudentProfile({
         ...profile,
-        userId: registration.userId,
-        ...(registration.temporaryPassword ? { password: registration.temporaryPassword } : {}),
+        userId: created.userId,
+        ...(created.temporaryPassword ? { password: created.temporaryPassword } : {}),
       });
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: queryKeys.students.all });
       client.invalidateQueries({ queryKey: queryKeys.parents.all });
+      client.invalidateQueries({ queryKey: queryKeys.classes.all });
     },
   });
 }

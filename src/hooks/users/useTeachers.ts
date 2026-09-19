@@ -85,11 +85,21 @@ export interface CreateTeacherInput {
   account: RegisterTeacherPayload;
   /** Profile fields for `POST /teachers/:userId`. */
   profile: CreateTeacherProfilePayload;
+  /**
+   * The user id of an account made by an earlier attempt whose profile step
+   * failed. Registration is skipped, so the retry cannot hit a `CONFLICT` on
+   * the email it already created.
+   */
+  existingUserId?: string;
+  /** Called with the new user id the moment the account exists, before the profile is written. */
+  onAccountCreated?: (userId: string) => void;
 }
 
 /**
  * Adds a teacher: creates the account (the API generates the temporary
  * password and emails the set-password link), then the teacher profile.
+ * Invalidates the teacher lists, and the classes when the teacher was
+ * assigned to some (their rosters change).
  *
  * @returns Mutation that resolves to the created profile.
  */
@@ -97,11 +107,18 @@ export function useCreateTeacher(): UseMutationResult<TeacherById, Error, Create
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ account, profile }: CreateTeacherInput) => {
-      const { userId } = await registerTeacher(account);
+    mutationFn: async ({ account, profile, existingUserId, onAccountCreated }: CreateTeacherInput) => {
+      let userId = existingUserId;
+      if (!userId) {
+        userId = (await registerTeacher(account)).userId;
+        onAccountCreated?.(userId);
+      }
       return createTeacherProfile(userId, profile);
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.teachers.all }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.teachers.all });
+      client.invalidateQueries({ queryKey: queryKeys.classes.all });
+    },
   });
 }
 

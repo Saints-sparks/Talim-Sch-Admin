@@ -33,6 +33,8 @@ export interface RosterClassesResult {
   isError: boolean;
   /** Whatever the query threw. */
   error: unknown;
+  /** Reloads the classes after a failure. */
+  refetch: () => void;
 }
 
 /**
@@ -44,7 +46,13 @@ export function useRosterClasses(): RosterClassesResult {
   const query = useClasses();
   const classes = useMemo(() => (query.data ?? []) as unknown as RosterClass[], [query.data]);
 
-  return { classes, isPending: query.isPending, isError: query.isError, error: query.error };
+  return {
+    classes,
+    isPending: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    refetch: () => void query.refetch(),
+  };
 }
 
 /**
