@@ -10,6 +10,27 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type {
+  CreateTeacherProfilePayload,
+  RegisterUserPayload,
+  TeacherAssignmentsPayload,
+  TeacherAvailabilityPayload,
+  TeacherEmploymentPayload,
+  TeacherPersonalDetailsPayload,
+  TeacherQualificationsPayload,
+  UpdateTeacherStatusPayload,
+} from "@/types/apiPayloads";
+
+// Request payloads are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
+// for the callers that already import them from here.
+export type {
+  CreateTeacherProfilePayload,
+  TeacherAssignmentsPayload,
+  TeacherAvailabilityPayload,
+  TeacherEmploymentPayload,
+  TeacherPersonalDetailsPayload,
+  TeacherQualificationsPayload,
+} from "@/types/apiPayloads";
 
 /** The maximum `limit` the backend's PaginationDto accepts. */
 const MAX_PAGE_SIZE = 500;
@@ -169,17 +190,10 @@ export interface GetTeachersResponse {
  * forces a change at first sign-in and emails a set-password link. Never
  * reintroduce a client-side default here.
  */
-export interface RegisterTeacherPayload {
-  email: string;
+export type RegisterTeacherPayload = Omit<RegisterUserPayload, "role" | "password"> & {
   role: "teacher";
-  schoolId: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  /** ISO date, optional. */
-  dateOfBirth?: string;
-  gender?: "male" | "female" | "other";
-}
+  password?: never;
+};
 
 /** What `POST /auth/register` answers with. */
 export interface RegisterTeacherResponse {
@@ -190,27 +204,7 @@ export interface RegisterTeacherResponse {
 }
 
 /** The qualifications the backend's `AcademicQualification` enum accepts. */
-export type AcademicQualification = "Undergraduate" | "Graduate" | "Postgraduate" | "Doctorate";
-
-/**
- * Body for `POST /teachers/:userId` (backend `CreateTeacherDto`).
- *
- * The backend rejects any property not on the DTO, so `userId`, `dateOfBirth`
- * and `gender` must not appear here — they belong to the account, not the
- * profile.
- */
-export interface CreateTeacherProfilePayload {
-  highestAcademicQualification: AcademicQualification;
-  yearsOfExperience: number;
-  specialization: string;
-  employmentType: "Fulltime" | "Parttime";
-  employmentRole: "Academic" | "NonAcademic";
-  availabilityDays: string[];
-  availableTime: string;
-  isFormTeacher?: boolean;
-  assignedClasses?: string[];
-  assignedCourses?: string[];
-}
+export type AcademicQualification = CreateTeacherProfilePayload["highestAcademicQualification"];
 
 /**
  * Creates a teacher's login account.
@@ -356,9 +350,10 @@ export const teacherService = {
    * @returns The updated profile.
    */
   async updateTeacherByCourse(teacherId: string, assignedCourses: string[]): Promise<TeacherById> {
+    const body: TeacherAssignmentsPayload = { assignedCourses };
     return api.patch<TeacherById>(
       `${API_ENDPOINTS.BASE_URL}/teachers/${encodeURIComponent(teacherId)}/class-course-assignments`,
-      { assignedCourses },
+      body,
     );
   },
 
@@ -418,9 +413,10 @@ export const teacherService = {
    * @throws `ApiError` — `FORBIDDEN` without `manage:teachers`.
    */
   async updateTeacherStatus(teacherId: string, isActive: boolean): Promise<Teacher> {
+    const body: UpdateTeacherStatusPayload = { isActive };
     return api.put<Teacher>(
       `${API_ENDPOINTS.BASE_URL}/users/teachers/${encodeURIComponent(teacherId)}/status`,
-      { isActive },
+      body,
     );
   },
 
@@ -434,47 +430,6 @@ export const teacherService = {
     return this.updateTeacherStatus(teacherId, false);
   },
 };
-
-/** Body for `PATCH /teachers/:userId/personal-details` (backend UpdateTeacherPersonalDetailsDto). */
-export interface TeacherPersonalDetailsPayload {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phoneNumber?: string;
-  gender?: "male" | "female" | "other";
-  /** ISO date. */
-  dateOfBirth?: string;
-}
-
-/** Body for `PATCH /teachers/:userId/qualification-details` (UpdateTeacherAcademicDetailsDto). */
-export interface TeacherQualificationsPayload {
-  highestAcademicQualification?: AcademicQualification;
-  yearsOfExperience?: number;
-  specialization?: string;
-}
-
-/** Body for `PUT /teachers/:userId/employment` (UpdateTeacherEmploymentDto). */
-export interface TeacherEmploymentPayload {
-  employmentType?: "Fulltime" | "Parttime";
-  employmentRole?: "Academic" | "NonAcademic";
-}
-
-/** Body for `PATCH /teachers/:userId/availability` (UpdateTeacherAvailabilityDto). */
-export interface TeacherAvailabilityPayload {
-  availabilityDays?: string[];
-  availableTime?: string;
-}
-
-/**
- * Body for `PATCH /teachers/:userId/class-course-assignments`. Omitted fields are
- * left unchanged; a provided array REPLACES the teacher's current list, so send
- * the full intended list. Every id must belong to the school.
- */
-export interface TeacherAssignmentsPayload {
-  assignedClasses?: string[];
-  assignedCourses?: string[];
-  isFormTeacher?: boolean;
-}
 
 const teacherPath = (userId: string, suffix: string) => `/teachers/${encodeURIComponent(userId)}/${suffix}`;
 

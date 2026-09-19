@@ -10,6 +10,23 @@
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
 import { getClasses as getSchoolClasses } from "@/app/services/school.service";
+import type {
+  AssignTeacherPayload,
+  CreateClassPayload,
+  CreateStudentProfilePayload,
+  RegisterUserPayload,
+  UpdateClassPayload,
+  UpdateStudentPayload,
+  UpdateStudentStatusPayload,
+} from "@/types/apiPayloads";
+
+// Request payloads are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
+// for the callers that already import them from here.
+export type {
+  CreateClassPayload,
+  CreateStudentProfilePayload,
+  UpdateStudentPayload,
+} from "@/types/apiPayloads";
 
 interface StudentUser {
   _id: string;
@@ -40,19 +57,6 @@ interface AssignedCourse {
   __v: number;
   schoolId?: string;
   id: string;
-}
-
-/**
- * Body for `POST /classes`, mirroring the backend `CreateClassDto`. The API
- * runs whitelist + forbidNonWhitelisted, so nothing else may be sent — the old
- * `Omit<Class, "_id">` asked callers for a populated school and course list
- * that the endpoint would have rejected.
- */
-export interface CreateClassPayload {
-  name: string;
-  gradeLevel: string;
-  classDescription: string;
-  classCapacity: string;
 }
 
 /** A class as the `/classes` endpoint returns it to the student and class pages. */
@@ -119,13 +123,6 @@ export interface Class {
   // The class endpoints return extra populated fields (students, courses,
   // subjects) whose shape differs per route; callers narrow what they read.
   [key: string]: unknown;
-}
-
-interface UpdateClassData {
-  name: string;
-  gradeLevel?: string;
-  classDescription: string;
-  classCapacity: string;
 }
 
 interface ParentContact {
@@ -210,21 +207,6 @@ export interface GetStudentsResponse {
   meta: PaginationMeta;
 }
 
-/**
- * Body for `POST /auth/register` when enrolling a student.
- *
- * `password` is deliberately absent: the API generates a temporary one and
- * emails a set-password link, and returns it as `temporaryPassword`.
- */
-export interface RegisterStudentPayload {
-  email: string;
-  role: "student";
-  schoolId: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-}
-
 /** What `POST /auth/register` answers with. */
 export interface RegisterStudentResponse {
   message: string;
@@ -235,48 +217,18 @@ export interface RegisterStudentResponse {
 }
 
 /** The relationships the backend's `ParentRelationship` enum accepts. */
-export type ParentRelationship = "MOTHER" | "FATHER" | "GUARDIAN" | "OTHER";
+export type ParentRelationship = CreateStudentProfilePayload["parentContact"]["relationship"];
 
-/** Body for `POST /students` (backend `CreateStudentDto`). */
-export interface CreateStudentProfilePayload {
-  userId: string;
-  classId: string;
-  gradeLevel: string;
-  parentContact: {
-    fullName: string;
-    phoneNumber: string;
-    email: string;
-    relationship: ParentRelationship;
-  };
-  /** The student's password, so the onboarding email quotes the real one. */
-  password?: string;
-  admissionNumber?: string;
-}
-
-/** Personal fields of `UpdateStudentDto.userInfo`. */
-export interface UpdateStudentUserInfo {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  email?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  userAvatar?: string;
-}
-
-/** Body for `PUT /students/:id` (backend `UpdateStudentDto`). */
-export interface UpdateStudentPayload {
-  userInfo?: UpdateStudentUserInfo;
-  classId?: string;
-  gradeLevel?: string;
-  parentContact?: {
-    fullName: string;
-    phoneNumber: string;
-    email: string;
-    relationship: ParentRelationship;
-  };
-  isActive?: boolean;
-}
+/**
+ * Body for `POST /auth/register` when enrolling a student.
+ *
+ * `password` is deliberately absent: the API generates a temporary one and
+ * emails a set-password link, and returns it as `temporaryPassword`.
+ */
+export type RegisterStudentPayload = Omit<RegisterUserPayload, "role" | "password"> & {
+  role: "student";
+  password?: never;
+};
 
 /**
  * Creates the student's login account.
@@ -399,13 +351,15 @@ export const studentService = {
  * @param updateData - The fields to change.
  * @returns The updated class.
  */
-export const updateClass = async (classId: string, updateData: UpdateClassData): Promise<Class> =>
+export const updateClass = async (classId: string, updateData: UpdateClassPayload): Promise<Class> =>
   api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}`, {
     name: updateData.name,
-    ...(updateData.gradeLevel ? { gradeLevel: updateData.gradeLevel } : {}),
+    // `PUT /classes/:id` validates the whole `CreateClassDto`: leaving
+    // `gradeLevel` out is a 400, so it is always sent.
+    gradeLevel: updateData.gradeLevel,
     classDescription: updateData.classDescription,
     classCapacity: updateData.classCapacity,
-  });
+  } satisfies UpdateClassPayload);
 
 /**
  * Makes a teacher the form teacher of a class.
@@ -415,7 +369,9 @@ export const updateClass = async (classId: string, updateData: UpdateClassData):
  * @returns The updated class.
  */
 export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> =>
-  api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}/assign-teacher`, { teacherId });
+  api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}/assign-teacher`, {
+    teacherId,
+  } satisfies AssignTeacherPayload);
 
 /**
  * Deletes a class.
@@ -464,7 +420,7 @@ export const updateStudentStatus = async (
 ): Promise<{ message: string }> => {
   const body = await api.put<{ message?: string } | null>(
     `${API_ENDPOINTS.BASE_URL}/students/${encodeURIComponent(studentId)}/status`,
-    { isActive },
+    { isActive } satisfies UpdateStudentStatusPayload,
   );
   return {
     message: body?.message ?? `Student ${isActive ? "activated" : "deactivated"} successfully`,

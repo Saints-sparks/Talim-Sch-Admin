@@ -104,6 +104,8 @@ export type TeacherAssignmentsPayload = RequestBody<
 export type UpdateTeacherStatusPayload = RequestBody<"/users/teachers/{id}/status", "put">;
 /** Body of `POST /students`. */
 export type CreateStudentProfilePayload = RequestBody<"/students", "post">;
+/** Body of `PUT /students/{id}/status`. */
+export type UpdateStudentStatusPayload = RequestBody<"/students/{id}/status", "put">;
 /** Body of `PUT /students/{id}`. */
 export type UpdateStudentPayload = RequestBody<"/students/{id}", "put">;
 /** Body of `POST /classes`. */
