@@ -1,11 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import MessageOptionsDropdown from "./MessageDropDown";
-import { AttachmentGrid } from "@/components/chat-kit";
+import BubbleMenu from "./BubbleMenu";
+import MessageBody from "./MessageBody";
+import type { ChatReplyTo, ReplyDraft } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
-import type { ReplyTarget } from "@/types/chat.types";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 
 interface Attachment {
@@ -22,6 +22,7 @@ interface Attachment {
 
 interface MessageBubbleProps {
   msg: {
+    _id: string;
     senderType: string;
     avatar: string;
     sender: string;
@@ -36,49 +37,32 @@ interface MessageBubbleProps {
     error?: string;
     /** Local upload progress per attachment while sending. */
     uploadProgress?: number[];
+    replyTo?: ChatReplyTo;
+    isDeleted?: boolean;
     /** Tick state, for my own messages. */
     deliveryState?: DeliveryState;
   };
-  index: number;
   onRetry?: () => void;
   onDelete?: () => void;
-  openSubMenu: { index: number; type: string } | null;
-  toggleSubMenu: (index: number, type: string) => void;
-  setReplyingMessage: (msg: ReplyTarget) => void;
+  /** Start a reply to this message. */
+  onReply?: (reply: ReplyDraft) => void;
+  /** Present when this user may delete this message. */
+  onDeleteMessage?: () => Promise<void>;
+  /** Scroll to a quoted message; omitted for one that isn't loaded. */
+  onJump?: (messageId: string) => void;
 }
 
 export default function MessageBubble({
   msg,
-  index,
-  openSubMenu,
-  toggleSubMenu,
-  setReplyingMessage,
+  onReply,
+  onDeleteMessage,
+  onJump,
   onRetry,
   onDelete,
 }: MessageBubbleProps) {
   const isCurrentUser = msg.senderType === "self" || msg.senderType === "me";
   const initials = msg.initials || getUserInitials(msg.sender);
   const bgColor = msg.color || generateColorFromString(msg.sender);
-
-  const renderContent = () => {
-    const hasAttachments = Boolean(msg.attachments?.length);
-    return (
-      <div className="flex flex-col gap-1.5">
-        {hasAttachments && (
-          <AttachmentGrid
-            attachments={msg.attachments ?? []}
-            tone={isCurrentUser ? "inverted" : "default"}
-            pending={Boolean(msg.status)}
-            failed={msg.status === "failed"}
-            progress={msg.status === "pending" ? msg.uploadProgress : undefined}
-          />
-        )}
-        {msg.text && (
-          <p className="text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div
@@ -106,25 +90,24 @@ export default function MessageBubble({
         )}
 
         <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
-          {!isCurrentUser && (
-            <span className="text-xs text-gray-600 mb-1 ml-1 font-medium">{msg.sender}</span>
-          )}
-
           <Card
-            className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative ${
+            className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative group ${
               isCurrentUser
                 ? "bg-blue-500 text-white rounded-2xl rounded-br-md"
                 : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-bl-md"
             }`}
           >
-            <MessageOptionsDropdown
-              index={index}
+            <BubbleMenu
               msg={msg}
-              openSubMenu={openSubMenu}
-              toggleSubMenu={toggleSubMenu}
-              setReplyingMessage={setReplyingMessage}
+              isMe={isCurrentUser}
+              onReply={
+                onReply
+                  ? () => onReply({ messageId: msg._id, senderName: msg.sender, preview: msg.text || (msg.attachments?.length ? "Attachment" : "") })
+                  : undefined
+              }
+              onDeleteMessage={onDeleteMessage}
             />
-            {renderContent()}
+            <MessageBody msg={msg} isMe={isCurrentUser} onJump={onJump} />
           </Card>
 
           <div

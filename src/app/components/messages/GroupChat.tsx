@@ -8,13 +8,13 @@ import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import GroupMessageBubble from "./GroupMessageBubble";
-import ReplyPreview from "./ReplyPreview";
+import { ReplyBar, type ChatReplyTo, type ReplyDraft } from "@/components/chat-kit";
+import { useMessageActions } from "./useMessageActions";
 import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
-import type { ReplyTarget } from "@/types/chat.types";
 import {
   deliveryState,
   latestOwnStoredMessageId,
@@ -39,6 +39,8 @@ interface Message {
   initials: string;
   duration?: number;
   attachments?: MsgAttachment[];
+  replyTo?: ChatReplyTo;
+  isDeleted?: boolean;
   status?: "pending" | "failed";
   error?: string;
   uploadProgress?: number[];
@@ -47,10 +49,8 @@ interface Message {
 }
 
 interface GroupChatProps {
-  replyingMessage: ReplyTarget | null;
-  setReplyingMessage: (msg: ReplyTarget | null) => void;
-  openSubMenu: { index: number; type: string } | null;
-  toggleSubMenu: (index: number, type: string) => void;
+  replyingMessage: ReplyDraft | null;
+  setReplyingMessage: (msg: ReplyDraft | null) => void;
   room: DisplayChatRoom;
   onBack?: () => void;
   chats: UseChatsReturn;
@@ -59,8 +59,6 @@ interface GroupChatProps {
 export default function GroupChat({
   replyingMessage,
   setReplyingMessage,
-  openSubMenu,
-  toggleSubMenu,
   room,
   onBack,
   chats,
@@ -82,7 +80,8 @@ export default function GroupChat({
     deleteFailedMessage,
   } = chats;
   const roomId = room.roomId;
-  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(chats, roomId);
+  const clearReply = useCallback(() => setReplyingMessage(null), [setReplyingMessage]);
+  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(chats, roomId, replyingMessage, clearReply);
 
   const getMessageDayKey = useCallback((value?: string) => {
     if (!value) return "";
@@ -146,6 +145,8 @@ export default function GroupChat({
           initials: getUserInitials(senderName),
           duration: msg.duration,
           attachments: msg.attachments,
+          replyTo: msg.replyTo,
+          isDeleted: msg.isDeleted,
           status: msg.status,
           error: msg.error,
           uploadProgress: msg.uploadProgress,
@@ -154,6 +155,8 @@ export default function GroupChat({
         };
     });
   }, [chatMessages, currentUserId, currentUserName, participantById]);
+
+  const { deleteHandlerFor, jumpFor } = useMessageActions(chats, roomId, true, messages);
 
   const { onScroll } = useThreadScroll({
     containerRef: messagesContainerRef,
@@ -244,7 +247,7 @@ export default function GroupChat({
             const showDateSeparator = idx === 0 || currentDayKey !== prevDayKey;
 
             return (
-              <div key={msg.clientMessageId || msg._id}>
+              <div key={msg.clientMessageId || msg._id} id={`msg-${msg._id}`} className="transition-colors duration-500">
                 {showDateSeparator && (
                   <div className="flex items-center justify-center my-3">
                     <span className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
@@ -254,10 +257,9 @@ export default function GroupChat({
                 )}
                 <GroupMessageBubble
                   msg={msg}
-                  index={idx}
-                  openSubMenu={openSubMenu}
-                  toggleSubMenu={toggleSubMenu}
-                  setReplyingMessage={setReplyingMessage}
+                  onReply={setReplyingMessage}
+                  onDeleteMessage={deleteHandlerFor(msg)}
+                  onJump={jumpFor(msg)}
                   onRetry={msg.clientMessageId ? () => retryMessage(msg.clientMessageId!) : undefined}
                   onDelete={msg.clientMessageId ? () => deleteFailedMessage(msg.clientMessageId!) : undefined}
                 />
@@ -268,12 +270,12 @@ export default function GroupChat({
       </div>
 
       {replyingMessage && (
-        <ReplyPreview replyingMessage={replyingMessage} onCancel={() => setReplyingMessage(null)} />
+        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-2 sm:mx-4" />
       )}
 
       <MessageInput
         value={draft}
-        onChange={(e) => updateDraft(e.target.value)}
+        onValueChange={updateDraft}
         onSend={sendText}
         onSendFiles={sendFiles}
         onSendVoice={sendVoice}

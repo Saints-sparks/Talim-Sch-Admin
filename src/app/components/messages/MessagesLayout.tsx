@@ -9,21 +9,17 @@ import ThreadNotices from "./ThreadNotices";
 import { useChats } from "@/hooks/useChats";
 import { ChatsProvider } from "@/context/ChatsContext";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
-import type { ReplyTarget } from "@/types/chat.types";
+import type { ReplyDraft } from "@/components/chat-kit";
 import { chatRoomUrl } from "@/lib/chat/openRoom";
 
 interface MessagesLayoutProps {
-  replyingMessage: ReplyTarget | null;
-  setReplyingMessage: (msg: ReplyTarget | null) => void;
-  openSubMenu: { index: number; type: string } | null;
-  toggleSubMenu: (index: number, type: string) => void;
+  replyingMessage: ReplyDraft | null;
+  setReplyingMessage: (msg: ReplyDraft | null) => void;
 }
 
 export default function MessagesLayout({
   replyingMessage,
   setReplyingMessage,
-  openSubMenu,
-  toggleSubMenu,
 }: MessagesLayoutProps) {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -107,8 +103,6 @@ export default function MessagesLayout({
   const threadProps = {
     replyingMessage,
     setReplyingMessage,
-    openSubMenu,
-    toggleSubMenu,
     onBack: handleBackToChats,
     chats,
   };

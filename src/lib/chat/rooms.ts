@@ -411,3 +411,23 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
     createdBy: room.createdBy || undefined,
   };
 }
+
+/** Preview shown for a room whose last message was deleted. */
+export const DELETED_PREVIEW = "This message was deleted";
+
+/**
+ * A message in `roomId` was deleted: when it is the room's last message, the
+ * list previews it as deleted. Returns the same array otherwise.
+ *
+ * @param rooms - The room list.
+ * @param roomId - The room the message was in.
+ * @param messageId - The deleted message's `_id`.
+ */
+export function applyMessageDeletedToRooms(rooms: ChatRoom[], roomId: string, messageId: string): ChatRoom[] {
+  const at = rooms.findIndex((r) => r._id === roomId);
+  const last = at === -1 ? undefined : rooms[at].lastMessage;
+  if (!last || last._id !== messageId || last.preview === DELETED_PREVIEW) return rooms;
+  const next = rooms.slice();
+  next[at] = { ...rooms[at], lastMessage: { ...last, preview: DELETED_PREVIEW, content: DELETED_PREVIEW } };
+  return next;
+}

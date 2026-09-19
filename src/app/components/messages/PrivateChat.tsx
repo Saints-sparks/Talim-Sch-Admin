@@ -7,12 +7,12 @@ import type { DisplayChatRoom } from "@/lib/chat/rooms";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageBubble from "./PrivateMessageBubble";
-import ReplyPreview from "./ReplyPreview";
+import { ReplyBar, type ChatReplyTo, type ReplyDraft } from "@/components/chat-kit";
+import { useMessageActions } from "./useMessageActions";
 import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { Loader2, MessageCircle } from "lucide-react";
-import type { ReplyTarget } from "@/types/chat.types";
 import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
 type MsgAttachment = ChatAttachment;
@@ -32,6 +32,8 @@ interface Message {
   color: string;
   duration?: number;
   attachments?: MsgAttachment[];
+  replyTo?: ChatReplyTo;
+  isDeleted?: boolean;
   status?: "pending" | "failed";
   error?: string;
   uploadProgress?: number[];
@@ -39,10 +41,8 @@ interface Message {
 }
 
 interface PrivateChatProps {
-  replyingMessage: ReplyTarget | null;
-  setReplyingMessage: (msg: ReplyTarget | null) => void;
-  openSubMenu: { index: number; type: string } | null;
-  toggleSubMenu: (index: number, type: string) => void;
+  replyingMessage: ReplyDraft | null;
+  setReplyingMessage: (msg: ReplyDraft | null) => void;
   room: DisplayChatRoom;
   onBack?: () => void; // Navigation back to chat list
   chats: UseChatsReturn;
@@ -51,8 +51,6 @@ interface PrivateChatProps {
 export default function PrivateChat({
   replyingMessage,
   setReplyingMessage,
-  openSubMenu,
-  toggleSubMenu,
   room,
   onBack,
   chats,
@@ -72,7 +70,13 @@ export default function PrivateChat({
     retryMessage,
     deleteFailedMessage,
   } = chats;
-  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(chats, room.roomId);
+  const clearReply = useCallback(() => setReplyingMessage(null), [setReplyingMessage]);
+  const { draft, updateDraft, sendText, sendFiles, sendVoice } = useChatThread(
+    chats,
+    room.roomId,
+    replyingMessage,
+    clearReply
+  );
 
   const participantById = useMemo(() => {
     const map = new Map<string, DisplayChatRoom["participants"][number]>();
@@ -106,6 +110,8 @@ export default function PrivateChat({
           avatar: msg.senderAvatar || participant?.userAvatar || "",
           duration: msg.duration,
           attachments: msg.attachments,
+          replyTo: msg.replyTo,
+          isDeleted: msg.isDeleted,
           status: msg.status,
           error: msg.error,
           uploadProgress: msg.uploadProgress,
@@ -114,6 +120,8 @@ export default function PrivateChat({
       }),
     [chatMessages, currentUserId, participantById, room.displayName, otherUserId]
   );
+
+  const { deleteHandlerFor, jumpFor } = useMessageActions(chats, room.roomId, false, messages);
 
   const { onScroll } = useThreadScroll({
     containerRef: messagesContainerRef,
@@ -234,17 +242,21 @@ export default function PrivateChat({
               </div>
 
               {/* Messages for this date */}
-              {group.messages.map((msg, index) => (
-                <MessageBubble
+              {group.messages.map((msg) => (
+                <div
                   key={msg.clientMessageId || msg._id}
-                  msg={msg}
-                  index={index}
-                  openSubMenu={openSubMenu}
-                  toggleSubMenu={toggleSubMenu}
-                  setReplyingMessage={setReplyingMessage}
-                  onRetry={msg.clientMessageId ? () => retryMessage(msg.clientMessageId!) : undefined}
-                  onDelete={msg.clientMessageId ? () => deleteFailedMessage(msg.clientMessageId!) : undefined}
-                />
+                  id={`msg-${msg._id}`}
+                  className="transition-colors duration-500"
+                >
+                  <MessageBubble
+                    msg={msg}
+                    onReply={setReplyingMessage}
+                    onDeleteMessage={deleteHandlerFor(msg)}
+                    onJump={jumpFor(msg)}
+                    onRetry={msg.clientMessageId ? () => retryMessage(msg.clientMessageId!) : undefined}
+                    onDelete={msg.clientMessageId ? () => deleteFailedMessage(msg.clientMessageId!) : undefined}
+                  />
+                </div>
               ))}
             </div>
           ))
@@ -252,12 +264,12 @@ export default function PrivateChat({
       </div>
 
       {replyingMessage && (
-        <ReplyPreview replyingMessage={replyingMessage} onCancel={() => setReplyingMessage(null)} />
+        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-2 sm:mx-4" />
       )}
 
       <MessageInput
         value={draft}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateDraft(e.target.value)}
+        onValueChange={updateDraft}
         onSend={sendText}
         onSendFiles={sendFiles}
         onSendVoice={sendVoice}

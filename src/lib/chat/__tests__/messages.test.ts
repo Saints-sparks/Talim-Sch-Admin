@@ -2,6 +2,7 @@
  * Message normalizer, thread merge and optimistic-send state transitions.
  */
 import {
+  applyMessageDeleted,
   buildPendingMessage,
   createClientMessageId,
   isDelivered,
@@ -215,5 +216,43 @@ describe("isNearBottom", () => {
   it("is true within 120px of the bottom", () => {
     expect(isNearBottom({ scrollHeight: 1000, scrollTop: 400, clientHeight: 500 })).toBe(true);
     expect(isNearBottom({ scrollHeight: 1000, scrollTop: 300, clientHeight: 500 })).toBe(false);
+  });
+});
+
+describe("replies and deleted messages", () => {
+  it("reads the server's replyTo snapshot", () => {
+    const message = normalizeMessage(
+      view({
+        replyTo: { messageId: "m0", senderId: ME, senderName: "Sam Admin", preview: "Photo", type: "image" },
+      })
+    );
+    expect(message.replyTo).toEqual({
+      messageId: "m0",
+      senderId: ME,
+      senderName: "Sam Admin",
+      preview: "Photo",
+      type: "image",
+    });
+    expect(normalizeMessage(view()).replyTo).toBeUndefined();
+    expect(normalizeMessage(view({ replyTo: { preview: "no id" } })).replyTo).toBeUndefined();
+  });
+
+  it("flags a deleted message", () => {
+    expect(normalizeMessage(view({ isDeleted: true, text: "" })).isDeleted).toBe(true);
+    expect(normalizeMessage(view()).isDeleted).toBeUndefined();
+  });
+
+  it("applyMessageDeleted blanks the message in place and is a no-op the second time", () => {
+    const withMedia = normalizeMessage(
+      view({ attachments: [{ url: "https://res.cloudinary.com/x/a.png", type: "image", name: "a.png" }] })
+    );
+    const other = normalizeMessage(view({ _id: "m2", text: "Second" }));
+    const thread = [withMedia, other];
+
+    const next = applyMessageDeleted(thread, "m1");
+    expect(next[0]).toMatchObject({ _id: "m1", content: "", attachments: [], isDeleted: true });
+    expect(next[1]).toBe(other);
+    expect(applyMessageDeleted(next, "m1")).toBe(next);
+    expect(applyMessageDeleted(thread, "missing")).toBe(thread);
   });
 });

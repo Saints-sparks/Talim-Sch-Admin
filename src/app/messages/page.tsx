@@ -1,28 +1,11 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import type { ReplyTarget } from "@/types/chat.types";
+import type { ReplyDraft } from "@/components/chat-kit";
 import MessagesLayout from "../components/messages/MessagesLayout";
 
 export default function AdminChatUI() {
-  const [replyingMessage, setReplyingMessage] = useState<ReplyTarget | null>(null);
-
-  const [openSubMenu, setOpenSubMenu] = useState<{
-    index: number;
-    type: string;
-  } | null>(null);
-
-  const toggleSubMenu = (index: number, type: string) => {
-    if (
-      openSubMenu &&
-      openSubMenu.index === index &&
-      openSubMenu.type === type
-    ) {
-      setOpenSubMenu(null);
-    } else {
-      setOpenSubMenu({ index, type });
-    }
-  };
+  const [replyingMessage, setReplyingMessage] = useState<ReplyDraft | null>(null);
 
   return (
     <div
@@ -31,12 +14,7 @@ export default function AdminChatUI() {
     >
       {/* MessagesLayout reads ?room= for deep links. */}
       <Suspense fallback={null}>
-        <MessagesLayout
-          replyingMessage={replyingMessage}
-          setReplyingMessage={setReplyingMessage}
-          openSubMenu={openSubMenu}
-          toggleSubMenu={toggleSubMenu}
-        />
+        <MessagesLayout replyingMessage={replyingMessage} setReplyingMessage={setReplyingMessage} />
       </Suspense>
     </div>
   );

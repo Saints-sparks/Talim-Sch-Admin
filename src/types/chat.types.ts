@@ -1,3 +1,4 @@
+import type { ChatReplyTo } from "@/components/chat-kit";
 // types/chat.types.ts
 
 export interface User {
@@ -110,6 +111,10 @@ export interface ChatMessage {
   error?: string;
   /** Local only: upload progress (0–1) per attachment while sending. */
   uploadProgress?: number[];
+  /** The message this one replies to (a server-side snapshot). */
+  replyTo?: ChatReplyTo;
+  /** Deleted: `content` and `attachments` are blank; shown as a placeholder. */
+  isDeleted?: boolean;
 }
 
 export interface ChatAttachment {
@@ -129,6 +134,7 @@ export interface ChatAttachment {
 export interface SendMessageDto {
   chatRoomId: string;
   text: string;
+  replyToId?: string;
   type?: string;
   duration?: number;
   clientMessageId?: string;
@@ -172,12 +178,6 @@ export interface UnreadCountResponse {
 export interface SearchChatRoomsParams {
   searchTerm?: string;
   type?: ChatRoomType;
-}
-
-/** The parts of a message the reply preview shows — what "Reply" hands upward. */
-export interface ReplyTarget {
-  sender: string;
-  text?: string;
 }
 
 /** A chat room member, normalised from whichever shape the API or socket sent. */

@@ -22,10 +22,12 @@ import {
   markMessagePending,
   mergeMessages,
   newestStoredMessageId,
+  applyMessageDeleted,
   normalizeMessage,
   removeLocalMessage,
 } from "@/lib/chat/messages";
 import {
+  applyMessageDeletedToRooms,
   applyParticipantsChanged,
   applyRoomActivity,
   applyRoomUpdated,
@@ -47,6 +49,7 @@ import {
   MAX_FILES_PER_MESSAGE,
   type AttachmentKind,
   type ChatUploadFn,
+  type ReplyDraft,
   type UploadItem,
 } from "@/components/chat-kit";
 import { logger } from "@/lib/logger";
@@ -64,6 +67,8 @@ export interface SendMessageInput {
   files?: File[];
   /** A recorded voice note (`useVoiceRecorder`). */
   voice?: { file: File; duration: number };
+  /** The message this one replies to. */
+  replyTo?: ReplyDraft;
 }
 
 /**
@@ -108,6 +113,8 @@ export interface UseChatsReturn {
   sendMessage: (input: SendMessageInput) => string | null;
   retryMessage: (clientMessageId: string) => void;
   deleteFailedMessage: (clientMessageId: string) => void;
+  /** Deletes a stored message (mine, or any if I can manage the room). Rejects with the server's message. */
+  deleteMessage: (roomId: string, messageId: string) => Promise<void>;
   /** Loads the previous page. Resolves true when older messages were added. */
   loadMoreMessages: () => Promise<boolean>;
   getDraft: (roomId: string) => string;
@@ -153,6 +160,8 @@ interface OutboxEntry {
   duration?: number;
   /** Local object URLs of the pending bubble's previews. */
   previewUrls: string[];
+  /** The message being replied to; kept so a retry sends the same reply. */
+  replyToId?: string;
 }
 
 function revokePreviews(entry: OutboxEntry) {
@@ -583,6 +592,7 @@ export const useChats = (): UseChatsReturn => {
           text: entry.text,
           type: entry.type,
           clientMessageId,
+          ...(entry.replyToId ? { replyToId: entry.replyToId } : {}),
           ...(attachments.length ? { attachments } : {}),
           ...(entry.type === "voice" && entry.duration !== undefined ? { duration: entry.duration } : {}),
         };
@@ -654,6 +664,7 @@ export const useChats = (): UseChatsReturn => {
         items: files.map((file, i) => ({ file, kind: input.voice ? "audio" : kinds[i], duration })),
         duration,
         previewUrls,
+        replyToId: input.replyTo?.messageId,
       });
       mergeInto(roomId, [
         {
@@ -669,6 +680,9 @@ export const useChats = (): UseChatsReturn => {
             duration,
           }),
           uploadProgress: files.length ? files.map(() => 0) : undefined,
+          replyTo: input.replyTo
+            ? { messageId: input.replyTo.messageId, senderName: input.replyTo.senderName, preview: input.replyTo.preview }
+            : undefined,
         },
       ]);
       void flushMessage(clientMessageId);
@@ -702,6 +716,20 @@ export const useChats = (): UseChatsReturn => {
       });
     },
     [updateThread]
+  );
+
+  const deleteMessage = useCallback(
+    async (roomId: string, messageId: string) => {
+      await chatService.deleteMessage(messageId);
+      // The server also sends `message-deleted`; applying it here makes the
+      // deleter's own screen update at once, and applying twice is a no-op.
+      updateThread(roomId, (t) => {
+        const messages = applyMessageDeleted(t.messages, messageId);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+      setChatRooms((prev) => applyMessageDeletedToRooms(prev, roomId, messageId));
+    },
+    [updateThread, setChatRooms]
   );
 
   /** Sends everything still pending (typed while offline). */
@@ -986,6 +1014,18 @@ export const useChats = (): UseChatsReturn => {
       });
     });
 
+    // A message in one of my rooms was deleted.
+    const unsubMessageDeleted = subscribe("message-deleted", (data: { roomId?: unknown; messageId?: unknown }) => {
+      const roomId = idOf(data?.roomId);
+      const messageId = idOf(data?.messageId);
+      if (!roomId || !messageId) return;
+      updateThread(roomId, (t) => {
+        const messages = applyMessageDeleted(t.messages, messageId);
+        return messages === t.messages ? t : { ...t, messages };
+      });
+      setChatRooms((prev) => applyMessageDeletedToRooms(prev, roomId, messageId));
+    });
+
     // I read a room on another device.
     const unsubRoomRead = subscribe("room-read", (data: ReadEvent) => {
       const roomId = idOf(data?.roomId);
@@ -1041,6 +1081,7 @@ export const useChats = (): UseChatsReturn => {
       unsubActivity();
       unsubRooms();
       unsubMessagesRead();
+      unsubMessageDeleted();
       unsubRoomRead();
       unsubRoomUpdated();
       unsubParticipants();
@@ -1131,6 +1172,7 @@ export const useChats = (): UseChatsReturn => {
     sendMessage,
     retryMessage,
     deleteFailedMessage,
+    deleteMessage,
     loadMoreMessages,
     getDraft,
     setDraft,

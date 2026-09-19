@@ -598,6 +598,19 @@ async sendMessage(data: SendMessageDto): Promise<ChatMessage> {
   }
 
   /**
+   * Deletes a message (its sender, or whoever can manage the room). The text
+   * and attachments are blanked and members get `message-deleted`. The error
+   * message is the server's, safe to show.
+   * DELETE /chat/messages/{messageId}
+   */
+  async deleteMessage(messageId: string): Promise<void> {
+    const response = await apiClient.delete(`${this.baseUrl}/messages/${messageId}`);
+    if (!response.ok) {
+      throw await this.toApiError(response);
+    }
+  }
+
+  /**
    * Update a group's name (1–80), description (≤ 500) or picture. `null` / `''`
    * clears description and picture. The error message is the server's, safe to show.
    * PATCH /chat/rooms/{roomId}

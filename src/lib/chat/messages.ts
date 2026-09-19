@@ -122,6 +122,20 @@ function rec(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+/** The server's `replyTo` snapshot, or undefined when absent or malformed. */
+function normalizeReplyTo(raw: unknown): ChatMessage["replyTo"] {
+  const r = rec(raw);
+  const messageId = idOf(r.messageId);
+  if (!messageId) return undefined;
+  return {
+    messageId,
+    senderId: idOf(r.senderId) || undefined,
+    senderName: typeof r.senderName === "string" && r.senderName ? r.senderName : "Unknown",
+    preview: typeof r.preview === "string" ? r.preview : "",
+    type: typeof r.type === "string" ? r.type : undefined,
+  };
+}
+
 export function normalizeMessage(raw: unknown, fallbackRoomId = ""): ChatMessage {
   const m = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const sender = m.sender && typeof m.sender === "object" ? rec(m.sender) : undefined;
@@ -162,6 +176,8 @@ export function normalizeMessage(raw: unknown, fallbackRoomId = ""): ChatMessage
     updatedAt: toDate(m.updatedAt ?? m.createdAt ?? m.timestamp),
     status: m.status === "pending" || m.status === "failed" ? m.status : undefined,
     error: typeof m.error === "string" ? m.error : undefined,
+    replyTo: normalizeReplyTo(m.replyTo),
+    isDeleted: m.isDeleted === true ? true : undefined,
   };
 }
 
@@ -290,4 +306,20 @@ export function isNearBottom(
   threshold = 120
 ): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+}
+
+/**
+ * Marks a message deleted, the way the server stores it: blank text and
+ * attachments, `isDeleted`. Returns the same array when the message isn't
+ * loaded or is already deleted.
+ *
+ * @param messages - The thread.
+ * @param messageId - The stored message's `_id`.
+ */
+export function applyMessageDeleted(messages: ChatMessage[], messageId: string): ChatMessage[] {
+  const at = messages.findIndex((m) => m._id === messageId);
+  if (at === -1 || messages[at].isDeleted) return messages;
+  const next = messages.slice();
+  next[at] = { ...messages[at], content: "", attachments: [], isDeleted: true, uploadProgress: undefined };
+  return next;
 }

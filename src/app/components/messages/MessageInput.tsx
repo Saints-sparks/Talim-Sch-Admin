@@ -1,11 +1,11 @@
 "use client";
 import { useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Mic, SendHorizontal, Paperclip, Loader2, X } from "lucide-react";
 import {
   ATTACHMENT_ACCEPT,
   ComposerAttachments,
+  ComposerTextarea,
   addToSelection,
   formatDuration,
   useVoiceRecorder,
@@ -14,7 +14,7 @@ import {
 
 interface MessageInputProps {
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onValueChange?: (value: string) => void;
   onSend?: () => void;
   /** Sends the picked files, with whatever was typed as their caption. Return false to keep them. */
   onSendFiles?: (files: File[], caption: string) => boolean | void;
@@ -26,7 +26,7 @@ interface MessageInputProps {
 
 export default function MessageInput({
   value,
-  onChange,
+  onValueChange,
   onSend,
   onSendFiles,
   onSendVoice,
@@ -46,9 +46,9 @@ export default function MessageInput({
   // Stops without sending (and releases the mic) when the chat unmounts or the room changes.
   const recorder = useVoiceRecorder({ onAutoStop: sendRecording });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (onChange) onChange(e);
-    else setMessage(e.target.value);
+  const handleChange = (text: string) => {
+    if (onValueChange) onValueChange(text);
+    else setMessage(text);
   };
 
   const currentMessage = value !== undefined ? value : message;
@@ -68,11 +68,9 @@ export default function MessageInput({
     if (hasText && onSend) onSend();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && canSend && !busy) {
-      e.preventDefault();
-      handleSend();
-    }
+  // Enter sends with a mouse; on a touch screen it is a new line and the Send button sends.
+  const handleSubmit = () => {
+    if (canSend && !busy) handleSend();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,13 +160,14 @@ export default function MessageInput({
             </Button>
 
             <div className="flex-1">
-              <Input
+              <ComposerTextarea
+                aria-label="Message"
                 placeholder={isSending ? "Sending..." : hasFiles ? "Add a caption..." : placeholder}
-                className="border border-gray-300 rounded-full bg-gray-50 focus:bg-white focus:border-blue-500 transition-colors"
+                className="block w-full border border-gray-300 rounded-2xl bg-gray-50 px-4 py-2 text-sm leading-6 outline-none focus:bg-white focus:border-blue-500 transition-colors disabled:opacity-60"
                 value={currentMessage}
-                onChange={handleChange}
+                onValueChange={handleChange}
+                onSubmit={handleSubmit}
                 disabled={busy}
-                onKeyDown={handleKeyDown}
               />
             </div>
           </>

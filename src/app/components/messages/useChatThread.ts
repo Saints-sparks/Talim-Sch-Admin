@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { UseChatsReturn } from "@/hooks/useChats";
+import type { ReplyDraft } from "@/components/chat-kit";
 
 /**
  * Composer state for one open room: the draft (kept per room, so switching
@@ -9,7 +10,13 @@ import type { UseChatsReturn } from "@/hooks/useChats";
  * optimistic — the text moves into a pending bubble, so the box clears at
  * once and a failed send keeps the text in its "Not sent" bubble.
  */
-export function useChatThread(chats: UseChatsReturn, roomId: string | undefined) {
+export function useChatThread(
+  chats: UseChatsReturn,
+  roomId: string | undefined,
+  /** The message being replied to; cleared as soon as a send has started. */
+  reply: ReplyDraft | null = null,
+  clearReply: () => void = () => {}
+) {
   const { getDraft, setDraft, sendMessage } = chats;
   const [draft, setDraftState] = useState(() => (roomId ? getDraft(roomId) : ""));
 
@@ -23,26 +30,30 @@ export function useChatThread(chats: UseChatsReturn, roomId: string | undefined)
 
   const sendText = useCallback(() => {
     if (!roomId || !draft.trim()) return;
-    if (sendMessage({ roomId, text: draft })) updateDraft("");
-  }, [roomId, draft, sendMessage, updateDraft]);
+    if (sendMessage({ roomId, text: draft, replyTo: reply ?? undefined })) {
+      updateDraft("");
+      clearReply();
+    }
+  }, [roomId, draft, reply, clearReply, sendMessage, updateDraft]);
 
   /** Sends picked files with whatever was typed as their caption. Returns false if nothing was sent. */
   const sendFiles = useCallback(
     (files: File[], caption: string) => {
       if (!roomId || files.length === 0) return false;
-      if (!sendMessage({ roomId, files, text: caption })) return false;
+      if (!sendMessage({ roomId, files, text: caption, replyTo: reply ?? undefined })) return false;
       updateDraft("");
+      clearReply();
       return true;
     },
-    [roomId, sendMessage, updateDraft]
+    [roomId, reply, clearReply, sendMessage, updateDraft]
   );
 
   const sendVoice = useCallback(
     (file: File, duration: number) => {
       if (!roomId) return;
-      sendMessage({ roomId, voice: { file, duration } });
+      if (sendMessage({ roomId, voice: { file, duration }, replyTo: reply ?? undefined })) clearReply();
     },
-    [roomId, sendMessage]
+    [roomId, reply, clearReply, sendMessage]
   );
 
   return { draft, updateDraft, sendText, sendFiles, sendVoice };

@@ -2,6 +2,8 @@
  * Room list: normalizer, live activity, ordering and the "other person".
  */
 import {
+  applyMessageDeletedToRooms,
+  DELETED_PREVIEW,
   applyRoomActivity,
   clearRoomUnread,
   mergeRoomList,
@@ -162,5 +164,35 @@ describe("chat alerts: is this room open?", () => {
     expect(toInAppPath("/messages?room=r1", "https://admin.talim.app")).toBe("/messages?room=r1");
     expect(toInAppPath("https://admin.talim.app/messages?room=r1", "https://admin.talim.app")).toBe("/messages?room=r1");
     expect(toInAppPath("https://evil.example/x", "https://admin.talim.app")).toBeNull();
+  });
+});
+
+describe("applyMessageDeletedToRooms", () => {
+  const withLast = (id: string, lastId: string) =>
+    normalizeRoom(
+      roomView(id, {
+        lastMessage: {
+          _id: lastId,
+          senderId: TEACHER,
+          senderName: "Tola Teacher",
+          type: "text",
+          preview: "See you",
+          createdAt: "2026-09-13T10:00:00Z",
+          content: "See you",
+        },
+      })
+    );
+
+  it("previews the room as deleted when its last message was the one deleted", () => {
+    const rooms = [withLast("r1", "m9")];
+    const next = applyMessageDeletedToRooms(rooms, "r1", "m9");
+    expect(next[0].lastMessage?.preview).toBe(DELETED_PREVIEW);
+    expect(applyMessageDeletedToRooms(next, "r1", "m9")).toBe(next);
+  });
+
+  it("leaves rooms alone when an older message was deleted", () => {
+    const rooms = [withLast("r1", "m9")];
+    expect(applyMessageDeletedToRooms(rooms, "r1", "m1")).toBe(rooms);
+    expect(applyMessageDeletedToRooms(rooms, "other", "m9")).toBe(rooms);
   });
 });
