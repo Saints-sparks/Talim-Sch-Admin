@@ -26,6 +26,9 @@ const ROUTE_PERMISSIONS: Array<[prefix: string, permission: PermissionValue]> = 
   ["/settings", Permission.MANAGE_SETTINGS],
 ];
 
+/** The route prefixes that need a permission, for tests and tooling that compare them with other maps. */
+export const PROTECTED_ROUTE_PREFIXES: readonly string[] = ROUTE_PERMISSIONS.map(([prefix]) => prefix);
+
 const SORTED = [...ROUTE_PERMISSIONS].sort((a, b) => b[0].length - a[0].length);
 
 /**
