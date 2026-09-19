@@ -8,7 +8,6 @@ import {
   ChatAttachment,
   CreateChatRoomDto,
   CreateGroupChatDto,
-  SendMessageDto,
   MessagesResponse,
   CursorMessagesResponse,
   SearchChatRoomsParams
