@@ -128,7 +128,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
   if (cards.length === 0) {
     return (
       <div className="mb-6 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-center">
-        <p className="text-sm text-gray-400 dark:text-slate-500">
+        <p className="text-sm text-gray-500 dark:text-slate-400">
           No metrics available for your current permissions.
         </p>
       </div>
@@ -154,7 +154,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
             {card.label}
           </div>
           {(card.sub1 || card.sub2) && (
-            <div className="text-xs text-gray-400 dark:text-slate-500 space-y-0.5 mb-3">
+            <div className="text-xs text-gray-500 dark:text-slate-400 space-y-0.5 mb-3">
               {card.sub1 && <div>{card.sub1}</div>}
               {card.sub2 && <div>{card.sub2}</div>}
             </div>

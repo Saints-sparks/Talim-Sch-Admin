@@ -121,7 +121,7 @@ export function Header() {
                     user?.lastName || ""
                   } avatar`}
                 />
-                <AvatarFallback className="bg-blue-500 text-white font-semibold">
+                <AvatarFallback className="bg-blue-600 text-white font-semibold">
                   {getUserInitials()}
                 </AvatarFallback>
               </Avatar>

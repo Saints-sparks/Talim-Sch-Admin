@@ -30,7 +30,7 @@ export const text = {
   /** Body copy. */
   body: "text-[#4A5568] dark:text-slate-300",
   /** A label or caption. */
-  muted: "text-[#929292] dark:text-slate-400",
+  muted: "text-[#6F6F6F] dark:text-slate-400",
   /** The brand colour, lightened for the dark theme. */
   brand: "text-[#003366] dark:text-sky-400",
 } as const;

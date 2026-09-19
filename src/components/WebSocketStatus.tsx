@@ -42,7 +42,7 @@ export const WebSocketStatus: React.FC = () => {
     <div className="flex items-center space-x-1 sm:space-x-2 text-xs">
       <span className="text-sm sm:text-lg">{getStatusIcon()}</span>
       <span className={`font-medium text-xs sm:text-sm ${
-        isConnected ? 'text-green-600' : 'text-gray-500'
+        isConnected ? 'text-green-700' : 'text-gray-500'
       }`}>
         {/* Show full text on desktop, shortened on mobile */}
         <span className="hidden sm:inline">{getStatusText()}</span>
