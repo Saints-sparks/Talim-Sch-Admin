@@ -4,40 +4,27 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { revokeWebPushOnSignOut } from "@/app/hooks/usePushNotifications";
 import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
-import { ApiError } from "@/lib/apiError";
 import { apiClient } from "@/lib/apiClient";
+import {
+  dispatchAuthChanged,
+  isAdminPortalRole,
+  loginFailure,
+  portalAccessDeniedMessage,
+  portalUserFromIntrospection,
+  userHasPermission,
+  type AuthUser as User,
+} from "@/lib/authPolicy";
+import {
+  clearStoredSession,
+  readStoredAccessToken,
+  readStoredUser,
+  saveEditedUser,
+  saveIntrospectedUser,
+  saveRefreshedToken,
+  saveRotatedToken,
+  saveSession,
+} from "@/lib/authStorage";
 import { sessionStore, extractSchoolId } from "@/lib/session";
-
-/** All roles allowed to access the school admin portal */
-const ADMIN_PORTAL_ROLES = ["school_admin", "school_sub_admin"] as const;
-type AdminPortalRole = (typeof ADMIN_PORTAL_ROLES)[number];
-
-interface User {
-  _id?: string;
-  userId: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  role: string;
-  schoolId?: string;
-  schoolName?: string;
-  schoolLogo?: string;
-  userAvatar?: string;
-  phoneNumber?: string;
-  isActive?: boolean;
-  isEmailVerified?: boolean;
-  studentId?: string | null;
-  classId?: string | null;
-  className?: string | null;
-  termId?: string;
-  onboardingCompleted?: boolean;
-  /** Granular permissions — empty = full access (primary school_admin) */
-  permissions?: string[];
-  /** Convenience flag set by introspect */
-  isSubAdmin?: boolean;
-  /** True while the account still has a temporary password; the API refuses other calls until it is replaced. */
-  mustChangePassword?: boolean;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -84,39 +71,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
-  const getStoredAccessToken = () =>
-    localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-
   const persistSession = (token: string, userData: User, keepSignedIn = true) => {
     setAccessTokenState(token);
     apiClient.setAccessToken(token);
     setUser(userData);
-
-    if (keepSignedIn) {
-      localStorage.setItem("accessToken", token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("keepSignedIn", "true");
-      sessionStorage.removeItem("accessToken");
-      sessionStorage.removeItem("user");
-    } else {
-      // Session-only: cleared automatically when the browser tab/window closes
-      sessionStorage.setItem("accessToken", token);
-      sessionStorage.setItem("user", JSON.stringify(userData));
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      localStorage.setItem("keepSignedIn", "false");
-    }
+    // Session-only sessions are cleared automatically when the tab closes.
+    saveSession(token, userData, keepSignedIn);
   };
 
   const clearSession = useCallback((redirectToLogin = false) => {
     setAccessTokenState(null);
     apiClient.setAccessToken(null);
     setUser(null);
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("keepSignedIn");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("user");
+    clearStoredSession();
 
     if (redirectToLogin && typeof window !== "undefined" && window.location.pathname !== "/") {
       window.location.assign("/");
@@ -128,15 +95,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     apiClient.setAccessToken(token);
 
     if (token) {
-      // Respect the original keepSignedIn preference when storing the refreshed token
-      const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
-      if (keepSignedIn) {
-        localStorage.setItem("accessToken", token);
-        sessionStorage.removeItem("accessToken");
-      } else {
-        sessionStorage.setItem("accessToken", token);
-        localStorage.removeItem("accessToken");
-      }
+      // Respects the original keepSignedIn preference when storing the refreshed token
+      saveRefreshedToken(token);
       introspectToken(token).catch(() => undefined);
     } else {
       clearSession();
@@ -163,26 +123,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const introspectToken = async (token: string, redirectOnFailure = true): Promise<User> => {
     try {
-      const data = await authService.introspectToken(token);
-      if (!data.active || !data.user) throw new Error("Token introspection failed");
-      const introspected = data.user as unknown as User;
-      if (!ADMIN_PORTAL_ROLES.includes(introspected.role as AdminPortalRole)) {
-        throw new Error("Access denied for this portal");
-      }
+      const introspected = portalUserFromIntrospection(await authService.introspectToken(token));
 
       setUser(introspected);
-
-      const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
-      if (keepSignedIn) {
-        localStorage.setItem("user", JSON.stringify(introspected));
-        sessionStorage.removeItem("user");
-      } else {
-        sessionStorage.setItem("user", JSON.stringify(introspected));
-        localStorage.removeItem("user");
-      }
+      saveIntrospectedUser(introspected);
 
       // Trigger auth event for WebSocket
-      window.dispatchEvent(new CustomEvent("auth-changed", { detail: { type: "login", user: introspected } }));
+      dispatchAuthChanged({ type: "login", user: introspected });
       return introspected;
     } catch (error) {
       if (redirectOnFailure) {
@@ -192,7 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-    /**
+  /**
    * Signs in and admits only school admins and sub-admins.
    *
    * @param email - Account email.
@@ -205,10 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       ({ access_token: accessToken } = await authService.login({ email, password, rememberMe: keepSignedIn }));
     } catch (error) {
-      if (error instanceof ApiError && (error.status === 401 || error.code === "UNAUTHENTICATED")) {
-        throw new Error("Incorrect email or password. Please check your credentials and try again.");
-      }
-      throw error;
+      throw loginFailure(error);
     }
 
     // Introspect before storing anything, so a wrong-role account never gets a session here.
@@ -223,21 +167,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error("Could not verify your account. Please try again.");
     }
 
-    if (!ADMIN_PORTAL_ROLES.includes(userData.role as AdminPortalRole)) {
-      const friendlyRole = userData.role.replace(/_/g, " ");
-      throw new Error(
-        `Access denied. This portal is for school administrators only. ` +
-          `Your account is registered as "${friendlyRole}". ` +
-          `Please use the correct Talim app for your role.`
-      );
+    if (!isAdminPortalRole(userData.role)) {
+      throw new Error(portalAccessDeniedMessage(userData.role));
     }
 
     persistSession(accessToken, userData, keepSignedIn);
-    window.dispatchEvent(new CustomEvent("auth-changed", { detail: { type: "login", user: userData } }));
+    dispatchAuthChanged({ type: "login", user: userData });
     return true;
   };
 
-    // Refresh token function
+  // Refresh token function
   const refreshToken = async (): Promise<boolean> => {
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
@@ -256,10 +195,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     })();
 
-        return refreshPromiseRef.current;
+    return refreshPromiseRef.current;
   };
 
-  // ✅ FIXED: Logout function - clear localStorage
+  /** Signs out on the server (best effort) and always clears the local session. */
   const logout = async () => {
     try {
       if (accessToken) {
@@ -275,11 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearSession();
 
       // Trigger auth event for WebSocket
-      window.dispatchEvent(
-        new CustomEvent("auth-changed", {
-          detail: { type: "logout" },
-        })
-      );
+      dispatchAuthChanged({ type: "logout" });
 
       toast.success("Logged out successfully");
     }
@@ -297,12 +232,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => window.removeEventListener("auth-changed", handleAuthChanged);
   }, [clearSession]);
 
-  // ✅ FIXED: Check for existing session on app load
+  // Resume the stored session on app load, else try a refresh.
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         // Check for stored token first
-        const storedToken = getStoredAccessToken();
+        const storedToken = readStoredAccessToken();
 
         if (storedToken) {
           // We have a stored token, try to use it
@@ -320,14 +255,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // No stored token, try to refresh
           const success = await refreshToken();
           if (!success) {
-            const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-            if (storedUser) {
-              try {
-                setUser(JSON.parse(storedUser));
-              } catch {
-                localStorage.removeItem("user");
-              }
-            }
+            const storedUser = readStoredUser<User>();
+            if (storedUser) setUser(storedUser);
           }
         }
       } catch {
@@ -356,22 +285,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /** Returns true if the current user has the specified permission.
    *  Primary school_admin always returns true (empty permissions = full access). */
-  const hasPermission = useCallback(
-    (permission: string): boolean => {
-      if (!user) return false;
-      if (user.role === "school_admin") return true;
-      return user.permissions?.includes(permission) ?? false;
-    },
-    [user]
-  );
+  const hasPermission = useCallback((permission: string): boolean => userHasPermission(user, permission), [user]);
 
   const changePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
     const { access_token } = await authService.changePassword(currentPassword, newPassword, confirmPassword);
     // Adopt the rotated session and reload the user, which clears mustChangePassword.
     setAccessTokenState(access_token);
     apiClient.setAccessToken(access_token);
-    const keepSignedIn = localStorage.getItem("keepSignedIn") !== "false";
-    (keepSignedIn ? localStorage : sessionStorage).setItem("accessToken", access_token);
+    saveRotatedToken(access_token);
     await introspectToken(access_token, false);
   };
 
@@ -379,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...partial };
-      localStorage.setItem("user", JSON.stringify(updated));
+      saveEditedUser(updated);
       return updated;
     });
   };
