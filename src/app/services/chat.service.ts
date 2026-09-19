@@ -1,5 +1,5 @@
 // services/chatServices.ts
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, unwrapEnvelope } from '@/lib/apiClient';
 import { ApiError } from '@/lib/apiError';
 import { logger } from '@/lib/logger';
 import {
@@ -131,7 +131,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      const raw = await response.json();
+      const raw = unwrapEnvelope(await response.json());
       const result = this.normalizeRoomPayload(raw);
       if (!result?._id) {
         throw new Error('Invalid chat room response: missing room id');
@@ -246,7 +246,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const result = await response.json();
+      const result = unwrapEnvelope(await response.json());
       return result;
     } catch (error) {
       logger.error('chat', '❌ Error searching chat rooms:', error);
@@ -273,7 +273,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const result = await response.json();
+      const result = unwrapEnvelope(await response.json());
       return result;
     } catch (error) {
       logger.error('chat', '❌ Error fetching chat room messages:', error);
@@ -336,7 +336,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const data = await response.json();
+      const data = unwrapEnvelope(await response.json());
       const normalized = this.normalizeCursorMessagesPayload(data, roomId);
       return normalized;
     } catch (error) {
@@ -379,7 +379,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const count = await response.json();
+      const count = unwrapEnvelope(await response.json());
       return count;
     } catch (error) {
       logger.error('chat', '❌ Error fetching unread message count:', error);
@@ -401,7 +401,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const participants = await response.json();
+      const participants = unwrapEnvelope(await response.json());
       return participants;
     } catch (error) {
       logger.error('chat', '❌ Error fetching chat room participants:', error);
@@ -426,7 +426,7 @@ class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const updatedRoom = await response.json();
+      const updatedRoom = unwrapEnvelope(await response.json());
       return this.normalizeRoomPayload(updatedRoom);
     } catch (error) {
       logger.error('chat', '❌ Error adding participant:', error);
@@ -446,7 +446,7 @@ class ChatService {
     if (!response.ok) {
       throw await this.toApiError(response);
     }
-    return this.normalizeRoomPayload(await response.json());
+    return this.normalizeRoomPayload(unwrapEnvelope(await response.json()));
   }
 
   /**
@@ -475,7 +475,7 @@ class ChatService {
     if (!response.ok) {
       throw await this.toApiError(response);
     }
-    return this.normalizeRoomPayload(await response.json());
+    return this.normalizeRoomPayload(unwrapEnvelope(await response.json()));
   }
 
 
@@ -498,7 +498,7 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
       throw new Error(error.message || 'Failed to add participants');
     }
 
-    return this.normalizeRoomPayload(await response.json());
+    return this.normalizeRoomPayload(unwrapEnvelope(await response.json()));
   } catch (error) {
     logger.error('chat', 'Error in addParticipantsToRoom:', error);
     throw error;
@@ -524,7 +524,7 @@ async addParticipantsToRoom(roomId: string, userIds: string[]): Promise<ChatRoom
       throw new Error(`Upload failed: ${err}`);
     }
 
-    const data = await response.json();
+    const data = unwrapEnvelope(await response.json());
     return {
       url: data.url,
       name: data.name || file.name,

@@ -1,4 +1,5 @@
 import { sessionStore } from "@/lib/session";
+import { unwrapEnvelope } from "@/lib/apiClient";
 import { API_ENDPOINTS, absoluteUrl } from "../lib/api/config";
 
 interface UploadResponse {
@@ -44,7 +45,8 @@ const uploadWithProgress = (
     xhr.addEventListener("load", () => {
       let payload: UploadResponse = {};
       try {
-        payload = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+        // Enveloped as { success, data: { url } } once the backend flag is on.
+        payload = xhr.responseText ? unwrapEnvelope<UploadResponse>(JSON.parse(xhr.responseText)) : {};
       } catch {
         payload = {};
       }

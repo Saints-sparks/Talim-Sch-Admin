@@ -6,7 +6,7 @@ import TalimModal from "@/components/ui/TalimModal";
 import { PermissionSelector } from "./PermissionSelector";
 import { subAdminService, PromoteTeacherDto, SubAdmin } from "@/app/services/sub-admin.service";
 import { toast } from "@/components/CustomToast";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, unwrapEnvelope } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
 import { API_ENDPOINTS } from "@/app/lib/api/config";
 
@@ -42,7 +42,7 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
       try {
         const res = await apiClient.get(API_ENDPOINTS.GET_TEACHERS);
         if (res.ok) {
-          const data = await res.json();
+          const data = unwrapEnvelope<unknown>(await res.json()) as Teacher[] | { data?: Teacher[] };
           // API may return { data: Teacher[] } or Teacher[]
           setTeachers(Array.isArray(data) ? data : (data.data ?? []));
         }

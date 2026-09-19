@@ -35,6 +35,33 @@ const DEFAULT_TIMEOUT_MS = 30_000;
  *   bottom of this file parses JSON and throws `ApiError` on any non-2xx,
  *   and is what new and migrated code should use.
  */
+/**
+ * Unwraps the canonical success envelope `{ success: true, data }` (with an
+ * optional `meta`) when the backend's `API_ENVELOPE_SUCCESS` flag is on.
+ * Any body that is not exactly that shape — including the ~85 endpoints that
+ * return `{ success: true, ...fields }` — is returned untouched.
+ *
+ * The type parameter defaults to `any` only so the legacy callers that read a
+ * raw `Response` (the chat REST service) keep the loose typing they had; new
+ * code uses `api.*`, which is typed end to end.
+ *
+ * @param body - A successful response body.
+ * @returns The payload the caller cares about.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function unwrapEnvelope<T = any>(body: unknown): T {
+  if (body && typeof body === "object" && !Array.isArray(body)) {
+    const record = body as Record<string, unknown>;
+    const keys = Object.keys(record);
+    const isEnvelope =
+      record.success === true &&
+      "data" in record &&
+      keys.every((key) => key === "success" || key === "data" || key === "meta");
+    if (isEnvelope) return record.data as T;
+  }
+  return body as T;
+}
+
 class ApiClient {
   private accessToken: string | null = null;
   private refreshCallback: (() => Promise<boolean>) | null = null;
@@ -195,8 +222,11 @@ class ApiClient {
    * Performs a request and parses the JSON body. Any non-2xx status becomes an
    * `ApiError` carrying the server's `error.code`, message and field details.
    *
-   * @typeParam T - Shape of the successful body (the legacy shape, or the
-   *   canonical `{ success, data }` envelope once `API_ENVELOPE_SUCCESS` is on).
+   * The canonical success envelope `{ success: true, data }` (sent once the
+   * backend's `API_ENVELOPE_SUCCESS` flag is on) is unwrapped here, so callers
+   * see the same payload with the flag on or off.
+   *
+   * @typeParam T - Shape of the payload the caller cares about.
    */
   async json<T>(url: string, config: RequestConfig = {}): Promise<T> {
     const response = await this.request(url, config);
@@ -222,7 +252,7 @@ class ApiClient {
       }
       throw error;
     }
-    return body as T;
+    return unwrapEnvelope<T>(body);
   }
 
   /** Builds a JSON (or FormData) request config for a body-carrying method. */
