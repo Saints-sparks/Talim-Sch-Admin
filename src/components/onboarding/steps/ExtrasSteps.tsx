@@ -16,6 +16,7 @@ import { useTerms } from "@/hooks/queries/reference";
 import { useSchoolId } from "@/hooks/useSchoolId";
 import { api } from "@/lib/apiClient";
 import { API_URLS } from "@/app/lib/api/config";
+import type { Announcement } from "@/app/services/announcement.service";
 import { assessmentService } from "@/app/services/assessment.service";
 import { queryKeys, staleTimes } from "@/lib/queryKeys";
 import { getErrorMessage } from "@/lib/apiError";
@@ -53,8 +54,7 @@ export function CreateAnnouncementStep({
 
   const mutation = useMutation({
     // The server takes the sender from the session; no senderId from storage.
-    mutationFn: (body: { title: string; content: string }) =>
-      api.post(API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT, body),
+    mutationFn: (body: Announcement) => api.post(API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT, body),
     onSuccess: () => {
       toast.success("Announcement posted!");
       onComplete();

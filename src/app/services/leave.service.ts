@@ -16,6 +16,7 @@
  * See `talimBE-V2/src/modules/user/data/dtos/leaveRequest.dto.ts`.
  */
 import { api } from "@/lib/apiClient";
+import type { UpdateLeaveStatusPayload as ContractLeaveStatusPayload } from "@/types/apiPayloads";
 import { API_ENDPOINTS } from "../lib/api/config";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -91,17 +92,15 @@ export interface LeaveRequest {
 }
 
 /**
- * Body of `PUT /leave-requests/:id/status` (`UpdateLeaveRequestDto`).
+ * Body of `PUT /leave-requests/:id/status` (the backend DTO,
+ * `UpdateLeaveRequestDto`). `status` is required here: this is the approve /
+ * reject call, and the DTO leaves it optional for its other uses.
  *
  * Deciding a request also marks it viewed — the parent app shows an
- * "unopened" flag until it is.
+ * "unopened" flag until it is. `declineReason` is shown to the parent when a
+ * request is rejected.
  */
-export interface UpdateLeaveStatusPayload {
-  status: LeaveStatus;
-  viewed?: boolean;
-  /** Shown to the parent when a request is rejected. */
-  declineReason?: string;
-}
+export type UpdateLeaveStatusPayload = ContractLeaveStatusPayload & { status: LeaveStatus };
 
 // ─── Calls ────────────────────────────────────────────────────────────────────
 
@@ -144,4 +143,4 @@ export const updateLeaveRequestStatus = (
     status: payload.status,
     viewed: payload.viewed ?? true,
     ...(payload.declineReason ? { declineReason: payload.declineReason } : {}),
-  });
+  } satisfies ContractLeaveStatusPayload);

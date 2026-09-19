@@ -15,25 +15,27 @@ import { api } from "@/lib/apiClient";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import { staleTimes } from "@/lib/queryKeys";
+import type { UpdateNotificationPreferencePayload } from "@/types/apiPayloads";
 
 /**
  * The preferences this page shows. A subset of the backend
  * `UpdateNotificationPreferenceDto`; fields not listed here are left alone.
  */
-export interface AdminNotifPrefs {
-  announcementsEnabled: boolean;
-  feesEnabled: boolean;
-  attendanceEnabled: boolean;
-  resultsEnabled: boolean;
-  messagesEnabled: boolean;
-  pushEnabled: boolean;
-  emailEnabled: boolean;
-  quietHoursEnabled: boolean;
-  /** "HH:mm", as the backend's pattern requires. */
-  quietHoursStart: string;
-  /** "HH:mm", as the backend's pattern requires. */
-  quietHoursEnd: string;
-}
+export type AdminNotifPrefs = Required<
+  Pick<
+    UpdateNotificationPreferencePayload,
+    | "announcementsEnabled"
+    | "feesEnabled"
+    | "attendanceEnabled"
+    | "resultsEnabled"
+    | "messagesEnabled"
+    | "pushEnabled"
+    | "emailEnabled"
+    | "quietHoursEnabled"
+    | "quietHoursStart" // "HH:mm", as the backend's pattern requires
+    | "quietHoursEnd" // "HH:mm", as the backend's pattern requires
+  >
+>;
 
 /** What a new account gets before it has saved anything. */
 export const ADMIN_NOTIF_DEFAULTS: AdminNotifPrefs = {
@@ -97,7 +99,8 @@ export function useUpdateNotificationPrefs(): UpdateNotificationPrefs {
       if ((field === "quietHoursStart" || field === "quietHoursEnd") && !TIME_PATTERN.test(String(value))) {
         throw new Error("Enter a time as HH:mm");
       }
-      await api.patch("/notifications/preferences", { [field]: value });
+      const body: Partial<AdminNotifPrefs> = { [field]: value };
+      await api.patch("/notifications/preferences", body satisfies UpdateNotificationPreferencePayload);
     },
     onMutate: async ({ field, value }) => {
       await client.cancelQueries({ queryKey: key });

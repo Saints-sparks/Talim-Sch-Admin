@@ -1,5 +1,9 @@
 import { api } from "@/lib/apiClient";
 import { API_URLS } from "../lib/api/config";
+import type { UpdateSchoolPayload } from "@/types/apiPayloads";
+
+// The request payload is the backend DTO (`src/types/apiPayloads.ts`).
+export type { UpdateSchoolPayload } from "@/types/apiPayloads";
 
 /**
  * A class as `GET /classes` returns it, mirroring the backend Class schema.
@@ -31,17 +35,6 @@ export interface PrimaryContact {
 export interface SchoolLocation {
   country: string;
   state: string;
-}
-
-/** Body for `PUT /schools/:id` — only these fields are accepted. */
-export interface UpdateSchoolPayload {
-  name?: string;
-  email?: string;
-  physicalAddress?: string;
-  location?: SchoolLocation;
-  primaryContacts?: PrimaryContact[];
-  active?: boolean;
-  logo?: string;
 }
 
 /** The school as the update endpoint returns it. */

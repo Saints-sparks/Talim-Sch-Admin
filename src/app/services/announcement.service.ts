@@ -14,6 +14,7 @@
  */
 import { api } from "@/lib/apiClient";
 import { API_ENDPOINTS } from "../lib/api/config";
+import type { CreateAnnouncementPayload } from "@/types/apiPayloads";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,21 +24,15 @@ export type AnnouncementStatus = "PENDING" | "DRAFT" | "SCHEDULED" | "PUBLISHED"
 /** Who a broadcast reaches (`AnnouncementAudience` on the backend). */
 export type AnnouncementAudience = "all_parents" | "all_students" | "all_teachers" | "custom";
 
-/** Body of `POST /notifications/announcements` (`CreateAnnouncementDto`). */
-export interface Announcement {
-  title: string;
+/**
+ * Body of `POST /notifications/announcements` (the backend DTO). `audience`
+ * is narrowed to the values the create form offers.
+ */
+export type Announcement = Omit<CreateAnnouncementPayload, "audience"> & {
+  /** The create form always writes a message. */
   content: string;
-  /** Single attachment URL. The API merges it with `attachments`. */
-  attachment?: string;
-  attachments?: string[];
   audience?: AnnouncementAudience[];
-  /** User ids — required by the API when `audience` contains `custom`. */
-  targetAudience?: string[];
-  status?: AnnouncementStatus;
-  /** ISO timestamp; only meaningful with `status: "SCHEDULED"`. */
-  scheduledFor?: string;
-  isPinned?: boolean;
-}
+};
 
 /** Query string accepted by `GET /notifications/announcements/sender/:id`. */
 export interface AnnouncementQuery {
@@ -117,7 +112,7 @@ export interface AnnouncementStats {
  * @returns The created announcement.
  */
 export const createAnnouncement = (announcement: Announcement): Promise<CreateAnnouncementResponse> =>
-  api.post<CreateAnnouncementResponse>(API_ENDPOINTS.CREATE_ANNOUNCEMENT, announcement);
+  api.post<CreateAnnouncementResponse>(API_ENDPOINTS.CREATE_ANNOUNCEMENT, announcement satisfies CreateAnnouncementPayload);
 
 /**
  * One page of the announcements a sender has written, newest first.

@@ -19,6 +19,7 @@
  */
 import { api } from "@/lib/apiClient";
 import { API_URLS } from "../lib/api/config";
+import type { CreateComplaintPayload } from "@/types/apiPayloads";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,13 +56,8 @@ export interface Complaint {
   updatedAt: string;
 }
 
-/** Body of `POST /complaints` (`CreateComplaintDto`). */
-export interface CreateComplaintInput {
-  subject: string;
-  description: string;
-  /** A URL the file service already holds — not a local blob. */
-  attachment?: string;
-}
+/** What the app sends to open a ticket; `ticket` and `status` are set by the server. */
+export type CreateComplaintInput = Pick<CreateComplaintPayload, "subject" | "description" | "attachment">;
 
 /** Newest first, by the date the complaint was raised. */
 function byNewest(a: Complaint, b: Complaint): number {

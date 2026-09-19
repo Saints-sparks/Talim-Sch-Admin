@@ -181,6 +181,15 @@ export type LoginPayload = RequestBody<"/auth/login", "post">;
 /** Body of `PUT /auth/profile/update`. */
 export type UpdateProfilePayload = RequestBody<"/auth/profile/update", "put">;
 
+// ─── Timetable, subjects ──────────────────────────────────────────────────────
+
+/** Body of `POST /timetable`; its ids are generated as `Record<string, never>` (a raw ObjectId). */
+export type CreateTimetableContractPayload = RequestBody<"/timetable", "post">;
+/** Body of `POST /subjects-courses/subjects`; `schoolId` is generated as an object. */
+export type CreateSubjectContractPayload = RequestBody<"/subjects-courses/subjects", "post">;
+/** Body of `PUT /subjects-courses/subjects/{id}`. */
+export type UpdateSubjectContractPayload = RequestBody<"/subjects-courses/subjects/{id}", "put">;
+
 // ─── Assessments, transit ─────────────────────────────────────────────────────
 
 /** Body of `POST /assessments`. */

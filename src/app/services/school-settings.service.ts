@@ -9,6 +9,18 @@
  * passes a school id.
  */
 import { api } from "@/lib/apiClient";
+import type {
+  UpdateFinanceSettingsPayload,
+  UpdateReceiptSettingsPayload,
+  UpdateSchoolProfilePayload,
+} from "@/types/apiPayloads";
+
+/** Fields `PATCH /settings/school-profile` accepts (the backend DTO). */
+export type UpdateSchoolProfileDto = UpdateSchoolProfilePayload;
+/** Fields `PATCH /settings/receipt` accepts (the backend DTO). */
+export type UpdateReceiptSettingsDto = UpdateReceiptSettingsPayload;
+/** Fields `PATCH /settings/finance` accepts (the backend DTO). */
+export type UpdateFinanceSettingsDto = UpdateFinanceSettingsPayload;
 
 const BASE = "/settings";
 
@@ -35,21 +47,6 @@ export interface SchoolProfile {
   primaryContacts?: PrimaryContact[];
 }
 
-/**
- * Fields `PATCH /settings/school-profile` accepts.
- * Mirrors `UpdateSchoolProfileDto` in talimBE-V2; name, email and prefix are
- * not editable by the school.
- */
-export interface UpdateSchoolProfileDto {
-  /** Max 500 characters. */
-  physicalAddress?: string;
-  /** Hosted image URL. */
-  logo?: string;
-  contactPhone?: string;
-  website?: string;
-  primaryContacts?: PrimaryContact[];
-}
-
 /** Receipt appearance and parent-facing options. */
 export interface ReceiptSettings {
   schoolId: string;
@@ -63,40 +60,12 @@ export interface ReceiptSettings {
   footerNote: string;
 }
 
-/**
- * Fields `PATCH /settings/receipt` accepts.
- * Mirrors `UpdateReceiptSettingsDto` in talimBE-V2.
- */
-export interface UpdateReceiptSettingsDto {
-  showSchoolLogo?: boolean;
-  allowParentDownload?: boolean;
-  showQrVerification?: boolean;
-  showAuthorizedSignature?: boolean;
-  /** Max 250 characters. */
-  footerNote?: string;
-  signatureName?: string;
-  signatureTitle?: string;
-  signatureUrl?: string;
-}
-
 /** Withdrawal safeguards for the school wallet. */
 export interface FinanceSettings {
   schoolId: string;
   requireEmailOtpForWithdrawals: boolean;
   minimumWithdrawalAmount: number;
   defaultBankAccountId: string | null;
-}
-
-/**
- * Fields `PATCH /settings/finance` accepts.
- * Mirrors `UpdateFinanceSettingsDto` in talimBE-V2.
- */
-export interface UpdateFinanceSettingsDto {
-  requireEmailOtpForWithdrawals?: boolean;
-  /** Must be 0 or greater. */
-  minimumWithdrawalAmount?: number;
-  /** A bank account id (Mongo ObjectId). */
-  defaultBankAccountId?: string;
 }
 
 /** The datasets Settings → Data & System can export. */

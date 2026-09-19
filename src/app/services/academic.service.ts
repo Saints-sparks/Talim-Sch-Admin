@@ -13,6 +13,7 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type { CreateAcademicYearPayload, CreateTermPayload } from "@/types/apiPayloads";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,32 +27,10 @@ export type AcademicPeriodStatus = "draft" | "active" | "closed" | "archived";
 export type TimetableDay = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
 /** Body for `POST /academic-year` (`CreateAcademicYearDto`). */
-export interface AcademicYear {
-  /** Label in `YYYY-YYYY` form, e.g. "2025-2026". */
-  year: string;
-  /** ISO date the year opens. */
-  startDate: string;
-  /** ISO date the year closes. */
-  endDate: string;
-  /** Marks this year as the school's current one. */
-  isCurrent: boolean;
-}
+export type AcademicYear = CreateAcademicYearPayload & { isCurrent: boolean };
 
 /** Body for `POST /term` (`CreateTermDto`), minus the server-stamped school. */
-export interface Term {
-  /** Term name, e.g. "First Term". */
-  name: string;
-  /** ISO date the term opens. */
-  startDate: string;
-  /** ISO date the term closes. */
-  endDate: string;
-  /** Marks this term as the school's current one. */
-  isCurrent: boolean;
-  /** Academic year the term belongs to. */
-  academicYearId: string;
-  /** Stamped by the API from the bearer token; never sent by the client. */
-  schoolId: string;
-}
+export type Term = CreateTermPayload & { isCurrent: boolean; schoolId: string };
 
 /** An academic year as the API returns it. */
 export interface AcademicYearResponse {
@@ -185,9 +164,10 @@ export function dedupeAcademicYearsByName<T extends AcademicYearLike>(years: T[]
 export const createAcademicYear = async (
   academicYear: AcademicYear
 ): Promise<AcademicYearResponse> => {
+  const body: CreateAcademicYearPayload = academicYear;
   const raw = await api.post<CreateAcademicYearBody | AcademicYearResponse | null>(
     API_ENDPOINTS.CREATE_ACADEMIC_YEAR,
-    academicYear
+    body
   );
   // Deployments reply `{ message, academicYear }`, `{ data }` or the bare document.
   const wrapped = raw as CreateAcademicYearBody | null;
@@ -222,13 +202,14 @@ export const getAcademicYears = async (): Promise<AcademicYearResponse[]> => {
  * @throws ApiError When the dates overlap another term or validation fails.
  */
 export const createTerm = async (data: Omit<Term, "schoolId">): Promise<CreateTermResult> => {
-  const result = await api.post<Partial<CreateTermResult>>(API_ENDPOINTS.CREATE_TERM, {
+  const body: CreateTermPayload = {
     academicYearId: data.academicYearId,
     name: data.name.trim(),
     startDate: data.startDate,
     endDate: data.endDate,
     isCurrent: data.isCurrent,
-  });
+  };
+  const result = await api.post<Partial<CreateTermResult>>(API_ENDPOINTS.CREATE_TERM, body);
 
   return {
     message: result?.message,

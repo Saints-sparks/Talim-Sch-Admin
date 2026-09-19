@@ -22,6 +22,11 @@
 import { API_BASE_URL } from "@/app/lib/api/config";
 import { api } from "@/lib/apiClient";
 import { sessionStore } from "@/lib/session";
+import type {
+  CreateWebPushSubscriptionPayload,
+  DeleteWebPushSubscriptionPayload,
+  UpdateNotificationPreferencePayload,
+} from "@/types/apiPayloads";
 
 /** The old flag shared by every user on a browser. */
 export const LEGACY_STORAGE_KEY = "talim:push-subscribed";
@@ -269,7 +274,8 @@ async function subscribeBrowser(): Promise<{ subscription: PushSubscription; vap
  */
 async function registerSubscription(subscription: PushSubscription): Promise<string> {
   const { endpoint, keys } = subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-  await api.post(ENDPOINTS.subscribe, { endpoint, keys, userAgent: navigator.userAgent });
+  const body: CreateWebPushSubscriptionPayload = { endpoint, keys, userAgent: navigator.userAgent };
+  await api.post(ENDPOINTS.subscribe, body);
   return endpoint;
 }
 
@@ -282,7 +288,7 @@ async function registerSubscription(subscription: PushSubscription): Promise<str
 export async function forgetServerSubscription(endpoint: string): Promise<void> {
   await api.delete(ENDPOINTS.subscribe, {
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint }),
+    body: JSON.stringify({ endpoint } satisfies DeleteWebPushSubscriptionPayload),
   });
 }
 
@@ -294,7 +300,7 @@ export async function forgetServerSubscription(endpoint: string): Promise<void> 
  */
 async function syncWebPushPreference(enabled: boolean): Promise<void> {
   try {
-    await api.patch(ENDPOINTS.preferences, { webPushEnabled: enabled });
+    await api.patch(ENDPOINTS.preferences, { webPushEnabled: enabled } satisfies UpdateNotificationPreferencePayload);
   } catch {
     // Non-fatal: the browser subscription is the source of truth for delivery.
   }
