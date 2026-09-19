@@ -54,6 +54,7 @@ function CardRow({ label, children }: { label: string; children: React.ReactNode
 export function ClassCard({ classItem, onOpen, onEdit }: ClassCardProps) {
   const students = classItem.students ?? [];
   const capacity = classItem.classCapacity || "50";
+  const enrolled = classItem.studentCount ?? students.length;
 
   return (
     <div className="group bg-white dark:bg-slate-900 rounded-2xl border-2 border-gray-200 dark:border-slate-800 shadow-sm hover:border-[#003366] dark:hover:border-blue-500 hover:shadow-xl transition-all duration-300 overflow-hidden">
@@ -97,7 +98,7 @@ export function ClassCard({ classItem, onOpen, onEdit }: ClassCardProps) {
 
         <CardRow label="Students">
           <span className="text-sm font-semibold text-gray-800 dark:text-slate-100 mr-2">
-            {students.length}/{capacity}
+            {enrolled}/{capacity}
           </span>
           <div className="flex -space-x-2">
             {students.slice(0, AVATAR_LIMIT).map((student, index) => {

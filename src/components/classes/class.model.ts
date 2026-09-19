@@ -57,6 +57,8 @@ export interface ClassDetail {
   classTeacherId?: string | ClassTeacher | null;
   courses?: ClassCourse[];
   students?: ClassStudent[];
+  /** How many students are enrolled; `GET /classes` sends it, the embedded list may be empty. */
+  studentCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
