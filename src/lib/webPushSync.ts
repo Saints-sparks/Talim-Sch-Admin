@@ -503,3 +503,28 @@ export async function revokeWebPushOnSignOut(): Promise<void> {
     await writeNote(PENDING_URL, null);
   }
 }
+
+/**
+ * Drops this browser's push subscription and the per-user flag **without any
+ * request**, for a forced sign-out (the session expired or could not be
+ * refreshed). The token is already invalid there, so telling the server would
+ * 401, try to refresh, fail, and trigger the same sign-out again. The server's
+ * row is removed by its own 404/410 cleanup the next time it tries to send to
+ * the dead endpoint. Never throws.
+ *
+ * @param userId - The user being signed out, when known.
+ */
+export async function dropLocalWebPush(userId: string | null): Promise<void> {
+  activeSync?.stop();
+  activeSync = null;
+  try {
+    const subscription = await currentSubscription();
+    await subscription?.unsubscribe();
+  } catch {
+    // A forced sign-out must not fail because of push.
+  } finally {
+    storage()?.removeItem(LEGACY_STORAGE_KEY);
+    forgetEndpoint(userId);
+    await writeNote(PENDING_URL, null).catch(() => undefined);
+  }
+}

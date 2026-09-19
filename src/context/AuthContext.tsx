@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
-import { revokeWebPushOnSignOut } from "@/app/hooks/usePushNotifications";
+import { dropLocalWebPush, revokeWebPushOnSignOut } from "@/app/hooks/usePushNotifications";
 import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
@@ -24,6 +24,9 @@ import {
   saveRotatedToken,
   saveSession,
 } from "@/lib/authStorage";
+
+/** Longest a forced sign-out waits for the browser push cleanup before redirecting. */
+const PUSH_CLEANUP_MAX_MS = 1500;
 import { sessionStore, extractSchoolId } from "@/lib/session";
 
 interface AuthContextType {
@@ -80,13 +83,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const clearSession = useCallback((redirectToLogin = false) => {
+    // Read before the session is wiped: a forced sign-out needs to know whose
+    // browser subscription to drop.
+    const departingUserId =
+      sessionStore.getUserId() ?? readStoredUser<{ userId?: string; _id?: string }>()?.userId ?? null;
     setAccessTokenState(null);
     apiClient.setAccessToken(null);
     setUser(null);
     clearStoredSession();
 
-    if (redirectToLogin && typeof window !== "undefined" && window.location.pathname !== "/") {
-      window.location.assign("/");
+    if (redirectToLogin) {
+      // Forced sign-out: the token is already invalid, so drop this browser's push
+      // subscription locally (no request), bounded so a stuck service worker cannot
+      // hold the redirect. The cleanup runs on every forced sign-out; only the
+      // redirect depends on which page the user is on.
+      const bound = new Promise<void>((resolve) => setTimeout(resolve, PUSH_CLEANUP_MAX_MS));
+      void Promise.race([dropLocalWebPush(departingUserId), bound]).finally(() => {
+        if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+      });
     }
   }, []);
 

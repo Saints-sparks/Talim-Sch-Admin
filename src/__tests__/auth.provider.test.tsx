@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { authService } from "@/app/services/auth.service";
 import { apiClient } from "@/lib/apiClient";
 import { ApiError } from "@/lib/apiError";
+import { dropLocalWebPush } from "@/app/hooks/usePushNotifications";
 import { sessionStore } from "@/lib/session";
 
 jest.mock("@/app/services/auth.service", () => ({
@@ -18,6 +19,7 @@ jest.mock("@/app/services/auth.service", () => ({
 }));
 jest.mock("@/app/hooks/usePushNotifications", () => ({
   revokeWebPushOnSignOut: jest.fn().mockResolvedValue(undefined),
+  dropLocalWebPush: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("@/components/CustomToast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 jest.mock("@/lib/apiClient", () => ({
@@ -84,6 +86,7 @@ describe("start-up", () => {
   });
 
   it("clears a stored token that neither introspects nor refreshes", async () => {
+    (dropLocalWebPush as jest.Mock).mockClear();
     localStorage.setItem("accessToken", "stale");
     localStorage.setItem("user", JSON.stringify(ADMIN));
     auth.introspectToken.mockRejectedValue(new Error("expired"));
@@ -92,6 +95,21 @@ describe("start-up", () => {
     expect(result.current.isAuthenticated).toBe(false);
     expect(localStorage.getItem("accessToken")).toBeNull();
     expect(localStorage.getItem("user")).toBeNull();
+  });
+
+  it("a forced sign-out asks for this browser's push subscription to be dropped locally", async () => {
+    (dropLocalWebPush as jest.Mock).mockClear();
+    localStorage.setItem("accessToken", "stale");
+    localStorage.setItem("user", JSON.stringify(ADMIN));
+    // The app hydrates the session store from storage on first read; earlier tests in this
+    // file already did, so seed it the way a real start-up would find it.
+    sessionStore.set(ADMIN as Parameters<typeof sessionStore.set>[0], "stale");
+    auth.introspectToken.mockRejectedValue(new Error("expired"));
+    await mount();
+
+    // Start-up clears the session on two failure paths (introspect, then refresh); the
+    // cleanup is idempotent, so what matters is that it ran for the departing user.
+    expect(dropLocalWebPush).toHaveBeenCalledWith(ADMIN.userId);
   });
 
   it("signs out (and forgets the stored user) when there is no token and the refresh fails", async () => {

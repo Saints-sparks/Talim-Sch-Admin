@@ -9,6 +9,7 @@ import {
   reconcileWebPush,
   reconcileWebPushForUser,
   revokeWebPushOnSignOut,
+  dropLocalWebPush,
 } from "@/lib/webPushSync";
 import { api } from "@/lib/apiClient";
 import { sessionStore } from "@/lib/session";
@@ -279,5 +280,39 @@ describe("revokeWebPushOnSignOut", () => {
     deleteMock.mockRejectedValue(new Error("offline"));
 
     await expect(revokeWebPushOnSignOut()).resolves.toBeUndefined();
+  });
+});
+
+describe("dropLocalWebPush (forced sign-out: the token is already invalid)", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("unsubscribes the browser and clears the flag without a single request", async () => {
+    const browser = stubBrowser({ permission: "granted", endpoint: "https://push.example/mine" });
+    optedIn("https://push.example/mine");
+
+    await dropLocalWebPush(USER);
+
+    expect(browser.subscription?.unsubscribe).toHaveBeenCalledTimes(1);
+    expect(recorded()).toBeNull();
+    // A request here would 401, try to refresh, fail, and trigger the same forced sign-out again.
+    expect(deleteMock).not.toHaveBeenCalled();
+    expect(postMock).not.toHaveBeenCalled();
+    expect(getMock).not.toHaveBeenCalled();
+  });
+
+  it("clears the flag even when there is no subscription, or the user is unknown", async () => {
+    stubBrowser({ permission: "granted", endpoint: null });
+    optedIn("https://push.example/stale");
+
+    await dropLocalWebPush(USER);
+    expect(recorded()).toBeNull();
+    await expect(dropLocalWebPush(null)).resolves.toBeUndefined();
+  });
+
+  it("never throws, so a forced sign-out cannot fail because of push cleanup", async () => {
+    const browser = stubBrowser({ permission: "granted", endpoint: "https://push.example/mine" });
+    browser.subscription!.unsubscribe.mockRejectedValueOnce(new Error("worker gone"));
+
+    await expect(dropLocalWebPush(USER)).resolves.toBeUndefined();
   });
 });

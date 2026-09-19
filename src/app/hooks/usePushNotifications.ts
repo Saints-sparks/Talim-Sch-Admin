@@ -15,7 +15,7 @@ import {
   type PushPermission,
 } from "@/lib/webPushSync";
 
-export { reconcileWebPushForUser, revokeWebPushOnSignOut } from "@/lib/webPushSync";
+export { dropLocalWebPush, reconcileWebPushForUser, revokeWebPushOnSignOut } from "@/lib/webPushSync";
 export type { PushPermission } from "@/lib/webPushSync";
 
 /** What {@link usePushNotifications} returns. */
