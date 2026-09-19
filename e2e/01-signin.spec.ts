@@ -94,12 +94,6 @@ test.describe.serial("temporary password", () => {
   let temporaryPassword = "";
 
   test("a new sub-admin is forced to set a password, then can use the app", async ({ page, monitor }) => {
-    // KNOWN BACKEND BUG (open): POST /auth/change-password returns an access token with no
-    // sub/email/role (it spreads a Mongoose document), so POST /auth/introspect says
-    // { active: false } and the app shows "Token introspection failed" instead of the dashboard.
-    // Remove this line when the backend is fixed; Playwright then reports an unexpected pass.
-    test.fail(true, "backend: change-password returns an unusable token");
-
     // Create the account the way the product does: the school admin adds a sub-admin.
     const adminToken = await apiLogin(ACCOUNTS.schoolAdmin);
     email = throwawayEmail("subadmin");
