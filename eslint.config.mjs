@@ -12,6 +12,8 @@ export default [
       "storybook-static/",
       "coverage/",
       "*.config.*",
+      // Generated copy of the backend contract (npm run types:api).
+      "src/types/api.d.ts",
     ],
   },
   {

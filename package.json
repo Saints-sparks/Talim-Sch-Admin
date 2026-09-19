@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint src/ --no-warn-ignored",
     "type-check": "tsc --noEmit",
+    "types:api": "node scripts/sync-api-types.mjs",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "storybook": "storybook dev -p 6006",
