@@ -226,6 +226,10 @@ function GuideCard({
   );
 }
 
+/** How often, and for how long, the first-visit guide waits for its page's targets. */
+const GUIDE_POLL_MS = 250;
+const GUIDE_WAIT_MS = 10_000;
+
 export default function AppGuide() {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
@@ -247,13 +251,28 @@ export default function AppGuide() {
     const autoOpenKey = getAutoOpenStorageKey(userId);
     const hasAutoOpened = localStorage.getItem(autoOpenKey) === "done";
 
-    if (!hasAutoOpened) {
-      localStorage.setItem(autoOpenKey, "done");
-      setIsOpen(true);
-      return;
-    }
-
     setIsOpen(false);
+    if (hasAutoOpened) return;
+
+    // Open only over the page the guide describes: wait for one of its
+    // targets. A page that never renders them (Access Denied for a role
+    // without the permission, an error state) keeps the one-time tour for
+    // the next page instead of spotlighting nothing.
+    let waited = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tryOpen = () => {
+      if (config.steps.some((step) => document.querySelector(`[data-guide="${step.target}"]`))) {
+        localStorage.setItem(autoOpenKey, "done");
+        setIsOpen(true);
+        return;
+      }
+      waited += GUIDE_POLL_MS;
+      if (waited < GUIDE_WAIT_MS) timer = setTimeout(tryOpen, GUIDE_POLL_MS);
+    };
+    timer = setTimeout(tryOpen, 0);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [config?.id, isLoading, userId, user, config]);
 
   // Only the target selector matters for the highlight; depending on the whole
