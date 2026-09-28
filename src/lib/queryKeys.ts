@@ -88,6 +88,20 @@ export const queryKeys = {
     /** Events overlapping `[from, to]` (`YYYY-MM-DD`, either may be empty). */
     range: (schoolId: string, from: string, to: string) => ["calendarEvents", schoolId, "range", from, to] as const,
   },
+  termResults: {
+    all: ["termResults"] as const,
+    /** Everything of one school, for invalidating after a publish or return. */
+    school: (schoolId: string) => ["termResults", schoolId] as const,
+    /** The office queue for a term and status. */
+    queue: (schoolId: string, termId: string, status: string) =>
+      ["termResults", schoolId, "queue", termId, status] as const,
+    /** A class's broadsheet for a term on one basis (`total` or an assessment id). */
+    broadsheet: (schoolId: string, classId: string, termId: string, basis: string) =>
+      ["termResults", schoolId, "broadsheet", classId, termId, basis] as const,
+    /** A class's remarks for a term. */
+    remarks: (schoolId: string, classId: string, termId: string) =>
+      ["termResults", schoolId, "remarks", classId, termId] as const,
+  },
   announcements: {
     all: ["announcements"] as const,
     list: (schoolId: string, params?: Record<string, unknown>) => ["announcements", schoolId, "list", params ?? {}] as const,

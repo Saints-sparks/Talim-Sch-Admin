@@ -16,6 +16,7 @@ export type NavIconKey =
   | "classes"
   | "curriculum"
   | "assessments"
+  | "termResults"
   | "timetable"
   | "fees"
   | "payments"
@@ -77,6 +78,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Assessments",
     tooltip: "Assessments",
     icon: "assessments",
+    permission: Permission.MANAGE_ASSESSMENTS,
+  },
+  {
+    path: "/term-results",
+    label: "Term Results",
+    tooltip: "Review and publish class results",
+    icon: "termResults",
     permission: Permission.MANAGE_ASSESSMENTS,
   },
   {

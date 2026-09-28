@@ -11,6 +11,8 @@ const ROUTE_PERMISSIONS: Array<[prefix: string, permission: PermissionValue]> = 
   ["/classes", Permission.MANAGE_CLASSES],
   ["/curriculum", Permission.MANAGE_CURRICULUM],
   ["/assessments", Permission.MANAGE_ASSESSMENTS],
+  // Publishing and returning class results is assessment work (§23).
+  ["/term-results", Permission.MANAGE_ASSESSMENTS],
   ["/timetable", Permission.MANAGE_TIMETABLE],
   ["/fees-management", Permission.MANAGE_FEES],
   ["/payments", Permission.MANAGE_PAYMENTS],

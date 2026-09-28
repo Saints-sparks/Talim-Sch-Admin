@@ -154,6 +154,14 @@ export function InputField({
   );
 }
 
+/** Props both buttons pass through to the `<button>`. */
+interface ButtonPassThrough {
+  /** Takes focus when it mounts (the safe choice in a confirmation dialog). */
+  autoFocus?: boolean;
+  /** Ids of text that explains the button, e.g. why it is disabled. */
+  "aria-describedby"?: string;
+}
+
 /** The filled action button. */
 export function PrimaryBtn({
   children,
@@ -162,6 +170,7 @@ export function PrimaryBtn({
   loading,
   type = "button",
   className = "",
+  ...rest
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -169,9 +178,10 @@ export function PrimaryBtn({
   loading?: boolean;
   type?: "button" | "submit";
   className?: string;
-}) {
+} & ButtonPassThrough) {
   return (
     <button
+      {...rest}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
@@ -189,14 +199,16 @@ export function OutlineBtn({
   onClick,
   disabled,
   className = "",
+  ...rest
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
-}) {
+} & ButtonPassThrough) {
   return (
     <button
+      {...rest}
       type="button"
       onClick={onClick}
       disabled={disabled}

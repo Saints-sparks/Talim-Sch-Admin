@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeftRight, CreditCard, Receipt, Wallet } from "lucide-react";
+import { ArrowLeftRight, ClipboardCheck, CreditCard, Receipt, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -37,6 +37,8 @@ export function NavIcon({ icon, active }: { icon: NavIconKey; active: boolean })
       return <Note isActive={active} />;
     case "assessments":
       return <Chart2 isActive={active} />;
+    case "termResults":
+      return <ClipboardCheck className={lucideClass(active)} />;
     case "timetable":
       return <Calendar2 isActive={active} />;
     case "fees":
