@@ -7,40 +7,38 @@
  * throws back a message, which the modal shows above the form so the draft
  * survives a failed save.
  */
-import React, { useEffect, useState } from "react";
-import { AlertCircle, Calendar, Clock, FileText, Target } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { AlertCircle, Calendar, Clock, FileText, Hash, Target } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
 import TermSelector from "@/components/assessment/TermSelector";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
+  describeAssessmentSaveError,
   isWithinAssessmentPeriod,
+  maxScoreChanged,
+  toAssessmentForm,
   validateAssessmentForm,
   type AssessmentFormErrors,
 } from "@/components/assessment/assessment.form";
 import { assessmentService, ASSESSMENT_STATUSES } from "@/app/services/assessment.service";
 import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
-import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
+import { MAX_SCORE_MAX, MAX_SCORE_MIN } from "@/types/gradingContract";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Saves the assessment; rejects with a message the modal displays. */
+  /**
+   * Saves the assessment. Rejects with what the save threw (usually an
+   * `ApiError`), which the modal turns into a message beside the form or the
+   * field it concerns.
+   */
   onSubmit: (assessmentData: AssessmentForm) => Promise<void>;
   terms: Term[];
   editingAssessment?: Assessment | null;
   loading?: boolean;
 }
-
-const EMPTY_FORM: AssessmentForm = {
-  name: "",
-  description: "",
-  termId: "",
-  startDate: "",
-  endDate: "",
-  status: "pending",
-};
 
 const labelClass = "flex items-center text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3";
 
@@ -53,12 +51,32 @@ function inputClass(hasError: boolean): string {
     : `${base} border-gray-200 dark:border-slate-700 focus:border-blue-300`;
 }
 
+/** The id of a field's error message, which the field names in `aria-describedby`. */
+function errorId(controlId: string): string {
+  return `${controlId}-error`;
+}
+
+/**
+ * Accessibility props for a field that may be invalid: flags it and points
+ * at its error (and hint), so a screen reader reads them with the field.
+ */
+function describedBy(controlId: string, error?: string, hintId?: string) {
+  const ids = [error ? errorId(controlId) : null, hintId ?? null].filter(Boolean).join(" ");
+  return {
+    "aria-invalid": Boolean(error) || undefined,
+    "aria-describedby": ids || undefined,
+  } as const;
+}
+
 /** The message under a field, or nothing. */
-function FieldError({ message }: { message?: string }) {
+function FieldError({ controlId, message }: { controlId: string; message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-950/30 p-2 rounded-lg">
-      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+    <p
+      id={errorId(controlId)}
+      className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-950/30 p-2 rounded-lg"
+    >
+      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" aria-hidden />
       {message}
     </p>
   );
@@ -83,7 +101,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   editingAssessment,
   loading = false,
 }) => {
-  const [formData, setFormData] = useState<AssessmentForm>(EMPTY_FORM);
+  const [formData, setFormData] = useState<AssessmentForm>(() => toAssessmentForm(editingAssessment));
   const [errors, setErrors] = useState<AssessmentFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   /** The failure from the last save, shown above the form. */
@@ -91,6 +109,15 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
   const isEditing = Boolean(editingAssessment);
   const isRunning = isWithinAssessmentPeriod(formData.startDate, formData.endDate);
+  const maxScoreRef = useRef<HTMLInputElement>(null);
+  /** Set when a failed save belongs to the max score; the field takes focus once it is enabled again. */
+  const [focusMaxScore, setFocusMaxScore] = useState(false);
+
+  useEffect(() => {
+    if (!focusMaxScore || submitting) return;
+    maxScoreRef.current?.focus();
+    setFocusMaxScore(false);
+  }, [focusMaxScore, submitting]);
 
   // TalimModal does not lock the page itself; the lock is counted, so doing it
   // here is safe even with another modal already open.
@@ -98,19 +125,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
   // Reload the form every time the modal opens or switches assessment.
   useEffect(() => {
-    setFormData(
-      editingAssessment
-        ? {
-            name: editingAssessment.name,
-            description: editingAssessment.description || "",
-            termId: editingAssessment.termId._id,
-            // The inputs are `type="date"`, which only understands YYYY-MM-DD.
-            startDate: editingAssessment.startDate.split("T")[0],
-            endDate: editingAssessment.endDate.split("T")[0],
-            status: editingAssessment.status,
-          }
-        : EMPTY_FORM,
-    );
+    setFormData(toAssessmentForm(editingAssessment));
     setErrors({});
     setSubmitError(null);
   }, [editingAssessment, isOpen]);
@@ -162,7 +177,20 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
       // The draft stays on screen: the administrator can correct it and
       // resubmit rather than retyping the whole form.
       logger.error("assessments", "Assessment form submission failed", error);
-      setSubmitError(getErrorMessage(error, "Could not save the assessment. Please try again."));
+      const problem = describeAssessmentSaveError(error, {
+        isEditing,
+        maxScoreChanged: maxScoreChanged(formData, editingAssessment),
+        savedMaxScore: editingAssessment?.maxScore,
+      });
+      if (problem.field) {
+        // The field explains it; focusing it makes a screen reader read the
+        // explanation with the field.
+        setErrors((previous) => ({ ...previous, [problem.field as string]: problem.message }));
+        setSubmitError("The assessment was not saved. See the max score below.");
+        setFocusMaxScore(true);
+      } else {
+        setSubmitError(problem.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -241,8 +269,9 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
             className={inputClass(Boolean(errors.name))}
             placeholder="e.g., First Term Examination 2025"
             disabled={submitting}
+            {...describedBy("assessment-name", errors.name)}
           />
-          <FieldError message={errors.name} />
+          <FieldError controlId="assessment-name" message={errors.name} />
         </div>
 
         <div>
@@ -287,7 +316,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               className="border-0 rounded-xl"
             />
           </div>
-          <FieldError message={errors.termId} />
+          <FieldError controlId="assessment-term" message={errors.termId} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -309,8 +338,9 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               min={isEditing ? undefined : new Date().toISOString().split("T")[0]}
               className={inputClass(Boolean(errors.startDate))}
               disabled={submitting}
+              {...describedBy("assessment-start", errors.startDate)}
             />
-            <FieldError message={errors.startDate} />
+            <FieldError controlId="assessment-start" message={errors.startDate} />
           </div>
 
           <div>
@@ -329,9 +359,41 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               min={formData.startDate || undefined}
               className={inputClass(Boolean(errors.endDate))}
               disabled={submitting}
+              {...describedBy("assessment-end", errors.endDate)}
             />
-            <FieldError message={errors.endDate} />
+            <FieldError controlId="assessment-end" message={errors.endDate} />
           </div>
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="assessment-max-score">
+            <span className="w-8 h-8 bg-indigo-100 dark:bg-indigo-950/50 rounded-lg flex items-center justify-center mr-3">
+              <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-300" aria-hidden />
+            </span>
+            Max Score *
+          </label>
+          <input
+            ref={maxScoreRef}
+            id="assessment-max-score"
+            type="number"
+            name="maxScore"
+            inputMode="decimal"
+            min={MAX_SCORE_MIN}
+            max={MAX_SCORE_MAX}
+            step="any"
+            value={formData.maxScore}
+            onChange={handleInputChange}
+            className={`${inputClass(Boolean(errors.maxScore))} sm:max-w-xs`}
+            placeholder="e.g., 100"
+            disabled={submitting}
+            aria-required
+            {...describedBy("assessment-max-score", errors.maxScore, "assessment-max-score-hint")}
+          />
+          <p id="assessment-max-score-hint" className="mt-2 text-sm text-gray-500 dark:text-slate-400">
+            Teachers enter every score out of this number ({MAX_SCORE_MIN}–{MAX_SCORE_MAX}). It can&apos;t
+            change once scores for this assessment are published.
+          </p>
+          <FieldError controlId="assessment-max-score" message={errors.maxScore} />
         </div>
 
         {isEditing && (
@@ -349,6 +411,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               onChange={handleInputChange}
               className={inputClass(Boolean(errors.status))}
               disabled={submitting}
+              {...describedBy("assessment-status", errors.status)}
             >
               {ASSESSMENT_STATUSES.map((status) => (
                 <option
@@ -364,7 +427,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
                 </option>
               ))}
             </select>
-            <FieldError message={errors.status} />
+            <FieldError controlId="assessment-status" message={errors.status} />
             {!isRunning && (
               <p className="mt-2 text-sm text-gray-500 dark:text-slate-400 flex items-center">
                 <Clock className="h-4 w-4 mr-1 flex-shrink-0" />

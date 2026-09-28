@@ -150,6 +150,10 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
         <div className="flex items-center text-sm">
           <span className={`font-medium ${daysRemaining.color}`}>{daysRemaining.text}</span>
         </div>
+
+        {assessment.maxScore !== undefined && (
+          <div className="text-sm text-gray-600">Scored out of {assessment.maxScore}</div>
+        )}
       </div>
 
       {/* Created By */}

@@ -18,6 +18,11 @@
  *   `{ avatarUrl }` as JSON, which the endpoint also accepts.
  */
 import type { RequestBody } from "./apiContract";
+import type {
+  CreateAssessmentMaxScore,
+  UpdateAcademicGradingFields,
+  UpdateAssessmentMaxScore,
+} from "./gradingContract";
 
 // ─── Fees ─────────────────────────────────────────────────────────────────────
 
@@ -159,8 +164,12 @@ export type UpdateSchoolProfilePayload = RequestBody<"/settings/school-profile",
 export type UpdateReceiptSettingsPayload = RequestBody<"/settings/receipt", "patch">;
 /** Body of `PATCH /settings/finance`. */
 export type UpdateFinanceSettingsPayload = RequestBody<"/settings/finance", "patch">;
-/** Body of `PATCH /settings/academic`. */
-export type UpdateAcademicSettingsPayload = RequestBody<"/settings/academic", "patch">;
+/**
+ * Body of `PATCH /settings/academic`. The grade scale and pass mark (Round 3,
+ * §16) are hand-written in `gradingContract.ts` until the contract has them.
+ */
+export type UpdateAcademicSettingsPayload = RequestBody<"/settings/academic", "patch"> &
+  UpdateAcademicGradingFields;
 /** Body of `POST /calendar-events`. */
 export type CreateCalendarEventPayload = RequestBody<"/calendar-events", "post">;
 /** Body of `PATCH /calendar-events/{id}`. `termId: null` clears the term. */
@@ -198,10 +207,13 @@ export type UpdateSubjectContractPayload = RequestBody<"/subjects-courses/subjec
 
 // ─── Assessments, transit ─────────────────────────────────────────────────────
 
-/** Body of `POST /assessments`. */
-export type CreateAssessmentPayload = RequestBody<"/assessments", "post">;
-/** Body of `PUT /assessments/{id}`. */
-export type UpdateAssessmentPayload = RequestBody<"/assessments/{id}", "put">;
+/**
+ * Body of `POST /assessments`. `maxScore` (Round 3, §15) is hand-written in
+ * `gradingContract.ts` until the contract has it.
+ */
+export type CreateAssessmentPayload = RequestBody<"/assessments", "post"> & CreateAssessmentMaxScore;
+/** Body of `PUT /assessments/{id}`, with the hand-written optional `maxScore` (§15). */
+export type UpdateAssessmentPayload = RequestBody<"/assessments/{id}", "put"> & UpdateAssessmentMaxScore;
 /** Body of `POST /transit/transfers`. */
 export type CreateTransferPayload = RequestBody<"/transit/transfers", "post">;
 /** Body of `POST /transit/transfers/{id}/reject`. */

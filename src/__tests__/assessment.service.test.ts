@@ -39,7 +39,7 @@ describe("createAssessment", () => {
   it("posts to /assessments and returns assessment from result.assessment", async () => {
     const assessment = { _id: "a1", name: "Mid Term", status: "pending" };
     mockPost.mockResolvedValueOnce({ assessment });
-    const payload = { name: "Mid Term", termId: "tm1", startDate: "2025-10-01", endDate: "2025-10-15" };
+    const payload = { name: "Mid Term", termId: "tm1", startDate: "2025-10-01", endDate: "2025-10-15", maxScore: 40 };
     await expect(assessmentService.createAssessment(payload)).resolves.toEqual(assessment);
     expect(mockPost).toHaveBeenCalledWith("/assessments", payload);
   });
@@ -47,7 +47,7 @@ describe("createAssessment", () => {
   it("propagates the ApiError the client throws", async () => {
     mockPost.mockRejectedValueOnce(new ApiError("NOT_FOUND", "Term not found", 404));
     await expect(
-      assessmentService.createAssessment({ name: "X", termId: "tm0", startDate: "", endDate: "" }),
+      assessmentService.createAssessment({ name: "X", termId: "tm0", startDate: "", endDate: "", maxScore: 100 }),
     ).rejects.toThrow("Term not found");
   });
 });

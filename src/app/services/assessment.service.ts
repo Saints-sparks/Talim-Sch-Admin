@@ -42,6 +42,12 @@ export interface AssessmentResponse {
   startDate: string;
   endDate: string;
   status: AssessmentStatus;
+  /**
+   * Highest score a student can get (Round 3, §15; hand-written until the
+   * contract has it). A migration fills it for older assessments, so it is
+   * missing only while an API without Round 3 is answering.
+   */
+  maxScore?: number;
   createdBy: {
     _id: string;
     name: string;
@@ -167,6 +173,8 @@ export const assessmentService = {
    * @param id - Assessment to update.
    * @param data - Fields to change; every field is optional.
    * @returns The updated assessment.
+   * @throws `ApiError` — `CONFLICT` (409) when `maxScore` changes on an
+   *   assessment that already has published scores for a course.
    */
   async updateAssessment(id: string, data: UpdateAssessmentRequest): Promise<AssessmentResponse> {
     const result = await api.put<AssessmentEnvelope>(

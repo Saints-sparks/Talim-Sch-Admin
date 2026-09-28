@@ -32,7 +32,9 @@ export type Term = TermResponse;
  * What the create/edit form holds.
  *
  * Mirrors `CreateAssessmentDto`: `termId` is fixed once an assessment exists,
- * which is why the update DTO has no term.
+ * which is why the update DTO has no term. `maxScore` is the input's text
+ * (so an empty field can be told apart from 0); `assessment.form.ts` turns it
+ * into the number the API takes.
  */
 export interface AssessmentForm {
   name: string;
@@ -41,4 +43,5 @@ export interface AssessmentForm {
   startDate: string;
   endDate: string;
   status?: AssessmentStatus;
+  maxScore: string;
 }

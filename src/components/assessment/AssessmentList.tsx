@@ -67,6 +67,16 @@ function durationLabel(assessment: Assessment): string {
 }
 
 /**
+ * How an assessment's max score reads on its card.
+ *
+ * @param maxScore - The assessment's max score.
+ * @returns E.g. "out of 100".
+ */
+export function maxScoreLabel(maxScore: number): string {
+  return `out of ${maxScore}`;
+}
+
+/**
  * Renders the filter bar, the grid and the pager.
  *
  * @param props - See {@link AssessmentListProps}.
@@ -180,6 +190,15 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                           {durationLabel(assessment)}
                         </span>
                       </div>
+
+                      {assessment.maxScore !== undefined && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500 dark:text-slate-400">Max score:</span>
+                          <span className="font-medium text-gray-900 dark:text-slate-100">
+                            {maxScoreLabel(assessment.maxScore)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {canManage && (

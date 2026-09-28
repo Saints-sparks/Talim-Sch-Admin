@@ -18,6 +18,8 @@ import { api } from "@/lib/apiClient";
 import { API_URLS } from "@/app/lib/api/config";
 import type { Announcement } from "@/app/services/announcement.service";
 import { assessmentService } from "@/app/services/assessment.service";
+import { parseMaxScore, validateMaxScore } from "@/components/assessment/assessment.form";
+import { MAX_SCORE_MAX, MAX_SCORE_MIN } from "@/types/gradingContract";
 import { queryKeys, staleTimes } from "@/lib/queryKeys";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -148,6 +150,8 @@ interface AssessmentForm {
   termId: string;
   startDate: string;
   endDate: string;
+  /** The input's text; required, 1–1000 (Round 3, §15). */
+  maxScore: string;
 }
 
 /**
@@ -170,6 +174,7 @@ export function CreateAssessmentStep({
     termId: "",
     startDate: "",
     endDate: "",
+    maxScore: "100",
   });
 
   // One row is enough to answer "does this school have an assessment yet?".
@@ -203,6 +208,8 @@ export function CreateAssessmentStep({
     if (new Date(form.startDate) >= new Date(form.endDate)) {
       return toast.error("The end date must be after the start date.");
     }
+    const maxScoreError = validateMaxScore(form.maxScore);
+    if (maxScoreError) return toast.error(`${maxScoreError}.`);
     mutation.mutate({
       name: form.name.trim(),
       description: form.description.trim() || undefined,
@@ -210,6 +217,7 @@ export function CreateAssessmentStep({
       startDate: new Date(form.startDate).toISOString(),
       endDate: new Date(form.endDate).toISOString(),
       status: "pending",
+      maxScore: parseMaxScore(form.maxScore) ?? 0,
     });
   };
 
@@ -280,6 +288,20 @@ export function CreateAssessmentStep({
               />
             </Field>
           </div>
+          <Field label="Max score" hint="scores are entered out of this">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={MAX_SCORE_MIN}
+              max={MAX_SCORE_MAX}
+              step="any"
+              aria-label="Max score"
+              value={form.maxScore}
+              onChange={(e) => setForm({ ...form, maxScore: e.target.value })}
+              className={inputCls}
+              required
+            />
+          </Field>
           <div className="flex gap-3">
             <PrimaryBtn loading={mutation.isPending}>
               <ClipboardList className="h-4 w-4" /> Create Assessment

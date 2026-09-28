@@ -20,6 +20,7 @@ const validForm: AssessmentForm = {
   startDate: "2026-04-01",
   endDate: "2026-04-10",
   status: "pending",
+  maxScore: "100",
 };
 
 describe("isWithinAssessmentPeriod", () => {

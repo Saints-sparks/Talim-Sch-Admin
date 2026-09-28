@@ -27,6 +27,10 @@ import {
   type GradedCourseInfo,
 } from "@/app/services/assessment.service";
 import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
+import {
+  toCreateAssessmentPayload,
+  toUpdateAssessmentPayload,
+} from "@/components/assessment/assessment.form";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import { Permission } from "@/lib/permissions";
@@ -80,43 +84,24 @@ const AssessmentManagementPage: React.FC<AssessmentManagementPageProps> = ({ ter
   };
 
   /**
-   * Saves the form. Throws so the modal keeps the draft on screen and can show
-   * the failure next to the fields.
+   * Saves the form. Rethrows what the save threw, so the modal keeps the
+   * draft on screen and can show the failure beside the form, or beside the
+   * max score when the API refuses to change it (409 once scores are
+   * published).
    */
   const handleSubmit = async (form: AssessmentForm) => {
     try {
       if (editing) {
-        await update.mutateAsync({
-          id: editing._id,
-          payload: {
-            name: form.name,
-            description: form.description,
-            startDate: form.startDate,
-            endDate: form.endDate,
-            status: form.status,
-          },
-        });
+        await update.mutateAsync({ id: editing._id, payload: toUpdateAssessmentPayload(form, editing) });
         toast.success("Assessment updated successfully!");
       } else {
-        await create.mutateAsync({
-          name: form.name,
-          description: form.description,
-          termId: form.termId,
-          startDate: form.startDate,
-          endDate: form.endDate,
-          status: form.status ?? "pending",
-        });
+        await create.mutateAsync(toCreateAssessmentPayload(form));
         toast.success("Assessment created successfully!");
       }
       closeForm();
     } catch (error) {
       logger.error("assessments", `Failed to ${editing ? "update" : "create"} assessment`, error);
-      throw new Error(
-        getErrorMessage(
-          error,
-          editing ? "Failed to update assessment." : "Failed to create assessment.",
-        ),
-      );
+      throw error;
     }
   };
 
