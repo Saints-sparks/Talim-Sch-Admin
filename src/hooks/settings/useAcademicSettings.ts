@@ -1,6 +1,7 @@
 /**
- * Settings → School Day & Bells data: the school's timezone, teaching days,
- * morning-register times and bell schedule (`/settings/academic`).
+ * Settings → School Day & Bells and Settings → Grading data: the school's
+ * timezone, teaching days, morning-register times, bell schedule, grade scale
+ * and pass mark (`/settings/academic`).
  *
  * The timetable page reads the same query for its period picker, so a saved
  * bell schedule shows up there without a reload.
@@ -51,13 +52,28 @@ export interface UpdateAcademicSettings {
   saving: boolean;
 }
 
+/** What the save toasts; each section names what it saved. */
+export interface AcademicSettingsMessages {
+  success: string;
+  failure: string;
+}
+
+const SCHOOL_DAY_MESSAGES: AcademicSettingsMessages = {
+  success: "School day settings saved",
+  failure: "Failed to save the school day settings",
+};
+
 /**
  * Saves academic settings. Not optimistic: the API re-sorts and validates the
- * bell schedule, so the cache takes the server's copy once it answers.
+ * bell schedule and the grade scale, so the cache takes the server's copy
+ * once it answers.
  *
+ * @param messages - The toasts; the School Day & Bells wording by default.
  * @returns The save function and its pending flag.
  */
-export function useUpdateAcademicSettings(): UpdateAcademicSettings {
+export function useUpdateAcademicSettings(
+  messages: AcademicSettingsMessages = SCHOOL_DAY_MESSAGES
+): UpdateAcademicSettings {
   const client = useQueryClient();
   const schoolId = useSchoolId();
   const key = settingsKeys.academic(schoolId ?? "none");
@@ -66,11 +82,11 @@ export function useUpdateAcademicSettings(): UpdateAcademicSettings {
     mutationFn: async (dto: UpdateAcademicSettingsDto) => (await updateAcademicSettings(dto)).settings,
     onError: (err) => {
       logger.error("settings/academic", "save failed", err);
-      toast.error(settingsErrorMessage(err, "Failed to save the school day settings"));
+      toast.error(settingsErrorMessage(err, messages.failure));
     },
     onSuccess: (settings) => {
       client.setQueryData(key, settings);
-      toast.success("School day settings saved");
+      toast.success(messages.success);
     },
   });
 

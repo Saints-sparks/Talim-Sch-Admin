@@ -10,6 +10,7 @@
  */
 import { api } from "@/lib/apiClient";
 import type { Schema } from "@/types/apiContract";
+import type { AcademicGradingFields, GradeBand } from "@/types/gradingContract";
 import type {
   UpdateAcademicSettingsPayload,
   UpdateFinanceSettingsPayload,
@@ -79,11 +80,16 @@ export type SchoolWeekday = Schema<"AcademicSettingsDto">["schoolDays"][number];
 export type SchoolPeriod = Schema<"AcademicPeriodResponseDto">;
 
 /**
- * The school's clock and bell schedule. The API fills in defaults
- * (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods), so every field
- * is always present.
+ * The school's clock, bell schedule, grade scale and pass mark. The API fills
+ * in defaults (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods; the
+ * A–F scale and a pass mark of 50), so every field is always present. The
+ * grading fields (Round 3, §16) are hand-written in `gradingContract.ts`
+ * until the generated contract has them.
  */
-export type AcademicSettings = Schema<"AcademicSettingsDto">;
+export type AcademicSettings = Schema<"AcademicSettingsDto"> & AcademicGradingFields;
+
+/** One band of the school's grade scale. */
+export type { GradeBand };
 
 /** The datasets Settings → Data & System can export. */
 export type ExportType = "students" | "staff" | "fees";
@@ -185,12 +191,14 @@ export const getAcademicSettings = async (): Promise<{ success: boolean; setting
 /**
  * Saves academic settings. `periods`, when sent, replaces the whole list; the
  * API sorts it by start time and rejects duplicate keys and overlaps.
+ * `gradeScale`, when sent, replaces the scale; the API rejects duplicate
+ * letters, minimums that do not strictly descend, and a last minimum above 0.
  *
  * @param dto - Only the fields being changed.
  * @returns The saved settings.
- * @throws `ApiError` — `VALIDATION_FAILED` (with `periods.N.field` details)
- *   when a field breaks the DTO rules, `FORBIDDEN` for a sub-admin without
- *   `manage:settings`.
+ * @throws `ApiError` — `VALIDATION_FAILED` (with `periods.N.field` or
+ *   `gradeScale.N.field` details) when a field breaks the DTO rules,
+ *   `FORBIDDEN` for a sub-admin without `manage:settings`.
  */
 export const updateAcademicSettings = async (
   dto: UpdateAcademicSettingsDto

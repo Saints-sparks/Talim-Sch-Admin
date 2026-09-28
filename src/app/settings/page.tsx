@@ -9,6 +9,7 @@ import { SchoolDaySection } from "@/components/settings/SchoolDaySection";
 import { SchoolCalendarSection } from "@/components/settings/SchoolCalendarSection";
 import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculumSection";
 import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
+import { GradingSection } from "@/components/settings/GradingSection";
 import { FeesReceiptsSection } from "@/components/settings/FeesReceiptsSection";
 import { PaymentsFinanceSection } from "@/components/settings/PaymentsFinanceSection";
 import { CommunicationSection } from "@/components/settings/CommunicationSection";
@@ -35,6 +36,7 @@ const SECTION_MAP: Record<SectionId, React.ComponentType<SettingsSectionProps>> 
   "school-calendar": SchoolCalendarSection,
   "classes-curriculum": ClassesCurriculumSection,
   "assessment-settings": AssessmentSettingsSection,
+  grading: GradingSection,
   "fees-receipts": FeesReceiptsSection,
   "payments-finance": PaymentsFinanceSection,
   communication: CommunicationSection,

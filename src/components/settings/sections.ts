@@ -1,5 +1,6 @@
 import type React from "react";
 import {
+  Award,
   BarChart2,
   Bell,
   BookOpen,
@@ -26,6 +27,7 @@ export type SectionId =
   | "school-calendar"
   | "classes-curriculum"
   | "assessment-settings"
+  | "grading"
   | "fees-receipts"
   | "payments-finance"
   | "communication"
@@ -65,6 +67,7 @@ export const SECTIONS: SectionMeta[] = [
   { id: "school-calendar", label: "School Calendar", desc: "Holidays, events and early closes", icon: CalendarDays },
   { id: "classes-curriculum", label: "Classes & Curriculum", desc: "Class levels, subjects and curriculum", icon: BookOpen },
   { id: "assessment-settings", label: "Assessment Settings", desc: "Grading rules and assessment preferences", icon: BarChart2 },
+  { id: "grading", label: "Grading", desc: "Grade scale and pass mark", icon: Award },
   { id: "fees-receipts", label: "Fees & Receipts", desc: "Fee categories, invoices and receipt design", icon: Receipt },
   { id: "payments-finance", label: "Payments & Finance", desc: "Wallet, withdrawals and payout settings", icon: Wallet },
   { id: "communication", label: "Communication", desc: "Email, SMS and messaging preferences", icon: MessageSquare },
@@ -104,3 +107,5 @@ export function sectionFromQuery(value: string | null, sections: SectionMeta[]):
 export const SCHOOL_DAY_SETTINGS_HREF = "/settings?section=school-day";
 /** Where the school calendar lives, for links from other pages. */
 export const SCHOOL_CALENDAR_SETTINGS_HREF = "/settings?section=school-calendar";
+/** Where the grade scale and pass mark live, for links from other pages. */
+export const GRADING_SETTINGS_HREF = "/settings?section=grading";

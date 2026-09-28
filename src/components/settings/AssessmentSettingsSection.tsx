@@ -2,21 +2,10 @@
 
 import React from "react";
 import { Info } from "lucide-react";
-import { Card, CardHeader, Notice, SectionHeader } from "@/components/settings/ui";
-
-/** The platform grading scale, shown for reference. */
-const GRADING_SCALE = [
-  { grade: "A+", min: 90, max: 100 },
-  { grade: "A", min: 80, max: 89 },
-  { grade: "B+", min: 75, max: 79 },
-  { grade: "B", min: 70, max: 74 },
-  { grade: "C+", min: 65, max: 69 },
-  { grade: "C", min: 60, max: 64 },
-  { grade: "D+", min: 55, max: 59 },
-  { grade: "D", min: 50, max: 54 },
-  { grade: "E", min: 45, max: 49 },
-  { grade: "F", min: 0, max: 44 },
-];
+import { Card, CardHeader, Notice, OutlineBtn, SectionHeader } from "@/components/settings/ui";
+import type { SettingsSectionProps } from "@/components/settings/sections";
+import { useAcademicSettings } from "@/hooks/settings/useAcademicSettings";
+import { toBandDrafts, toPassMarkText, previewGrading } from "@/components/settings/grading/gradeScale";
 
 /** How a final score is split between continuous assessment and the exam. */
 const WEIGHTING = [
@@ -32,43 +21,22 @@ const RULES = [
 ];
 
 /**
- * Settings → Assessment Settings: the grading scale, weighting and rules the
- * platform applies, shown read-only.
+ * Settings → Assessment Settings: the school's grade scale (edited under
+ * Grading) and the weighting and rules the platform applies, shown read-only.
  *
  * These used to be switches that changed nothing — there is no endpoint behind
  * them, so every toggle was discarded on the next render. Configuration that
- * does persist lives in the Assessments module, which the note links to.
+ * does persist lives in the Grading section and the Assessments module, which
+ * the card and the note link to.
+ *
+ * @param props.onNavigate - Opens the Grading section.
  */
-export function AssessmentSettingsSection() {
+export function AssessmentSettingsSection({ onNavigate }: Pick<SettingsSectionProps, "onNavigate">) {
   return (
     <div className="space-y-5">
       <SectionHeader title="Assessment Settings" desc="Grading rules and assessment preferences" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card>
-          <CardHeader title="Grading Scale" />
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700">
-                  {["Grade", "Min (%)", "Max (%)"].map((h) => (
-                    <th key={h} className="py-2 text-left text-xs font-semibold text-gray-500 dark:text-slate-400">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {GRADING_SCALE.map((g) => (
-                  <tr key={g.grade} className="border-b border-gray-50 dark:border-slate-700 last:border-0">
-                    <td className="py-2 font-semibold text-[#003366] dark:text-blue-400">{g.grade}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.min}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{g.max}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <SchoolScaleCard onEdit={() => onNavigate("grading")} />
 
         <div className="space-y-4">
           <Card>
@@ -113,5 +81,57 @@ export function AssessmentSettingsSection() {
         .
       </Notice>
     </div>
+  );
+}
+
+/** The school's grade scale, read-only, with a way to the editor. */
+function SchoolScaleCard({ onEdit }: { onEdit: () => void }) {
+  const query = useAcademicSettings();
+  const passMark = toPassMarkText(query.data?.passMark);
+  const bands = query.data ? previewGrading(toBandDrafts(query.data.gradeScale), passMark).reverse() : [];
+
+  return (
+    <Card>
+      <CardHeader
+        title="Grading Scale"
+        action={
+          <OutlineBtn onClick={onEdit} className="!px-3 !py-1.5 !text-xs">
+            Edit in Grading
+          </OutlineBtn>
+        }
+      />
+      <div className="p-4 overflow-x-auto">
+        {query.isLoading ? (
+          <div className="h-32 bg-gray-100 dark:bg-slate-700 rounded-lg animate-pulse" />
+        ) : query.isError ? (
+          <p className="text-xs text-gray-500 dark:text-slate-400">The school&apos;s grade scale could not be loaded.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <caption className="sr-only">The school&apos;s grade scale</caption>
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-slate-700">
+                {["Grade", "Range", "Remark"].map((h) => (
+                  <th key={h} scope="col" className="py-2 text-left text-xs font-semibold text-gray-500 dark:text-slate-400">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bands.map((b) => (
+                <tr key={b.id} className="border-b border-gray-50 dark:border-slate-700 last:border-0">
+                  <td className="py-2 font-semibold text-[#003366] dark:text-blue-400">{b.letter}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300 tabular-nums">{b.range}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300">{b.remark || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!query.isLoading && !query.isError && (
+          <p className="mt-3 text-xs text-gray-500 dark:text-slate-400">Pass mark: {passMark}%</p>
+        )}
+      </div>
+    </Card>
   );
 }
