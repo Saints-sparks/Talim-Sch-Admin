@@ -29,6 +29,14 @@ export const settingsKeys = {
    */
   receipt: (schoolId: string) => [...queryKeys.settings.all, schoolId, "receipt"] as const,
   /**
+   * Timezone, school days, register times and bell schedule. The timetable
+   * page reads the same entry for its period picker.
+   *
+   * @param schoolId - The signed-in administrator's school.
+   * @returns The query key.
+   */
+  academic: (schoolId: string) => [...queryKeys.settings.all, schoolId, "academic"] as const,
+  /**
    * Withdrawal safeguards (OTP, minimum amount, default payout account).
    *
    * @param schoolId - The signed-in administrator's school.

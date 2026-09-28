@@ -9,7 +9,9 @@
  * passes a school id.
  */
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import type {
+  UpdateAcademicSettingsPayload,
   UpdateFinanceSettingsPayload,
   UpdateReceiptSettingsPayload,
   UpdateSchoolProfilePayload,
@@ -21,6 +23,8 @@ export type UpdateSchoolProfileDto = UpdateSchoolProfilePayload;
 export type UpdateReceiptSettingsDto = UpdateReceiptSettingsPayload;
 /** Fields `PATCH /settings/finance` accepts (the backend DTO). */
 export type UpdateFinanceSettingsDto = UpdateFinanceSettingsPayload;
+/** Fields `PATCH /settings/academic` accepts (the backend DTO). */
+export type UpdateAcademicSettingsDto = UpdateAcademicSettingsPayload;
 
 const BASE = "/settings";
 
@@ -67,6 +71,19 @@ export interface FinanceSettings {
   minimumWithdrawalAmount: number;
   defaultBankAccountId: string | null;
 }
+
+/** A weekday the school may teach on. */
+export type SchoolWeekday = Schema<"AcademicSettingsDto">["schoolDays"][number];
+
+/** One slot of the school day: a lesson period or a break. */
+export type SchoolPeriod = Schema<"AcademicPeriodResponseDto">;
+
+/**
+ * The school's clock and bell schedule. The API fills in defaults
+ * (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods), so every field
+ * is always present.
+ */
+export type AcademicSettings = Schema<"AcademicSettingsDto">;
 
 /** The datasets Settings → Data & System can export. */
 export type ExportType = "students" | "staff" | "fees";
@@ -152,6 +169,33 @@ export const updateFinanceSettings = async (
   dto: UpdateFinanceSettingsDto
 ): Promise<{ success: boolean; settings: FinanceSettings }> =>
   api.patch<{ success: boolean; settings: FinanceSettings }>(`${BASE}/finance`, dto);
+
+// ─── Academic Settings ────────────────────────────────────────────────────────
+
+/**
+ * Loads the timezone, school days, register times and bell schedule. Open to
+ * every school admin and sub-admin (no permission needed to read).
+ *
+ * @returns The academic settings with defaults filled in.
+ * @throws `ApiError` when the request fails.
+ */
+export const getAcademicSettings = async (): Promise<{ success: boolean; settings: AcademicSettings }> =>
+  api.get<{ success: boolean; settings: AcademicSettings }>(`${BASE}/academic`);
+
+/**
+ * Saves academic settings. `periods`, when sent, replaces the whole list; the
+ * API sorts it by start time and rejects duplicate keys and overlaps.
+ *
+ * @param dto - Only the fields being changed.
+ * @returns The saved settings.
+ * @throws `ApiError` — `VALIDATION_FAILED` (with `periods.N.field` details)
+ *   when a field breaks the DTO rules, `FORBIDDEN` for a sub-admin without
+ *   `manage:settings`.
+ */
+export const updateAcademicSettings = async (
+  dto: UpdateAcademicSettingsDto
+): Promise<{ success: boolean; settings: AcademicSettings }> =>
+  api.patch<{ success: boolean; settings: AcademicSettings }>(`${BASE}/academic`, dto);
 
 // ─── Data Export ──────────────────────────────────────────────────────────────
 

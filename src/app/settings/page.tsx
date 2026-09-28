@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SubAdminsSection } from "@/components/sub-admin/SubAdminsSection";
 import { SchoolProfileSection } from "@/components/settings/SchoolProfileSection";
 import { AdminAccountSection } from "@/components/settings/AdminAccountSection";
 import { AcademicSetupSection } from "@/components/settings/AcademicSetupSection";
+import { SchoolDaySection } from "@/components/settings/SchoolDaySection";
 import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculumSection";
 import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
 import { FeesReceiptsSection } from "@/components/settings/FeesReceiptsSection";
@@ -15,6 +16,7 @@ import { SecuritySection } from "@/components/settings/SecuritySection";
 import { DataSystemSection } from "@/components/settings/DataSystemSection";
 import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import {
+  sectionFromQuery,
   visibleSections,
   type SectionId,
   type SettingsSectionProps,
@@ -28,6 +30,7 @@ const SECTION_MAP: Record<SectionId, React.ComponentType<SettingsSectionProps>> 
   "school-profile": SchoolProfileSection,
   "admin-account": AdminAccountSection,
   "academic-setup": AcademicSetupSection,
+  "school-day": SchoolDaySection,
   "classes-curriculum": ClassesCurriculumSection,
   "assessment-settings": AssessmentSettingsSection,
   "fees-receipts": FeesReceiptsSection,
@@ -55,6 +58,15 @@ export default function SettingsPage() {
   const canManage = hasPermission(Permission.MANAGE_SETTINGS);
   const canManageSubAdmins = isFullAdmin && hasPermission(Permission.MANAGE_SUB_ADMINS);
   const sections = visibleSections(canManageSubAdmins);
+
+  // `/settings?section=school-day` opens that tab (links from other pages).
+  // Read once on mount from `window.location` rather than `useSearchParams`,
+  // which would need a Suspense boundary around the whole page.
+  useEffect(() => {
+    const requested = sectionFromQuery(new URLSearchParams(window.location.search).get("section"), sections);
+    if (requested) setActive(requested);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // A tab that stops being visible (role change, session refresh) falls back.
   const current = sections.some((s) => s.id === active) ? active : "school-profile";

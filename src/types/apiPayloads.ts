@@ -17,7 +17,7 @@
  * - `PUT /auth/profile/avatar`: documented as multipart only; the app sends
  *   `{ avatarUrl }` as JSON, which the endpoint also accepts.
  */
-import type { RequestBody } from "./apiContract";
+import type { RequestBody, Schema } from "./apiContract";
 
 // ─── Fees ─────────────────────────────────────────────────────────────────────
 
@@ -159,6 +159,24 @@ export type UpdateSchoolProfilePayload = RequestBody<"/settings/school-profile",
 export type UpdateReceiptSettingsPayload = RequestBody<"/settings/receipt", "patch">;
 /** Body of `PATCH /settings/finance`. */
 export type UpdateFinanceSettingsPayload = RequestBody<"/settings/finance", "patch">;
+/**
+ * Body of `PATCH /settings/academic`. The contract types `schoolDays` as one
+ * weekday (the Swagger decorator lost `isArray`), while the DTO validates an
+ * array, so it is restated from the response schema.
+ */
+export type UpdateAcademicSettingsPayload = Omit<
+  RequestBody<"/settings/academic", "patch">,
+  "schoolDays"
+> & { schoolDays?: Schema<"AcademicSettingsDto">["schoolDays"] };
+/** Body of `POST /calendar-events`. */
+export type CreateCalendarEventPayload = RequestBody<"/calendar-events", "post">;
+/**
+ * Body of `PATCH /calendar-events/{id}`. `termId: null` is left out: the API
+ * turns a null term id into a fresh ObjectId instead of clearing it.
+ */
+export type UpdateCalendarEventPayload = Omit<RequestBody<"/calendar-events/{id}", "patch">, "termId"> & {
+  termId?: string;
+};
 /** Body of `PUT /schools/update/{id}`. */
 export type UpdateSchoolPayload = RequestBody<"/schools/update/{id}", "put">;
 /** Body of `POST /academic-year-term/academic-year`. */
