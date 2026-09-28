@@ -26,7 +26,8 @@ export const ADMIN_PAGES: readonly PageSpec[] = [
   { path: "/users/parents", content: /Paul Parent/ },
   { path: "/users/sub-admins", content: /Sam Subadmin/ },
   { path: "/announcements", content: /Welcome to Greenfield/ },
-  { path: "/leave-requests", content: /No Leave Requests Yet/, empty: true },
+  // The seed approves a leave request for Ben (the Teachers register shows it as on leave).
+  { path: "/leave-requests", content: /Ben Student/ },
   { path: "/transit", content: /Pending Incoming Transfers/ },
   { path: "/transit/transfers", content: /No transfers found/, empty: true },
   { path: "/transit/enrollments", content: /No enrollments found/, empty: true },
