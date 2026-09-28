@@ -66,6 +66,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teachers/me/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calling teacher's classes (class pickers)
+         * @description The calling teacher's classes, class-teacher classes first.
+         */
+        get: operations["TeachersMeController_myClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teachers/me/classes/{classId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A class's students (class teacher, course teacher, staff)
+         * @description A class's roster: attendance this term and each guardian.
+         */
+        get: operations["TeachersMeController_students"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teachers/me/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A student's record (a teacher of the student's class, or staff)
+         * @description A student's record: details, guardian, attendance and scores.
+         */
+        get: operations["TeachersMeController_student"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/calendar-events": {
         parameters: {
             query?: never;
@@ -147,6 +207,31 @@ export interface paths {
          */
         get: operations["RegistersController_status"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registers/{classId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A class's register for a day (class teacher, course teacher, staff)
+         * @description A class's register on a day, student by student, with what the caller
+         *     may do with it.
+         */
+        get: operations["RegistersController_view"];
+        /**
+         * Save (and optionally submit) a class's register for a day
+         * @description Upserts the attendance rows. Students on approved leave are ignored in `marks` and written as Excused on submit. With `submit: true` every student not on leave must be marked (else the marks are still saved and the answer is 409). `notified` counts the parents told by this call. Parents of absent students are notified on submit only: on the first submit every absent student, later only those not notified before; late students are not notified.
+         */
+        put: operations["RegistersController_save"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6678,8 +6763,9 @@ export interface components {
             onLeaveCount: number;
             /**
              * @description True when there is no register document but every student has an
-             *     attendance row (registers taken before submission existed); then
-             *     `submittedAt` is the latest row's `createdAt`.
+             *     attendance row, on a day before the school's `registerTrackingSince`
+             *     (registers taken before submission existed); then `submittedAt` is the
+             *     latest row's `createdAt`. From that day on only a submission counts.
              */
             inferred: boolean;
             /** @description ISO instant the register is due (`registerCloseTime` that day). */
@@ -6791,6 +6877,164 @@ export interface components {
             /** @description ISO instant. */
             now: string;
         };
+        ClassCourseDto: {
+            id: string;
+            code: string;
+            title: string;
+        };
+        MyClassDto: {
+            /** @enum {string} */
+            role: "class_teacher" | "subject_teacher";
+            /** @description `Number(classCapacity)`, or null when the stored value is not numeric. */
+            capacity: number | null;
+            /** @description The courses the caller teaches in this class; may be empty. */
+            courses: components["schemas"]["ClassCourseDto"][];
+            id: string;
+            name: string;
+            /** @description Active students in the class. */
+            studentCount: number;
+        };
+        RosterClassDto: {
+            /**
+             * @description `staff` for a school admin or sub-admin.
+             * @enum {string}
+             */
+            role: "class_teacher" | "subject_teacher" | "staff";
+            capacity: number | null;
+            id: string;
+            name: string;
+            studentCount: number;
+        };
+        RosterStatsDto: {
+            /**
+             * @description (present + late) / (present + late + absent) this term, in percent with
+             *     one decimal; Excused and approved leave are left out. Null with no
+             *     current term or no marks.
+             */
+            attendanceRateTerm: number | null;
+            /** @description Students marked absent today; null until today's register is submitted. */
+            absentToday: number | null;
+            /** @description Whether today's register counts as submitted. */
+            registerSubmitted: boolean;
+        };
+        RosterGuardianDto: {
+            /** @description The parent's login; start a direct chat with it. Null when unknown. */
+            userId: string | null;
+            /** @description As stored: `MOTHER`, `FATHER`, `GUARDIAN` or `OTHER`. */
+            relationship: string | null;
+            phone: string | null;
+            email: string | null;
+            name: string;
+        };
+        RosterStudentDto: {
+            admissionNumber: string | null;
+            email: string | null;
+            avatarUrl: string | null;
+            /** @description As `stats.attendanceRateTerm`, for this student. */
+            attendanceRateTerm: number | null;
+            guardian: components["schemas"]["RosterGuardianDto"] | null;
+            /** @description Student profile id. */
+            id: string;
+            name: string;
+            firstName: string;
+        };
+        ClassRosterDto: {
+            class: components["schemas"]["RosterClassDto"];
+            stats: components["schemas"]["RosterStatsDto"];
+            /** @description What the caller teaches in this class (none for staff). */
+            courses: components["schemas"]["ClassCourseDto"][];
+            /** @description Active students, by name. */
+            students: components["schemas"]["RosterStudentDto"][];
+        };
+        StudentClassDto: {
+            id: string;
+            name: string;
+        };
+        StudentRecordStudentDto: {
+            admissionNumber: string | null;
+            class: components["schemas"]["StudentClassDto"];
+            /** @description `YYYY-MM-DD`. */
+            dateOfBirth: string | null;
+            gender: string | null;
+            email: string | null;
+            avatarUrl: string | null;
+            /** @description Student profile id. */
+            id: string;
+            name: string;
+            firstName: string;
+        };
+        StudentRecordSchoolDto: {
+            name: string;
+        };
+        StudentRecordGuardianDto: {
+            /** @description The parent's login; start a direct chat with it. Null when unknown. */
+            userId: string | null;
+            /** @description As stored: `MOTHER`, `FATHER`, `GUARDIAN` or `OTHER`. */
+            relationship: string | null;
+            /** @description Not stored anywhere yet: always null. */
+            occupation: string | null;
+            email: string | null;
+            phone: string | null;
+            /** @description Not stored anywhere yet: always null. */
+            address: string | null;
+            name: string;
+        };
+        StudentAttendanceDto: {
+            /** @description (present + late) / (present + late + absent), percent, one decimal. */
+            rate: number | null;
+            /**
+             * @description School days of the current term up to today: the school's weekdays,
+             *     less holidays. 0 with no current term.
+             */
+            schoolDays: number;
+            present: number;
+            late: number;
+            absent: number;
+            /** @description Days marked Excused (approved leave is written as Excused). */
+            onLeave: number;
+        };
+        StudentAssessmentScoreDto: {
+            maxScore: number | null;
+            score: number | null;
+            /** @description Mean of the class's recorded scores, one decimal. */
+            classAverage: number | null;
+            /**
+             * @description `published` once the assessment's scores are published for the course;
+             *     `draft` when the student's score is recorded but not published;
+             *     `not_entered` when there is no score for the student.
+             * @enum {string}
+             */
+            status: "published" | "draft" | "not_entered";
+            id: string;
+            name: string;
+        };
+        StudentPositionDto: {
+            rank: number;
+            /** @description Students of the class with a complete set of scores for the course. */
+            of: number;
+        };
+        StudentCourseScoresDto: {
+            course: components["schemas"]["ClassCourseDto"];
+            /** @description The current term's assessments, by start date. */
+            assessments: components["schemas"]["StudentAssessmentScoreDto"][];
+            /** @description Sum of the recorded scores; null when none is recorded. */
+            total: number | null;
+            /** @description The grading module's grade for the percentage; only when complete. */
+            grade: string | null;
+            /** @description Only when complete. */
+            position: components["schemas"]["StudentPositionDto"] | null;
+            className: string;
+            /** @description Every assessment of the term has a score for the student. */
+            complete: boolean;
+        };
+        StudentRecordDto: {
+            student: components["schemas"]["StudentRecordStudentDto"];
+            school: components["schemas"]["StudentRecordSchoolDto"];
+            guardian: components["schemas"]["StudentRecordGuardianDto"] | null;
+            attendance: components["schemas"]["StudentAttendanceDto"];
+            /** @description Teacher: the courses they teach the student; staff: every course of the student's class. */
+            scores: components["schemas"]["StudentCourseScoresDto"][];
+        };
         CalendarEventDto: {
             termId: string | null;
             /** @enum {string} */
@@ -6834,6 +7078,7 @@ export interface components {
             endDate?: string;
             /** @example 12:00 */
             endsAt?: string | null;
+            /** @description The term the event belongs to; `null` clears it. */
             termId?: string | null;
             title?: string;
         };
@@ -6920,16 +7165,158 @@ export interface components {
             /** @description Today in the school, `YYYY-MM-DD`. */
             today: string;
         };
+        RegisterClassDto: {
+            id: string;
+            name: string;
+        };
+        RegisterTermDto: {
+            id: string;
+            name: string;
+            /** @description `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description `YYYY-MM-DD`. */
+            endDate: string;
+        };
+        RegisterSchoolDayDto: {
+            /** @enum {string|null} */
+            reason: "weekend" | "holiday" | "no_term" | null;
+            holidayTitle: string | null;
+            isSchoolDay: boolean;
+        };
+        RegisterSubmitterDto: {
+            id: string;
+            name: string;
+        };
+        RegisterCountsDto: {
+            present: number;
+            late: number;
+            absent: number;
+            onLeave: number;
+            unmarked: number;
+        };
+        RegisterLeaveDto: {
+            /**
+             * @description Name of the student's parent: only parents can ask for leave, and the
+             *     request does not record which one did. Null when unknown.
+             */
+            requestedBy: string | null;
+            id: string;
+            /** @description The leave request's type, e.g. `Health Issue`. */
+            type: string;
+        };
+        RegisterStudentDto: {
+            admissionNumber: string | null;
+            avatarUrl: string | null;
+            /**
+             * @description `on_leave` for approved leave covering the day (and for a stored
+             *     Excused row); null while unmarked.
+             * @enum {string|null}
+             */
+            status: "present" | "late" | "absent" | "on_leave" | null;
+            absenceReason: string | null;
+            note: string | null;
+            leave: components["schemas"]["RegisterLeaveDto"] | null;
+            /** @description Student profile id. */
+            id: string;
+            name: string;
+            firstName: string;
+        };
+        RegisterSheetDto: {
+            class: components["schemas"]["RegisterClassDto"];
+            term: components["schemas"]["RegisterTermDto"] | null;
+            schoolDay: components["schemas"]["RegisterSchoolDayDto"];
+            submittedAt: string | null;
+            submittedBy: components["schemas"]["RegisterSubmitterDto"] | null;
+            lastEditedAt: string | null;
+            /** @enum {string} */
+            access: "edit" | "view";
+            /**
+             * @description Why `access` is `view`: the most specific reason that applies, in this
+             *     order: `not_school_day`, `future`, `past` (never for staff),
+             *     `not_class_teacher`, `after_edit_window`. Null when editable.
+             * @enum {string|null}
+             */
+            readOnlyReason: "past" | "future" | "not_class_teacher" | "after_edit_window" | "not_school_day" | null;
+            counts: components["schemas"]["RegisterCountsDto"];
+            /** @description By name. */
+            students: components["schemas"]["RegisterStudentDto"][];
+            /** @description `YYYY-MM-DD`. */
+            date: string;
+            /** @description Today in the school, `YYYY-MM-DD` (to clamp date pickers). */
+            today: string;
+            isToday: boolean;
+            /** @description ISO instant the register is due. */
+            closesAt: string;
+            /** @description ISO instant after which a teacher can no longer change it. */
+            editableUntil: string;
+            /** @description As in `GET /registers/status`: a legacy register, before tracking began. */
+            inferred: boolean;
+        };
+        RegisterMarkDto: {
+            /** @enum {string} */
+            status: "present" | "late" | "absent";
+            /** @description Student profile id; must be in the class. */
+            studentId: string;
+            /**
+             * @description Why the student is absent. Left out: an absent student keeps the stored
+             *     reason, a present or late one has none.
+             */
+            absenceReason?: string;
+            /** @description A note for the school office. Left out: the stored note is kept. */
+            note?: string;
+        };
+        SaveRegisterDto: {
+            /** @description Students on approved leave are ignored if they appear here. */
+            marks: components["schemas"]["RegisterMarkDto"][];
+            /**
+             * @description Also submit the register: every student not on leave must then be
+             *     marked (409 with `missing` otherwise).
+             */
+            submit: boolean;
+        };
+        RegisterSaveDto: {
+            class: components["schemas"]["RegisterClassDto"];
+            term: components["schemas"]["RegisterTermDto"] | null;
+            schoolDay: components["schemas"]["RegisterSchoolDayDto"];
+            submittedAt: string | null;
+            submittedBy: components["schemas"]["RegisterSubmitterDto"] | null;
+            lastEditedAt: string | null;
+            /** @enum {string} */
+            access: "edit" | "view";
+            /**
+             * @description Why `access` is `view`: the most specific reason that applies, in this
+             *     order: `not_school_day`, `future`, `past` (never for staff),
+             *     `not_class_teacher`, `after_edit_window`. Null when editable.
+             * @enum {string|null}
+             */
+            readOnlyReason: "past" | "future" | "not_class_teacher" | "after_edit_window" | "not_school_day" | null;
+            counts: components["schemas"]["RegisterCountsDto"];
+            /** @description By name. */
+            students: components["schemas"]["RegisterStudentDto"][];
+            /** @description `YYYY-MM-DD`. */
+            date: string;
+            /** @description Today in the school, `YYYY-MM-DD` (to clamp date pickers). */
+            today: string;
+            isToday: boolean;
+            /** @description ISO instant the register is due. */
+            closesAt: string;
+            /** @description ISO instant after which a teacher can no longer change it. */
+            editableUntil: string;
+            /** @description As in `GET /registers/status`: a legacy register, before tracking began. */
+            inferred: boolean;
+            /** @description Parents notified by this call; 0 unless it submitted the register. */
+            notified: number;
+        };
+        RegisterIncompleteDto: {
+            /** @description Students with no attendance row and no approved leave for the day. */
+            missing: number;
+        };
         SubmitRegisterDto: {
             /**
              * @description The school day, `YYYY-MM-DD`; defaults to today in the school.
              * @example 2026-09-28
              */
             date?: string;
-        };
-        RegisterIncompleteDto: {
-            /** @description Students with no attendance row and no approved leave for the day. */
-            missing: number;
         };
         SchemeCourseDto: {
             id: string;
@@ -7169,6 +7556,29 @@ export interface components {
             termId?: string;
         };
         Timetable: Record<string, never>;
+        ClassTimetableEntryDto: {
+            _id?: string;
+            courseId?: string;
+            subjectId?: string;
+            /** @description Course title. */
+            course?: string;
+            room: string | null;
+            /** @description Key of the school period the entry sits in, when set. */
+            periodKey: string | null;
+            /** @description `"<startTime> - <endTime>"`, as stored. */
+            time: string;
+            /** @description As stored (legacy rows may read `"08:00 AM"`). */
+            startTime: string;
+            /** @description Legacy misspelling kept for old clients; same as `startTime`. */
+            startTIme: string;
+            endTime: string;
+            /** @description Subject name, or `N/A`. */
+            subject: string;
+            /** @description Class name, or `N/A`. */
+            class: string;
+            /** @description The course teacher's name, or `Unassigned teacher`. */
+            teacherName: string;
+        };
         UpdateTimetableDto: {
             /** @enum {string} */
             day?: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
@@ -10244,6 +10654,13 @@ export interface components {
             schoolDays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
             /** @description Ordered by start time; empty when the school has not set any. */
             periods: components["schemas"]["AcademicPeriodResponseDto"][];
+            /**
+             * @description `YYYY-MM-DD`. From this day on a register counts as submitted only when
+             *     it was submitted; before it, a full set of attendance rows counts
+             *     (`inferred`). Set by the server, never by PATCH.
+             * @example 2026-09-28
+             */
+            registerTrackingSince: string;
             schoolId: string;
             timezone: string;
             /** @description `HH:mm`. */
@@ -10281,9 +10698,8 @@ export interface components {
              *       "Thursday",
              *       "Friday"
              *     ]
-             * @enum {array}
              */
-            schoolDays?: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+            schoolDays?: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
             periods?: components["schemas"]["AcademicPeriodDto"][];
             /** @description IANA timezone, e.g. `Africa/Lagos`. */
             timezone?: string;
@@ -10475,6 +10891,69 @@ export interface operations {
             };
         };
     };
+    TeachersMeController_myClasses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyClassDto"][];
+                };
+            };
+        };
+    };
+    TeachersMeController_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassRosterDto"];
+                };
+            };
+        };
+    };
+    TeachersMeController_student: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Student profile id */
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRecordDto"];
+                };
+            };
+        };
+    };
     CalendarEventsController_list: {
         parameters: {
             query?: {
@@ -10610,6 +11089,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RegisterStatusDto"][];
+                };
+            };
+        };
+    };
+    RegistersController_view: {
+        parameters: {
+            query?: {
+                /** @description The school day, `YYYY-MM-DD`; defaults to today in the school. */
+                date?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterSheetDto"];
+                };
+            };
+        };
+    };
+    RegistersController_save: {
+        parameters: {
+            query?: {
+                /** @description The school day, `YYYY-MM-DD`; defaults to today in the school. */
+                date?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveRegisterDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterSaveDto"];
+                };
+            };
+            /** @description The caller may only view this register (see `readOnlyReason` on GET). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Submitting with students neither marked nor on approved leave; `missing` is their number (top level of the error body). The marks sent are saved as a draft; the register is not submitted. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterIncompleteDto"];
                 };
             };
         };
@@ -11457,13 +12006,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Timetable retrieved successfully. */
+            /** @description Timetable retrieved successfully: entries grouped by weekday (e.g. `{ Monday: [...] }`). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Timetable"][];
+                    "application/json": {
+                        [key: string]: components["schemas"]["ClassTimetableEntryDto"][];
+                    };
                 };
             };
         };

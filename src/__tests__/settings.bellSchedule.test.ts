@@ -29,6 +29,7 @@ const saved: AcademicSettings = {
   schoolDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   registerCloseTime: "11:00",
   registerEditUntil: "16:00",
+  registerTrackingSince: "2026-09-01",
   periods: [
     { key: "p1", label: "Period 1", startTime: "08:00", endTime: "08:40", isBreak: false },
     { key: "brk", label: "Break", startTime: "08:40", endTime: "09:00", isBreak: true },

@@ -14,6 +14,7 @@
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
 import type { CreateAcademicYearPayload, CreateTermPayload } from "@/types/apiPayloads";
+import type { Schema } from "@/types/apiContract";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,17 @@ export interface TimetableEntryResponse {
   /** The school period the entry was placed in, when sent. */
   periodKey?: string | null;
 }
+
+/** `T`, if it is assignable to `U`; a compile error otherwise. */
+type Assignable<T extends U, U> = T;
+
+/**
+ * Compile-time check that an entry of the documented class timetable
+ * (`ClassTimetableEntryDto`, with `room` and `periodKey`) is readable as
+ * {@link TimetableEntryResponse}, which the grid uses. `tsc` fails here if the
+ * contract drifts from what the grid reads.
+ */
+export type ClassTimetableEntryFitsGrid = Assignable<Schema<"ClassTimetableEntryDto">, TimetableEntryResponse>;
 
 /** A class timetable, grouped by day as the API returns it. */
 export type TimetableByDay = Partial<Record<TimetableDay, TimetableEntryResponse[]>>;
