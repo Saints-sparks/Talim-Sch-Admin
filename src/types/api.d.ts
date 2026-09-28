@@ -46,6 +46,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teachers/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calling teacher's Today page in one call
+         * @description Everything the teacher's Today page shows.
+         */
+        get: operations["TeachersTodayController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List school calendar events in a date range
+         * @description Events overlapping `[from, to]`, by start date.
+         */
+        get: operations["CalendarEventsController_list"];
+        put?: never;
+        /**
+         * Add a calendar event
+         * @description Adds a holiday, event or early close.
+         */
+        post: operations["CalendarEventsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar-events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a calendar event
+         * @description Deletes an event.
+         */
+        delete: operations["CalendarEventsController_remove"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a calendar event
+         * @description Changes an event.
+         */
+        patch: operations["CalendarEventsController_update"];
+        trace?: never;
+    };
+    "/timetable/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calling teacher's timetable for one week
+         * @description The teacher's lessons, periods and calendar for one week.
+         */
+        get: operations["TimetableMeController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registers/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Register status of your classes for a day
+         * @description Where each register stands on a day.
+         */
+        get: operations["RegistersController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registers/{classId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a class's morning register
+         * @description Submits a class's register once every student is marked or on leave.
+         */
+        post: operations["RegistersController_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheme-of-work/course/{courseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A course's week-by-week scheme of work
+         * @description A course's scheme for a term, every week present.
+         */
+        get: operations["SchemeOfWorkController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheme-of-work/course/{courseId}/weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save several weeks of a scheme of work
+         * @description Saves several weeks at once.
+         */
+        put: operations["SchemeOfWorkController_saveWeeks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheme-of-work/course/{courseId}/weeks/{week}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save one week of a scheme of work
+         * @description Saves one week.
+         */
+        put: operations["SchemeOfWorkController_saveWeek"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheme-of-work/course/{courseId}/weeks/{week}/taught": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a scheme-of-work week taught
+         * @description Marks a week taught or not taught.
+         */
+        post: operations["SchemeOfWorkController_markTaught"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/subjects-courses/courses": {
         parameters: {
             query?: never;
@@ -5874,6 +6082,28 @@ export interface paths {
         patch: operations["SettingsController_updateFinanceSettings"];
         trace?: never;
     };
+    "/settings/academic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the academic settings (timezone, periods) */
+        get: operations["SettingsController_getAcademicSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the academic settings (timezone, periods)
+         * @description Changes the academic settings. `periods`, when sent, replaces the list
+         *     and must have unique keys and no overlapping times.
+         */
+        patch: operations["SettingsController_updateAcademicSettings"];
+        trace?: never;
+    };
     "/settings/security/change-password": {
         parameters: {
             query?: never;
@@ -6360,6 +6590,402 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        TodayTermDto: {
+            id: string;
+            name: string;
+        };
+        SchoolDayDto: {
+            /** @enum {string|null} */
+            reason: "weekend" | "holiday" | "no_term" | null;
+            holidayTitle: string | null;
+            /** @description `HH:mm` when school closes early today. */
+            endsEarlyAt: string | null;
+            isSchoolDay: boolean;
+        };
+        PeriodDto: {
+            key: string;
+            label: string;
+            /** @description `HH:mm`. */
+            startTime: string;
+            /** @description `HH:mm`. */
+            endTime: string;
+            isBreak: boolean;
+        };
+        LessonCourseDto: {
+            id: string;
+            code: string;
+            title: string;
+        };
+        LessonSubjectDto: {
+            id: string;
+            name: string;
+        };
+        LessonClassDto: {
+            id: string;
+            name: string;
+        };
+        LessonTopicDto: {
+            /** @description ISO instant the week was marked taught. */
+            taughtAt: string | null;
+            week: number;
+            topic: string;
+            objectives: string;
+        };
+        LessonCancelledDto: {
+            reason: string;
+        };
+        TodayLessonDto: {
+            periodKey: string | null;
+            course: components["schemas"]["LessonCourseDto"];
+            subject: components["schemas"]["LessonSubjectDto"] | null;
+            class: components["schemas"]["LessonClassDto"];
+            /**
+             * @description The class-group chat room of the lesson's class that the teacher is in;
+             *     null when there is none.
+             */
+            classRoomId: string | null;
+            room: string | null;
+            topic: components["schemas"]["LessonTopicDto"] | null;
+            cancelled: components["schemas"]["LessonCancelledDto"] | null;
+            /** @enum {string} */
+            state: "done" | "now" | "later";
+            /** @description Minutes to the end of the lesson in progress; null otherwise. */
+            minutesLeft: number | null;
+            /** @description Timetable entry id. */
+            id: string;
+            /** @description `YYYY-MM-DD`. */
+            date: string;
+            day: string;
+            /** @description `HH:mm`. */
+            startTime: string;
+            /** @description `HH:mm`. */
+            endTime: string;
+            isClassTeacher: boolean;
+            studentCount: number;
+        };
+        RegisterStatusDto: {
+            /** @description ISO instant; null until submitted. */
+            submittedAt: string | null;
+            classId: string;
+            className: string;
+            /** @description Whether the caller is this class's class teacher. */
+            isClassTeacher: boolean;
+            /** @description Active students in the class. */
+            studentCount: number;
+            /** @description Students with an attendance row for the day. */
+            markedCount: number;
+            /** @description Students on approved leave covering the day. */
+            onLeaveCount: number;
+            /**
+             * @description True when there is no register document but every student has an
+             *     attendance row (registers taken before submission existed); then
+             *     `submittedAt` is the latest row's `createdAt`.
+             */
+            inferred: boolean;
+            /** @description ISO instant the register is due (`registerCloseTime` that day). */
+            closesAt: string;
+            /** @description ISO instant after which a teacher can no longer submit or change it. */
+            editableUntil: string;
+            /**
+             * @description Whether the caller may submit now: the class teacher before
+             *     `editableUntil`, staff at any time. Completeness is not considered;
+             *     an incomplete submission answers 409.
+             */
+            canSubmit: boolean;
+        };
+        AttentionTargetDto: {
+            /** @enum {string} */
+            page: "attendance" | "grading" | "messages" | "resources" | "subjects" | "leave";
+            classId?: string;
+            courseId?: string;
+            assessmentId?: string;
+            roomId?: string;
+            week?: number;
+            /** @description `YYYY-MM-DD`. */
+            date?: string;
+        };
+        AttentionActionDto: {
+            target: components["schemas"]["AttentionTargetDto"];
+            label: string;
+        };
+        AttentionItemDto: {
+            /** @enum {string} */
+            kind: "register" | "scores_start" | "scores_missing" | "scores_publish" | "reply" | "resource" | "leave_request";
+            /** @enum {string} */
+            tone: "warning" | "neutral" | "success" | "info" | "accent";
+            action: components["schemas"]["AttentionActionDto"];
+            /** @description Stable for the same underlying task, e.g. `register:<classId>`. */
+            id: string;
+            title: string;
+            description: string;
+        };
+        TodayClassRegisterDto: {
+            submittedAt: string | null;
+        };
+        TodayClassDto: {
+            /** @enum {string} */
+            role: "class_teacher" | "subject_teacher";
+            /** @description `Number(classCapacity)`, or null when that is not a number. */
+            capacity: number | null;
+            /** @description Percent of this term's attendance rows that are Present or Late. */
+            attendanceRateTerm: number | null;
+            /** @description Null for a class the teacher only teaches a subject in. */
+            register: components["schemas"]["TodayClassRegisterDto"] | null;
+            id: string;
+            name: string;
+            studentCount: number;
+        };
+        TodayEventDto: {
+            /** @enum {string} */
+            type: "holiday" | "event" | "early_close";
+            id: string;
+            title: string;
+            /** @description `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description `YYYY-MM-DD`, inclusive. */
+            endDate: string;
+        };
+        SetupStepDto: {
+            /** @enum {string} */
+            key: "profile" | "register" | "publish" | "resource" | "plan" | "tour";
+            label: string;
+            done: boolean;
+        };
+        SetupDto: {
+            steps: components["schemas"]["SetupStepDto"][];
+            /** @description 0..100. */
+            percent: number;
+        };
+        TodayCountsDto: {
+            unreadMessages: number;
+            unreadNotifications: number;
+            /** @description Class-teacher registers not yet submitted today (0 on a non-school day). */
+            pendingRegisters: number;
+        };
+        TeacherTodayDto: {
+            /** @enum {string} */
+            greeting: "morning" | "afternoon" | "evening";
+            term: components["schemas"]["TodayTermDto"] | null;
+            weekNumber: number | null;
+            schoolDay: components["schemas"]["SchoolDayDto"];
+            periods: components["schemas"]["PeriodDto"][];
+            /** @description Today's lessons, by start time. */
+            lessons: components["schemas"]["TodayLessonDto"][];
+            nowLessonId: string | null;
+            nextLessonId: string | null;
+            /** @description `HH:mm` of the first lesson that takes place. */
+            firstLessonAt: string | null;
+            /** @description `HH:mm` the last lesson that takes place ends. */
+            lastLessonEndsAt: string | null;
+            registers: components["schemas"]["RegisterStatusDto"][];
+            attention: components["schemas"]["AttentionItemDto"][];
+            classes: components["schemas"]["TodayClassDto"][];
+            events: components["schemas"]["TodayEventDto"][];
+            setup: components["schemas"]["SetupDto"];
+            counts: components["schemas"]["TodayCountsDto"];
+            /** @description Today in the school, `YYYY-MM-DD`. */
+            date: string;
+            /** @description Weekday name. */
+            day: string;
+            timezone: string;
+            /** @description ISO instant. */
+            now: string;
+        };
+        CalendarEventDto: {
+            termId: string | null;
+            /** @enum {string} */
+            type: "holiday" | "event" | "early_close";
+            /** @description `HH:mm`; only for `early_close`. */
+            endsAt: string | null;
+            id: string;
+            title: string;
+            /** @description `YYYY-MM-DD`. */
+            startDate: string;
+            /** @description `YYYY-MM-DD`, inclusive. */
+            endDate: string;
+        };
+        CreateCalendarEventDto: {
+            /** @enum {string} */
+            type: "holiday" | "event" | "early_close";
+            /**
+             * @description First day, `YYYY-MM-DD`.
+             * @example 2026-10-01
+             */
+            startDate: string;
+            /**
+             * @description Last day (inclusive), `YYYY-MM-DD`; defaults to `startDate`.
+             * @example 2026-10-01
+             */
+            endDate?: string;
+            /**
+             * @description `HH:mm`; required for `early_close`, ignored otherwise.
+             * @example 12:00
+             */
+            endsAt?: string;
+            title: string;
+            termId?: string;
+        };
+        UpdateCalendarEventDto: {
+            /** @enum {string} */
+            type?: "holiday" | "event" | "early_close";
+            /** @example 2026-10-01 */
+            startDate?: string;
+            /** @example 2026-10-01 */
+            endDate?: string;
+            /** @example 12:00 */
+            endsAt?: string | null;
+            termId?: string | null;
+            title?: string;
+        };
+        TermSummaryDto: {
+            id: string;
+            name: string;
+            startDate: string;
+            endDate: string;
+            /** @description Weeks from the week of `startDate` to the week of `endDate` (max 30). */
+            totalWeeks: number;
+        };
+        WeekInfoDto: {
+            /** @description Term week (1 contains the term's start day); null outside the term. */
+            number: number | null;
+            /** @description Monday, `YYYY-MM-DD`. */
+            start: string;
+            /** @description Sunday, `YYYY-MM-DD`. */
+            end: string;
+            /** @description Whether this is the week the timetable opens on by default. */
+            isCurrent: boolean;
+            prevStart: string;
+            nextStart: string;
+            /** @description Whether the week overlaps the current term. */
+            inTerm: boolean;
+        };
+        HolidayDto: {
+            title: string;
+        };
+        DayEventDto: {
+            /** @enum {string} */
+            type: "holiday" | "event" | "early_close";
+            id: string;
+            title: string;
+        };
+        WeekDayDto: {
+            holiday: components["schemas"]["HolidayDto"] | null;
+            /** @description `HH:mm` when school closes early that day. */
+            endsEarlyAt: string | null;
+            events: components["schemas"]["DayEventDto"][];
+            /** @description `YYYY-MM-DD`. */
+            date: string;
+            /** @description Weekday name, e.g. `Monday`. */
+            day: string;
+            isToday: boolean;
+        };
+        LessonDto: {
+            periodKey: string | null;
+            course: components["schemas"]["LessonCourseDto"];
+            subject: components["schemas"]["LessonSubjectDto"] | null;
+            class: components["schemas"]["LessonClassDto"];
+            /**
+             * @description The class-group chat room of the lesson's class that the teacher is in;
+             *     null when there is none.
+             */
+            classRoomId: string | null;
+            room: string | null;
+            topic: components["schemas"]["LessonTopicDto"] | null;
+            cancelled: components["schemas"]["LessonCancelledDto"] | null;
+            /** @description Timetable entry id. */
+            id: string;
+            /** @description `YYYY-MM-DD`. */
+            date: string;
+            day: string;
+            /** @description `HH:mm`. */
+            startTime: string;
+            /** @description `HH:mm`. */
+            endTime: string;
+            isClassTeacher: boolean;
+            studentCount: number;
+        };
+        TimetableMeDto: {
+            term: components["schemas"]["TermSummaryDto"] | null;
+            week: components["schemas"]["WeekInfoDto"];
+            /** @description School days of the week only. */
+            days: components["schemas"]["WeekDayDto"][];
+            periods: components["schemas"]["PeriodDto"][];
+            /** @enum {string} */
+            periodsSource: "school" | "derived";
+            /** @description Every timetabled lesson of the teacher that week, one per date. */
+            lessons: components["schemas"]["LessonDto"][];
+            timezone: string;
+            /** @description ISO instant. */
+            now: string;
+            /** @description Today in the school, `YYYY-MM-DD`. */
+            today: string;
+        };
+        SubmitRegisterDto: {
+            /**
+             * @description The school day, `YYYY-MM-DD`; defaults to today in the school.
+             * @example 2026-09-28
+             */
+            date?: string;
+        };
+        RegisterIncompleteDto: {
+            /** @description Students with no attendance row and no approved leave for the day. */
+            missing: number;
+        };
+        SchemeCourseDto: {
+            id: string;
+            code: string;
+            title: string;
+            className: string;
+        };
+        SchemeTermDto: {
+            id: string;
+            name: string;
+        };
+        SchemeWeekDto: {
+            /** @description ISO instant the week was marked taught. */
+            taughtAt: string | null;
+            week: number;
+            topic: string;
+            objectives: string;
+            /** @description Resources of the course filed under this term and week. */
+            resourceCount: number;
+        };
+        SchemeOfWorkDto: {
+            course: components["schemas"]["SchemeCourseDto"];
+            term: components["schemas"]["SchemeTermDto"];
+            /** @description Term week of today; null when today is outside the term. */
+            currentWeek: number | null;
+            /** @description Weeks 1..totalWeeks, in order. */
+            weeks: components["schemas"]["SchemeWeekDto"][];
+            totalWeeks: number;
+        };
+        SchemeWeekInputDto: {
+            week: number;
+            topic: string;
+            objectives: string;
+        };
+        SaveSchemeWeeksDto: {
+            weeks: components["schemas"]["SchemeWeekInputDto"][];
+            /** @description Defaults to the current term. */
+            termId?: string;
+        };
+        SaveSchemeWeekDto: {
+            /** @description Defaults to the current term. */
+            termId?: string;
+            topic: string;
+            objectives: string;
+        };
+        MarkSchemeWeekTaughtDto: {
+            /** @description Defaults to the current term. */
+            termId?: string;
+            /** @description True stamps the week taught now; false clears it. */
+            taught: boolean;
+        };
+        SchemeWeekTaughtDto: {
+            /** @description ISO instant the week was marked taught; null when cleared. */
+            taughtAt: string | null;
+            week: number;
+        };
         CreateCourseDto: {
             /** @example Algebra 101 */
             title: string;
@@ -6532,8 +7158,15 @@ export interface components {
             courseId: string;
             /** @enum {string} */
             day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
-            startTime: string;
-            endTime: string;
+            startTime?: string;
+            /** @description Required unless `periodKey` is given. `"08:40"` or legacy `"08:40 AM"`. */
+            endTime?: string;
+            /** @description Where the lesson is taught, e.g. "Lab 2". */
+            room?: string;
+            /** @description Key of a school period (see `GET /settings/academic`), e.g. `p1`. */
+            periodKey?: string;
+            /** @description Term the entry applies to; leave out for every term. */
+            termId?: string;
         };
         Timetable: Record<string, never>;
         UpdateTimetableDto: {
@@ -6542,6 +7175,13 @@ export interface components {
             startTime?: string;
             endTime?: string;
             room?: string;
+            /**
+             * @description Key of a school period. When given without `startTime`/`endTime`, the
+             *     times are filled in from the period.
+             */
+            periodKey?: string;
+            /** @description Term the entry applies to. */
+            termId?: string;
             courseId?: string;
         };
         CurriculumKpiDto: {
@@ -7974,6 +8614,11 @@ export interface components {
         };
         TeacherGuidePreferencesDto: {
             showAppTips?: boolean;
+            /**
+             * @description True stamps `guides.tourCompletedAt` with the current time (the Today
+             *     setup step "tour" is then done); false clears it. Not stored itself.
+             */
+            tourCompleted?: boolean;
         };
         UpdateTeacherPreferencesDto: {
             notifications?: components["schemas"]["TeacherNotificationPreferencesDto"];
@@ -8774,6 +9419,11 @@ export interface components {
              *     ]
              */
             files?: string[];
+            /**
+             * @description Term week (1..30) of the scheme of work this resource is for
+             * @example 3
+             */
+            week?: number;
         };
         UpdateResourceDto: {
             name?: string;
@@ -8788,6 +9438,11 @@ export interface components {
             uploadDate?: string;
             image?: string;
             files?: string[];
+            /**
+             * @description Term week (1..30) of the scheme of work this resource is for
+             * @example 3
+             */
+            week?: number;
         };
         FeeDashboardSummaryDto: {
             totalFeeItems: number;
@@ -9576,6 +10231,67 @@ export interface components {
             minimumWithdrawalAmount?: number;
             defaultBankAccountId?: string;
         };
+        AcademicPeriodResponseDto: {
+            key: string;
+            label: string;
+            /** @description `HH:mm`. */
+            startTime: string;
+            /** @description `HH:mm`. */
+            endTime: string;
+            isBreak: boolean;
+        };
+        AcademicSettingsDto: {
+            schoolDays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
+            /** @description Ordered by start time; empty when the school has not set any. */
+            periods: components["schemas"]["AcademicPeriodResponseDto"][];
+            schoolId: string;
+            timezone: string;
+            /** @description `HH:mm`. */
+            registerCloseTime: string;
+            /** @description `HH:mm`. */
+            registerEditUntil: string;
+        };
+        AcademicSettingsResponseDto: {
+            settings: components["schemas"]["AcademicSettingsDto"];
+            success: boolean;
+        };
+        AcademicPeriodDto: {
+            /**
+             * @description `HH:mm`, 24-hour.
+             * @example 08:00
+             */
+            startTime: string;
+            /**
+             * @description `HH:mm`, 24-hour.
+             * @example 08:40
+             */
+            endTime: string;
+            /** @description Stable key timetable entries point at, e.g. `p1` or `brk`. */
+            key: string;
+            /** @description Shown to people, e.g. "Period 1" or "Break". */
+            label: string;
+            isBreak?: boolean;
+        };
+        UpdateAcademicSettingsDto: {
+            /**
+             * @example [
+             *       "Monday",
+             *       "Tuesday",
+             *       "Wednesday",
+             *       "Thursday",
+             *       "Friday"
+             *     ]
+             * @enum {array}
+             */
+            schoolDays?: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+            periods?: components["schemas"]["AcademicPeriodDto"][];
+            /** @description IANA timezone, e.g. `Africa/Lagos`. */
+            timezone?: string;
+            /** @description `HH:mm`; the morning register is due by this time. */
+            registerCloseTime?: string;
+            /** @description `HH:mm`; after this a teacher can no longer change the day's register. */
+            registerEditUntil?: string;
+        };
         CreateEnrollmentDto: {
             /** @description Student ID */
             studentId: string;
@@ -9737,6 +10453,306 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TeachersTodayController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherTodayDto"];
+                };
+            };
+        };
+    };
+    CalendarEventsController_list: {
+        parameters: {
+            query?: {
+                /** @description First day, `YYYY-MM-DD`. */
+                from?: string;
+                /** @description Last day (inclusive), `YYYY-MM-DD`. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventDto"][];
+                };
+            };
+        };
+    };
+    CalendarEventsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCalendarEventDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventDto"];
+                };
+            };
+        };
+    };
+    CalendarEventsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar event id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarEventsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar event id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCalendarEventDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventDto"];
+                };
+            };
+        };
+    };
+    TimetableMeController_me: {
+        parameters: {
+            query?: {
+                /** @description Any day of the wanted week, `YYYY-MM-DD`; snapped to its Monday. */
+                weekStart?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableMeDto"];
+                };
+            };
+        };
+    };
+    RegistersController_status: {
+        parameters: {
+            query?: {
+                /** @description The school day, `YYYY-MM-DD`; defaults to today in the school. */
+                date?: string;
+                /** @description Staff only: limit the result to one class. */
+                classId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterStatusDto"][];
+                };
+            };
+        };
+    };
+    RegistersController_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitRegisterDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterStatusDto"];
+                };
+            };
+            /** @description Some students are neither marked nor on approved leave; `missing` is their number (top level of the error body). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterIncompleteDto"];
+                };
+            };
+        };
+    };
+    SchemeOfWorkController_get: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term. */
+                termId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemeOfWorkDto"];
+                };
+            };
+        };
+    };
+    SchemeOfWorkController_saveWeeks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSchemeWeeksDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemeOfWorkDto"];
+                };
+            };
+        };
+    };
+    SchemeOfWorkController_saveWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+                /** @description Term week, 1..30 */
+                week: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSchemeWeekDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemeOfWorkDto"];
+                };
+            };
+        };
+    };
+    SchemeOfWorkController_markTaught: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+                /** @description Term week, 1..30 */
+                week: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkSchemeWeekTaughtDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemeWeekTaughtDto"];
+                };
             };
         };
     };
@@ -17476,7 +18492,10 @@ export interface operations {
     };
     ResourceController_findByCourseId: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only resources filed under this scheme-of-work week */
+                week?: number;
+            };
             header?: never;
             path: {
                 /** @description ID of the course */
@@ -19448,6 +20467,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    SettingsController_getAcademicSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicSettingsResponseDto"];
+                };
+            };
+        };
+    };
+    SettingsController_updateAcademicSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAcademicSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicSettingsResponseDto"];
+                };
             };
         };
     };
