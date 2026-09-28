@@ -5,6 +5,7 @@
  *
  * Kept free of React so the matching logic can be tested directly.
  */
+import type { SchoolPeriod } from "@/app/services/school-settings.service";
 import type {
   TimetableByDay,
   TimetableCourse,
@@ -22,7 +23,7 @@ export const WEEK_DAYS: TimetableDay[] = [
   "Friday",
 ];
 
-/** One hour of the school day. */
+/** One row of the grid: an hour, a school period, or a lesson's own times. */
 export interface TimeSlot {
   /** What the row header shows, e.g. "8:00 - 9:00". */
   label: string;
@@ -30,6 +31,14 @@ export interface TimeSlot {
   start: string;
   /** Slot end in the grid's own loose form, e.g. "9:00". */
   end: string;
+  /** The period's name ("Period 1") when the row is a school period. */
+  title?: string;
+  /** The period's key, sent as `periodKey` when a course is dropped here. */
+  periodKey?: string;
+  /** A break: shown, but lessons cannot be dropped into it. */
+  isBreak?: boolean;
+  /** A row added only because a lesson sits at times no other row has. */
+  isCustom?: boolean;
 }
 
 /** The school day the grid draws, 8am to 3pm. */
@@ -58,6 +67,10 @@ export interface TimetableEntry {
   subjectId: string;
   day: string;
   teacherName: string;
+  /** Where the lesson is taught; empty when unknown. */
+  room?: string;
+  /** The school period it was placed in; empty when unknown. */
+  periodKey?: string;
 }
 
 /** The grid, keyed by day name. */
@@ -281,6 +294,8 @@ export function toGridData(
         subjectId: entry.subjectId ?? (matched ? courseSubjectId(matched) : ""),
         day,
         teacherName: teacherName || "Unassigned",
+        room: entry.room?.trim() ?? "",
+        periodKey: entry.periodKey ?? "",
       };
     });
     return grid;
@@ -295,4 +310,68 @@ export function toGridData(
  */
 export function isGridEmpty(grid: TimetableGridData): boolean {
   return Object.values(grid).every((entries) => entries.length === 0);
+}
+
+/**
+ * Minutes since midnight for a time in the grid's loose form ("8:00").
+ *
+ * @param value - The time.
+ * @returns The minutes; unreadable times sort last.
+ */
+function slotMinutes(value: string): number {
+  const [h, m] = normalizeTime(value).split(":").map(Number);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * The rows the grid draws.
+ *
+ * With a bell schedule, one row per school period (breaks included, as
+ * non-droppable rows); without one, the hourly `TIME_SLOTS`. Either way a
+ * lesson whose times match no row gets a row of its own, so every lesson on
+ * the timetable is visible — including ones typed as a custom time.
+ *
+ * @param periods - The school's bell schedule (may be empty).
+ * @param grid - The class's lessons.
+ * @returns The rows in time order.
+ */
+export function buildGridRows(periods: readonly SchoolPeriod[] | undefined, grid: TimetableGridData): TimeSlot[] {
+  const base: TimeSlot[] = periods?.length
+    ? periods.map((p) => ({
+        label: `${normalizeTime(p.startTime)} - ${normalizeTime(p.endTime)}`,
+        start: normalizeTime(p.startTime),
+        end: normalizeTime(p.endTime),
+        title: p.label,
+        periodKey: p.key,
+        isBreak: Boolean(p.isBreak),
+      }))
+    : [...TIME_SLOTS];
+
+  const seen = new Set(base.map((row) => `${row.start}-${row.end}`));
+  const extra: TimeSlot[] = [];
+  Object.values(grid).forEach((entries) =>
+    entries.forEach((entry) => {
+      const start = normalizeTime(entry.startTime);
+      const end = normalizeTime(entry.endTime);
+      if (!start || !end || seen.has(`${start}-${end}`)) return;
+      seen.add(`${start}-${end}`);
+      extra.push({ label: `${start} - ${end}`, start, end, isCustom: true });
+    })
+  );
+
+  return [...base, ...extra]
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => slotMinutes(a.row.start) - slotMinutes(b.row.start) || a.index - b.index)
+    .map(({ row }) => row);
+}
+
+/**
+ * The rows a template may fill: the school's lesson periods, or the hourly
+ * slots when there is no bell schedule.
+ *
+ * @param periods - The school's bell schedule (may be empty).
+ * @returns The rows, in time order.
+ */
+export function templateSlots(periods: readonly SchoolPeriod[] | undefined): TimeSlot[] {
+  return buildGridRows(periods, {}).filter((row) => !row.isBreak);
 }

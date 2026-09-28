@@ -3,9 +3,14 @@
 /**
  * The "Add Entry" dialog.
  *
- * The form is exactly `CreateTimetableDto`: a course, a day from the five-day
- * enum, and 24-hour start and end times. It mirrors the server's checks before
- * sending — all four fields required, end strictly after start — and maps a
+ * The form is `CreateTimetableDto`: a course, a day from the five-day enum,
+ * 24-hour start and end times, and optionally a room and a school period.
+ * When the school has a bell schedule, picking a period fills the times and
+ * sends its `periodKey`; editing a time afterwards makes it a custom slot
+ * (see `entryForm.ts`). Without a bell schedule the times are typed freely
+ * and a hint points at Settings → School Day & Bells.
+ *
+ * It mirrors the server's checks before sending and maps a
  * `VALIDATION_FAILED` response onto the field it names, so a rejection points
  * at the input that caused it instead of only raising a toast.
  *
@@ -18,18 +23,22 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { ApiError } from "@/lib/apiError";
 import type { TimetableCourse } from "@/app/services/timetable.service";
-import type { TimetableDay } from "@/app/services/timetable.service";
+import type { SchoolPeriod } from "@/app/services/school-settings.service";
 import { WEEK_DAYS, courseTeacherName } from "./timetable.model";
+import {
+  EMPTY_ENTRY_FORM,
+  ROOM_MAX_LENGTH,
+  choosePeriod,
+  editTime,
+  lessonPeriods,
+  toEntrySubmit,
+  validateEntryForm,
+  type EntryFormValues,
+  type EntrySubmitValues,
+} from "./entryForm";
 
-/** The dialog's form state, one field per DTO property. */
-export interface EntryFormValues {
-  courseId: string;
-  day: string;
-  startTime: string;
-  endTime: string;
-}
-
-const EMPTY_FORM: EntryFormValues = { courseId: "", day: "", startTime: "", endTime: "" };
+export { validateEntryForm };
+export type { EntryFormValues, EntrySubmitValues };
 
 interface TimetableEntryModalProps {
   open: boolean;
@@ -39,30 +48,14 @@ interface TimetableEntryModalProps {
   /** The last failure from the create mutation, or null. */
   error: unknown;
   onClose: () => void;
-  onSubmit: (values: {
-    courseId: string;
-    day: TimetableDay;
-    startTime: string;
-    endTime: string;
-  }) => void;
-}
-
-/**
- * The client-side half of the DTO's validation.
- *
- * @param values - What the form currently holds.
- * @returns A message per invalid field; empty when the form may be sent.
- */
-export function validateEntryForm(values: EntryFormValues): Partial<Record<keyof EntryFormValues, string>> {
-  const errors: Partial<Record<keyof EntryFormValues, string>> = {};
-  if (!values.courseId) errors.courseId = "Choose the course to schedule.";
-  if (!values.day) errors.day = "Choose a day.";
-  if (!values.startTime) errors.startTime = "Set a start time.";
-  if (!values.endTime) errors.endTime = "Set an end time.";
-  if (values.startTime && values.endTime && values.endTime <= values.startTime) {
-    errors.endTime = "The end time must be after the start time.";
-  }
-  return errors;
+  onSubmit: (values: EntrySubmitValues) => void;
+  /** The school's bell schedule; empty or absent means free times only. */
+  periods?: SchoolPeriod[];
+  /**
+   * Where the bell schedule is edited, for the "no bell schedule" hint; null
+   * when the viewer cannot open Settings (the hint then only explains).
+   */
+  bellScheduleHref?: string | null;
 }
 
 const FIELD_CLASSES =
@@ -76,8 +69,11 @@ export function TimetableEntryModal({
   error,
   onClose,
   onSubmit,
+  periods,
+  bellScheduleHref = null,
 }: TimetableEntryModalProps) {
-  const [values, setValues] = useState<EntryFormValues>(EMPTY_FORM);
+  const [values, setValues] = useState<EntryFormValues>(EMPTY_ENTRY_FORM);
+  const choices = lessonPeriods(periods);
   const [errors, setErrors] = useState<Partial<Record<keyof EntryFormValues, string>>>({});
 
   useBodyScrollLock(open);
@@ -85,7 +81,7 @@ export function TimetableEntryModal({
   // Start from a clean form each time the dialog opens.
   useEffect(() => {
     if (open) {
-      setValues(EMPTY_FORM);
+      setValues(EMPTY_ENTRY_FORM);
       setErrors({});
     }
   }, [open]);
@@ -113,12 +109,7 @@ export function TimetableEntryModal({
     const found = validateEntryForm(values);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    onSubmit({
-      courseId: values.courseId,
-      day: values.day as TimetableDay,
-      startTime: values.startTime,
-      endTime: values.endTime,
-    });
+    onSubmit(toEntrySubmit(values));
   };
 
   const border = (field: keyof EntryFormValues) =>
@@ -131,7 +122,7 @@ export function TimetableEntryModal({
       role="presentation"
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 shadow-xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -162,6 +153,7 @@ export function TimetableEntryModal({
               value={values.courseId}
               onChange={(e) => setValues((prev) => ({ ...prev, courseId: e.target.value }))}
               className={`${FIELD_CLASSES} ${border("courseId")}`}
+              {...invalid("entry-course", errors.courseId)}
             >
               <option value="">Select a course</option>
               {courses.map((course) => (
@@ -170,7 +162,7 @@ export function TimetableEntryModal({
                 </option>
               ))}
             </select>
-            <FieldError message={errors.courseId} />
+            <FieldError id="entry-course" message={errors.courseId} />
           </div>
 
           <div>
@@ -185,6 +177,7 @@ export function TimetableEntryModal({
               value={values.day}
               onChange={(e) => setValues((prev) => ({ ...prev, day: e.target.value }))}
               className={`${FIELD_CLASSES} ${border("day")}`}
+              {...invalid("entry-day", errors.day)}
             >
               <option value="">Select a day</option>
               {WEEK_DAYS.map((day) => (
@@ -193,8 +186,37 @@ export function TimetableEntryModal({
                 </option>
               ))}
             </select>
-            <FieldError message={errors.day} />
+            <FieldError id="entry-day" message={errors.day} />
           </div>
+
+          {choices.length > 0 && (
+            <div>
+              <label
+                htmlFor="entry-period"
+                className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
+              >
+                Period
+              </label>
+              <select
+                id="entry-period"
+                value={values.periodKey ?? ""}
+                onChange={(e) => setValues((prev) => choosePeriod(prev, e.target.value, periods))}
+                className={`${FIELD_CLASSES} ${border("periodKey")}`}
+                {...invalid("entry-period", errors.periodKey, "entry-period-hint")}
+              >
+                <option value="">Custom time</option>
+                {choices.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.label} ({p.startTime}–{p.endTime})
+                  </option>
+                ))}
+              </select>
+              <p id="entry-period-hint" className="mt-1 text-xs text-[#4D4D4D] dark:text-slate-400">
+                Picking a period fills in its times. Change a time to use a custom slot.
+              </p>
+              <FieldError id="entry-period" message={errors.periodKey} />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -213,10 +235,11 @@ export function TimetableEntryModal({
                 id="entry-start"
                 type="time"
                 value={values.startTime}
-                onChange={(e) => setValues((prev) => ({ ...prev, startTime: e.target.value }))}
+                onChange={(e) => setValues((prev) => editTime(prev, "startTime", e.target.value, periods))}
                 className={`${FIELD_CLASSES} ${border("startTime")}`}
+                {...invalid("entry-start", errors.startTime)}
               />
-              <FieldError message={errors.startTime} />
+              <FieldError id="entry-start" message={errors.startTime} />
             </div>
             <div>
               <Tooltip
@@ -234,11 +257,48 @@ export function TimetableEntryModal({
                 id="entry-end"
                 type="time"
                 value={values.endTime}
-                onChange={(e) => setValues((prev) => ({ ...prev, endTime: e.target.value }))}
+                onChange={(e) => setValues((prev) => editTime(prev, "endTime", e.target.value, periods))}
                 className={`${FIELD_CLASSES} ${border("endTime")}`}
+                {...invalid("entry-end", errors.endTime)}
               />
-              <FieldError message={errors.endTime} />
+              <FieldError id="entry-end" message={errors.endTime} />
             </div>
+          </div>
+
+          {choices.length === 0 && (
+            <p className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-xs text-blue-800 dark:text-blue-300">
+              No bell schedule yet, so times are typed in freely.{" "}
+              {bellScheduleHref ? (
+                <>
+                  <a href={bellScheduleHref} className="font-semibold underline">
+                    Set up the bell schedule
+                  </a>{" "}
+                  to pick named periods here.
+                </>
+              ) : (
+                "A school admin can set up named periods in Settings."
+              )}
+            </p>
+          )}
+
+          <div>
+            <label
+              htmlFor="entry-room"
+              className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
+            >
+              Room <span className="font-normal text-[#808080] dark:text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="entry-room"
+              type="text"
+              value={values.room ?? ""}
+              maxLength={ROOM_MAX_LENGTH}
+              placeholder="e.g. Lab 2"
+              onChange={(e) => setValues((prev) => ({ ...prev, room: e.target.value }))}
+              className={`${FIELD_CLASSES} ${border("room")}`}
+              {...invalid("entry-room", errors.room)}
+            />
+            <FieldError id="entry-room" message={errors.room} />
           </div>
 
           <div className="flex justify-end gap-3 border-t border-gray-100 dark:border-slate-700 pt-4">
@@ -264,8 +324,25 @@ export function TimetableEntryModal({
   );
 }
 
+/**
+ * Ties a control to its error (and optional hint) for screen readers.
+ *
+ * @param id - The control's id.
+ * @param message - Its error, if any.
+ * @param hintId - Id of a hint that always describes it.
+ * @returns `aria-invalid` and `aria-describedby`.
+ */
+function invalid(id: string, message?: string, hintId?: string) {
+  const describedBy = [message ? `${id}-error` : null, hintId ?? null].filter(Boolean).join(" ");
+  return { "aria-invalid": message ? true : undefined, "aria-describedby": describedBy || undefined };
+}
+
 /** One field's validation message. */
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs text-red-600 dark:text-red-400">{message}</p>;
+  return (
+    <p id={`${id}-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">
+      {message}
+    </p>
+  );
 }

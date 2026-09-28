@@ -1,14 +1,16 @@
 /**
  * Excel export of the week grid.
  *
- * The sheet mirrors what is on screen — one row per hour, one column per day —
- * so a printed copy matches the page a teacher was just looking at.
+ * The sheet mirrors what is on screen — one row per period (or hour), one
+ * column per day, rooms included — so a printed copy matches the page a
+ * teacher was just looking at.
  */
 import * as XLSX from "xlsx";
 import {
   TIME_SLOTS,
   WEEK_DAYS,
   entryForSlot,
+  type TimeSlot,
   type TimetableGridData,
 } from "./timetable.model";
 
@@ -17,19 +19,31 @@ import {
  *
  * @param grid - The timetable as the page is showing it.
  * @param className - Class name, used in the file name.
+ * @param slots - The grid's rows; the hourly slots when left out.
  * @throws Error When the workbook cannot be written.
  */
-export function downloadTimetableWorkbook(grid: TimetableGridData, className: string): void {
+export function downloadTimetableWorkbook(
+  grid: TimetableGridData,
+  className: string,
+  slots: TimeSlot[] = TIME_SLOTS
+): void {
   const rows: string[][] = [["Time", ...WEEK_DAYS]];
 
-  TIME_SLOTS.forEach((slot) => {
-    const row = [slot.label];
+  slots.forEach((slot) => {
+    const row = [slot.title ? `${slot.title}\n${slot.label}` : slot.label];
     WEEK_DAYS.forEach((day) => {
       const entry = entryForSlot(grid, day, slot);
       row.push(
         entry
-          ? `${entry.course}\n(${entry.subject})\n${entry.teacherName || "Unassigned teacher"}`
-          : ""
+          ? [
+              entry.course,
+              `(${entry.subject})`,
+              entry.teacherName || "Unassigned teacher",
+              ...(entry.room ? [`Room: ${entry.room}`] : []),
+            ].join("\n")
+          : slot.isBreak
+            ? slot.title || "Break"
+            : ""
       );
     });
     rows.push(row);

@@ -13,8 +13,8 @@
  * course palette and the entry dialog together.
  */
 
-import React, { useCallback, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
+import { CalendarDays, RefreshCw } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Download } from "@/components/Icons";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -22,6 +22,12 @@ import { RequirePermission } from "@/components/auth/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { getErrorMessage } from "@/lib/apiError";
+import { useAcademicSettings } from "@/hooks/settings/useAcademicSettings";
+import {
+  SCHOOL_CALENDAR_SETTINGS_HREF,
+  SCHOOL_DAY_SETTINGS_HREF,
+} from "@/components/settings/sections";
+import type { EntrySubmitValues } from "@/components/timetable/entryForm";
 import { logger } from "@/lib/logger";
 import type { TimetableCourse, TimetableDay } from "@/app/services/timetable.service";
 import { CoursePalette } from "@/components/timetable/CoursePalette";
@@ -36,9 +42,10 @@ import {
 } from "@/components/timetable/TimetableStates";
 import { downloadTimetableWorkbook } from "@/components/timetable/exportTimetable";
 import {
-  TIME_SLOTS,
   WEEK_DAYS,
+  buildGridRows,
   isGridEmpty,
+  templateSlots,
   toApiTime,
   type TimeSlot,
   type TimetableEntry,
@@ -48,6 +55,7 @@ import { useTimetableBoard } from "@/components/timetable/useTimetableBoard";
 function TimetablePage() {
   const { hasPermission, isFullAdmin } = usePermissions();
   const canManage = isFullAdmin || hasPermission(Permission.MANAGE_TIMETABLE);
+  const canOpenSettings = isFullAdmin || hasPermission(Permission.MANAGE_SETTINGS);
 
   const board = useTimetableBoard();
   const [draggedCourse, setDraggedCourse] = useState<TimetableCourse | null>(null);
@@ -56,9 +64,16 @@ function TimetablePage() {
 
   const { createEntry, deleteEntry, applyTemplate, grid, selectedClassId } = board;
 
+  // The bell schedule shapes the grid's rows and the dialog's period picker.
+  // Without one (or if it fails to load) the page keeps its hourly rows and
+  // free time entry.
+  const academic = useAcademicSettings();
+  const periods = useMemo(() => academic.data?.periods ?? [], [academic.data]);
+  const rows = useMemo(() => buildGridRows(periods, grid), [periods, grid]);
+
   const handleDrop = useCallback(
     (day: string, slot: TimeSlot) => {
-      if (!canManage || !draggedCourse || !selectedClassId) return;
+      if (!canManage || !draggedCourse || !selectedClassId || slot.isBreak) return;
       const course = draggedCourse;
       setDraggedCourse(null);
 
@@ -69,9 +84,11 @@ function TimetablePage() {
           day: day as TimetableDay,
           startTime: toApiTime(slot.start),
           endTime: toApiTime(slot.end),
+          ...(slot.periodKey ? { periodKey: slot.periodKey } : {}),
         },
         {
-          onSuccess: () => toast.success(`${course.title} added to ${day} at ${slot.label}`),
+          onSuccess: () =>
+            toast.success(`${course.title} added to ${day} at ${slot.title ? `${slot.title} (${slot.label})` : slot.label}`),
           onError: (err) => {
             logger.error("timetable", "Failed to add a timetable entry", err);
             toast.error(getErrorMessage(err, "Failed to add timetable entry"));
@@ -83,7 +100,7 @@ function TimetablePage() {
   );
 
   const handleCreateFromModal = useCallback(
-    (values: { courseId: string; day: TimetableDay; startTime: string; endTime: string }) => {
+    (values: EntrySubmitValues) => {
       if (!selectedClassId) {
         toast.error("Please select a class first");
         return;
@@ -142,16 +159,17 @@ function TimetablePage() {
     }
 
     // One course per slot, rotated by day so no day repeats the same order.
+    // Slots are the school's lesson periods, or the hourly rows without them.
+    const slots = templateSlots(periods);
     const entries = WEEK_DAYS.flatMap((day, dayIndex) =>
-      TIME_SLOTS.slice(0, Math.min(TIME_SLOTS.length, board.courses.length)).map(
-        (slot, slotIndex) => ({
-          classId: selectedClassId,
-          courseId: board.courses[(slotIndex + dayIndex) % board.courses.length]._id,
-          day,
-          startTime: toApiTime(slot.start),
-          endTime: toApiTime(slot.end),
-        })
-      )
+      slots.slice(0, Math.min(slots.length, board.courses.length)).map((slot, slotIndex) => ({
+        classId: selectedClassId,
+        courseId: board.courses[(slotIndex + dayIndex) % board.courses.length]._id,
+        day,
+        startTime: toApiTime(slot.start),
+        endTime: toApiTime(slot.end),
+        ...(slot.periodKey ? { periodKey: slot.periodKey } : {}),
+      }))
     );
 
     applyTemplate.mutate(entries, {
@@ -169,7 +187,7 @@ function TimetablePage() {
         toast.error(getErrorMessage(err, "Failed to apply timetable template"));
       },
     });
-  }, [selectedClassId, board.courses, grid, applyTemplate]);
+  }, [selectedClassId, board.courses, grid, applyTemplate, periods]);
 
   const handleDownload = useCallback(() => {
     if (!selectedClassId || isGridEmpty(grid)) {
@@ -177,13 +195,13 @@ function TimetablePage() {
       return;
     }
     try {
-      downloadTimetableWorkbook(grid, board.selectedClassName);
+      downloadTimetableWorkbook(grid, board.selectedClassName, rows);
       toast.success("Timetable downloaded successfully!");
     } catch (err) {
       logger.error("timetable", "Failed to write the timetable workbook", err);
       toast.error("Failed to download timetable");
     }
-  }, [selectedClassId, grid, board.selectedClassName]);
+  }, [selectedClassId, grid, board.selectedClassName, rows]);
 
   const handleRefresh = useCallback(() => {
     void board.refresh().then(() => toast.success("Timetable refreshed"));
@@ -196,6 +214,15 @@ function TimetablePage() {
           Class Timetable
         </h1>
         <div className="flex items-center gap-2" data-guide="timetable-actions">
+          {canOpenSettings && (
+            <a
+              href={SCHOOL_CALENDAR_SETTINGS_HREF}
+              className="bg-white dark:bg-slate-800 border border-[#E0E0E0] dark:border-slate-600 font-semibold rounded-xl flex items-center gap-2 px-3 py-2 text-[#1A1A1A] dark:text-slate-100 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <CalendarDays className="w-4 h-4" aria-hidden />
+              School calendar
+            </a>
+          )}
           <Tooltip
             content="Reload classes, courses, and the selected class timetable after curriculum changes."
             side="top"
@@ -270,6 +297,7 @@ function TimetablePage() {
                 deletingEntryId={deletingEntryId}
                 onDropCourse={handleDrop}
                 onRemoveEntry={handleRemoveEntry}
+                rows={rows}
               />
             </div>
           )}
@@ -285,6 +313,8 @@ function TimetablePage() {
           error={createEntry.error}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleCreateFromModal}
+          periods={periods}
+          bellScheduleHref={canOpenSettings ? SCHOOL_DAY_SETTINGS_HREF : null}
         />
       )}
     </div>

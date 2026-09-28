@@ -85,6 +85,13 @@ export interface TimetableEntryResponse {
   class?: string;
   /** `"Unassigned teacher"` when the course has no teacher. */
   teacherName?: string;
+  /**
+   * Where the lesson is taught. Stored since the timetable redesign; read
+   * only when the class timetable route sends it.
+   */
+  room?: string | null;
+  /** The school period the entry was placed in, when sent. */
+  periodKey?: string | null;
 }
 
 /** A class timetable, grouped by day as the API returns it. */
