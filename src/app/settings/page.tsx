@@ -6,6 +6,7 @@ import { SchoolProfileSection } from "@/components/settings/SchoolProfileSection
 import { AdminAccountSection } from "@/components/settings/AdminAccountSection";
 import { AcademicSetupSection } from "@/components/settings/AcademicSetupSection";
 import { SchoolDaySection } from "@/components/settings/SchoolDaySection";
+import { SchoolCalendarSection } from "@/components/settings/SchoolCalendarSection";
 import { ClassesCurriculumSection } from "@/components/settings/ClassesCurriculumSection";
 import { AssessmentSettingsSection } from "@/components/settings/AssessmentSettingsSection";
 import { FeesReceiptsSection } from "@/components/settings/FeesReceiptsSection";
@@ -31,6 +32,7 @@ const SECTION_MAP: Record<SectionId, React.ComponentType<SettingsSectionProps>> 
   "admin-account": AdminAccountSection,
   "academic-setup": AcademicSetupSection,
   "school-day": SchoolDaySection,
+  "school-calendar": SchoolCalendarSection,
   "classes-curriculum": ClassesCurriculumSection,
   "assessment-settings": AssessmentSettingsSection,
   "fees-receipts": FeesReceiptsSection,

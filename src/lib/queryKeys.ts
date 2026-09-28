@@ -81,6 +81,13 @@ export const queryKeys = {
     all: ["timetable"] as const,
     byClass: (schoolId: string, classId: string) => ["timetable", schoolId, "class", classId] as const,
   },
+  calendarEvents: {
+    all: ["calendarEvents"] as const,
+    /** Every range of one school, for invalidating after a write. */
+    school: (schoolId: string) => ["calendarEvents", schoolId] as const,
+    /** Events overlapping `[from, to]` (`YYYY-MM-DD`, either may be empty). */
+    range: (schoolId: string, from: string, to: string) => ["calendarEvents", schoolId, "range", from, to] as const,
+  },
   announcements: {
     all: ["announcements"] as const,
     list: (schoolId: string, params?: Record<string, unknown>) => ["announcements", schoolId, "list", params ?? {}] as const,

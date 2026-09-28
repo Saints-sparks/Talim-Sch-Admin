@@ -4,6 +4,7 @@ import {
   Bell,
   BookOpen,
   Calendar,
+  CalendarDays,
   Clock,
   Database,
   MessageSquare,
@@ -22,6 +23,7 @@ export type SectionId =
   | "admin-account"
   | "academic-setup"
   | "school-day"
+  | "school-calendar"
   | "classes-curriculum"
   | "assessment-settings"
   | "fees-receipts"
@@ -60,6 +62,7 @@ export const SECTIONS: SectionMeta[] = [
   { id: "admin-account", label: "Admin Profile", desc: "Personal information & preferences", icon: UserCog },
   { id: "academic-setup", label: "Academic Setup", desc: "Academic year, terms and grading periods", icon: Calendar },
   { id: "school-day", label: "School Day & Bells", desc: "Timezone, school days and bell schedule", icon: Clock },
+  { id: "school-calendar", label: "School Calendar", desc: "Holidays, events and early closes", icon: CalendarDays },
   { id: "classes-curriculum", label: "Classes & Curriculum", desc: "Class levels, subjects and curriculum", icon: BookOpen },
   { id: "assessment-settings", label: "Assessment Settings", desc: "Grading rules and assessment preferences", icon: BarChart2 },
   { id: "fees-receipts", label: "Fees & Receipts", desc: "Fee categories, invoices and receipt design", icon: Receipt },
@@ -99,3 +102,5 @@ export function sectionFromQuery(value: string | null, sections: SectionMeta[]):
 
 /** Where the bell schedule editor lives, for links from other pages. */
 export const SCHOOL_DAY_SETTINGS_HREF = "/settings?section=school-day";
+/** Where the school calendar lives, for links from other pages. */
+export const SCHOOL_CALENDAR_SETTINGS_HREF = "/settings?section=school-calendar";
