@@ -259,6 +259,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scheme-of-work/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calling teacher's subject cards (Subjects page)
+         * @description The calling teacher's subject cards: one per course they teach.
+         */
+        get: operations["SchemeOfWorkController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scheme-of-work/course/{courseId}": {
         parameters: {
             query?: never;
@@ -333,6 +353,305 @@ export interface paths {
          * @description Marks a week taught or not taught.
          */
         post: operations["SchemeOfWorkController_markTaught"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/course/{courseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A course's grading sheet (course teacher, staff) */
+        get: operations["GradingController_sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/course/{courseId}/assessments/{assessmentId}/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save one assessment's scores for a course
+         * @description Saves scores of one assessment; `null` deletes a score.
+         */
+        put: operations["GradingController_saveScores"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/course/{courseId}/assessments/{assessmentId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish one assessment's scores for a course
+         * @description Publishes one assessment's scores for a course.
+         */
+        post: operations["GradingController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/course/{courseId}/assessments/{assessmentId}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock published scores for a correction
+         * @description Unlocks published scores for a correction.
+         */
+        post: operations["GradingController_unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/classes/{classId}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A class's grading readiness (class teacher, staff) */
+        get: operations["GradingController_readiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/classes/{classId}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remind a course teacher (class teacher only)
+         * @description Reminds a course teacher that scores are awaited (once a day).
+         */
+        post: operations["GradingController_remind"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/classes/{classId}/broadsheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A class's broadsheet (class teacher, staff)
+         * @description The class's broadsheet of published scores.
+         */
+        get: operations["GradingController_broadsheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/classes/{classId}/remarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A class's term remarks (class teacher, staff)
+         * @description The class's term remarks.
+         */
+        get: operations["GradingController_remarks"];
+        /**
+         * Save class-teacher remarks (class teacher, staff)
+         * @description Saves class-teacher remarks.
+         */
+        put: operations["GradingController_saveRemarks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/classes/{classId}/term-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A class's term results (class teacher, staff)
+         * @description The class's term results submissions.
+         */
+        get: operations["GradingController_classSubmissions"];
+        put?: never;
+        /**
+         * Submit term results (class teacher, staff)
+         * @description Submits the class's term results to the office.
+         */
+        post: operations["GradingController_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Term results queue (staff) */
+        get: operations["GradingController_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Term results counts by status (staff)
+         * @description How many submissions are in each status.
+         */
+        get: operations["GradingController_counts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One term results submission (staff, or its class teacher)
+         * @description One submission.
+         */
+        get: operations["GradingController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish term results (staff)
+         * @description Publishes submitted results to students and parents.
+         */
+        post: operations["GradingController_publishResults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results/{id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Return term results to the class teacher (staff)
+         * @description Returns submitted results to the class teacher.
+         */
+        post: operations["GradingController_returnResults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grading/term-results/{id}/principal-remarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the principal's remarks (staff)
+         * @description Saves the principal's remarks for a submission's class.
+         */
+        put: operations["GradingController_savePrincipalRemarks"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1578,8 +1897,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish class cumulative term grade record
-         * @description Marks the class cumulative grade as published and notifies students and parents.
+         * Publish class cumulative term grade record (school office)
+         * @description Marks the class cumulative grade as published and notifies students and parents. School staff only (sub-admins need manage:assessments): teachers submit term results through POST /grading/classes/:classId/term-results instead.
          */
         post: operations["GradeRecordsController_publishClassCumulativeTermGradeRecord"];
         delete?: never;
@@ -4898,6 +5217,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/resources/{id}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a view of a resource (students, parents) */
+        post: operations["ResourceController_recordView"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/fees/dashboard/summary": {
         parameters: {
             query?: never;
@@ -7318,6 +7654,37 @@ export interface components {
              */
             date?: string;
         };
+        SubjectCardCourseDto: {
+            id: string;
+            code: string;
+            title: string;
+        };
+        SubjectCardClassDto: {
+            id: string;
+            name: string;
+        };
+        SubjectCardCurriculumDto: {
+            /** @description ISO. */
+            updatedAt: string | null;
+            id: string;
+        };
+        SubjectCardDto: {
+            course: components["schemas"]["SubjectCardCourseDto"];
+            class: components["schemas"]["SubjectCardClassDto"];
+            /** @description Null outside the term. */
+            currentWeek: number | null;
+            /** @description The old text curriculum for this course and term, if any. */
+            legacyCurriculum: components["schemas"]["SubjectCardCurriculumDto"] | null;
+            /** @description Active students in the class. */
+            studentCount: number;
+            /** @description Timetabled lessons a week (entries of every term, or of this term). */
+            lessonsPerWeek: number;
+            totalWeeks: number;
+            /** @description Weeks of the term marked taught. */
+            taughtCount: number;
+            /** @description Resources of the course filed under the term. */
+            resourceCount: number;
+        };
         SchemeCourseDto: {
             id: string;
             code: string;
@@ -7372,6 +7739,323 @@ export interface components {
             /** @description ISO instant the week was marked taught; null when cleared. */
             taughtAt: string | null;
             week: number;
+        };
+        GradingCourseRefDto: {
+            id: string;
+            code: string;
+            title: string;
+        };
+        GradingClassRefDto: {
+            id: string;
+            name: string;
+        };
+        GradingTermRefDto: {
+            id: string;
+            name: string;
+        };
+        GradingScaleBandDto: {
+            remark: string | null;
+            letter: string;
+            /** @description Lowest percentage that earns the letter. */
+            min: number;
+        };
+        GradingAssessmentStatsDto: {
+            average: number | null;
+            highest: number | null;
+            lowest: number | null;
+            /** @description Share of the students with a score at or above the pass mark. */
+            passRate: number | null;
+            /** @description Students with a score. */
+            entered: number;
+            /** @description Active students in the class. */
+            total: number;
+        };
+        GradingSheetAssessmentDto: {
+            /** @description The assessment's type (`test`, `exam`, ...) when the school set one. */
+            type: string | null;
+            /** @description `YYYY-MM-DD`: the assessment's end date. */
+            dueDate: string | null;
+            /** @enum {string} */
+            status: "not_started" | "draft" | "published" | "unlocked";
+            /** @description When a score was last saved (ISO). */
+            savedAt: string | null;
+            /** @description When the scores were last published (ISO). */
+            publishedAt: string | null;
+            /** @description When the scores were last unlocked for a correction (ISO). */
+            unlockedAt: string | null;
+            stats: components["schemas"]["GradingAssessmentStatsDto"];
+            id: string;
+            name: string;
+            maxScore: number;
+        };
+        GradingPositionDto: {
+            rank: number;
+            /** @description How many were ranked. */
+            of: number;
+        };
+        GradingSheetStudentDto: {
+            admissionNumber: string | null;
+            /**
+             * @description Score per assessment id; null when none is entered.
+             * @example {
+             *       "66f1c0ffee0000000000abcd": 17.5
+             *     }
+             */
+            scores: {
+                [key: string]: number | null;
+            };
+            /** @description Sum of the entered scores; null when none is entered. */
+            total: number | null;
+            /** @description `total / totalMax`, in percent. */
+            percent: number | null;
+            /** @description Only when `complete`. */
+            grade: string | null;
+            /** @description Only when `complete`, among the students who are complete. */
+            position: components["schemas"]["GradingPositionDto"] | null;
+            /** @description Student profile id. */
+            id: string;
+            name: string;
+            /** @description Every assessment has a score. */
+            complete: boolean;
+        };
+        GradingSheetDto: {
+            course: components["schemas"]["GradingCourseRefDto"];
+            class: components["schemas"]["GradingClassRefDto"];
+            term: components["schemas"]["GradingTermRefDto"];
+            scale: components["schemas"]["GradingScaleBandDto"][];
+            /** @description Every assessment of the term, by start date then name. */
+            assessments: components["schemas"]["GradingSheetAssessmentDto"][];
+            /** @description Active students of the class, by name. */
+            students: components["schemas"]["GradingSheetStudentDto"][];
+            passMark: number;
+            /** @description Sum of the assessments' max scores. */
+            totalMax: number;
+        };
+        GradingScoreInputDto: {
+            /**
+             * @description 0..the assessment's max score, up to 2 decimals; `null` deletes the score.
+             * @example 17.5
+             */
+            score: number | null;
+            /** @description Student profile id. */
+            studentId: string;
+        };
+        SaveGradingScoresDto: {
+            /** @description The term of the sheet answered; the assessment's term when left out. */
+            termId?: string;
+            scores: components["schemas"]["GradingScoreInputDto"][];
+        };
+        GradingPublishResultDto: {
+            /** @description ISO. */
+            publishedAt: string;
+            /**
+             * @description Student ids whose scores this call published: every student on a first
+             *     publish; after an unlock, those whose score changed; none when the
+             *     scores were already published.
+             */
+            changed: string[];
+            /** @description In-app notifications created for those students and their parents. */
+            notified: number;
+        };
+        UnlockGradingScoresDto: {
+            /** @description Why the scores are being corrected. */
+            reason?: string;
+        };
+        GradingUnlockResultDto: {
+            /** @enum {string} */
+            status: "unlocked";
+            /** @description ISO. */
+            unlockedAt: string;
+        };
+        ReadinessAssessmentDto: {
+            id: string;
+            name: string;
+            maxScore: number;
+        };
+        GradingPersonDto: {
+            /** @description Their login (User) id. */
+            id: string;
+            name: string;
+        };
+        ReadinessCellDto: {
+            /** @enum {string} */
+            status: "not_started" | "draft" | "published" | "unlocked";
+            /** @description When the last reminder for it was sent (ISO). */
+            reminderSentAt: string | null;
+            assessmentId: string;
+        };
+        ReadinessSubjectDto: {
+            course: components["schemas"]["GradingCourseRefDto"];
+            /** @description The course teacher; `id` is their login. */
+            teacher: components["schemas"]["GradingPersonDto"] | null;
+            cells: components["schemas"]["ReadinessCellDto"][];
+            /** @description Whether the caller teaches the course. */
+            isMine: boolean;
+        };
+        ClassReadinessDto: {
+            class: components["schemas"]["GradingClassRefDto"];
+            term: components["schemas"]["GradingTermRefDto"];
+            assessments: components["schemas"]["ReadinessAssessmentDto"][];
+            subjects: components["schemas"]["ReadinessSubjectDto"][];
+        };
+        SendGradingReminderDto: {
+            courseId: string;
+            assessmentId: string;
+        };
+        GradingReminderSentDto: {
+            /** @description ISO. */
+            sentAt: string;
+        };
+        BroadsheetBasisDto: {
+            /**
+             * @description The assessment's max score; null for `total`, whose cells are
+             *     percents.
+             */
+            maxPerSubject: number | null;
+            /** @description `total` or the assessment id. */
+            key: string;
+            /** @description The assessment's name, or "Term total". */
+            label: string;
+        };
+        BroadsheetSubjectDto: {
+            courseId: string;
+            code: string;
+            title: string;
+            /** @description Its scores for the basis are published (and not unlocked). */
+            published: boolean;
+        };
+        BroadsheetStudentDto: {
+            admissionNumber: string | null;
+            /** @description Student profile id. */
+            id: string;
+            name: string;
+        };
+        BroadsheetRowDto: {
+            student: components["schemas"]["BroadsheetStudentDto"];
+            /** @description One per subject, in `subjects` order; null until published. */
+            cells: (number | null)[];
+            total: number | null;
+            /** @description Percent over the published subjects. */
+            average: number | null;
+            position: components["schemas"]["GradingPositionDto"] | null;
+            grade: string | null;
+            publishedCount: number;
+        };
+        BroadsheetWaitingDto: {
+            courseId: string;
+            title: string;
+        };
+        BroadsheetDto: {
+            class: components["schemas"]["GradingClassRefDto"];
+            term: components["schemas"]["GradingTermRefDto"];
+            basis: components["schemas"]["BroadsheetBasisDto"];
+            /** @description The school's grading scale, highest band first. */
+            scale: components["schemas"]["GradingScaleBandDto"][];
+            subjects: components["schemas"]["BroadsheetSubjectDto"][];
+            rows: components["schemas"]["BroadsheetRowDto"][];
+            /** @description The subjects not yet published for the basis. */
+            waitingOn: components["schemas"]["BroadsheetWaitingDto"][];
+            /** @description The school's pass mark, in percent. */
+            passMark: number;
+            /** @description Every subject is published for the basis. */
+            ready: boolean;
+        };
+        TermRemarkRowDto: {
+            student: components["schemas"]["BroadsheetStudentDto"];
+            /** @description From the term-total broadsheet. */
+            position: components["schemas"]["GradingPositionDto"] | null;
+            average: number | null;
+            publishedCount: number;
+            subjectCount: number;
+            classTeacherRemark: string;
+            principalRemark: string;
+        };
+        TermRemarksDto: {
+            rows: components["schemas"]["TermRemarkRowDto"][];
+        };
+        ClassTeacherRemarkInputDto: {
+            studentId: string;
+            classTeacherRemark: string;
+        };
+        SaveClassTeacherRemarksDto: {
+            termId?: string;
+            remarks: components["schemas"]["ClassTeacherRemarkInputDto"][];
+        };
+        SubmitTermResultsDto: {
+            termId?: string;
+            /**
+             * @description `total`, or an assessment id.
+             * @example total
+             */
+            basis: string;
+        };
+        TermResultBasisDto: {
+            /** @description `total` or the assessment id. */
+            key: string;
+            /** @description The assessment's name, or "Term total". */
+            label: string;
+        };
+        TermResultSubmissionDto: {
+            class: components["schemas"]["GradingClassRefDto"];
+            term: components["schemas"]["GradingTermRefDto"];
+            basis: components["schemas"]["TermResultBasisDto"];
+            /** @enum {string} */
+            status: "submitted" | "returned" | "published";
+            submittedBy: components["schemas"]["GradingPersonDto"] | null;
+            returnReason: string | null;
+            /** @description ISO. */
+            returnedAt: string | null;
+            returnedBy: components["schemas"]["GradingPersonDto"] | null;
+            /** @description ISO. */
+            publishedAt: string | null;
+            publishedBy: components["schemas"]["GradingPersonDto"] | null;
+            id: string;
+            /** @description ISO. */
+            submittedAt: string;
+            /** @description Active students in the class. */
+            studentCount: number;
+            /** @description Active students without a class-teacher remark. */
+            missingRemarks: number;
+        };
+        TermResultCountsDto: {
+            submitted: number;
+            returned: number;
+            published: number;
+        };
+        TermResultSubmissionDetailDto: {
+            class: components["schemas"]["GradingClassRefDto"];
+            term: components["schemas"]["GradingTermRefDto"];
+            basis: components["schemas"]["TermResultBasisDto"];
+            /** @enum {string} */
+            status: "submitted" | "returned" | "published";
+            submittedBy: components["schemas"]["GradingPersonDto"] | null;
+            returnReason: string | null;
+            /** @description ISO. */
+            returnedAt: string | null;
+            returnedBy: components["schemas"]["GradingPersonDto"] | null;
+            /** @description ISO. */
+            publishedAt: string | null;
+            publishedBy: components["schemas"]["GradingPersonDto"] | null;
+            id: string;
+            /** @description ISO. */
+            submittedAt: string;
+            /** @description Active students in the class. */
+            studentCount: number;
+            /** @description Active students without a class-teacher remark. */
+            missingRemarks: number;
+            classId: string;
+            termId: string;
+        };
+        ReturnTermResultsDto: {
+            /** @description Why the results go back to the class teacher. */
+            reason: string;
+        };
+        PrincipalRemarkInputDto: {
+            studentId: string;
+            principalRemark: string;
+        };
+        SavePrincipalRemarksDto: {
+            remarks: components["schemas"]["PrincipalRemarkInputDto"][];
         };
         CreateCourseDto: {
             /** @example Algebra 101 */
@@ -7770,6 +8454,11 @@ export interface components {
              * @enum {string}
              */
             status?: "pending" | "active" | "completed" | "cancelled";
+            /**
+             * @description The most a student can score: a whole number, 1..1000. Every score recorded for the assessment is out of it.
+             * @example 20
+             */
+            maxScore: number;
         };
         UpdateAssessmentDto: {
             /**
@@ -7788,6 +8477,11 @@ export interface components {
              * @enum {string}
              */
             status?: "pending" | "active" | "completed" | "cancelled";
+            /**
+             * @description The most a student can score: a whole number, 1..1000. 409 once any course has published scores for the assessment, or when a recorded score is above the new value.
+             * @example 20
+             */
+            maxScore?: number;
         };
         CreateAssessmentGradeRecordDto: {
             /** @description Course ID */
@@ -7798,8 +8492,11 @@ export interface components {
             assessmentId: string;
             /** @description Actual score obtained by student */
             actualScore: number;
-            /** @description Maximum possible score */
-            maxScore: number;
+            /**
+             * @deprecated
+             * @description Deprecated: the assessment's max score is used. When sent it must equal it, otherwise 400.
+             */
+            maxScore?: number;
             /** @description Class ID (resolved automatically from course if not provided) */
             classId?: string;
         };
@@ -7816,8 +8513,11 @@ export interface components {
             assessmentId: string;
             /** @description Actual score obtained by student */
             actualScore: number;
-            /** @description Maximum possible score */
-            maxScore: number;
+            /**
+             * @deprecated
+             * @description Deprecated: the assessment's max score is used. When sent it must equal it, otherwise 400.
+             */
+            maxScore?: number;
             /** @description Class ID */
             classId: string;
         };
@@ -7846,8 +8546,11 @@ export interface components {
         AssessmentScoreDto: {
             studentId: string;
             score: number;
-            /** @default 100 */
-            maxScore: number;
+            /**
+             * @deprecated
+             * @description Deprecated: the assessment's max score is used. When sent it must equal it, otherwise 400.
+             */
+            maxScore?: number;
         };
         SaveAssessmentScoresDto: {
             courseId: string;
@@ -7859,7 +8562,10 @@ export interface components {
         UpdateAssessmentGradeRecordDto: {
             /** @description Actual score obtained by student */
             actualScore?: number;
-            /** @description Maximum possible score */
+            /**
+             * @deprecated
+             * @description Deprecated: the assessment's max score is used. When sent it must equal it, otherwise 400.
+             */
             maxScore?: number;
             /** @description Active status */
             isActive?: boolean;
@@ -7964,11 +8670,8 @@ export interface components {
             totalScore: number;
             /** @description Percentage score */
             percentage: number;
-            /**
-             * @description Overall grade
-             * @enum {string}
-             */
-            grade: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D+" | "D" | "E" | "F";
+            /** @description Overall grade: a letter of the school's grading scale */
+            grade: string;
             /** @description Additional remarks */
             remarks?: string;
             /** @description Position in class */
@@ -9817,10 +10520,10 @@ export interface components {
              */
             uploadDate?: string;
             /**
-             * @description Image URL or path related to the resource
+             * @description Image URL or path related to the resource (optional)
              * @example https://cloudinary.com/image/resource-image.jpg
              */
-            image: string;
+            image?: string;
             /**
              * @description Array of file URLs related to the resource
              * @example [
@@ -9834,6 +10537,30 @@ export interface components {
              * @example 3
              */
             week?: number;
+            /**
+             * @description Who may see it besides teachers and staff: students (default), or students and their parents
+             * @default students
+             * @enum {string}
+             */
+            visibility: "students" | "students_and_parents";
+            /**
+             * @description What sort of file; derived from mimeType, else the file extension, when left out
+             * @enum {string}
+             */
+            kind?: "pdf" | "slides" | "video" | "doc" | "image" | "other";
+            /**
+             * @description MIME type of the uploaded file
+             * @example application/pdf
+             */
+            mimeType?: string;
+            /** @description Size of the file in bytes */
+            sizeBytes?: number;
+        };
+        ResourceViewResultDto: {
+            /** @description Whether this was the caller's first view (and so counted). */
+            counted: boolean;
+            /** @description Unique students and parents who have opened the resource. */
+            viewCount: number;
         };
         UpdateResourceDto: {
             name?: string;
@@ -9853,6 +10580,24 @@ export interface components {
              * @example 3
              */
             week?: number;
+            /**
+             * @description Who may see it besides teachers and staff: students (default), or students and their parents
+             * @default students
+             * @enum {string}
+             */
+            visibility: "students" | "students_and_parents";
+            /**
+             * @description What sort of file; derived from mimeType, else the file extension, when left out
+             * @enum {string}
+             */
+            kind?: "pdf" | "slides" | "video" | "doc" | "image" | "other";
+            /**
+             * @description MIME type of the uploaded file
+             * @example application/pdf
+             */
+            mimeType?: string;
+            /** @description Size of the file in bytes */
+            sizeBytes?: number;
         };
         FeeDashboardSummaryDto: {
             totalFeeItems: number;
@@ -10650,6 +11395,12 @@ export interface components {
             endTime: string;
             isBreak: boolean;
         };
+        GradeScaleBandResponseDto: {
+            remark: string | null;
+            letter: string;
+            /** @description Lowest percentage (0..100) that earns the letter. */
+            min: number;
+        };
         AcademicSettingsDto: {
             schoolDays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
             /** @description Ordered by start time; empty when the school has not set any. */
@@ -10661,12 +11412,20 @@ export interface components {
              * @example 2026-09-28
              */
             registerTrackingSince: string;
+            /**
+             * @description The grading scale, highest band first. The default until the school
+             *     sets one: A 70 Excellent, B 60 Very good, C 50 Good, D 45 Fair,
+             *     E 40 Pass, F 0 Fail.
+             */
+            gradeScale: components["schemas"]["GradeScaleBandResponseDto"][];
             schoolId: string;
             timezone: string;
             /** @description `HH:mm`. */
             registerCloseTime: string;
             /** @description `HH:mm`. */
             registerEditUntil: string;
+            /** @description Percentage at or above which a score passes; 50 by default. */
+            passMark: number;
         };
         AcademicSettingsResponseDto: {
             settings: components["schemas"]["AcademicSettingsDto"];
@@ -10689,6 +11448,23 @@ export interface components {
             label: string;
             isBreak?: boolean;
         };
+        GradeScaleBandDto: {
+            /**
+             * @description The letter, 1..4 characters, e.g. `A` or `B2`; unique ignoring case.
+             * @example A
+             */
+            letter: string;
+            /**
+             * @description Lowest percentage (0..100) that earns the letter.
+             * @example 70
+             */
+            min: number;
+            /**
+             * @description Shown beside the letter, up to 60 characters, e.g. "Excellent".
+             * @example Excellent
+             */
+            remark?: string;
+        };
         UpdateAcademicSettingsDto: {
             /**
              * @example [
@@ -10701,6 +11477,13 @@ export interface components {
              */
             schoolDays?: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
             periods?: components["schemas"]["AcademicPeriodDto"][];
+            /** @description The grading scale, highest band first. Replaces the whole scale. */
+            gradeScale?: components["schemas"]["GradeScaleBandDto"][];
+            /**
+             * @description Percentage (0..100) at or above which a score passes.
+             * @example 50
+             */
+            passMark?: number;
             /** @description IANA timezone, e.g. `Africa/Lagos`. */
             timezone?: string;
             /** @description `HH:mm`; the morning register is due by this time. */
@@ -11198,6 +11981,28 @@ export interface operations {
             };
         };
     };
+    SchemeOfWorkController_mine: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term. */
+                termId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectCardDto"][];
+                };
+            };
+        };
+    };
     SchemeOfWorkController_get: {
         parameters: {
             query?: {
@@ -11302,6 +12107,495 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SchemeWeekTaughtDto"];
                 };
+            };
+        };
+    };
+    GradingController_sheet: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingSheetDto"];
+                };
+            };
+        };
+    };
+    GradingController_saveScores: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+                /** @description Assessment id */
+                assessmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveGradingScoresDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingSheetDto"];
+                };
+            };
+            /** @description Published and locked: `{ code: 'LOCKED' }` at the top level */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+                /** @description Assessment id */
+                assessmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingPublishResultDto"];
+                };
+            };
+            /** @description Scores missing: `{ missing: studentIds }` at the top level */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Course id */
+                courseId: string;
+                /** @description Assessment id */
+                assessmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockGradingScoresDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingUnlockResultDto"];
+                };
+            };
+            /** @description Not published: `{ code: 'NOT_PUBLISHED' }` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_readiness: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassReadinessDto"];
+                };
+            };
+        };
+    };
+    GradingController_remind: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendGradingReminderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingReminderSentDto"];
+                };
+            };
+            /** @description Already reminded today (`{ code: 'ALREADY_REMINDED', sentAt }`), published, or no teacher */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_broadsheet: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+                /** @description `total` (default) or an assessment id */
+                basis?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadsheetDto"];
+                };
+            };
+        };
+    };
+    GradingController_remarks: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermRemarksDto"];
+                };
+            };
+        };
+    };
+    GradingController_saveRemarks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveClassTeacherRemarksDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermRemarksDto"];
+                };
+            };
+            /** @description The class's results are submitted or published: `{ code: 'RESULTS_SUBMITTED' | 'RESULTS_PUBLISHED' }` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_classSubmissions: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDto"][];
+                };
+            };
+        };
+    };
+    GradingController_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Class id */
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitTermResultsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDto"];
+                };
+            };
+            /** @description Not ready (`{ waitingOn }`), or already submitted or published (`{ code }`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_queue: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+                status?: "submitted" | "returned" | "published";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDto"][];
+                };
+            };
+        };
+    };
+    GradingController_counts: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current term */
+                termId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultCountsDto"];
+                };
+            };
+        };
+    };
+    GradingController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Submission id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDetailDto"];
+                };
+            };
+        };
+    };
+    GradingController_publishResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Submission id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDto"];
+                };
+            };
+            /** @description Not submitted (`{ code, status }`), or a subject unlocked since (`{ waitingOn }`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_returnResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Submission id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnTermResultsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermResultSubmissionDto"];
+                };
+            };
+            /** @description Not submitted: `{ code, status }` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_savePrincipalRemarks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Submission id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePrincipalRemarksDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermRemarksDto"];
+                };
+            };
+            /** @description Results published: `{ code: 'RESULTS_PUBLISHED' }` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -19150,6 +20444,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ResourceController_recordView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the resource */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceViewResultDto"];
+                };
             };
         };
     };

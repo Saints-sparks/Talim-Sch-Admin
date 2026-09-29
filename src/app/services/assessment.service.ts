@@ -43,9 +43,11 @@ export interface AssessmentResponse {
   endDate: string;
   status: AssessmentStatus;
   /**
-   * Highest score a student can get (Round 3, §15; hand-written until the
-   * contract has it). A migration fills it for older assessments, so it is
-   * missing only while an API without Round 3 is answering.
+   * Highest score a student can get: a whole number, 1..1000 (Round 3, §15).
+   * The `/assessments` responses are not described in the generated
+   * contract, so this shape is hand-written. The `20260928000005` migration
+   * filled it for older assessments; it stays optional so a record the API
+   * sends without it shows no "out of" rather than "out of undefined".
    */
   maxScore?: number;
   createdBy: {
@@ -173,8 +175,10 @@ export const assessmentService = {
    * @param id - Assessment to update.
    * @param data - Fields to change; every field is optional.
    * @returns The updated assessment.
-   * @throws `ApiError` — `CONFLICT` (409) when `maxScore` changes on an
-   *   assessment that already has published scores for a course.
+   * @throws `ApiError` — 409 with a top-level `code` when `maxScore` changes:
+   *   `PUBLISHED` once any course has published scores for the assessment,
+   *   `SCORES_ABOVE_MAX` (with `highestScore`) when a recorded score is above
+   *   the new value; 400 when it is not a whole number from 1 to 1000.
    */
   async updateAssessment(id: string, data: UpdateAssessmentRequest): Promise<AssessmentResponse> {
     const result = await api.put<AssessmentEnvelope>(

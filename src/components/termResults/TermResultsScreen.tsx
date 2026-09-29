@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ClipboardCheck } from "lucide-react";
 import { ErrorState } from "@/components/StateComponents";
 import { useAcademicYears, useTerms } from "@/hooks/queries/reference";
-import { useTermResultsQueue } from "@/hooks/termResults/useTermResults";
+import { useTermResultCounts, useTermResultsQueue } from "@/hooks/termResults/useTermResults";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getErrorMessage } from "@/lib/apiError";
 import { Permission } from "@/lib/permissions";
@@ -17,7 +17,7 @@ import {
   basisLabel,
   formatWhen,
   missingRemarksLabel,
-  submitterName,
+  personName,
   termOptions,
 } from "./termResults.model";
 
@@ -56,7 +56,11 @@ export function TermResultsScreen() {
   const openButtons = useRef(new Map<string, HTMLButtonElement>());
 
   const queue = useTermResultsQueue(termId, status);
+  const counts = useTermResultCounts(termId);
   const tab = STATUS_TABS.find((t) => t.status === status) ?? STATUS_TABS[0];
+  /** A tab's count: from the counts route, else (until it answers) the open tab's list. */
+  const countFor = (s: TermResultStatus): number | undefined =>
+    counts.data?.[s] ?? (s === status ? queue.data?.length : undefined);
 
   useEffect(() => {
     if (open || !returnFocusTo || !queue.data) return;
@@ -163,7 +167,7 @@ export function TermResultsScreen() {
             )}
           >
             {t.label}
-            {status === t.status && queue.data ? ` (${queue.data.length})` : ""}
+            {countFor(t.status) !== undefined ? ` (${countFor(t.status)})` : ""}
           </button>
         ))}
       </div>
@@ -237,7 +241,7 @@ export function TermResultsScreen() {
                         )}
                       </th>
                       <td className={TD}>{basisLabel(s.basis)}</td>
-                      <td className={TD}>{submitterName(s.submittedBy)}</td>
+                      <td className={TD}>{personName(s.submittedBy)}</td>
                       <td className={`${TD} whitespace-nowrap`}>{formatWhen(s.submittedAt)}</td>
                       <td className={`${TD} text-right tabular-nums`}>{s.studentCount}</td>
                       <td className={TD}>

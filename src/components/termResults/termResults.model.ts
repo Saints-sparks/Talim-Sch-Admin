@@ -5,12 +5,15 @@
 import type { AcademicYearResponse, TermResponse } from "@/app/services/academic.service";
 import {
   REMARK_MAX_LENGTH,
+  RETURN_REASON_MAX_LENGTH,
   type Broadsheet,
-  type NamedRef,
+  type GradingConflict,
+  type GradingPerson,
   type ResultPosition,
   type TermRemarkRow,
   type TermResultStatus,
   type TermResultSubmission,
+  type WaitingSubject,
 } from "@/types/gradingContract";
 
 /** The queue's tabs, in order. */
@@ -31,9 +34,6 @@ export const STATUS_TABS: readonly { status: TermResultStatus; label: string; em
     empty: "No results have been published this term.",
   },
 ];
-
-/** Longest reason the return dialog takes. The contract sets no limit; this keeps the notification readable. */
-export const RETURN_REASON_MAX_LENGTH = 500;
 
 /** One entry of the term picker. */
 export interface TermOption {
@@ -75,38 +75,25 @@ export function activeTermId(options: readonly TermOption[], picked: string): st
 }
 
 /**
- * The basis a submission was made on, as the broadsheet route takes it.
+ * The basis in words: the label the API sends ("Term total" or the
+ * assessment's name). The API sends an empty label for an assessment it can
+ * no longer find, which reads as "Single assessment".
  *
- * @param basis - The submission's basis: `'total'`, an assessment id, or `{ key, label }`.
- * @returns `total` or the assessment id.
- */
-export function basisKey(basis: TermResultSubmission["basis"]): string {
-  return typeof basis === "string" ? basis : basis.key;
-}
-
-/**
- * The basis in words: the label the API sends, else "Term total" or
- * "Single assessment".
- *
- * @param basis - The submission's basis.
+ * @param basis - The submission's basis, `{ key, label }`.
  * @returns The label.
  */
 export function basisLabel(basis: TermResultSubmission["basis"]): string {
-  if (typeof basis !== "string")
-    return basis.label || (basis.key === "total" ? "Term total" : "Single assessment");
-  return basis === "total" ? "Term total" : "Single assessment";
+  return basis.label || (basis.key === "total" ? "Term total" : "Single assessment");
 }
 
 /**
- * Who submitted the results.
+ * A person the submission names (who submitted, returned or published it).
  *
- * @param submittedBy - `{ id, name }`, a bare user id, or null.
- * @returns The name, or "Class teacher" when only an id came back.
+ * @param person - `{ id, name }`, or null when nobody is recorded.
+ * @returns The name, or "Unknown" when there is none (e.g. a deleted account).
  */
-export function submitterName(submittedBy: TermResultSubmission["submittedBy"]): string {
-  if (!submittedBy) return "Unknown";
-  if (typeof submittedBy === "string") return "Class teacher";
-  return (submittedBy as NamedRef).name || "Class teacher";
+export function personName(person: GradingPerson | null): string {
+  return person?.name || "Unknown";
 }
 
 /**
@@ -203,17 +190,80 @@ export function awaitsOffice(submission: Pick<TermResultSubmission, "status">): 
 }
 
 /**
- * Whether the principal's remarks can still be edited. Once results are
- * published, students and parents have read them, so the screen stops
- * offering edits (the API does not forbid it; this is a product choice).
+ * Whether the remarks are locked. The API refuses remark changes (409
+ * `RESULTS_PUBLISHED`) once the class's results for the term are published;
+ * this submission being published is the case the screen can see up front.
+ * Another basis's publication for the same class and term only shows when a
+ * save is refused, and the screen then locks the remarks too.
  *
  * @param submission - The submission.
- * @returns False once published.
+ * @returns True once published.
  */
-export function principalRemarksEditable(
-  submission: Pick<TermResultSubmission, "status">
-): boolean {
-  return submission.status !== "published";
+export function remarksLocked(submission: Pick<TermResultSubmission, "status">): boolean {
+  return submission.status === "published";
+}
+
+/**
+ * What the remarks panel says when the remarks are locked.
+ *
+ * @param submission - The submission.
+ * @returns The note.
+ */
+export function remarksLockedNote(
+  submission: Pick<TermResultSubmission, "class" | "term">
+): string {
+  return `Remarks are locked: ${submission.class.name}'s results for ${submission.term.name} are published.`;
+}
+
+/**
+ * Names subjects that are not published for the basis.
+ *
+ * @param waitingOn - The subjects.
+ * @returns E.g. "English", "English and Mathematics", "Art, English and Mathematics".
+ */
+function subjectList(waitingOn: readonly WaitingSubject[]): string {
+  const titles = waitingOn.map((w) => w.title);
+  if (titles.length <= 1) return titles[0] ?? "";
+  return `${titles.slice(0, -1).join(", ")} and ${titles[titles.length - 1]}`;
+}
+
+/**
+ * Why publishing is blocked because a subject is no longer published (it was
+ * unlocked for a correction since the submission).
+ *
+ * @param waitingOn - The subjects, from the broadsheet or the publish 409.
+ * @returns The explanation.
+ */
+export function notPublishedMessage(waitingOn: readonly WaitingSubject[]): string {
+  if (waitingOn.length === 0) {
+    return "A subject is no longer published. Return the results, or wait until its teacher publishes again.";
+  }
+  return waitingOn.length === 1
+    ? `${subjectList(waitingOn)} is no longer published. Return the results, or wait until its teacher publishes again.`
+    : `${subjectList(waitingOn)} are no longer published. Return the results, or wait until their teachers publish again.`;
+}
+
+/**
+ * Explains a 409 from publish or return: another member of staff acted first
+ * (`{ code, status }`), or, for publish, a subject was unlocked since the
+ * submission (`{ waitingOn }`).
+ *
+ * @param conflict - From `gradingConflict()`.
+ * @param className - The class, to name in the message.
+ * @returns The message, or undefined when the 409 carries neither (the
+ *   caller falls back to the API's message).
+ */
+export function officeConflictMessage(
+  conflict: GradingConflict | null,
+  className: string
+): string | undefined {
+  if (!conflict) return undefined;
+  if (conflict.waitingOn) return notPublishedMessage(conflict.waitingOn);
+  if (conflict.status === "published") return `${className} results are already published.`;
+  if (conflict.status === "returned") {
+    return `${className} results were already returned to the class teacher.`;
+  }
+  return undefined;
 }
 
 /**
@@ -253,7 +303,7 @@ export type RemarkEdits = Record<string, string>;
  * @returns The text.
  */
 export function remarkValue(row: TermRemarkRow, edits: RemarkEdits): string {
-  return edits[row.student.id] ?? row.principalRemark ?? "";
+  return edits[row.student.id] ?? row.principalRemark;
 }
 
 /**
@@ -272,7 +322,7 @@ export function changedPrincipalRemarks(
     const edit = edits[row.student.id];
     if (edit === undefined) return [];
     const next = edit.trim();
-    return next === (row.principalRemark ?? "").trim()
+    return next === row.principalRemark.trim()
       ? []
       : [{ studentId: row.student.id, principalRemark: next }];
   });
@@ -285,5 +335,5 @@ export function changedPrincipalRemarks(
  * @returns Their names.
  */
 export function studentsMissingRemarks(rows: readonly TermRemarkRow[]): string[] {
-  return rows.filter((r) => !r.classTeacherRemark?.trim()).map((r) => r.student.name);
+  return rows.filter((r) => !r.classTeacherRemark.trim()).map((r) => r.student.name);
 }

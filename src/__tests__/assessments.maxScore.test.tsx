@@ -1,9 +1,10 @@
 /** @jest-environment jsdom */
 /**
- * The assessment max score (Round 3, §15): required, 1–1000, sent on create,
- * sent on edit only when it changed, shown on the list as "out of X", and a
- * 409 on an edit that changed it (scores already published) explained on the
- * field.
+ * The assessment max score (Round 3, §15): required, a whole number 1–1000,
+ * sent on create, sent on edit only when it changed, shown on the list as
+ * "out of X", and a 409 on an edit that changed it explained on the field:
+ * `PUBLISHED` (scores already published) or `SCORES_ABOVE_MAX` (a recorded
+ * score is above the new value), read from the top level of the 409 body.
  */
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@/test-utils/render";
@@ -73,11 +74,12 @@ describe("validateMaxScore", () => {
     }
   });
 
-  it("keeps it between 1 and 1000", () => {
+  it("keeps it a whole number between 1 and 1000", () => {
     expect(validateMaxScore("0")).toBe("Max score must be between 1 and 1000");
     expect(validateMaxScore("0.5")).toBe("Max score must be between 1 and 1000");
     expect(validateMaxScore("1001")).toBe("Max score must be between 1 and 1000");
-    for (const ok of ["1", "20", "100", "1000", "12.5", " 60 "]) expect(validateMaxScore(ok)).toBeUndefined();
+    expect(validateMaxScore("12.5")).toBe("Max score must be a whole number");
+    for (const ok of ["1", "20", "100", "1000", "40.0", " 60 "]) expect(validateMaxScore(ok)).toBeUndefined();
   });
 
   it("is part of the form check", () => {
@@ -112,13 +114,41 @@ describe("payloads", () => {
 });
 
 describe("describeAssessmentSaveError", () => {
-  const conflict = new ApiError("CONFLICT", "Scores are published", 409);
+  /** A 409 as the API sends it: `code` and friends at the top level, `error.code` CONFLICT. */
+  const conflictWith = (meta: Record<string, unknown>) =>
+    new ApiError("CONFLICT", "Scores are published", 409, [], undefined, meta);
+  const conflict = conflictWith({ code: "PUBLISHED" });
 
-  it("explains a 409 on a changed max score on the field, with the value to go back to", () => {
+  it("explains a 409 PUBLISHED on a changed max score on the field, with the value to go back to", () => {
     const problem = describeAssessmentSaveError(conflict, { isEditing: true, maxScoreChanged: true, savedMaxScore: 40 });
-    expect(problem.field).toBe("maxScore");
-    expect(problem.message).toMatch(/already published/);
-    expect(problem.message).toMatch(/back to 40/);
+    expect(problem).toEqual({
+      field: "maxScore",
+      message:
+        "Scores for this assessment are already published, so its max score can't change. Put it back to 40 to save your other changes.",
+    });
+  });
+
+  it("explains a 409 SCORES_ABOVE_MAX with the highest score recorded", () => {
+    const problem = describeAssessmentSaveError(conflictWith({ code: "SCORES_ABOVE_MAX", highestScore: 38.5 }), {
+      isEditing: true,
+      maxScoreChanged: true,
+      savedMaxScore: 40,
+    });
+    expect(problem).toEqual({
+      field: "maxScore",
+      message:
+        "A score of 38.5 is already recorded for this assessment, so the max score can't be below 38.5. Use 39 or more, or put it back to 40.",
+    });
+  });
+
+  it("puts a 400 about the max score on the field", () => {
+    const invalid = new ApiError("VALIDATION_FAILED", "Some fields need attention.", 400, [
+      { field: "maxScore", reason: "maxScore must be an integer number" },
+    ]);
+    expect(describeAssessmentSaveError(invalid, { isEditing: false, maxScoreChanged: false })).toEqual({
+      field: "maxScore",
+      message: "maxScore must be an integer number",
+    });
   });
 
   it("leaves any other failure to the form", () => {
@@ -155,7 +185,9 @@ describe("AssessmentCreateModal max score field", () => {
 
   it("shows the published-scores conflict on the field and keeps the draft", async () => {
     jest.spyOn(console, "error").mockImplementation(() => undefined);
-    const onSubmit = jest.fn().mockRejectedValue(new ApiError("CONFLICT", "Conflict", 409));
+    const onSubmit = jest
+      .fn()
+      .mockRejectedValue(new ApiError("CONFLICT", "Conflict", 409, [], undefined, { code: "PUBLISHED" }));
     const onClose = jest.fn();
     render(
       <AssessmentCreateModal isOpen onClose={onClose} onSubmit={onSubmit} terms={[term]} editingAssessment={saved} />,
@@ -178,6 +210,25 @@ describe("AssessmentCreateModal max score field", () => {
     await waitFor(() => expect(field).toHaveFocus());
     expect(field).toHaveValue(50);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows the scores-above-max conflict on the field", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+    const onSubmit = jest.fn().mockRejectedValue(
+      new ApiError("CONFLICT", "Conflict", 409, [], undefined, { code: "SCORES_ABOVE_MAX", highestScore: 36 }),
+    );
+    render(
+      <AssessmentCreateModal isOpen onClose={jest.fn()} onSubmit={onSubmit} terms={[term]} editingAssessment={saved} />,
+    );
+    const field = screen.getByLabelText(/Max Score/);
+    fireEvent.change(field, { target: { value: "30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Update Assessment" }));
+
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(document.getElementById("assessment-max-score-error")).toHaveTextContent(
+      "A score of 36 is already recorded for this assessment, so the max score can't be below 36. Use 36 or more, or put it back to 40.",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("The assessment was not saved. See the max score below.");
   });
 });
 

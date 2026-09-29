@@ -10,7 +10,7 @@
  */
 import { api } from "@/lib/apiClient";
 import type { Schema } from "@/types/apiContract";
-import type { AcademicGradingFields, GradeBand } from "@/types/gradingContract";
+import type { GradeBand } from "@/types/gradingContract";
 import type {
   UpdateAcademicSettingsPayload,
   UpdateFinanceSettingsPayload,
@@ -82,11 +82,12 @@ export type SchoolPeriod = Schema<"AcademicPeriodResponseDto">;
 /**
  * The school's clock, bell schedule, grade scale and pass mark. The API fills
  * in defaults (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods; the
- * A–F scale and a pass mark of 50), so every field is always present. The
- * grading fields (Round 3, §16) are hand-written in `gradingContract.ts`
- * until the generated contract has them.
+ * A–F scale and a pass mark of 50), so every field is always present.
  */
-export type AcademicSettings = Schema<"AcademicSettingsDto"> & AcademicGradingFields;
+export type AcademicSettings = Schema<"AcademicSettingsDto">;
+
+/** Body of `GET` and `PATCH /settings/academic`. */
+export type AcademicSettingsResponse = Schema<"AcademicSettingsResponseDto">;
 
 /** One band of the school's grade scale. */
 export type { GradeBand };
@@ -185,8 +186,8 @@ export const updateFinanceSettings = async (
  * @returns The academic settings with defaults filled in.
  * @throws `ApiError` when the request fails.
  */
-export const getAcademicSettings = async (): Promise<{ success: boolean; settings: AcademicSettings }> =>
-  api.get<{ success: boolean; settings: AcademicSettings }>(`${BASE}/academic`);
+export const getAcademicSettings = async (): Promise<AcademicSettingsResponse> =>
+  api.get<AcademicSettingsResponse>(`${BASE}/academic`);
 
 /**
  * Saves academic settings. `periods`, when sent, replaces the whole list; the
@@ -202,8 +203,8 @@ export const getAcademicSettings = async (): Promise<{ success: boolean; setting
  */
 export const updateAcademicSettings = async (
   dto: UpdateAcademicSettingsDto
-): Promise<{ success: boolean; settings: AcademicSettings }> =>
-  api.patch<{ success: boolean; settings: AcademicSettings }>(`${BASE}/academic`, dto);
+): Promise<AcademicSettingsResponse> =>
+  api.patch<AcademicSettingsResponse>(`${BASE}/academic`, dto);
 
 // ─── Data Export ──────────────────────────────────────────────────────────────
 

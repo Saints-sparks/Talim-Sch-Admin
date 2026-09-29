@@ -6,9 +6,10 @@ import { OutlineBtn, PrimaryBtn } from "@/components/settings/ui";
 import {
   useBroadsheet,
   useTermRemarks,
+  useTermResult,
   useTermResultActions,
 } from "@/hooks/termResults/useTermResults";
-import type { TermResultSubmission } from "@/types/gradingContract";
+import { gradingConflict, type TermResultSubmission } from "@/types/gradingContract";
 import { BroadsheetTable } from "./BroadsheetTable";
 import { PrincipalRemarksPanel } from "./PrincipalRemarksPanel";
 import { PublishDialog, ReturnDialog } from "./ResultDialogs";
@@ -18,12 +19,15 @@ import {
   basisLabel,
   changedPrincipalRemarks,
   formatWhen,
-  principalRemarksEditable,
-  submitterName,
+  notPublishedMessage,
+  personName,
+  remarksLocked,
+  remarksLockedNote,
   type RemarkEdits,
 } from "./termResults.model";
 
 interface TermResultDetailProps {
+  /** The submission as the queue listed it; refreshed from the API on open. */
   submission: TermResultSubmission;
   /** True when the viewer may publish, return and write principal remarks (`manage:assessments`). */
   canManage: boolean;
@@ -36,13 +40,21 @@ interface TermResultDetailProps {
  * and — while it waits on the office — Return and Publish. Publishing asks
  * first (students and parents are notified); returning needs a reason.
  * Unsaved principal remarks block publishing, so none are lost.
+ *
+ * When the API refuses because something changed under the office (409:
+ * already published or returned, a subject unlocked, remarks locked), the
+ * dialog closes and the view refreshes to show where things stand.
  */
-export function TermResultDetail({ submission, canManage, onBack }: TermResultDetailProps) {
+export function TermResultDetail({ submission: row, canManage, onBack }: TermResultDetailProps) {
+  const submission = useTermResult(row);
   const broadsheet = useBroadsheet(submission);
   const remarks = useTermRemarks(submission);
   const actions = useTermResultActions(submission);
 
   const [edits, setEdits] = useState<RemarkEdits>({});
+  /** Set when a save was refused because the class's results for the term are published. */
+  const [lockedByApi, setLockedByApi] = useState(false);
+  const locked = lockedByApi || remarksLocked(submission);
   const [dialog, setDialog] = useState<"publish" | "return" | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   /** The button that opened the dialog, which gets focus back when it closes. */
@@ -55,10 +67,10 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
   const office = canManage && awaitsOffice(submission);
   const notReady = broadsheet.data ? !broadsheet.data.ready : false;
   const publishBlocker =
-    changes.length > 0
+    changes.length > 0 && !locked
       ? "Save or discard the principal's remarks before publishing."
       : notReady
-        ? "A subject is no longer published. Return the results, or wait until its teacher publishes again."
+        ? notPublishedMessage(broadsheet.data?.waitingOn ?? [])
         : null;
 
   const openDialog = (which: "publish" | "return") => {
@@ -71,13 +83,27 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
     opener.current?.focus();
   };
 
+  /**
+   * After a refused publish or return: a 409 with `status` or `waitingOn`
+   * means retrying cannot help (the submission moved on, or a subject must be
+   * published again), so the dialog closes onto the refreshed view; any other
+   * failure keeps the dialog for a retry.
+   */
+  const afterOfficeError = (err: unknown) => {
+    const conflict = gradingConflict(err);
+    if (!conflict?.status && !conflict?.waitingOn) return;
+    setDialog(null);
+    heading.current?.focus();
+  };
+
   const publish = async () => {
     try {
       await actions.publish();
       setDialog(null);
       onBack();
-    } catch {
-      // Toasted by the hook; the dialog stays for a retry or a cancel.
+    } catch (err) {
+      // Toasted by the hook.
+      afterOfficeError(err);
     }
   };
 
@@ -86,8 +112,9 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
       await actions.returnToTeacher(reason);
       setDialog(null);
       onBack();
-    } catch {
-      // Toasted by the hook; the dialog keeps the reason.
+    } catch (err) {
+      // Toasted by the hook; unless the 409 says a retry is pointless, the dialog keeps the reason.
+      afterOfficeError(err);
     }
   };
 
@@ -95,8 +122,12 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
     try {
       await actions.saveRemarks(changes);
       setEdits({});
-    } catch {
-      // Toasted by the hook; the edits stay.
+    } catch (err) {
+      // Toasted by the hook; the edits stay, unless the remarks are now locked.
+      if (gradingConflict(err)?.code === "RESULTS_PUBLISHED") {
+        setLockedByApi(true);
+        setEdits({});
+      }
     }
   };
 
@@ -126,7 +157,7 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
             <TermResultStatusBadge status={submission.status} />
           </div>
           <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-            {basisLabel(submission.basis)} · submitted by {submitterName(submission.submittedBy)} on{" "}
+            {basisLabel(submission.basis)} · submitted by {personName(submission.submittedBy)} on{" "}
             {formatWhen(submission.submittedAt)} · {submission.studentCount}{" "}
             {submission.studentCount === 1 ? "student" : "students"}
           </p>
@@ -136,13 +167,15 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
               {submission.returnedAt
                 ? `on ${formatWhen(submission.returnedAt)}`
                 : "to the class teacher"}
+              {submission.returnedBy ? ` by ${personName(submission.returnedBy)}` : ""}
               {submission.returnReason ? `: ${submission.returnReason}` : "."}
             </p>
           )}
           {submission.status === "published" && (
             <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
-              Published{submission.publishedAt ? ` on ${formatWhen(submission.publishedAt)}` : ""}.
-              Students and parents can see these results.
+              Published{submission.publishedAt ? ` on ${formatWhen(submission.publishedAt)}` : ""}
+              {submission.publishedBy ? ` by ${personName(submission.publishedBy)}` : ""}. Students
+              and parents can see these results.
             </p>
           )}
         </div>
@@ -185,7 +218,8 @@ export function TermResultDetail({ submission, canManage, onBack }: TermResultDe
           query={remarks}
           edits={edits}
           changedCount={changes.length}
-          editable={canManage && principalRemarksEditable(submission)}
+          editable={canManage && !locked}
+          lockedNote={locked ? remarksLockedNote(submission) : undefined}
           saving={actions.savingRemarks}
           onEdit={(studentId, text) => setEdits((prev) => ({ ...prev, [studentId]: text }))}
           onSave={() => void saveRemarks()}

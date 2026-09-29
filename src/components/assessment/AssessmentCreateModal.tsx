@@ -377,10 +377,10 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
             id="assessment-max-score"
             type="number"
             name="maxScore"
-            inputMode="decimal"
+            inputMode="numeric"
             min={MAX_SCORE_MIN}
             max={MAX_SCORE_MAX}
-            step="any"
+            step={1}
             value={formData.maxScore}
             onChange={handleInputChange}
             className={`${inputClass(Boolean(errors.maxScore))} sm:max-w-xs`}
@@ -390,8 +390,8 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
             {...describedBy("assessment-max-score", errors.maxScore, "assessment-max-score-hint")}
           />
           <p id="assessment-max-score-hint" className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-            Teachers enter every score out of this number ({MAX_SCORE_MIN}–{MAX_SCORE_MAX}). It can&apos;t
-            change once scores for this assessment are published.
+            Teachers enter every score out of this whole number ({MAX_SCORE_MIN}–{MAX_SCORE_MAX}). It
+            can&apos;t change once scores for this assessment are published.
           </p>
           <FieldError controlId="assessment-max-score" message={errors.maxScore} />
         </div>

@@ -9,8 +9,8 @@ import {
   controlClasses,
   describedBy,
 } from "@/components/settings/schoolDay/fields";
-import type { TermResultSubmission } from "@/types/gradingContract";
-import { RETURN_REASON_MAX_LENGTH, basisLabel, validateReturnReason } from "./termResults.model";
+import { RETURN_REASON_MAX_LENGTH, type TermResultSubmission } from "@/types/gradingContract";
+import { basisLabel, validateReturnReason } from "./termResults.model";
 
 /** Does nothing: a dialog cannot be dismissed while its action runs. */
 const stay = () => undefined;

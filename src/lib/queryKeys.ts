@@ -95,6 +95,11 @@ export const queryKeys = {
     /** The office queue for a term and status. */
     queue: (schoolId: string, termId: string, status: string) =>
       ["termResults", schoolId, "queue", termId, status] as const,
+    /** How many submissions of a term are in each status. */
+    counts: (schoolId: string, termId: string) => ["termResults", schoolId, "counts", termId] as const,
+    /** One submission, as it stands now. */
+    detail: (schoolId: string, submissionId: string) =>
+      ["termResults", schoolId, "detail", submissionId] as const,
     /** A class's broadsheet for a term on one basis (`total` or an assessment id). */
     broadsheet: (schoolId: string, classId: string, termId: string, basis: string) =>
       ["termResults", schoolId, "broadsheet", classId, termId, basis] as const,

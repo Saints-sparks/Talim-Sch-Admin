@@ -147,7 +147,7 @@ describe("payload and dirty state", () => {
   });
 
   it("is dirty only when something changed", () => {
-    const saved = { gradeScale: [{ letter: "A", min: 70, remark: "Top" }, { letter: "F", min: 0 }], passMark: 50 };
+    const saved = { gradeScale: [{ letter: "A", min: 70, remark: "Top" }, { letter: "F", min: 0, remark: null }], passMark: 50 };
     expect(isGradingDirty(rows("A:70:Top", "F:0"), "50", saved)).toBe(false);
     expect(isGradingDirty(rows("A:75:Top", "F:0"), "50", saved)).toBe(true);
     expect(isGradingDirty(rows("A:70:Top", "F:0"), "40", saved)).toBe(true);

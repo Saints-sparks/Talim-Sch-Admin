@@ -13,7 +13,7 @@
  * minimums. "Moving" a grade up or down therefore swaps its letter and
  * remark with its neighbour's and leaves the minimums where they are.
  */
-import type { GradeBand } from "@/types/gradingContract";
+import type { GradeBand, GradeBandInput } from "@/types/gradingContract";
 
 /** One row of the editor. Minimum is the input's text. */
 export interface BandDraft {
@@ -80,8 +80,8 @@ export function parsePercent(value: string): number | null {
 }
 
 /**
- * Turns a saved scale into editor rows. An API that does not send a scale
- * yet (before Round 3) gets the default one.
+ * Turns a saved scale into editor rows. An empty scale (which the API never
+ * sends; it fills in the default) gets the default one.
  *
  * @param scale - The saved bands, highest first.
  * @returns The rows.
@@ -265,7 +265,7 @@ export function hasGradingErrors(errors: GradingErrors): boolean {
 export function toGradingPayload(
   rows: readonly BandDraft[],
   passMark: string
-): { gradeScale: { letter: string; min: number; remark?: string }[]; passMark: number } {
+): { gradeScale: GradeBandInput[]; passMark: number } {
   return {
     gradeScale: rows.map((r) => {
       const remark = r.remark.trim();

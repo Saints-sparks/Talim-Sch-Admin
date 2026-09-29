@@ -1,9 +1,11 @@
 /** @jest-environment jsdom */
 /**
- * The Term Results queue against fixtures (the Round 3 API is not built yet):
- * the list per status, opening a submission (broadsheet and remarks), the
- * publish confirmation, the required return reason, saving principal
- * remarks, and permission gating of the route, the sidebar and the actions.
+ * The Term Results queue against fixtures shaped like the generated contract
+ * (Round 3 as built): the list per status with counts, opening a submission
+ * (broadsheet and remarks), the publish confirmation, the required return
+ * reason, saving principal remarks, the 409s (already published or returned,
+ * a subject unlocked, remarks locked), and permission gating of the route,
+ * the sidebar and the actions.
  */
 import React from "react";
 import {
@@ -61,6 +63,8 @@ jest.mock("@/hooks/queries/reference", () => ({
 
 jest.mock("@/app/services/term-results.service", () => ({
   listTermResults: jest.fn(),
+  getTermResultCounts: jest.fn(),
+  getTermResult: jest.fn(),
   getBroadsheet: jest.fn(),
   getTermRemarks: jest.fn(),
   savePrincipalRemarks: jest.fn(),
@@ -78,12 +82,17 @@ const submitted: TermResultSubmission = {
   id: "sub1",
   class: { id: "c5a", name: "Grade 5A" },
   term: { id: "t1", name: "First Term" },
-  basis: "total",
+  basis: { key: "total", label: "Term total" },
   status: "submitted",
   submittedAt: "2026-09-28T09:30:00Z",
   submittedBy: { id: "u9", name: "Tolu Teacher" },
   studentCount: 2,
   missingRemarks: 1,
+  returnReason: null,
+  returnedAt: null,
+  returnedBy: null,
+  publishedAt: null,
+  publishedBy: null,
 };
 
 const returned: TermResultSubmission = {
@@ -96,10 +105,20 @@ const returned: TermResultSubmission = {
   missingRemarks: 0,
 };
 
+/** A 409 as the API sends it: the machine-readable fields at the top level of the body. */
+const conflict = (message: string, meta: Record<string, unknown>) =>
+  new ApiError("CONFLICT", message, 409, [], undefined, meta);
+
 const sheet: Broadsheet = {
   class: { id: "c5a", name: "Grade 5A" },
   term: { id: "t1", name: "First Term" },
   basis: { key: "total", label: "Term total", maxPerSubject: null },
+  scale: [
+    { letter: "A", min: 70, remark: "Excellent" },
+    { letter: "C", min: 50, remark: null },
+    { letter: "F", min: 0, remark: "Fail" },
+  ],
+  passMark: 50,
   subjects: [
     { courseId: "m", code: "MTH", title: "Mathematics", published: true },
     { courseId: "e", code: "ENG", title: "English", published: true },
@@ -136,7 +155,7 @@ const remarks: TermRemarkRow[] = [
     publishedCount: 2,
     subjectCount: 2,
     classTeacherRemark: "A focused term.",
-    principalRemark: null,
+    principalRemark: "",
   },
   {
     student: { id: "s2", name: "Ben Student", admissionNumber: null },
@@ -144,7 +163,7 @@ const remarks: TermRemarkRow[] = [
     average: 55,
     publishedCount: 1,
     subjectCount: 2,
-    classTeacherRemark: null,
+    classTeacherRemark: "",
     principalRemark: "See me.",
   },
 ];
@@ -154,11 +173,21 @@ beforeEach(() => {
   mocked.listTermResults.mockImplementation(async ({ status } = {}) =>
     status === "submitted" ? [submitted] : status === "returned" ? [returned] : []
   );
+  mocked.getTermResultCounts.mockResolvedValue({ submitted: 1, returned: 1, published: 0 });
+  mocked.getTermResult.mockImplementation(async (id) => {
+    const row = [submitted, returned].find((s) => s.id === id) ?? submitted;
+    return { ...row, classId: row.class.id, termId: row.term.id };
+  });
   mocked.getBroadsheet.mockResolvedValue(sheet);
   mocked.getTermRemarks.mockResolvedValue(remarks);
-  mocked.savePrincipalRemarks.mockResolvedValue(undefined);
-  mocked.publishTermResults.mockResolvedValue({});
-  mocked.returnTermResults.mockResolvedValue({});
+  mocked.savePrincipalRemarks.mockImplementation(async (_id, changes) =>
+    remarks.map((row) => {
+      const change = changes.find((c) => c.studentId === row.student.id);
+      return change ? { ...row, principalRemark: change.principalRemark } : row;
+    })
+  );
+  mocked.publishTermResults.mockResolvedValue({ ...submitted, status: "published" });
+  mocked.returnTermResults.mockResolvedValue({ ...submitted, status: "returned" });
 });
 
 /** Renders the queue and opens the submitted Grade 5A results. */
@@ -186,6 +215,16 @@ describe("queue", () => {
       "aria-pressed",
       "true"
     );
+  });
+
+  it("counts every tab from the counts route", async () => {
+    render(<TermResultsScreen />);
+    expect(await screen.findByRole("button", { name: "Returned (1)" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(screen.getByRole("button", { name: "Published (0)" })).toBeInTheDocument();
+    expect(mocked.getTermResultCounts).toHaveBeenCalledWith("t1");
   });
 
   it("switches status and term", async () => {
@@ -265,16 +304,106 @@ describe("a submission", () => {
     expect(await screen.findByRole("table", { name: /Submitted results/ })).toBeInTheDocument();
   });
 
-  it("keeps the publish dialog open when the API refuses", async () => {
+  it("keeps the publish dialog open for a retry when the publish fails", async () => {
     mocked.publishTermResults.mockRejectedValue(
-      new ApiError("CONFLICT", "Waiting on English", 409)
+      new ApiError("INTERNAL_ERROR", "Server fell over", 500)
     );
     await openSubmitted();
     fireEvent.click(screen.getByRole("button", { name: "Publish results" }));
     const dialog = await screen.findByRole("dialog", { name: "Publish results?" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Publish and notify" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Waiting on English"));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Server fell over"));
     expect(screen.getByRole("dialog", { name: "Publish results?" })).toBeInTheDocument();
+  });
+
+  it("on a 409 { waitingOn }, names the unlocked subjects, closes the dialog and blocks publishing", async () => {
+    await openSubmitted();
+    await screen.findByRole("table", { name: /Broadsheet/ });
+    mocked.publishTermResults.mockRejectedValue(
+      conflict("A subject is no longer published.", {
+        waitingOn: [{ courseId: "e", title: "English" }],
+      })
+    );
+    // What the refreshed broadsheet says after the 409.
+    mocked.getBroadsheet.mockResolvedValue({
+      ...sheet,
+      ready: false,
+      waitingOn: [{ courseId: "e", title: "English" }],
+      subjects: [sheet.subjects[0], { ...sheet.subjects[1], published: false }],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish results" }));
+    fireEvent.click(
+      within(await screen.findByRole("dialog", { name: "Publish results?" })).getByRole("button", {
+        name: "Publish and notify",
+      })
+    );
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "English is no longer published. Return the results, or wait until its teacher publishes again."
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Publish results" })).toBeDisabled()
+    );
+    expect(screen.getByRole("button", { name: "Publish results" })).toHaveAccessibleDescription(
+      /English is no longer published/
+    );
+  });
+
+  it("on a 409 { code, status }, says who got there first and shows where the results stand", async () => {
+    await openSubmitted();
+    mocked.publishTermResults.mockRejectedValue(
+      conflict("These results are already published.", {
+        code: "ALREADY_PUBLISHED",
+        status: "published",
+      })
+    );
+    mocked.getTermResult.mockResolvedValue({
+      ...submitted,
+      status: "published",
+      publishedAt: "2026-09-29T08:00:00Z",
+      publishedBy: { id: "u1", name: "Ada Admin" },
+      classId: "c5a",
+      termId: "t1",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish results" }));
+    fireEvent.click(
+      within(await screen.findByRole("dialog", { name: "Publish results?" })).getByRole("button", {
+        name: "Publish and notify",
+      })
+    );
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("Grade 5A results are already published.")
+    );
+    expect(
+      await screen.findByText(/by Ada Admin\. Students and parents can see/)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Publish results" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Remarks are locked: Grade 5A's results for First Term are published."
+    );
+  });
+
+  it("closes the return dialog on a 409 { code, status }", async () => {
+    await openSubmitted();
+    mocked.returnTermResults.mockRejectedValue(
+      conflict("These results were returned to the class teacher.", {
+        code: "RETURNED",
+        status: "returned",
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Return to class teacher" }));
+    const dialog = await screen.findByRole("dialog", { name: "Return to class teacher" });
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Fix it" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Return results" }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Grade 5A results were already returned to the class teacher."
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("needs a reason to return, tied to the field, and sends it trimmed", async () => {
@@ -326,6 +455,30 @@ describe("a submission", () => {
     expect(screen.getByLabelText("Principal remark for Ada Student")).toHaveValue(
       "An excellent term."
     );
+  });
+
+  it("locks the remarks when a save answers 409 RESULTS_PUBLISHED", async () => {
+    await openSubmitted();
+    mocked.savePrincipalRemarks.mockRejectedValue(
+      conflict("This class's results are published; remarks can no longer change.", {
+        code: "RESULTS_PUBLISHED",
+      })
+    );
+    fireEvent.change(await screen.findByLabelText("Principal remark for Ada Student"), {
+      target: { value: "An excellent term." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save remarks (1)" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Remarks are locked: Grade 5A's results for First Term are published."
+    );
+    expect(toast.error).toHaveBeenCalledWith(
+      "Not saved: Grade 5A's results for First Term are published, so the remarks are locked."
+    );
+    expect(screen.queryByLabelText("Principal remark for Ada Student")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Save remarks/ })).not.toBeInTheDocument();
+    expect(screen.getByText("See me.")).toBeInTheDocument();
+    // The unsaved edit is gone, so it no longer blocks publishing.
+    expect(screen.getByRole("button", { name: "Publish results" })).toBeEnabled();
   });
 
   it("blocks publishing when a subject is no longer published", async () => {

@@ -22,6 +22,11 @@ const settings: AcademicSettings = {
   registerCloseTime: "11:00",
   registerEditUntil: "16:00",
   registerTrackingSince: "2026-09-01",
+  gradeScale: [
+    { letter: "A", min: 70, remark: "Excellent" },
+    { letter: "F", min: 0, remark: null },
+  ],
+  passMark: 50,
   periods: [
     { key: "p1", label: "Period 1", startTime: "08:00", endTime: "08:40", isBreak: false },
     { key: "brk", label: "Break", startTime: "08:40", endTime: "09:00", isBreak: true },

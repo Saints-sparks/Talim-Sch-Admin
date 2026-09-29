@@ -5,7 +5,6 @@ import {
   STATUS_TABS,
   activeTermId,
   awaitsOffice,
-  basisKey,
   basisLabel,
   cellUnit,
   changedPrincipalRemarks,
@@ -13,20 +12,25 @@ import {
   formatPercent,
   formatWhen,
   missingRemarksLabel,
+  notPublishedMessage,
+  officeConflictMessage,
   ordinal,
+  personName,
   positionLabel,
-  principalRemarksEditable,
   remarkValue,
+  remarksLocked,
+  remarksLockedNote,
   studentsMissingRemarks,
-  submitterName,
   termOptions,
   validateRemark,
   validateReturnReason,
 } from "@/components/termResults/termResults.model";
-import type { TermRemarkRow } from "@/types/gradingContract";
+import { gradingConflict, type TermRemarkRow } from "@/types/gradingContract";
+import { ApiError } from "@/lib/apiError";
 import type { AcademicYearResponse, TermResponse } from "@/app/services/academic.service";
 
-function remarkRow(id: string, teacher: string | null, principal: string | null): TermRemarkRow {
+/** A remark not written is '' (Round 3 as built, §22), never null. */
+function remarkRow(id: string, teacher: string, principal: string): TermRemarkRow {
   return {
     student: { id, name: `Student ${id}`, admissionNumber: null },
     position: null,
@@ -43,18 +47,16 @@ describe("queue wording", () => {
     expect(STATUS_TABS.map((t) => t.label)).toEqual(["Submitted", "Returned", "Published"]);
   });
 
-  it("names the basis from whatever shape the API sends", () => {
-    expect(basisLabel("total")).toBe("Term total");
-    expect(basisLabel("665f00000000000000000a01")).toBe("Single assessment");
+  it("names the basis from its label, with a fallback for an assessment the API no longer finds", () => {
+    expect(basisLabel({ key: "total", label: "Term total" })).toBe("Term total");
     expect(basisLabel({ key: "a1", label: "First CA" })).toBe("First CA");
-    expect(basisKey({ key: "a1", label: "First CA" })).toBe("a1");
-    expect(basisKey("total")).toBe("total");
+    expect(basisLabel({ key: "a1", label: "" })).toBe("Single assessment");
   });
 
-  it("names the submitter from an object, or says 'Class teacher' for a bare id", () => {
-    expect(submitterName({ id: "u1", name: "Tolu Teacher" })).toBe("Tolu Teacher");
-    expect(submitterName("u1")).toBe("Class teacher");
-    expect(submitterName(null)).toBe("Unknown");
+  it("names a person, or says 'Unknown' when none is recorded", () => {
+    expect(personName({ id: "u1", name: "Tolu Teacher" })).toBe("Tolu Teacher");
+    expect(personName({ id: "u1", name: "" })).toBe("Unknown");
+    expect(personName(null)).toBe("Unknown");
   });
 
   it("says how many class teacher remarks are missing", () => {
@@ -127,10 +129,16 @@ describe("state rules", () => {
     expect(awaitsOffice({ status: "published" })).toBe(false);
   });
 
-  it("stops offering principal remark edits once published", () => {
-    expect(principalRemarksEditable({ status: "submitted" })).toBe(true);
-    expect(principalRemarksEditable({ status: "returned" })).toBe(true);
-    expect(principalRemarksEditable({ status: "published" })).toBe(false);
+  it("locks the remarks once published", () => {
+    expect(remarksLocked({ status: "submitted" })).toBe(false);
+    expect(remarksLocked({ status: "returned" })).toBe(false);
+    expect(remarksLocked({ status: "published" })).toBe(true);
+    expect(
+      remarksLockedNote({
+        class: { id: "c", name: "Grade 5A" },
+        term: { id: "t", name: "First Term" },
+      })
+    ).toBe("Remarks are locked: Grade 5A's results for First Term are published.");
   });
 
   it("needs a reason to return results", () => {
@@ -149,8 +157,8 @@ describe("state rules", () => {
 describe("principal remarks", () => {
   const rows = [
     remarkRow("s1", "Good work", "Well done"),
-    remarkRow("s2", null, null),
-    remarkRow("s3", " ", null),
+    remarkRow("s2", "", ""),
+    remarkRow("s3", " ", ""),
   ];
 
   it("shows the edit, else the saved remark", () => {
@@ -170,5 +178,47 @@ describe("principal remarks", () => {
 
   it("lists the students without a class teacher remark", () => {
     expect(studentsMissingRemarks(rows)).toEqual(["Student s2", "Student s3"]);
+  });
+});
+
+describe("409s from the office actions", () => {
+  /** A 409 as the API sends it: the machine-readable fields sit at the top level. */
+  const conflict = (meta: Record<string, unknown>) =>
+    new ApiError("CONFLICT", "Conflict", 409, [], undefined, meta);
+
+  it("reads the top-level fields of a 409 only", () => {
+    expect(gradingConflict(conflict({ code: "ALREADY_PUBLISHED", status: "published" }))).toEqual({
+      code: "ALREADY_PUBLISHED",
+      status: "published",
+    });
+    expect(gradingConflict(conflict({ waitingOn: [{ courseId: "e", title: "English" }] }))).toEqual(
+      { waitingOn: [{ courseId: "e", title: "English" }] }
+    );
+    expect(gradingConflict(new ApiError("NOT_FOUND", "Gone", 404))).toBeNull();
+    expect(gradingConflict(new Error("x"))).toBeNull();
+  });
+
+  it("says another member of staff got there first", () => {
+    expect(
+      officeConflictMessage({ code: "ALREADY_PUBLISHED", status: "published" }, "Grade 5A")
+    ).toBe("Grade 5A results are already published.");
+    expect(officeConflictMessage({ code: "RETURNED", status: "returned" }, "Grade 5A")).toBe(
+      "Grade 5A results were already returned to the class teacher."
+    );
+    expect(officeConflictMessage({}, "Grade 5A")).toBeUndefined();
+    expect(officeConflictMessage(null, "Grade 5A")).toBeUndefined();
+  });
+
+  it("names the subjects no longer published", () => {
+    const english = { courseId: "e", title: "English" };
+    const maths = { courseId: "m", title: "Mathematics" };
+    const art = { courseId: "a", title: "Art" };
+    expect(officeConflictMessage({ waitingOn: [english] }, "Grade 5A")).toBe(
+      "English is no longer published. Return the results, or wait until its teacher publishes again."
+    );
+    expect(notPublishedMessage([art, english, maths])).toBe(
+      "Art, English and Mathematics are no longer published. Return the results, or wait until their teachers publish again."
+    );
+    expect(notPublishedMessage([])).toMatch(/^A subject is no longer published/);
   });
 });

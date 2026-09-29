@@ -291,10 +291,10 @@ export function CreateAssessmentStep({
           <Field label="Max score" hint="scores are entered out of this">
             <input
               type="number"
-              inputMode="decimal"
+              inputMode="numeric"
               min={MAX_SCORE_MIN}
               max={MAX_SCORE_MAX}
-              step="any"
+              step={1}
               aria-label="Max score"
               value={form.maxScore}
               onChange={(e) => setForm({ ...form, maxScore: e.target.value })}

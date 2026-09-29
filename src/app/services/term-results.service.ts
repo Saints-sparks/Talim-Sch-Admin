@@ -4,10 +4,12 @@
  * adds the principal's remarks, then publishes (students and parents are
  * notified) or returns them with a reason.
  *
- * Every route here is for staff; a sub-admin needs `manage:assessments` for
- * the queue. The shapes are hand-written in `@/types/gradingContract` until
- * the generated contract has them. Every function throws `ApiError`; another
- * school's ids answer `NOT_FOUND`.
+ * Every route here is for staff: a school admin, or a sub-admin holding
+ * `manage:assessments` (without it, `FORBIDDEN`). The shapes are the generated
+ * contract's, aliased in `@/types/gradingContract`. Every function throws
+ * `ApiError`; another school's ids answer `NOT_FOUND`. A 409 carries its
+ * machine-readable fields at the top level of the body; read them with
+ * `gradingConflict()`.
  */
 import { api } from "@/lib/apiClient";
 import type {
@@ -16,14 +18,17 @@ import type {
   ReturnTermResultsPayload,
   TermRemarkRow,
   TermRemarksResponse,
+  TermResultCounts,
   TermResultStatus,
   TermResultSubmission,
+  TermResultSubmissionDetail,
 } from "@/types/gradingContract";
 
 const GRADING = "/grading";
 
 /**
- * The office queue: submissions for a term, optionally of one status.
+ * The office queue: submissions for a term, optionally of one status,
+ * newest first.
  *
  * @param params.termId - The term; the API defaults to the current one.
  * @param params.status - Only submissions in this state.
@@ -42,6 +47,30 @@ export const listTermResults = async (
   );
   return Array.isArray(body) ? body : [];
 };
+
+/**
+ * How many submissions of a term are in each status, for the queue's tabs.
+ *
+ * @param termId - The term; the API defaults to the current one.
+ * @returns `{ submitted, returned, published }`.
+ * @throws `ApiError` — `FORBIDDEN` for a sub-admin without `manage:assessments`.
+ */
+export const getTermResultCounts = async (termId?: string): Promise<TermResultCounts> => {
+  const query = termId ? `?${new URLSearchParams({ termId })}` : "";
+  return api.get<TermResultCounts>(`${GRADING}/term-results/counts${query}`);
+};
+
+/**
+ * One submission as it stands now: the queue row plus `classId` and `termId`.
+ *
+ * @param submissionId - The submission.
+ * @returns The submission.
+ * @throws `ApiError` — `NOT_FOUND` for another school's submission.
+ */
+export const getTermResult = async (submissionId: string): Promise<TermResultSubmissionDetail> =>
+  api.get<TermResultSubmissionDetail>(
+    `${GRADING}/term-results/${encodeURIComponent(submissionId)}`
+  );
 
 /**
  * A class's broadsheet for a term: one row per student, one column per
@@ -85,17 +114,21 @@ export const getTermRemarks = async (classId: string, termId: string): Promise<T
  *
  * @param submissionId - The term-result submission.
  * @param remarks - The remarks, at most 500 characters each.
- * @throws `ApiError` — `VALIDATION_FAILED` for a remark that is too long.
+ * @returns Every student's remarks as saved.
+ * @throws `ApiError` — `VALIDATION_FAILED` for a remark that is too long;
+ *   409 `{ code: 'RESULTS_PUBLISHED' }` once the class's results for the term
+ *   are published (by this submission or another basis's).
  */
 export const savePrincipalRemarks = async (
   submissionId: string,
   remarks: PrincipalRemarksPayload["remarks"]
-): Promise<void> => {
+): Promise<TermRemarkRow[]> => {
   const body: PrincipalRemarksPayload = { remarks };
-  await api.put<unknown>(
+  const saved = await api.put<TermRemarksResponse | null>(
     `${GRADING}/term-results/${encodeURIComponent(submissionId)}/principal-remarks`,
     body
   );
+  return saved?.rows ?? [];
 };
 
 /**
@@ -103,25 +136,32 @@ export const savePrincipalRemarks = async (
  * notified.
  *
  * @param submissionId - The submission.
- * @returns The submission as the API returns it.
- * @throws `ApiError` — `CONFLICT` when it is not in a publishable state.
+ * @returns The submission, now published.
+ * @throws `ApiError` — 409 `{ code: 'ALREADY_PUBLISHED' | 'RETURNED', status }`
+ *   unless it is submitted, or 409 `{ waitingOn }` when a subject was
+ *   unlocked since the submission.
  */
-export const publishTermResults = async (submissionId: string): Promise<unknown> =>
-  api.post<unknown>(`${GRADING}/term-results/${encodeURIComponent(submissionId)}/publish`);
+export const publishTermResults = async (submissionId: string): Promise<TermResultSubmission> =>
+  api.post<TermResultSubmission>(
+    `${GRADING}/term-results/${encodeURIComponent(submissionId)}/publish`
+  );
 
 /**
  * Sends a submission back to the class teacher, who is notified with the
  * reason.
  *
  * @param submissionId - The submission.
- * @param reason - Why it is going back; required.
- * @returns The submission as the API returns it.
- * @throws `ApiError` — `VALIDATION_FAILED` without a reason, `CONFLICT` when
- *   it is not in a returnable state.
+ * @param reason - Why it is going back: 1..500 characters after trimming.
+ * @returns The submission, now returned.
+ * @throws `ApiError` — `VALIDATION_FAILED` without a reason, 409
+ *   `{ code: 'ALREADY_PUBLISHED' | 'RETURNED', status }` unless it is submitted.
  */
-export const returnTermResults = async (submissionId: string, reason: string): Promise<unknown> => {
+export const returnTermResults = async (
+  submissionId: string,
+  reason: string
+): Promise<TermResultSubmission> => {
   const body: ReturnTermResultsPayload = { reason };
-  return api.post<unknown>(
+  return api.post<TermResultSubmission>(
     `${GRADING}/term-results/${encodeURIComponent(submissionId)}/return`,
     body
   );

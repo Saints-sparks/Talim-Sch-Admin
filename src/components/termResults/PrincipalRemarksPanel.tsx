@@ -25,8 +25,10 @@ interface PrincipalRemarksPanelProps {
   edits: RemarkEdits;
   /** Number of students whose principal remark differs from what is saved. */
   changedCount: number;
-  /** False shows every remark read-only (no permission, or already published). */
+  /** False shows every remark read-only (no permission, or locked). */
   editable: boolean;
+  /** Shown above the remarks when they are locked (the results are published). */
+  lockedNote?: string;
   saving: boolean;
   onEdit: (studentId: string, text: string) => void;
   onSave: () => void;
@@ -43,6 +45,7 @@ export function PrincipalRemarksPanel({
   edits,
   changedCount,
   editable,
+  lockedNote,
   saving,
   onEdit,
   onSave,
@@ -100,6 +103,14 @@ export function PrincipalRemarksPanel({
         <p className="p-5 text-sm text-gray-500 dark:text-slate-400">No students in this class.</p>
       ) : (
         <div className="p-5 space-y-3">
+          {lockedNote && (
+            <p
+              role="status"
+              className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200"
+            >
+              {lockedNote}
+            </p>
+          )}
           <p className="text-xs text-gray-500 dark:text-slate-400">
             {missing.length === 0
               ? "Every student has a class teacher remark."
@@ -142,7 +153,7 @@ function RemarkRow({
   const id = `principal-remark-${row.student.id}`;
   const value = remarkValue(row, edits);
   const error = validateRemark(value);
-  const teacherRemark = row.classTeacherRemark?.trim();
+  const teacherRemark = row.classTeacherRemark.trim();
 
   return (
     <li className="py-3 grid gap-3 md:grid-cols-[minmax(10rem,14rem)_1fr_1fr]">
@@ -196,7 +207,7 @@ function RemarkRow({
           <>
             <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Principal</p>
             <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-line">
-              {row.principalRemark?.trim() || (
+              {row.principalRemark.trim() || (
                 <span className="italic text-gray-500 dark:text-slate-400">None</span>
               )}
             </p>

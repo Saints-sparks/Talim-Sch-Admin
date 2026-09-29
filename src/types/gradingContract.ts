@@ -1,191 +1,158 @@
 /**
- * Round 3 (Grading) API types, WRITTEN BY HAND.
+ * Round 3 (Grading) types: aliases of the generated contract (`./api.d.ts`,
+ * refreshed with `npm run types:api`), so `tsc` flags any drift from the
+ * backend DTOs.
  *
  * Source: `talimBE-V2/docs/redesign-teachers-today-timetable.md`, "Round 3"
  * (§15 assessment max score, §16 grade scale, §21 broadsheet, §22 term
- * remarks, §23 term results). The backend is being built alongside this app,
- * so the generated contract (`./api.d.ts`) does not describe these fields and
- * routes yet.
+ * remarks, §23 term results) and "Round 3 as built", which wins where the two
+ * differ.
  *
- * When `npm run types:api` brings the generated DTOs, replace each type here
- * with its `Schema<"…">` / `RequestBody<…>` / `ResponseBody<…>` alias, delete
- * what is left, and let `tsc` point at every place the two disagree.
+ * Hand-written here, because Swagger does not carry them:
+ * - the limits the DTO validators enforce (the constants below);
+ * - the 409 bodies. Swagger documents each 409 only as a description, while
+ *   the API puts machine-readable fields at the top level of the error body
+ *   beside `error.code: 'CONFLICT'` (see {@link GradingConflict}).
  */
+import { ApiError } from "@/lib/apiError";
+import type { RequestBody, Schema } from "./apiContract";
 
 // ─── §15 Assessment max score ─────────────────────────────────────────────────
 
-/** Lowest max score an assessment may have (§15). */
+/** Lowest max score an assessment may have: a whole number (§15, `CreateAssessmentDto`). */
 export const MAX_SCORE_MIN = 1;
 /** Highest max score an assessment may have (§15). */
 export const MAX_SCORE_MAX = 1000;
 
-/**
- * §15: `POST /assessments` requires `maxScore` (1..1000). Intersected with the
- * generated `CreateAssessmentDto` in `apiPayloads.ts`.
- */
-export interface CreateAssessmentMaxScore {
-  maxScore: number;
-}
-
-/**
- * §15: `PUT /assessments/:id` accepts `maxScore`. Changing it once any course
- * has published scores for the assessment answers 409.
- */
-export interface UpdateAssessmentMaxScore {
-  maxScore?: number;
-}
-
 // ─── §16 Grade scale and pass mark ────────────────────────────────────────────
 
-/** One band of a school's grade scale: `min` is the lowest percent that earns `letter`. */
-export interface GradeBand {
-  letter: string;
-  /** Percent, 0..100, inclusive lower bound. */
-  min: number;
-  /** Optional word printed beside the letter, e.g. "Excellent". */
-  remark?: string | null;
-}
-
 /**
- * §16 fields `GET /settings/academic` adds to `AcademicSettingsDto`. The API
- * fills in the defaults, so both are always present once Round 3 is deployed;
- * they are optional here only so an older API that omits them does not crash
- * the form (it falls back to the defaults).
+ * One band of a school's grade scale as `GET /settings/academic` answers it:
+ * `min` is the lowest percent that earns `letter`; `remark` is null when unset.
  */
-export interface AcademicGradingFields {
-  /** Bands with strictly descending `min`; the last `min` is 0. */
-  gradeScale?: GradeBand[];
-  /** Percent, default 50. */
-  passMark?: number;
-}
+export type GradeBand = Schema<"GradeScaleBandResponseDto">;
 
-/**
- * §16 fields `PATCH /settings/academic` accepts. The API checks: unique
- * letters, strictly descending `min`, and a last `min` of 0.
- */
-export interface UpdateAcademicGradingFields {
-  gradeScale?: { letter: string; min: number; remark?: string }[];
-  passMark?: number;
-}
+/** One band as `PATCH /settings/academic` takes it (`remark` optional). */
+export type GradeBandInput = Schema<"GradeScaleBandDto">;
 
 // ─── Shared shapes ────────────────────────────────────────────────────────────
 
-/** `{ id, name }` references the grading routes return. */
-export interface NamedRef {
-  id: string;
-  name: string;
-}
+/** `{ id, name }` of a person the grading routes name (their login id). */
+export type GradingPerson = Schema<"GradingPersonDto">;
 
 /** A student as the broadsheet and remarks routes return one. */
-export interface ResultStudent {
-  id: string;
-  name: string;
-  admissionNumber: string | null;
-}
+export type ResultStudent = Schema<"BroadsheetStudentDto">;
 
 /** Standard competition rank: ties share a rank (1, 1, 3). */
-export interface ResultPosition {
-  rank: number;
-  of: number;
-}
+export type ResultPosition = Schema<"GradingPositionDto">;
+
+/** A subject whose scores for the basis are not published (yet, or since an unlock). */
+export type WaitingSubject = Schema<"BroadsheetWaitingDto">;
 
 // ─── §21 Broadsheet ───────────────────────────────────────────────────────────
 
 /**
  * `GET /grading/classes/:classId/broadsheet?termId=&basis=<assessmentId>|total`
- * (class teacher and staff). Published scores only.
+ * (class teacher and staff). Published scores only; carries the school's
+ * `scale` and `passMark`.
  */
-export interface Broadsheet {
-  class: NamedRef;
-  term: NamedRef;
-  basis: {
-    /** `total` or an assessment id. */
-    key: string;
-    label: string;
-    /** The assessment's max score; null for `total`, where cells are percents. */
-    maxPerSubject: number | null;
-  };
-  subjects: { courseId: string; code: string; title: string; published: boolean }[];
-  rows: {
-    student: ResultStudent;
-    /** One per subject, in `subjects` order; null when not published or not entered. */
-    cells: (number | null)[];
-    total: number | null;
-    /** Percent over the published subjects. */
-    average: number | null;
-    position: ResultPosition | null;
-    grade: string | null;
-    publishedCount: number;
-  }[];
-  /** True when every subject has published scores for the basis. */
-  ready: boolean;
-  waitingOn: { courseId: string; title: string }[];
-}
+export type Broadsheet = Schema<"BroadsheetDto">;
 
 // ─── §22 Term remarks ─────────────────────────────────────────────────────────
 
-/** One row of `GET /grading/classes/:classId/remarks?termId=`. */
-export interface TermRemarkRow {
-  student: ResultStudent;
-  position: ResultPosition | null;
-  average: number | null;
-  publishedCount: number;
-  subjectCount: number;
-  /** Written by the class teacher; at most 500 characters. */
-  classTeacherRemark: string | null;
-  /** Written by the office (staff); at most 500 characters. */
-  principalRemark: string | null;
-}
+/**
+ * One row of `GET /grading/classes/:classId/remarks?termId=`. A remark not
+ * written is `''`, never null.
+ */
+export type TermRemarkRow = Schema<"TermRemarkRowDto">;
 
-/** Body of `GET /grading/classes/:classId/remarks`. */
-export interface TermRemarksResponse {
-  rows: TermRemarkRow[];
-}
+/** Body of `GET /grading/classes/:classId/remarks` and of the principal-remarks save. */
+export type TermRemarksResponse = Schema<"TermRemarksDto">;
 
-/** Longest remark the API stores (§22). */
+/** Longest remark the API stores (§22, `@MaxLength(500)`). */
 export const REMARK_MAX_LENGTH = 500;
 
 /** Body of `PUT /grading/term-results/:id/principal-remarks` (staff only). */
-export interface PrincipalRemarksPayload {
-  remarks: { studentId: string; principalRemark: string }[];
-}
+export type PrincipalRemarksPayload = RequestBody<
+  "/grading/term-results/{id}/principal-remarks",
+  "put"
+>;
 
 // ─── §23 Term results ─────────────────────────────────────────────────────────
 
-/** Where a class's term results are: with the office, back with the class teacher, or out. */
-export type TermResultStatus = "submitted" | "returned" | "published";
-
 /**
- * One row of the office queue `GET /grading/term-results?termId=&status=`
- * (staff; sub-admins need `manage:assessments`).
- *
- * The contract lists `{ id, class, term, basis, status, submittedAt,
- * submittedBy, studentCount, missingRemarks }` without spelling out `basis`
- * and `submittedBy`; both are read through the normalisers in
- * `components/termResults/termResults.model.ts`, which accept either the raw
- * value or the `{ key, label }` / `{ id, name }` object the other grading
- * routes use. The return and publish fields are optional extras the model
- * stores (§23) and the queue shows when the API sends them.
+ * One submission, as the office queue `GET /grading/term-results?termId=&status=`
+ * lists it (staff; sub-admins need `manage:assessments`) and as publish and
+ * return answer it. `basis` is `{ key, label }`; every `*By` is `{ id, name } | null`.
  */
-export interface TermResultSubmission {
-  id: string;
-  class: NamedRef;
-  term: NamedRef;
-  /** `'total'` or an assessment id, or `{ key, label }`. */
-  basis: string | { key: string; label: string };
-  status: TermResultStatus;
-  submittedAt: string;
-  /** A user id, or `{ id, name }`. */
-  submittedBy: string | NamedRef | null;
-  studentCount: number;
-  /** Students still without a class teacher remark. */
-  missingRemarks: number;
-  returnedAt?: string | null;
-  returnReason?: string | null;
-  publishedAt?: string | null;
-}
+export type TermResultSubmission = Schema<"TermResultSubmissionDto">;
+
+/** `GET /grading/term-results/:id`: the queue row plus `classId` and `termId`. */
+export type TermResultSubmissionDetail = Schema<"TermResultSubmissionDetailDto">;
+
+/** Where a class's term results are: with the office, back with the class teacher, or out. */
+export type TermResultStatus = TermResultSubmission["status"];
+
+/** `GET /grading/term-results/counts?termId=`: how many submissions are in each status. */
+export type TermResultCounts = Schema<"TermResultCountsDto">;
 
 /** Body of `POST /grading/term-results/:id/return` (staff). */
-export interface ReturnTermResultsPayload {
-  reason: string;
+export type ReturnTermResultsPayload = RequestBody<"/grading/term-results/{id}/return", "post">;
+
+/** Longest return reason the API takes, after trimming (§23 as built: 1..500). */
+export const RETURN_REASON_MAX_LENGTH = 500;
+
+// ─── 409 bodies (not in Swagger) ──────────────────────────────────────────────
+
+/** The sub-codes a grading 409 carries at the top level of its body. */
+export type GradingConflictCode =
+  | "LOCKED"
+  | "NOT_PUBLISHED"
+  | "PUBLISHED"
+  | "SCORES_ABOVE_MAX"
+  | "ALREADY_REMINDED"
+  | "NO_TEACHER"
+  | "RESULTS_SUBMITTED"
+  | "RESULTS_PUBLISHED"
+  | "ALREADY_SUBMITTED"
+  | "ALREADY_PUBLISHED"
+  | "RETURNED";
+
+/**
+ * The machine-readable fields of a grading 409 (Round 3 as built,
+ * "Everywhere"). Each is present only on the 409s that use it.
+ */
+export interface GradingConflict {
+  /** Why it conflicts; absent on the `missing` and `waitingOn` 409s. */
+  code?: GradingConflictCode;
+  /** Active students without a valid score (score publish). */
+  missing?: string[];
+  /** Subjects not published for the basis (term results submit and publish). */
+  waitingOn?: WaitingSubject[];
+  /** When the earlier reminder went (`ALREADY_REMINDED`). */
+  sentAt?: string;
+  /** Where the submission stands (term results publish and return). */
+  status?: TermResultStatus;
+  /** The highest recorded score (`SCORES_ABOVE_MAX`, assessment max score change). */
+  highestScore?: number;
+}
+
+/**
+ * Reads the grading fields of a 409.
+ *
+ * @param error - What a call threw.
+ * @returns The fields, or null when it is not a 409 `ApiError`.
+ */
+export function gradingConflict(error: unknown): GradingConflict | null {
+  if (!(error instanceof ApiError) || (error.status !== 409 && error.code !== "CONFLICT"))
+    return null;
+  const { code, missing, waitingOn, sentAt, status, highestScore } = error.meta;
+  return {
+    ...(typeof code === "string" ? { code: code as GradingConflictCode } : {}),
+    ...(Array.isArray(missing) ? { missing: missing.map(String) } : {}),
+    ...(Array.isArray(waitingOn) ? { waitingOn: waitingOn as WaitingSubject[] } : {}),
+    ...(typeof sentAt === "string" ? { sentAt } : {}),
+    ...(typeof status === "string" ? { status: status as TermResultStatus } : {}),
+    ...(typeof highestScore === "number" ? { highestScore } : {}),
+  };
 }

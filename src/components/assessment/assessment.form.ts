@@ -5,7 +5,7 @@
  * They mirror the backend `CreateAssessmentDto` and the service's date checks:
  * a new assessment cannot start in the past, the end must follow the start,
  * "active" is only a legal status while the assessment is actually running,
- * and the max score is a number from 1 to 1000 (Round 3, §15).
+ * and the max score is a whole number from 1 to 1000 (Round 3, §15).
  */
 import type {
   Assessment,
@@ -14,7 +14,7 @@ import type {
   UpdateAssessmentRequest,
 } from "@/components/assessment/AssessmentForm.types";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
-import { MAX_SCORE_MAX, MAX_SCORE_MIN } from "@/types/gradingContract";
+import { MAX_SCORE_MAX, MAX_SCORE_MIN, gradingConflict } from "@/types/gradingContract";
 
 /** What is wrong with the form, keyed by field; empty when it is valid. */
 export type AssessmentFormErrors = Partial<Record<keyof AssessmentForm, string>>;
@@ -129,7 +129,7 @@ export function parseMaxScore(value: string): number | null {
 
 /**
  * Checks the max score the way `CreateAssessmentDto` does: required, a
- * number, from 1 to 1000.
+ * whole number, from 1 to 1000.
  *
  * @param value - The input's text.
  * @returns The problem, or undefined when the value is fine.
@@ -141,6 +141,7 @@ export function validateMaxScore(value: string): string | undefined {
   if (score < MAX_SCORE_MIN || score > MAX_SCORE_MAX) {
     return `Max score must be between ${MAX_SCORE_MIN} and ${MAX_SCORE_MAX}`;
   }
+  if (!Number.isInteger(score)) return "Max score must be a whole number";
   return undefined;
 }
 
@@ -227,9 +228,14 @@ export interface AssessmentSaveProblem {
 }
 
 /**
- * Explains a failed save. A 409 on an edit that changed the max score means
- * the API refused the change because scores are already published (§15);
- * the whole update was refused, so the message says how to keep the rest.
+ * Explains a failed save. A 409 on an edit that changed the max score is the
+ * API refusing that change (§15), and the whole update with it, so the
+ * message sits on the field and says how to keep the rest:
+ * - `PUBLISHED`: scores for the assessment are published (an unlocked
+ *   publication counts), so the max score cannot change at all;
+ * - `SCORES_ABOVE_MAX` (with `highestScore`): a recorded score is above the
+ *   new max score, so it can go no lower than that score.
+ * A 400 that names `maxScore` also lands on the field.
  *
  * @param error - What the save threw.
  * @param context.isEditing - True for an edit.
@@ -241,17 +247,30 @@ export function describeAssessmentSaveError(
   error: unknown,
   context: { isEditing: boolean; maxScoreChanged: boolean; savedMaxScore?: number },
 ): AssessmentSaveProblem {
-  const conflict = error instanceof ApiError && (error.status === 409 || error.code === "CONFLICT");
+  const conflict = gradingConflict(error);
   if (context.isEditing && context.maxScoreChanged && conflict) {
     const back =
       context.savedMaxScore === undefined
-        ? "Put the max score back"
-        : `Put it back to ${context.savedMaxScore}`;
+        ? "put the max score back"
+        : `put it back to ${context.savedMaxScore}`;
+    if (conflict.code === "SCORES_ABOVE_MAX") {
+      const highest = conflict.highestScore;
+      return {
+        field: "maxScore",
+        message:
+          highest === undefined
+            ? `A score already recorded for this assessment is above the new max score. Use a higher max score, or ${back}.`
+            : `A score of ${highest} is already recorded for this assessment, so the max score can't be below ${highest}. Use ${Math.ceil(highest)} or more, or ${back}.`,
+      };
+    }
+    // `PUBLISHED`, or a 409 from an API that does not say which.
     return {
       field: "maxScore",
-      message: `Scores for this assessment are already published, so its max score can't change. ${back} to save your other changes.`,
+      message: `Scores for this assessment are already published, so its max score can't change. ${back.charAt(0).toUpperCase()}${back.slice(1)} to save your other changes.`,
     };
   }
+  const fieldError = error instanceof ApiError ? error.fieldErrors().maxScore : undefined;
+  if (fieldError) return { field: "maxScore", message: fieldError };
   return {
     message: getErrorMessage(
       error,
