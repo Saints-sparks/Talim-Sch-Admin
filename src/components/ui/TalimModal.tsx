@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useId } from "react";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { X } from "lucide-react";
 
@@ -27,12 +27,28 @@ const TalimModal: React.FC<TalimModalProps> = ({
 }) => {
   // The modal owns the lock, so no caller has to remember it.
   useBodyScrollLock(isOpen);
+  const titleId = useId();
+
+  // Escape closes it, as the close button does (not while a save is running).
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, isSubmitting, onClose]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden"
+      >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative overflow-hidden flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
@@ -44,18 +60,22 @@ const TalimModal: React.FC<TalimModalProps> = ({
                 </div>
               )}
               <div>
-                <h2 className="text-2xl font-bold">{title}</h2>
+                <h2 id={titleId} className="text-2xl font-bold">
+                  {title}
+                </h2>
                 {subtitle && (
                   <p className="text-blue-100 text-sm mt-1">{subtitle}</p>
                 )}
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label="Close"
               className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden />
             </button>
           </div>
         </div>
