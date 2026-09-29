@@ -34,6 +34,14 @@ export const API_URLS = {
     UPDATE_PROFILE: "/auth/profile/update",
     UPDATE_AVATAR: "/auth/profile/avatar",
     COMPLETE_ONBOARDING: "/auth/onboarding/complete",
+    /** Round 4 §34: the caller's signed-in devices. */
+    SESSIONS: "/auth/sessions",
+    /** Round 4 §34: signs one of the caller's sessions out. */
+    SESSION: "/auth/sessions/:id",
+    /** Round 4 §34: signs out every session but this one. */
+    REVOKE_OTHER_SESSIONS: "/auth/sessions/revoke-others",
+    /** Round 4 §34: the password rules (public). */
+    PASSWORD_POLICY: "/auth/password-policy",
   },
   SCHOOL: {
     GET_CLASS: "/classes",

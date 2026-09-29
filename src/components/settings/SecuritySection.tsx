@@ -7,6 +7,7 @@ import { useAdminProfile } from "@/hooks/settings/useAdminProfile";
 import { useFinanceSettings } from "@/hooks/settings/usePaymentsFinance";
 import { useAuth } from "@/context/AuthContext";
 import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
+import { SessionsCard } from "@/components/settings/security/SessionsCard";
 import type { SectionId } from "@/components/settings/sections";
 import { Card, CardHeader, OutlineBtn, SectionHeader } from "@/components/settings/ui";
 
@@ -54,12 +55,12 @@ function DetailRow({
 }
 
 /**
- * Settings → Security: password, the withdrawal OTP state, and what the
- * session knows about this account.
+ * Settings → Security: password, the withdrawal OTP state, what the session
+ * knows about this account, and the signed-in devices.
  *
- * Everything here is read-only except the password, which every admin role may
- * change; the OTP switch itself lives in Payments & Finance, behind
- * `manage:settings`.
+ * Everything here is read-only except the password and the devices, which are
+ * the administrator's own (every admin role may change them); the OTP switch
+ * itself lives in Payments & Finance, behind `manage:settings`.
  *
  * @param props.onNavigate - Switches the open settings tab.
  */
@@ -79,7 +80,7 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
 
   return (
     <div className="space-y-5">
-      <SectionHeader title="Security" desc="Password, OTP and access security" />
+      <SectionHeader title="Security" desc="Password, signed-in devices, OTP and access security" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card>
@@ -200,6 +201,8 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
           </div>
         </Card>
       </div>
+
+      <SessionsCard />
 
       <AnimatePresence>
         {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}

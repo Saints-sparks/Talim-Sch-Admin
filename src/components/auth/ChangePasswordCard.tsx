@@ -7,6 +7,7 @@ import PasswordRequirements from "@/components/auth/PasswordRequirements";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { isPasswordValid } from "@/lib/passwordPolicy";
+import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
 
 type Field = "currentPassword" | "newPassword" | "confirmPassword";
 
@@ -17,6 +18,7 @@ type Field = "currentPassword" | "newPassword" | "confirmPassword";
  */
 export default function ChangePasswordCard() {
   const { changePassword } = useAuth();
+  const { rules, historyNote } = usePasswordPolicy();
   const [values, setValues] = useState<Record<Field, string>>({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,7 +26,7 @@ export default function ChangePasswordCard() {
 
   const mismatch = values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
   const canSubmit =
-    values.currentPassword.length > 0 && isPasswordValid(values.newPassword) && !mismatch && values.confirmPassword.length > 0 && !saving;
+    values.currentPassword.length > 0 && isPasswordValid(values.newPassword, rules) && !mismatch && values.confirmPassword.length > 0 && !saving;
 
   const set = (field: Field) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setValues((prev) => ({ ...prev, [field]: e.target.value }));
@@ -94,7 +96,7 @@ export default function ChangePasswordCard() {
         </div>
         {input("confirmPassword", "Confirm new password", "new-password")}
       </div>
-      <PasswordRequirements password={values.newPassword} id="cp-rules" />
+      <PasswordRequirements password={values.newPassword} id="cp-rules" rules={rules} note={historyNote} />
       <button
         type="submit"
         disabled={!canSubmit}
