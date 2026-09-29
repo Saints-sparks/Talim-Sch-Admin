@@ -17,6 +17,8 @@ export const ADMIN_PAGES: readonly PageSpec[] = [
   { path: "/classes", content: /Grade 5A/ },
   { path: "/curriculum", content: /Total Subjects/ },
   { path: "/assessments", content: /First Term CA 1/ },
+  // The seed (and `--reset`) leaves no term results submitted: the queue opens on its empty Submitted tab.
+  { path: "/term-results", content: /Nothing is waiting for review/, empty: true },
   { path: "/timetable", content: /Mathematics 5A/ },
   { path: "/fees-management", content: /Term 1 Tuition/ },
   { path: "/payments", content: /Total Collected/ },

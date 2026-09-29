@@ -58,6 +58,8 @@ test.describe("sub-admin access", () => {
       "/classes",
       "/curriculum",
       "/assessments",
+      // Term Results needs manage:assessments, which this sub-admin does not hold.
+      "/term-results",
       "/timetable",
       "/fees-management",
       "/payments",
@@ -74,7 +76,7 @@ test.describe("sub-admin access", () => {
     }
   });
 
-  for (const path of ["/fees-management", "/classes", "/finance", "/users/teachers", "/users/sub-admins"]) {
+  for (const path of ["/fees-management", "/classes", "/finance", "/users/teachers", "/users/sub-admins", "/term-results"]) {
     test(`opening ${path} directly is refused`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("heading", { name: "Access Denied" })).toBeVisible();
