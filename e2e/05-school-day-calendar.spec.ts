@@ -43,9 +43,10 @@ const periods = (page: Page) => page.getByRole("list", { name: "Periods" }).getB
 
 async function openSection(page: Page, section: "school-day" | "school-calendar", title: string): Promise<void> {
   await page.goto(`/settings?section=${section}`);
-  await dismissGuide(page, 2_000);
   await expect(page.getByRole("heading", { name: title }).first()).toBeVisible();
   await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
+  // The one-time guide opens once the section renders: close it after that (it is late on a busy machine).
+  await dismissGuide(page, 3_000);
 }
 
 async function fillRow(row: Locator, name: string, start: string, end: string): Promise<void> {
@@ -223,8 +224,10 @@ test("screenshots of School Day & Bells, School Calendar and the Period picker, 
     await page.screenshot({ path: `e2e/screenshots/redesign-admin-school-calendar-${theme}.png`, fullPage: true });
 
     await page.goto("/timetable");
-    await dismissGuide(page, 2_000);
     const cls = page.locator("#timetable-class");
+    // The one-time guide opens once the page renders; wait for it before closing it (it is late on a busy machine).
+    await expect(cls.locator("option", { hasText: "Grade 5A" })).toHaveCount(1);
+    await dismissGuide(page, 3_000);
     await cls.selectOption({ label: (await cls.locator("option", { hasText: "Grade 5A" }).textContent())!.trim() });
     await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
     await page.waitForTimeout(600);

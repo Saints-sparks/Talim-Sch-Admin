@@ -163,11 +163,13 @@ async function rawCall(token: string, method: string, path: string, body?: unkno
 
 const grades = (page: Page) => page.getByRole("list", { name: "Grades" }).getByRole("listitem");
 
+// The first page a fresh session opens shows the one-time guide as soon as its content renders,
+// so each helper waits for the content before closing the guide (on a busy machine it comes late).
 async function openGrading(page: Page): Promise<void> {
   await page.goto("/settings?section=grading");
-  await dismissGuide(page, 2_000);
   await expect(page.getByRole("heading", { name: "Grade scale" })).toBeVisible();
   await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
+  await dismissGuide(page, 3_000);
 }
 
 test("the admin edits the grade scale: a mistake is caught first, the saved scale survives a reload", async ({ page, monitor }) => {
@@ -236,9 +238,9 @@ test("the admin edits the grade scale: a mistake is caught first, the saved scal
 
 async function openAssessments(page: Page): Promise<void> {
   await page.goto("/assessments");
-  await dismissGuide(page, 2_000);
   await expect(page.getByText("First Term CA 1").first()).toBeVisible();
   await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
+  await dismissGuide(page, 3_000);
 }
 
 /** The card of one assessment in the list (the innermost block holding its heading). */
@@ -325,8 +327,9 @@ const PRINCIPAL = "A fine term, Ada. Keep it up.";
 
 async function openQueue(page: Page, tab: "Submitted" | "Returned" | "Published"): Promise<void> {
   await page.goto("/term-results");
-  await dismissGuide(page, 2_000);
   await expect(page.getByRole("heading", { name: "Term Results" }).first()).toBeVisible();
+  await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
+  await dismissGuide(page, 3_000);
   await page.getByRole("group", { name: "Show results that are" }).getByRole("button", { name: new RegExp(`^${tab}`) }).click();
   await expect(page.locator(".animate-pulse:visible")).toHaveCount(0, { timeout: 30_000 });
 }
@@ -450,6 +453,25 @@ for (const theme of ["light", "dark"] as const) {
   });
 }
 
+/** The settings page scrolls an inner column: grows the viewport by what it hides, shoots, restores. */
+async function shootWhole(page: Page, file: string): Promise<void> {
+  const size = page.viewportSize()!;
+  const hidden = await page.evaluate(() => {
+    let most = 0;
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+      const overflow = getComputedStyle(el).overflowY;
+      if ((overflow === "auto" || overflow === "scroll") && el.clientHeight > 200) most = Math.max(most, el.scrollHeight - el.clientHeight);
+    }
+    return most;
+  });
+  if (hidden > 0) {
+    await page.setViewportSize({ width: size.width, height: size.height + hidden });
+    await page.waitForTimeout(400);
+  }
+  await page.screenshot({ path: file, fullPage: true });
+  if (hidden > 0) await page.setViewportSize(size);
+}
+
 test("screenshots of Grading settings and Term Results, light and dark", async ({ browser, baseURL }) => {
   test.setTimeout(240_000);
   fs.mkdirSync("e2e/screenshots", { recursive: true });
@@ -460,16 +482,16 @@ test("screenshots of Grading settings and Term Results, light and dark", async (
     await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [THEME_KEY, theme] as const);
     await openGrading(page);
     await page.waitForTimeout(600);
-    await page.screenshot({ path: `e2e/screenshots/redesign-admin-grading-${theme}.png`, fullPage: true });
+    await shootWhole(page, `e2e/screenshots/redesign-admin-grading-${theme}.png`);
     await openQueue(page, "Published");
     await page.waitForTimeout(600);
-    await page.screenshot({ path: `e2e/screenshots/redesign-admin-term-results-${theme}.png`, fullPage: true });
+    await shootWhole(page, `e2e/screenshots/redesign-admin-term-results-${theme}.png`);
     const open = page.getByRole("button", { name: /^(Open|Review) Grade 5A results$/ }).first();
     if (await open.count()) {
       await open.click();
       await expect(page.getByRole("list", { name: "Remarks by student" })).toBeVisible();
       await page.waitForTimeout(600);
-      await page.screenshot({ path: `e2e/screenshots/redesign-admin-term-result-detail-${theme}.png`, fullPage: true });
+      await shootWhole(page, `e2e/screenshots/redesign-admin-term-result-detail-${theme}.png`);
     }
     await context.close();
   }
