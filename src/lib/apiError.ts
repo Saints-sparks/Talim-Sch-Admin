@@ -41,6 +41,23 @@ interface ApiErrorBody {
   requestId?: string;
 }
 
+/** The fields every error body carries; anything else at the top level is `meta`. */
+const STANDARD_FIELDS = new Set(["success", "statusCode", "message", "error", "path", "timestamp", "requestId"]);
+
+/**
+ * The top-level fields of an error body beyond the standard ones, e.g. the
+ * `code: 'LOCKED'` or `missing: [...]` a 409 adds beside `error.code: 'CONFLICT'`.
+ *
+ * @param body - The parsed error body.
+ * @returns Those fields; empty when there are none.
+ */
+function extraFields(body: object | null): Record<string, unknown> {
+  const meta: Record<string, unknown> = {};
+  if (!body || typeof body !== "object" || Array.isArray(body)) return meta;
+  for (const [key, value] of Object.entries(body)) if (!STANDARD_FIELDS.has(key)) meta[key] = value;
+  return meta;
+}
+
 const KNOWN_CODES = new Set<ApiErrorCode>([
   "UNAUTHENTICATED", "TOKEN_EXPIRED", "FORBIDDEN", "PASSWORD_CHANGE_REQUIRED", "TENANT_MISMATCH", "VALIDATION_FAILED",
   "BAD_REQUEST", "NOT_FOUND", "CONFLICT", "PAYLOAD_TOO_LARGE", "RATE_LIMITED",
@@ -87,14 +104,30 @@ export class ApiError extends Error {
   readonly status: number;
   readonly details: ApiErrorDetail[];
   readonly requestId?: string;
+  /**
+   * Machine-readable fields the endpoint put at the top level of the error
+   * body, beside the standard ones. The grading 409s use them: a sub-code
+   * (`code: 'LOCKED'`, `'RESULTS_PUBLISHED'`, ...) while `error.code` stays
+   * `CONFLICT`, and data such as `missing`, `waitingOn` or `status`. The body
+   * is the same whether or not success envelopes are on.
+   */
+  readonly meta: Readonly<Record<string, unknown>>;
 
-  constructor(code: ApiErrorCode, message: string, status: number, details: ApiErrorDetail[] = [], requestId?: string) {
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status: number,
+    details: ApiErrorDetail[] = [],
+    requestId?: string,
+    meta: Record<string, unknown> = {},
+  ) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
     this.details = details;
     this.requestId = requestId;
+    this.meta = meta;
   }
 
   /**
@@ -125,7 +158,7 @@ export class ApiError extends Error {
     if (status === 401 && message && /expired/i.test(message)) code = "TOKEN_EXPIRED";
     if (!message || (status >= 500 && !errorObj)) message = messageForStatus(status);
 
-    return new ApiError(code, message, status, details, requestId);
+    return new ApiError(code, message, status, details, requestId, extraFields(body));
   }
 
   /** The device has no network connection. */

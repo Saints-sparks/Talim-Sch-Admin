@@ -58,6 +58,27 @@ describe("typed client (api.*) gives the same payload with the envelope on or of
     respondWith({ success: false, error: { code: "NOT_FOUND", message: "Class not found" } }, 404);
     await expect(api.get("/classes/x")).rejects.toMatchObject({ code: "NOT_FOUND", message: "Class not found" });
   });
+
+  it("keeps a 409's top-level fields (the grading sub-code and its data) as meta", async () => {
+    // The body the API sends for every error, with or without success envelopes.
+    respondWith(
+      {
+        code: "SCORES_ABOVE_MAX",
+        highestScore: 38,
+        success: false,
+        statusCode: 409,
+        message: "A score of 38 is already recorded",
+        error: { code: "CONFLICT", message: "A score of 38 is already recorded" },
+        path: "/assessments/a1",
+        timestamp: "2026-09-29T08:00:00.000Z",
+        requestId: "r1",
+      },
+      409,
+    );
+    const error = await api.put("/assessments/a1", { maxScore: 30 }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: "CONFLICT", status: 409, requestId: "r1" });
+    expect((error as { meta: unknown }).meta).toEqual({ code: "SCORES_ABOVE_MAX", highestScore: 38 });
+  });
 });
 
 describe("legacy raw-Response readers (chat REST) unwrap too", () => {
