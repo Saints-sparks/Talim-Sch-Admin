@@ -103,12 +103,18 @@ export function Header() {
               <WebSocketStatus />
             </div>
             <ThemeToggle />
-            <Link href="/notifications" className="relative">
-              <button className="bg-white dark:bg-slate-800 shadow-none border border-[#F0F0F0] dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg p-2.5 transition-colors">
-                <Bell className="h-5 w-5 text-gray-600 dark:text-slate-300" />
-              </button>
+            {/* One named link (it used to hold an unnamed button, which axe flags as critical). */}
+            <Link
+              href="/notifications"
+              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+              className="relative inline-flex bg-white dark:bg-slate-800 shadow-none border border-[#F0F0F0] dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg p-2.5 transition-colors"
+            >
+              <Bell className="h-5 w-5 text-gray-600 dark:text-slate-300" aria-hidden />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold px-1 leading-none">
+                <span
+                  aria-hidden
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold px-1 leading-none"
+                >
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
