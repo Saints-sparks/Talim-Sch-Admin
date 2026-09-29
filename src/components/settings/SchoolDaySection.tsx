@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { Clock, Info } from "lucide-react";
 import { ApiError } from "@/lib/apiError";
 import { useAcademicSettings, useUpdateAcademicSettings } from "@/hooks/settings/useAcademicSettings";
 import type { AcademicSettings } from "@/app/services/school-settings.service";
@@ -26,6 +26,7 @@ import { FieldError, FieldLabel, controlClasses, describedBy, errorId } from "./
 import {
   hasSchoolDayErrors,
   isSchoolDayDirty,
+  mapServerFieldErrors,
   toAcademicPayload,
   toSchoolDayValues,
   validateSchoolDay,
@@ -34,7 +35,7 @@ import {
 } from "./schoolDay/schoolDayForm";
 
 const TITLE = "School Day & Bells";
-const DESC = "Timezone, school days, register times and the bell schedule";
+const DESC = "Timezone, school days, register times, office hours and the bell schedule";
 const NO_ERRORS: SchoolDayErrors = { fields: {}, periods: {} };
 
 /**
@@ -96,15 +97,14 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
     setSubmitted(true);
     if (hasSchoolDayErrors(liveErrors)) return;
     try {
-      await save(toAcademicPayload(values));
+      await save(toAcademicPayload(values, settings));
     } catch (err) {
       if (err instanceof ApiError && err.code === "VALIDATION_FAILED") {
         const fieldErrors = err.fieldErrors();
-        const fields: SchoolDayErrors["fields"] = {};
-        (["timezone", "schoolDays", "registerCloseTime", "registerEditUntil"] as const).forEach((f) => {
-          if (fieldErrors[f]) fields[f] = fieldErrors[f];
+        setServerErrors({
+          fields: mapServerFieldErrors(fieldErrors),
+          periods: mapServerPeriodErrors(values.periods, fieldErrors),
         });
-        setServerErrors({ fields, periods: mapServerPeriodErrors(values.periods, fieldErrors) });
       }
     }
   };
@@ -236,6 +236,57 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
               <FieldError controlId="sd-register-edit" message={errors.fields.registerEditUntil} />
             </div>
           </div>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Office hours"
+            action={<Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" aria-hidden />}
+          />
+          <fieldset className="p-5 space-y-4" aria-describedby="sd-office-hint">
+            <legend className="sr-only">Office hours (optional)</legend>
+            <p id="sd-office-hint" className="text-xs text-gray-500 dark:text-slate-400">
+              Optional. When the school office can be reached; teachers see it with the school&apos;s contact
+              details. Leave both empty for none.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel htmlFor="sd-office-start">Office hours start</FieldLabel>
+                <input
+                  id="sd-office-start"
+                  type="time"
+                  value={values.officeHoursStart}
+                  disabled={!canManage}
+                  onChange={(e) => update({ officeHoursStart: e.target.value })}
+                  className={controlClasses(Boolean(errors.fields.officeHoursStart))}
+                  {...describedBy("sd-office-start", errors.fields.officeHoursStart)}
+                />
+                <FieldError controlId="sd-office-start" message={errors.fields.officeHoursStart} />
+              </div>
+              <div>
+                <FieldLabel htmlFor="sd-office-end">Office hours end</FieldLabel>
+                <input
+                  id="sd-office-end"
+                  type="time"
+                  value={values.officeHoursEnd}
+                  disabled={!canManage}
+                  onChange={(e) => update({ officeHoursEnd: e.target.value })}
+                  className={controlClasses(Boolean(errors.fields.officeHoursEnd))}
+                  {...describedBy("sd-office-end", errors.fields.officeHoursEnd)}
+                />
+                <FieldError controlId="sd-office-end" message={errors.fields.officeHoursEnd} />
+              </div>
+            </div>
+            {canManage && (values.officeHoursStart || values.officeHoursEnd) && (
+              <button
+                type="button"
+                onClick={() => update({ officeHoursStart: "", officeHoursEnd: "" })}
+                className="text-xs font-medium text-[#003366] dark:text-blue-400 hover:underline"
+              >
+                Clear office hours
+              </button>
+            )}
+          </fieldset>
         </Card>
       </div>
 
