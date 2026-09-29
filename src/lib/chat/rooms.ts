@@ -5,6 +5,7 @@
  */
 import { ChatRoomType } from "@/types/chat.types";
 import type { ChatRoom, ChatRoomLastMessage, Participant } from "@/types/chat.types";
+import type { ChatRoomCategory } from "@/types/round4Contract";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { idOf } from "./messages";
 
@@ -56,6 +57,12 @@ export interface DisplayChatRoom {
   description?: string;
   avatarUrl?: string;
   createdBy?: string;
+  /** What the room is to me: the API's `category`, or worked out from the room when it has none. */
+  category: ChatRoomCategory;
+  /** One line under the name, e.g. "Office thread · Tolu Ade"; absent when there is nothing useful to say. */
+  subtitle?: string;
+  /** A teacher's thread with the school office (members are managed by the server). */
+  isOffice: boolean;
 }
 
 /**
@@ -141,7 +148,70 @@ export function normalizeRoom(raw: unknown): ChatRoom {
     avatarUrl: typeof room.avatarUrl === "string" && room.avatarUrl ? room.avatarUrl : undefined,
     lastMessage: normalizeLastMessage(room.lastMessage),
     unreadCount: Number(room.unreadCount) || 0,
+    category: isRoomCategory(room.category) ? room.category : undefined,
+    subtitle: typeof room.subtitle === "string" && room.subtitle.trim() ? room.subtitle.trim() : undefined,
+    callPhone: typeof room.callPhone === "string" && room.callPhone ? room.callPhone : null,
   } as ChatRoom;
+}
+
+const ROOM_CATEGORIES: readonly ChatRoomCategory[] = ["parent", "colleague", "class_group", "office", "group"];
+
+/** Narrows a payload value to a known room category (an unknown one is ignored). */
+function isRoomCategory(value: unknown): value is ChatRoomCategory {
+  return typeof value === "string" && (ROOM_CATEGORIES as readonly string[]).includes(value);
+}
+
+/**
+ * Whether a room is a teacher's office thread (Round 4 §28). Its members are
+ * the teacher, every admin and every sub-admin with `manage:messages`; the
+ * server keeps that list, so nobody adds, removes or leaves.
+ *
+ * @param room - A room, or its type and category.
+ * @returns True for `type: 'office'` or `category: 'office'`.
+ */
+export function isOfficeRoom(room: Pick<ChatRoom, "type"> & Partial<Pick<ChatRoom, "category">> | null | undefined): boolean {
+  return Boolean(room) && (room!.type === ChatRoomType.OFFICE || room!.category === "office");
+}
+
+/**
+ * What a room is to the viewer: the API's `category` (Round 4 §27), or, from
+ * an API that doesn't send one yet, a guess from the room type and the other
+ * person's role.
+ *
+ * @param room - The room.
+ * @param currentUserId - The viewer.
+ * @returns The category.
+ */
+export function roomCategory(room: ChatRoom, currentUserId: string): ChatRoomCategory {
+  if (room.category) return room.category;
+  switch (room.type) {
+    case ChatRoomType.OFFICE:
+      return "office";
+    case ChatRoomType.ONE_TO_ONE:
+      return otherParticipant(room, currentUserId)?.role === "parent" ? "parent" : "colleague";
+    case ChatRoomType.CLASS_GROUP:
+    case ChatRoomType.COURSE_GROUP:
+      return "class_group";
+    default:
+      return "group";
+  }
+}
+
+/** The start of an admin's office-thread subtitle (Round 4 §27). */
+export const OFFICE_SUBTITLE_PREFIX = "Office thread · ";
+
+/**
+ * The teacher an office thread belongs to, for its name in the list.
+ *
+ * @param room - An office room.
+ * @returns The teacher's name, from the members, else the API's subtitle or the room name.
+ */
+export function officeTeacherName(room: ChatRoom): string {
+  const teacher = room.participants.find((p) => p.role === "teacher");
+  const fromMembers = teacher ? participantName(teacher) || teacher.email : "";
+  if (fromMembers) return fromMembers;
+  if (room.subtitle?.startsWith(OFFICE_SUBTITLE_PREFIX)) return room.subtitle.slice(OFFICE_SUBTITLE_PREFIX.length).trim();
+  return room.name || "Teacher";
 }
 
 /** The time a room last had activity — the sidebar sort key. */
@@ -173,7 +243,9 @@ export function otherParticipant(room: ChatRoom, currentUserId: string): Partici
 export function mergeRoomList(rawRooms: unknown[], currentUserId: string, viewingRoomId: string | null): ChatRoom[] {
   const rooms = rawRooms
     .map(normalizeRoom)
-    .filter((room) => room._id && isRoomMember(room, currentUserId))
+    // An office thread is listed for every admin even before the server adds
+    // them to its members (it does so on the next read or post).
+    .filter((room) => room._id && (isRoomMember(room, currentUserId) || isOfficeRoom(room)))
     .map((room) => (room._id === viewingRoomId ? { ...room, unreadCount: 0 } : room));
   return sortRooms(rooms);
 }
@@ -274,19 +346,23 @@ export const GROUP_MANAGER_ROLES = ["teacher", "school_admin", "school_sub_admin
 /** Rooms whose members may leave on their own. */
 export const LEAVABLE_ROOM_TYPES: string[] = [ChatRoomType.CUSTOM_GROUP, ChatRoomType.PARENT_GROUP];
 
-/** Whether to show group controls: never for direct messages; managers by role, or the creator. */
+/**
+ * Whether to show group controls (add and remove members, edit the name,
+ * description and picture): never for direct messages or office threads, whose
+ * members the server manages; managers by role, or the creator.
+ */
 export function canManageRoom(
-  room: Pick<ChatRoom, "type" | "createdBy"> | null | undefined,
+  room: (Pick<ChatRoom, "type" | "createdBy"> & Partial<Pick<ChatRoom, "category">>) | null | undefined,
   user: { id: string; role?: string | null }
 ): boolean {
-  if (!room || room.type === ChatRoomType.ONE_TO_ONE) return false;
+  if (!room || room.type === ChatRoomType.ONE_TO_ONE || isOfficeRoom(room)) return false;
   if (user.role && GROUP_MANAGER_ROLES.includes(user.role)) return true;
   return Boolean(user.id) && idOf(room.createdBy) === user.id;
 }
 
-/** Whether "Leave group" is offered. */
-export function canLeaveRoom(room: Pick<ChatRoom, "type"> | null | undefined): boolean {
-  return Boolean(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
+/** Whether "Leave group" is offered: never for an office thread. */
+export function canLeaveRoom(room: (Pick<ChatRoom, "type"> & Partial<Pick<ChatRoom, "category">>) | null | undefined): boolean {
+  return Boolean(room) && !isOfficeRoom(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
 }
 
 /**
@@ -356,10 +432,18 @@ function participantName(p: Participant): string {
 /** The sidebar / header shape for a room. */
 export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayChatRoom {
   const isGroup = room.type !== ChatRoomType.ONE_TO_ONE;
+  const isOffice = isOfficeRoom(room);
+  const category = roomCategory(room, currentUserId);
   let displayName = room.name || (isGroup ? "Group Chat" : "Chat");
+  let subtitle = room.subtitle;
   let isOnline = false;
 
-  if (!isGroup) {
+  if (isOffice) {
+    // Listed under the teacher it belongs to.
+    const teacherName = officeTeacherName(room);
+    displayName = teacherName;
+    subtitle = room.subtitle || `${OFFICE_SUBTITLE_PREFIX}${teacherName}`;
+  } else if (!isGroup) {
     const other = otherParticipant(room, currentUserId);
     if (other) {
       displayName = participantName(other) || other.email || "User";
@@ -397,7 +481,7 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
       isOnline: Boolean(p.isOnline),
     })),
     avatarInfo:
-      isGroup && room.avatarUrl
+      isGroup && !isOffice && room.avatarUrl
         ? { type: "image", value: room.avatarUrl, bgColor: generateColorFromString(displayName) }
         : {
             type: "initials",
@@ -409,6 +493,9 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
     description: isGroup ? room.description : undefined,
     avatarUrl: isGroup ? room.avatarUrl : undefined,
     createdBy: room.createdBy || undefined,
+    category,
+    subtitle,
+    isOffice,
   };
 }
 

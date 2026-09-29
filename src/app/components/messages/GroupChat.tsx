@@ -14,6 +14,7 @@ import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { formatDateSeparator } from "@/lib/chat/dates";
+import { OFFICE_THREAD_NOTE } from "./group-info/groupInfo";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import {
@@ -177,8 +178,8 @@ export default function GroupChat({
       <ChatHeader
         avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
         name={roomInfo.name}
-        status="Group chat"
-        subtext={roomInfo.participantList}
+        status={room.subtitle || "Group chat"}
+        subtext={room.isOffice ? OFFICE_THREAD_NOTE : roomInfo.participantList}
         participants={room.participants}
         currentUserId={currentUserId}
         onBack={onBack}

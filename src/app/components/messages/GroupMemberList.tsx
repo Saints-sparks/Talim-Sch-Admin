@@ -6,13 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import type { ChatRoom, Participant } from "@/types/chat.types";
 import { useChatsContext } from "@/context/ChatsContext";
-import { canLeaveRoom } from "@/lib/chat/rooms";
+import { canLeaveRoom, isOfficeRoom } from "@/lib/chat/rooms";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface GroupMemberListProps {
   room: ChatRoom;
   currentUserId: string;
-  /** Show Remove on other members. */
+  /** Show Remove on other members (never in an office thread, whose members the server keeps). */
   canManage: boolean;
 }
 
@@ -44,6 +44,7 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
     [room.participants, currentUserId]
   );
   const showLeave = canLeaveRoom(room) && members.some((m) => m.userId === currentUserId);
+  const showRemove = canManage && !isOfficeRoom(room);
 
   const confirm = async () => {
     if (!pending) return;
@@ -87,7 +88,7 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
                   {[roleLabel(member.role), member.isOnline ? "Online" : "Offline"].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              {canManage && !isMe && (
+              {showRemove && !isMe && (
                 <button
                   type="button"
                   onClick={() => setPending({ kind: "remove", member })}

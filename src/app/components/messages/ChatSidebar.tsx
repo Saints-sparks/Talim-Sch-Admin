@@ -13,6 +13,7 @@ import {
   WifiOff,
   Plus,
   Filter,
+  Building2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,13 +21,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import CreateGroupModal from "./CreateGroupModal";
 import NewMessageModal from "./NewMessageModal";
 import type { UseChatsReturn } from "@/hooks/useChats";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
 import { getUserInitials } from "@/lib/colorUtils";
+import { ROOM_FILTERS, filterRooms, unreadOfficeThreads, type RoomFilter } from "./roomFilter";
 
 interface ChatSidebarProps {
   onSelectChat: (room: DisplayChatRoom) => void;
@@ -39,8 +41,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "teachers" | "groups">("all");
-  const [displayRooms, setDisplayRooms] = useState<DisplayChatRoom[]>([]);
+  const [filterType, setFilterType] = useState<RoomFilter>("all");
 
   const { chatRooms: originalRooms, isRoomsLoading: isLoading, roomsError: error, fetchChatRooms, currentUserId } = chats;
 
@@ -55,41 +56,16 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
     0
   );
 
-  // Apply filters and search to rooms
-  useEffect(() => {
-    let filtered = [...transformedRooms];
-
-    // Apply type filter
-    if (filterType !== "all") {
-      if (filterType === "groups") {
-        filtered = filtered.filter((room) => room.type === "group");
-      } else if (filterType === "teachers") {
-        filtered = filtered.filter(
-          (room) => room.type === "private" && room.participants.some((p) => p.role === "teacher")
-        );
-      }
-    }
-
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(
-        (room) =>
-          room.displayName.toLowerCase().includes(term) ||
-          room.lastMessage?.content?.toLowerCase().includes(term) ||
-          room.participants.some((p) => p.name?.toLowerCase().includes(term))
-      );
-    }
-
-    setDisplayRooms(filtered);
-  }, [transformedRooms, filterType, searchTerm]);
+  // Filter and search; the list keeps its latest-message order.
+  const displayRooms = useMemo(
+    () => filterRooms(transformedRooms, filterType, searchTerm),
+    [transformedRooms, filterType, searchTerm]
+  );
+  const officeUnread = unreadOfficeThreads(transformedRooms);
+  const filterLabel = ROOM_FILTERS.find((f) => f.id === filterType)?.label ?? "All chats";
 
   const handleSelectChat = (room: DisplayChatRoom) => {
     onSelectChat(room);
-  };
-
-  const handleFilterChange = (newFilter: "all" | "teachers" | "groups") => {
-    setFilterType(newFilter);
   };
 
   const formatTime = (timestamp: Date | string) => {
@@ -134,6 +110,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
           <Input
             className="pl-9 pr-4 py-3 sm:py-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-gray-500 touch-manipulation"
             placeholder="Search conversations..."
+            aria-label="Search conversations"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -145,23 +122,34 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 active:bg-gray-100 capitalize rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
+                aria-label={`Filter: ${filterLabel}`}
+                className="flex items-center gap-2 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
               >
-                <Filter size={12} />
-                {filterType}
-                <ChevronDown size={12} />
+                <Filter size={12} aria-hidden />
+                {filterLabel}
+                {filterType !== "office" && officeUnread > 0 && (
+                  <span
+                    className="inline-block h-2 w-2 rounded-full bg-amber-500"
+                    title="Unread office threads"
+                    aria-hidden
+                  />
+                )}
+                <ChevronDown size={12} aria-hidden />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-32">
-              <DropdownMenuItem onClick={() => handleFilterChange("all")}>
-                All Chats
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterChange("teachers")}>
-                Teachers
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterChange("groups")}>
-                Groups
-              </DropdownMenuItem>
+            <DropdownMenuContent align="start" className="w-48">
+              {ROOM_FILTERS.map((f) => (
+                <DropdownMenuItem key={f.id} onClick={() => setFilterType(f.id)} className="flex items-center gap-2">
+                  {f.id === "office" && <Building2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />}
+                  <span className="flex-1">{f.label}</span>
+                  {f.id === "office" && officeUnread > 0 && (
+                    <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 text-[10px] font-semibold text-amber-800 dark:text-amber-200">
+                      {officeUnread}
+                      <span className="sr-only"> unread</span>
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -256,9 +244,15 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
           <div className="flex items-center justify-center p-6 text-gray-500">
             <div className="text-center">
               <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">{searchTerm ? "No chats found" : "No chats yet"}</p>
+              <p className="text-sm">
+                {searchTerm ? "No chats found" : filterType === "office" ? "No office threads yet" : "No chats yet"}
+              </p>
               {!searchTerm && (
-                <p className="text-xs text-gray-400 mt-1">Start by creating a group chat</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {filterType === "office"
+                    ? "When a teacher messages the school office, the thread appears here."
+                    : "Start by creating a group chat"}
+                </p>
               )}
             </div>
           </div>
@@ -270,16 +264,33 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
             return (
               <div
                 key={room.roomId}
-                className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 ${
+                role="button"
+                tabIndex={0}
+                aria-current={selectedRoomId === room.roomId ? "true" : undefined}
+                data-category={room.category}
+                className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   selectedRoomId === room.roomId
-                    ? "bg-blue-50 border border-blue-200 shadow-sm"
+                    ? "bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 shadow-sm"
                     : ""
                 } touch-manipulation`}
                 onClick={() => handleSelectChat(room)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelectChat(room);
+                  }
+                }}
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  {room.avatarInfo.type === "image" ? (
+                  {room.isOffice ? (
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                      aria-hidden
+                    >
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                  ) : room.avatarInfo.type === "image" ? (
                     <Avatar className="w-11 h-11">
                       <AvatarImage src={room.avatarInfo.value} />
                       <AvatarFallback
@@ -313,7 +324,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
                   )}
 
                   {/* Group indicator */}
-                  {room.type === "group" && (
+                  {room.type === "group" && !room.isOffice && (
                     <Tooltip
                       content="Broadcast conversations with all members. Any member can send a message."
                       side="right"
@@ -337,6 +348,17 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
                       </span>
                     )}
                   </div>
+
+                  {room.subtitle && (
+                    <p
+                      className={`text-xs truncate mb-0.5 flex items-center gap-1 ${
+                        room.isOffice ? "text-amber-800 dark:text-amber-300" : "text-gray-500"
+                      }`}
+                    >
+                      {room.isOffice && <Building2 className="w-3 h-3 flex-shrink-0" aria-hidden />}
+                      {room.subtitle}
+                    </p>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500 truncate pr-2">

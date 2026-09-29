@@ -169,6 +169,7 @@ export default function PrivateChat({
         avatar={otherParticipant.avatar}
         name={otherParticipant.name}
         status={otherParticipant.status}
+        subtext={room.subtitle}
         onBack={onBack}
         showBackButton={true}
         isGroup={false}

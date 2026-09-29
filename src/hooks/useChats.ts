@@ -33,6 +33,7 @@ import {
   applyRoomActivity,
   applyRoomUpdated,
   clearRoomUnread,
+  isOfficeRoom,
   isRoomMember,
   mergeRoomList,
   removeRoom,
@@ -478,7 +479,8 @@ export const useChats = (): UseChatsReturn => {
           return;
         }
       }
-      if (room.participants.length > 0 && !isRoomMember(room, currentUserIdRef.current)) {
+      // The server adds staff to an office thread when they open it (Round 4 §28).
+      if (room.participants.length > 0 && !isRoomMember(room, currentUserIdRef.current) && !isOfficeRoom(room)) {
         setThreadStatus("error", "You are not a member of this chat room");
         return;
       }

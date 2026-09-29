@@ -1,5 +1,6 @@
 import type { ChatReplyTo } from "@/components/chat-kit";
 import type { CreateChatRoomPayload, CreateGroupChatPayload } from "@/types/apiPayloads";
+import type { ChatRoomCategory } from "@/types/round4Contract";
 // types/chat.types.ts
 
 export interface User {
@@ -30,6 +31,8 @@ export enum ChatRoomType {
   ADMIN_PARENT_GROUP = 'admin_parent_group',
   PARENT_GROUP = 'parent_group',
   CUSTOM_GROUP = 'custom_group',
+  /** A teacher's thread with the school office (Round 4 §28); server-managed members. */
+  OFFICE = 'office',
 }
 
 export interface Participant {
@@ -82,6 +85,12 @@ export interface ChatRoom {
   courseId?: string;
   termId?: string;
   unreadCount?: number;
+  /** Round 4 §27: what the room is to the viewer. Absent from an older API. */
+  category?: ChatRoomCategory;
+  /** Round 4 §27: one line describing the room, e.g. "Office thread · Tolu Ade". */
+  subtitle?: string;
+  /** Round 4 §27: teachers only; null for admins. */
+  callPhone?: string | null;
 }
 
 
@@ -147,7 +156,10 @@ export interface SendMessageDto {
  * values are the DTO's literals. The DTO has no `name`: a group's name is set
  * through `POST /chat/groups` or `PATCH /chat/rooms/:id`.
  */
-export type CreateChatRoomDto = Omit<CreateChatRoomPayload, "type"> & { type: ChatRoomType };
+export type CreateChatRoomDto = Omit<CreateChatRoomPayload, "type"> & {
+  /** Office threads are never created here (the server opens them for teachers). */
+  type: Exclude<ChatRoomType, ChatRoomType.OFFICE>;
+};
 
 /**
  * Body of `POST /chat/groups` (the backend DTO). The generated `type` omits

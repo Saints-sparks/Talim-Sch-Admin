@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Building2, X } from "lucide-react";
 import SharedMedia from "./SharedMedia";
 import GroupMemberList from "./GroupMemberList";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
@@ -12,6 +12,7 @@ import { GroupNameField } from "./group-info/GroupNameField";
 import { GroupPictureBlock } from "./group-info/GroupPictureBlock";
 import {
   membersHeading,
+  OFFICE_THREAD_NOTE,
   pictureProblem,
   planDescriptionSave,
   planNameSave,
@@ -21,7 +22,7 @@ import {
 import { useChatsContext } from "@/context/ChatsContext";
 import { useAuth } from "@/context/AuthContext";
 import { ChatRoomType } from "@/types/chat.types";
-import { canManageRoom } from "@/lib/chat/rooms";
+import { canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
 import { chatService } from "@/app/services/chat.service";
 import { toast } from "@/components/CustomToast";
 import { getErrorMessage } from "@/lib/apiError";
@@ -52,6 +53,7 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
   const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
   const type = room?.type ?? roomType;
   const isGroup = Boolean(type) && type !== ChatRoomType.ONE_TO_ONE;
+  const isOffice = isOfficeRoom(room ?? { type: type as ChatRoomType });
   const canManage = isGroup && canManageRoom(room ?? { type: type as ChatRoomType, createdBy: "" }, {
     id: currentUserId,
     role: user?.role,
@@ -179,8 +181,15 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   onSave={() => void saveName()}
                 />
                 <p className="text-sm text-[#7B7B7B]">
-                  {roomSubtitle(type, isGroup, memberCount)}
+                  {isOffice && room?.subtitle ? room.subtitle : roomSubtitle(type, isGroup, memberCount)}
                 </p>
+
+                {isOffice && (
+                  <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-left text-xs text-amber-900 dark:text-amber-200">
+                    <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                    <span>{OFFICE_THREAD_NOTE} Members are kept up to date automatically.</span>
+                  </p>
+                )}
 
                 {/* Add members — managers only, never in 1:1 chats */}
                 {canManage && chatRoomId && (
