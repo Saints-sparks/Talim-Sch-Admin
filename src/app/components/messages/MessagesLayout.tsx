@@ -76,7 +76,16 @@ export default function MessagesLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [removedRoom]);
 
-    // Deep link: /messages?room=<id> opens that room, on load and whenever the query changes.
+  // Leaving the page (and React's development double mount) leaves the open room (useChats'
+  // cleanup): forget the handled link, so a remount opens it again instead of waiting forever.
+  useEffect(
+    () => () => {
+      handledRoomParamRef.current = undefined;
+    },
+    []
+  );
+
+  // Deep link: /messages?room=<id> opens that room, on load and whenever the query changes.
   useEffect(() => {
     if (handledRoomParamRef.current === roomParam) return;
     handledRoomParamRef.current = roomParam;
