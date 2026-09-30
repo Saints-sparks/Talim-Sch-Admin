@@ -9,7 +9,7 @@ import { chatService } from "@/app/services/chat.service";
 import { reconcileWebPushForUser } from "@/app/hooks/usePushNotifications";
 import { toast } from "@/components/CustomToast";
 import { idOf } from "@/lib/chat/messages";
-import { chatRoomUrl, openChatRoom, shouldAlertForActivity, toInAppPath } from "@/lib/chat/openRoom";
+import { chatRoomUrl, isPageFocused, openChatRoom, shouldAlertForActivity, toInAppPath } from "@/lib/chat/openRoom";
 import type { RoomActivity } from "@/lib/chat/rooms";
 
 /** Window event the header listens to so the bell refreshes immediately. */
@@ -28,9 +28,14 @@ const ChatAlertsContext = createContext<ChatAlertsContextValue>({ unreadTotal: 0
 
 /**
  * App-wide chat signals, mounted once under the socket provider: the unread
- * badge total, "Name: preview" toasts for messages in rooms that aren't open,
- * the `(N)` tab-title prefix, in-app notification events, and routing for
- * browser-push clicks.
+ * badge total, "Name: preview" toasts for messages (except in the room that
+ * is open on screen and focused: the backend sends every message to every
+ * member), the `(N)` tab-title prefix, in-app notification events, and
+ * routing for browser-push clicks. The service worker skips browser pushes by
+ * the same rule (`public/sw.js`).
+ *
+ * @param props.children - The app.
+ * @returns The provider.
  */
 export function ChatAlertsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -87,6 +92,7 @@ export function ChatAlertsProvider({ children }: { children: ReactNode }) {
           currentUserId: userIdRef.current,
           pathname: pathnameRef.current,
           openRoomId,
+          focused: isPageFocused(),
         })
       ) {
         return;
@@ -154,6 +160,11 @@ export function ChatAlertsProvider({ children }: { children: ReactNode }) {
   return <ChatAlertsContext.Provider value={{ unreadTotal }}>{children}</ChatAlertsContext.Provider>;
 }
 
+/**
+ * The app-wide chat signals.
+ *
+ * @returns The unread total.
+ */
 export function useChatAlerts(): ChatAlertsContextValue {
   return useContext(ChatAlertsContext);
 }

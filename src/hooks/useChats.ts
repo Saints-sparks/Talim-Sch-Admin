@@ -42,7 +42,7 @@ import {
   type ParticipantsChangedEvent,
   type RoomUpdatedEvent,
 } from "@/lib/chat/rooms";
-import { openChatRoom } from "@/lib/chat/openRoom";
+import { isPageFocused, openChatRoom } from "@/lib/chat/openRoom";
 import {
   fileKind,
   messageTypeFor,
@@ -195,10 +195,13 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-/** The page is on screen and focused — only then does the open room count as read. */
+/**
+ * The page is on screen and focused — only then does the open room count as read.
+ *
+ * @returns True when the tab is visible and focused (see `isPageFocused`).
+ */
 function isViewing(): boolean {
-  if (typeof document === "undefined") return true;
-  return document.visibilityState === "visible" && (typeof document.hasFocus !== "function" || document.hasFocus());
+  return isPageFocused();
 }
 
 /**

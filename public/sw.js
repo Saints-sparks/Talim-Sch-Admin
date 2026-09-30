@@ -1,6 +1,11 @@
 /* Talim School Admin — Web Push Service Worker */
 
-/** "/messages?room=1" for an absolute or relative URL on this origin. */
+/**
+ * The path and query of a URL on this origin.
+ *
+ * @param {string} url - An absolute or relative URL.
+ * @returns {string | null} e.g. "/messages?room=1", or null for another origin or a bad URL.
+ */
 function pathOf(url) {
   try {
     const parsed = new URL(url, self.location.origin);
@@ -8,6 +13,56 @@ function pathOf(url) {
   } catch {
     return null;
   }
+}
+
+/**
+ * The chat room a window shows: the `room` of a `/messages?room=…` URL on
+ * this origin (the messages page keeps it in step with the open room).
+ *
+ * @param {string} url - A window's URL.
+ * @returns {string | null} The room id, or null when no room is open there.
+ */
+function openRoomOf(url) {
+  try {
+    const parsed = new URL(url, self.location.origin);
+    if (parsed.origin !== self.location.origin || !parsed.pathname.startsWith("/messages")) return null;
+    return parsed.searchParams.get("room") || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The chat room a push is about: `roomId`, the older `chatId`, or the `room`
+ * of its URL.
+ *
+ * @param {Record<string, unknown>} payload - The push's `data`.
+ * @returns {string | null} The room id, or null for a push that isn't about a room.
+ */
+function pushRoomId(payload) {
+  const id = payload.roomId || payload.chatId;
+  if (typeof id === "string" && id) return id;
+  return typeof payload.url === "string" ? openRoomOf(payload.url) : null;
+}
+
+/**
+ * Whether a visible, focused window already shows what a push is about: the
+ * same chat room (the backend pushes every message to every member, even
+ * the one reading the room), or, for other pushes, the same page.
+ *
+ * @param {Record<string, unknown>} payload - The push's `data`.
+ * @param {ReadonlyArray<WindowClient>} clientList - This origin's windows.
+ * @returns {boolean} True to skip the notification.
+ */
+function isShownInFocusedWindow(payload, clientList) {
+  const focused = clientList.filter(
+    (client) => client.focused && (client.visibilityState === undefined || client.visibilityState === "visible")
+  );
+  if (!focused.length) return false;
+  const roomId = pushRoomId(payload);
+  if (roomId) return focused.some((client) => openRoomOf(client.url) === roomId);
+  const target = typeof payload.url === "string" ? pathOf(payload.url) : null;
+  return target !== null && focused.some((client) => pathOf(client.url) === target);
 }
 
 self.addEventListener("push", (event) => {
@@ -34,11 +89,8 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Skip it when a focused tab already shows this room.
-      const target = payload.url ? pathOf(payload.url) : null;
-      const alreadyOpen =
-        target !== null && clientList.some((client) => client.focused && pathOf(client.url) === target);
-      if (alreadyOpen) return undefined;
+      // Skip it while a focused tab shows this room: the page has it already.
+      if (isShownInFocusedWindow(payload, clientList)) return undefined;
       return self.registration.showNotification(data.title || "Talim Notification", options);
     })
   );
