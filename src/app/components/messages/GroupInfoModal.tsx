@@ -196,7 +196,7 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   onCancel={() => setEditingName(false)}
                   onSave={() => void saveName()}
                 />
-                <p className="text-sm text-[#7B7B7B]">
+                <p className="text-sm text-[#666666] dark:text-slate-400">
                   {isOffice && room?.subtitle ? room.subtitle : roomSubtitle(type, isGroup, memberCount)}
                 </p>
 

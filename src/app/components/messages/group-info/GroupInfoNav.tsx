@@ -16,7 +16,7 @@ interface NavProps {
 /** The desktop sidebar: Info plus the four shared-media panes. */
 export function GroupInfoSidebar({ selected, onSelect }: NavProps) {
   return (
-    <div className="hidden sm:flex w-44 flex-col gap-1 bg-[#FDFDFD] border-r border-[#EEEEEE] text-[#878787] pt-6 p-3">
+    <div className="hidden sm:flex w-44 flex-col gap-1 bg-[#FDFDFD] border-r border-[#EEEEEE] text-[#5F5F5F] dark:text-slate-300 pt-6 p-3">
       <button
         type="button"
         className={`flex items-center gap-3 p-2 rounded-lg transition text-left ${

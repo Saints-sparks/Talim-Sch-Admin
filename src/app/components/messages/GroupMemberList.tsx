@@ -100,6 +100,7 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
                   className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${
                     member.isOnline ? "bg-green-500" : "bg-gray-300"
                   }`}
+                  role="img"
                   aria-label={member.isOnline ? "Online" : "Offline"}
                 />
               </div>

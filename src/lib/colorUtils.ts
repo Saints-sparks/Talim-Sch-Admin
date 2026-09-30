@@ -40,6 +40,24 @@ export function generateColorFromString(str: string): string {
 }
 
 /**
+ * The same hue, light enough for text on the dark theme: the palette's dark
+ * shades are mixed with white (55% by default), which puts every entry well
+ * above 4.5:1 on the dark background. Anything that is not `#rrggbb` is
+ * answered unchanged.
+ *
+ * @param hex - A colour such as "#303F9F".
+ * @param amount - How much white to mix in, 0..1.
+ * @returns The lighter colour, `#rrggbb`.
+ */
+export function onDarkShade(hex: string, amount = 0.55): string {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return hex;
+  const channels = [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16));
+  const mixed = channels.map((c) => Math.round(c + (255 - c) * amount));
+  return `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
+
+/**
  * Extract initials from a name for avatar display
  * Returns up to 2 characters in uppercase
  */

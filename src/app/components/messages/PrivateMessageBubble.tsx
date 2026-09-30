@@ -93,7 +93,7 @@ export default function MessageBubble({
           <Card
             className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative group ${
               isCurrentUser
-                ? "bg-blue-500 text-white rounded-2xl rounded-br-md"
+                ? "bg-blue-600 text-white rounded-2xl rounded-br-md"
                 : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-bl-md"
             }`}
           >

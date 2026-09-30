@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import BubbleMenu from "./BubbleMenu";
@@ -6,7 +7,7 @@ import type { ChatReplyTo, ReplyDraft } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { generateColorFromString, getUserInitials, onDarkShade } from "@/lib/colorUtils";
 
 interface Attachment {
   url: string;
@@ -92,7 +93,11 @@ export default function GroupMessageBubble({
         <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
           {msg.sender !== "me" && !isMe && (
             <div className="mb-1 px-1">
-              <p className="text-xs font-semibold" style={{ color: bgColor }}>
+              {/* The sender colours are dark shades, readable on white; the dark theme uses a lighter mix of each. */}
+              <p
+                className="text-xs font-semibold text-[color:var(--sender)] dark:text-[color:var(--sender-dark)]"
+                style={{ "--sender": bgColor, "--sender-dark": onDarkShade(bgColor) } as CSSProperties}
+              >
                 {msg.sender}
               </p>
             </div>
@@ -101,7 +106,7 @@ export default function GroupMessageBubble({
           <Card
             className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative group ${
               isMe
-                ? "bg-blue-500 text-white rounded-2xl rounded-br-md"
+                ? "bg-blue-600 text-white rounded-2xl rounded-br-md"
                 : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-bl-md"
             }`}
           >

@@ -203,7 +203,7 @@ export default function ChatHeader({
             <span className="block text-xs text-gray-500 truncate">{status}</span>
           )}
           {displaySubtext && (
-            <span className="text-xs text-[#7B7B7B] truncate hidden sm:block">{displaySubtext}</span>
+            <span className="text-xs text-[#666666] dark:text-slate-400 truncate hidden sm:block">{displaySubtext}</span>
           )}
         </button>
 

@@ -77,7 +77,7 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
 
   const boolLabel = (v?: boolean) => (v === undefined ? "—" : v ? "Yes" : "No");
   const boolTone = (v?: boolean) =>
-    v === undefined ? "" : v ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400";
+    v === undefined ? "" : v ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
 
   return (
     <div className="space-y-5">
