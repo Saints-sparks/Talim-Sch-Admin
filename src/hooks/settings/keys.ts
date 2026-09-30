@@ -59,6 +59,19 @@ export const settingsKeys = {
   notificationPrefs: (userId: string) =>
     [...queryKeys.settings.all, "notification-preferences", userId] as const,
   /**
+   * The signed-in administrator's devices (Settings → Security).
+   *
+   * @param userId - The signed-in user's id.
+   * @returns The query key.
+   */
+  sessions: (userId: string) => [...queryKeys.settings.all, "sessions", userId] as const,
+  /**
+   * The server's password rules — the same for everyone, so not user-scoped.
+   *
+   * @returns The query key.
+   */
+  passwordPolicy: () => [...queryKeys.settings.all, "password-policy"] as const,
+  /**
    * The bank list for one country — the same for every school, so it is not
    * school-scoped.
    *

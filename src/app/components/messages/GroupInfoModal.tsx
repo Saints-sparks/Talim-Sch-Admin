@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Building2, X } from "lucide-react";
 import SharedMedia from "./SharedMedia";
 import GroupMemberList from "./GroupMemberList";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
@@ -12,6 +12,7 @@ import { GroupNameField } from "./group-info/GroupNameField";
 import { GroupPictureBlock } from "./group-info/GroupPictureBlock";
 import {
   membersHeading,
+  OFFICE_THREAD_NOTE,
   pictureProblem,
   planDescriptionSave,
   planNameSave,
@@ -21,7 +22,7 @@ import {
 import { useChatsContext } from "@/context/ChatsContext";
 import { useAuth } from "@/context/AuthContext";
 import { ChatRoomType } from "@/types/chat.types";
-import { canManageRoom } from "@/lib/chat/rooms";
+import { canEditRoomDetails, canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
 import { chatService } from "@/app/services/chat.service";
 import { toast } from "@/components/CustomToast";
 import { getErrorMessage } from "@/lib/apiError";
@@ -36,6 +37,21 @@ interface GroupInfoModalProps {
   roomType?: string;
 }
 
+/**
+ * Group info: picture, name, description, members and shared media. School
+ * staff and group admins edit the name and description; managers also change
+ * the picture and add or remove members. Office threads explain the shared
+ * inbox and have no description; direct messages have none either. Reads the
+ * room from the list, so `room-updated` shows here live.
+ *
+ * @param props.isOpen - Whether the dialog is shown.
+ * @param props.onClose - Closes it.
+ * @param props.avatar - Picture shown until the room is in the list.
+ * @param props.name - Name shown until the room is in the list.
+ * @param props.chatRoomId - The room.
+ * @param props.roomType - The room's type, until the room is in the list.
+ * @returns The dialog, or null when closed.
+ */
 export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoomId, roomType }: GroupInfoModalProps) {
   const [selectedMenu, setSelectedMenu] = useState<Section>("");
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);
@@ -52,10 +68,12 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
   const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
   const type = room?.type ?? roomType;
   const isGroup = Boolean(type) && type !== ChatRoomType.ONE_TO_ONE;
-  const canManage = isGroup && canManageRoom(room ?? { type: type as ChatRoomType, createdBy: "" }, {
-    id: currentUserId,
-    role: user?.role,
-  });
+  const isOffice = isOfficeRoom(room ?? { type: type as ChatRoomType });
+  const viewer = { id: currentUserId, role: user?.role };
+  const roomRef = room ?? { type: type as ChatRoomType, createdBy: "" };
+  // Members and the picture: managers. Name and description: staff and group admins too.
+  const canManage = isGroup && canManageRoom(roomRef, viewer);
+  const canEditDetails = isGroup && canEditRoomDetails(roomRef, viewer);
   const groupName = isGroup ? room?.name || name : name;
   const pictureUrl = isGroup ? room?.avatarUrl || "" : avatar;
   // Shared media comes from this conversation's loaded messages.
@@ -169,7 +187,7 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   draft={nameDraft}
                   name={groupName}
                   saving={saving === "name"}
-                  canManage={canManage}
+                  canManage={canEditDetails}
                   onDraftChange={setNameDraft}
                   onStartEdit={() => {
                     setNameDraft(room?.name || groupName);
@@ -179,8 +197,15 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   onSave={() => void saveName()}
                 />
                 <p className="text-sm text-[#7B7B7B]">
-                  {roomSubtitle(type, isGroup, memberCount)}
+                  {isOffice && room?.subtitle ? room.subtitle : roomSubtitle(type, isGroup, memberCount)}
                 </p>
+
+                {isOffice && (
+                  <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-left text-xs text-amber-900 dark:text-amber-200">
+                    <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                    <span>{OFFICE_THREAD_NOTE} Members are kept up to date automatically.</span>
+                  </p>
+                )}
 
                 {/* Add members — managers only, never in 1:1 chats */}
                 {canManage && chatRoomId && (
@@ -190,13 +215,14 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   />
                 )}
 
-                {isGroup && (
+                {/* Office threads and direct messages have no description. */}
+                {isGroup && !isOffice && (
                   <GroupDescriptionField
                     editing={editingDescription}
                     draft={descriptionDraft}
                     description={room?.description}
                     saving={saving === "description"}
-                    canManage={canManage}
+                    canManage={canEditDetails}
                     onDraftChange={setDescriptionDraft}
                     onStartEdit={() => {
                       setDescriptionDraft(room?.description ?? "");

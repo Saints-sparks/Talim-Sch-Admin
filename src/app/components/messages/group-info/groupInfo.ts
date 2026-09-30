@@ -17,7 +17,12 @@ export const ROOM_TYPE_LABELS: Record<string, string> = {
   [ChatRoomType.PARENT_GROUP]: "Parent group",
   [ChatRoomType.CUSTOM_GROUP]: "Group",
   [ChatRoomType.ONE_TO_ONE]: "Direct message",
+  [ChatRoomType.OFFICE]: "Office thread",
 };
+
+/** What an office thread is, in the header and the info dialog (Round 4 §28). */
+export const OFFICE_THREAD_NOTE =
+  "Shared school office inbox: every admin, and sub-admins with Manage Messages, can read and reply.";
 
 /**
  * The line under the group's name: its kind, and for a group its member count.

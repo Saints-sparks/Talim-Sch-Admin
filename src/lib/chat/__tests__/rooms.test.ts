@@ -6,13 +6,19 @@ import {
   applyPresenceChanged,
   DELETED_PREVIEW,
   applyRoomActivity,
+  canLeaveRoom,
+  canManageRoom,
   clearRoomUnread,
+  isOfficeRoom,
   mergeRoomList,
   normalizeRoom,
+  officeTeacherName,
   otherParticipant,
+  roomCategory,
   toDisplayRoom,
   upsertRoom,
 } from "@/lib/chat/rooms";
+import { ChatRoomType } from "@/types/chat.types";
 import {
   chatRoomUrl,
   isRoomOpen,
@@ -212,5 +218,90 @@ describe("applyPresenceChanged", () => {
     const rooms = [normalizeRoom(roomView("r1"))];
     expect(applyPresenceChanged(rooms, TEACHER, false)).toBe(rooms);
     expect(applyPresenceChanged(rooms, "someone-else", true)).toBe(rooms);
+  });
+});
+
+describe("office threads (Round 4 §27–28)", () => {
+  const ADMIN2 = "u-admin-2";
+  function officeView(overrides: Record<string, unknown> = {}) {
+    return roomView("office-1", {
+      type: "office",
+      name: "School office",
+      category: "office",
+      subtitle: "Office thread · Tola Teacher",
+      participants: [
+        { _id: ME, userId: ME, firstName: "Sam", lastName: "Admin", role: "school_admin" },
+        { _id: TEACHER, userId: TEACHER, firstName: "Tola", lastName: "Teacher", role: "teacher" },
+        { _id: ADMIN2, userId: ADMIN2, firstName: "Ola", lastName: "Office", role: "school_sub_admin" },
+      ],
+      ...overrides,
+    });
+  }
+
+  it("reads category, subtitle and callPhone, ignoring an unknown category", () => {
+    const room = normalizeRoom(officeView({ callPhone: null }));
+    expect(room.category).toBe("office");
+    expect(room.subtitle).toBe("Office thread · Tola Teacher");
+    expect(room.callPhone).toBeNull();
+    expect(normalizeRoom(roomView("r1", { category: "nonsense" })).category).toBeUndefined();
+  });
+
+  it("is listed under the teacher, with the office subtitle", () => {
+    const display = toDisplayRoom(normalizeRoom(officeView()), ME);
+    expect(display.isOffice).toBe(true);
+    expect(display.category).toBe("office");
+    expect(display.type).toBe("group");
+    expect(display.displayName).toBe("Tola Teacher");
+    expect(display.subtitle).toBe("Office thread · Tola Teacher");
+  });
+
+  it("builds the subtitle when an older API sends none", () => {
+    const display = toDisplayRoom(normalizeRoom(officeView({ category: undefined, subtitle: undefined })), ME);
+    expect(display.isOffice).toBe(true);
+    expect(display.subtitle).toBe("Office thread · Tola Teacher");
+  });
+
+  it("takes the teacher from the subtitle when members are bare ids", () => {
+    const room = normalizeRoom(officeView({ participants: [ME, TEACHER] }));
+    expect(officeTeacherName(room)).toBe("Tola Teacher");
+  });
+
+  it("offers no member management or leaving, even to a full admin", () => {
+    const room = normalizeRoom(officeView());
+    expect(isOfficeRoom(room)).toBe(true);
+    expect(canManageRoom(room, { id: ME, role: "school_admin" })).toBe(false);
+    expect(canManageRoom(room, { id: TEACHER, role: "teacher" })).toBe(false);
+    expect(canLeaveRoom(room)).toBe(false);
+    // A room whose category alone says office is treated the same.
+    expect(canManageRoom({ type: ChatRoomType.CUSTOM_GROUP, createdBy: ME, category: "office" }, { id: ME })).toBe(false);
+    // Ordinary groups are unchanged.
+    expect(canManageRoom({ type: ChatRoomType.CUSTOM_GROUP, createdBy: "" }, { id: ME, role: "school_admin" })).toBe(true);
+    expect(canLeaveRoom({ type: ChatRoomType.CUSTOM_GROUP })).toBe(true);
+  });
+
+  it("keeps an office thread in the list before the server adds me to it", () => {
+    const rooms = mergeRoomList(
+      [
+        officeView({ participants: [{ _id: TEACHER, userId: TEACHER, role: "teacher", firstName: "Tola" }] }),
+        roomView("foreign", { participants: [{ _id: PARENT, userId: PARENT }] }),
+      ],
+      ME,
+      null
+    );
+    expect(rooms.map((r) => r._id)).toEqual(["office-1"]);
+  });
+
+  it("falls back to a category from the room type and the other person", () => {
+    expect(roomCategory(normalizeRoom(roomView("dm")), ME)).toBe("colleague");
+    const withParent = roomView("dm2", {
+      participants: [
+        { _id: ME, userId: ME, role: "school_admin" },
+        { _id: PARENT, userId: PARENT, role: "parent" },
+      ],
+    });
+    expect(roomCategory(normalizeRoom(withParent), ME)).toBe("parent");
+    expect(roomCategory(normalizeRoom(roomView("g", { type: "class_group" })), ME)).toBe("class_group");
+    expect(roomCategory(normalizeRoom(roomView("g2", { type: "custom_group" })), ME)).toBe("group");
+    expect(roomCategory(normalizeRoom(roomView("o", { type: "office" })), ME)).toBe("office");
   });
 });

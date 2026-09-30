@@ -135,4 +135,10 @@ describe("DataSystemSection", () => {
     expect(screen.queryByText(/Next Backup/i)).toBeNull();
     expect(screen.getByText(/Backups are managed by Talim/i)).toBeTruthy();
   });
+
+  it("offers Report a problem to any role that can open it", () => {
+    withPermissions([]);
+    render(<DataSystemSection />);
+    expect(screen.getByRole("button", { name: /Report a problem/ })).toBeTruthy();
+  });
 });

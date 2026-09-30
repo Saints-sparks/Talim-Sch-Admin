@@ -11,6 +11,7 @@
 import { api } from "@/lib/apiClient";
 import type { Schema } from "@/types/apiContract";
 import type { GradeBand } from "@/types/gradingContract";
+import type { OfficeHours } from "@/types/round4Contract";
 import type {
   UpdateAcademicSettingsPayload,
   UpdateFinanceSettingsPayload,
@@ -24,8 +25,12 @@ export type UpdateSchoolProfileDto = UpdateSchoolProfilePayload;
 export type UpdateReceiptSettingsDto = UpdateReceiptSettingsPayload;
 /** Fields `PATCH /settings/finance` accepts (the backend DTO). */
 export type UpdateFinanceSettingsDto = UpdateFinanceSettingsPayload;
-/** Fields `PATCH /settings/academic` accepts (the backend DTO). */
-export type UpdateAcademicSettingsDto = UpdateAcademicSettingsPayload;
+/**
+ * Fields `PATCH /settings/academic` accepts (the backend DTO), plus Round 4
+ * §36 `officeHours` (hand-written until the generated contract has it; `null`
+ * clears them).
+ */
+export type UpdateAcademicSettingsDto = UpdateAcademicSettingsPayload & { officeHours?: OfficeHours | null };
 
 const BASE = "/settings";
 
@@ -84,7 +89,15 @@ export type SchoolPeriod = Schema<"AcademicPeriodResponseDto">;
  * in defaults (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods; the
  * A–F scale and a pass mark of 50), so every field is always present.
  */
-export type AcademicSettings = Schema<"AcademicSettingsDto">;
+export type AcademicSettings = Schema<"AcademicSettingsDto"> & {
+  /**
+   * Round 4 §36: when the school office is open, or null / absent when the
+   * school hasn't set it. Hand-written until the generated contract has it.
+   */
+  officeHours?: OfficeHours | null;
+};
+
+export type { OfficeHours };
 
 /** Body of `GET` and `PATCH /settings/academic`. */
 export type AcademicSettingsResponse = Schema<"AcademicSettingsResponseDto">;

@@ -5,6 +5,7 @@
  */
 import { ChatRoomType } from "@/types/chat.types";
 import type { ChatRoom, ChatRoomLastMessage, Participant } from "@/types/chat.types";
+import type { ChatRoomCategory, RoomAdmin } from "@/types/round4Contract";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { idOf } from "./messages";
 
@@ -56,6 +57,12 @@ export interface DisplayChatRoom {
   description?: string;
   avatarUrl?: string;
   createdBy?: string;
+  /** What the room is to me: the API's `category`, or worked out from the room when it has none. */
+  category: ChatRoomCategory;
+  /** One line under the name, e.g. "Office thread · Tolu Ade"; absent when there is nothing useful to say. */
+  subtitle?: string;
+  /** A teacher's thread with the school office (members are managed by the server). */
+  isOffice: boolean;
 }
 
 /**
@@ -125,12 +132,20 @@ function normalizeLastMessage(raw: unknown): ChatRoomLastMessage | undefined {
   };
 }
 
-/** Reads a room from REST or `chat-rooms-update` (`_id` or the `roomId` alias). */
+/**
+ * Reads a room from REST or `chat-rooms-update` (`_id` or the `roomId` alias).
+ * The Round 4 fields (`category`, `subtitle`, `callPhone`, `admins`) are set
+ * only when the payload carries them, so a mutation response without them
+ * doesn't wipe what the list already has (see {@link upsertRoom}).
+ *
+ * @param raw - A room in any of the shapes the API and socket send.
+ * @returns The room.
+ */
 export function normalizeRoom(raw: unknown): ChatRoom {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const room = rec(r.data || r.chatRoom || r.room || r);
   const id = idOf(room._id) || idOf(room.roomId) || idOf(room.id);
-  return {
+  const normalized = {
     ...room,
     _id: id,
     roomId: id,
@@ -141,7 +156,110 @@ export function normalizeRoom(raw: unknown): ChatRoom {
     avatarUrl: typeof room.avatarUrl === "string" && room.avatarUrl ? room.avatarUrl : undefined,
     lastMessage: normalizeLastMessage(room.lastMessage),
     unreadCount: Number(room.unreadCount) || 0,
+    category: isRoomCategory(room.category) ? room.category : undefined,
+    subtitle: typeof room.subtitle === "string" && room.subtitle.trim() ? room.subtitle.trim() : undefined,
+    callPhone: typeof room.callPhone === "string" && room.callPhone ? room.callPhone : null,
+    admins: normalizeAdmins(room.admins),
   } as ChatRoom;
+  // Absent means "not sent": leave the keys off so merging keeps known values.
+  (["category", "subtitle", "admins"] as const).forEach((key) => {
+    if (normalized[key] === undefined) delete normalized[key];
+  });
+  if (!("callPhone" in room)) delete normalized.callPhone;
+  return normalized;
+}
+
+/**
+ * Reads the room view's `admins` (Round 4 group info).
+ *
+ * @param value - `admins` from a payload: `{ id, name }` entries (a bare id or `_id` is accepted).
+ * @returns The admins with an id, or undefined when the payload has no list.
+ */
+export function normalizeAdmins(value: unknown): RoomAdmin[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .map((entry) => {
+      const r = rec(entry);
+      const id = typeof entry === "string" ? entry : idOf(r.id) || idOf(r._id) || idOf(r.userId);
+      return { id, name: str(r.name) ?? "" };
+    })
+    .filter((admin) => admin.id);
+}
+
+/**
+ * Whether a person is one of the group's admins.
+ *
+ * @param room - The room (its `admins`, when the API sent them).
+ * @param userId - The person.
+ * @returns True when listed in `admins`.
+ */
+export function isGroupAdmin(room: Pick<ChatRoom, "admins"> | null | undefined, userId: string): boolean {
+  return Boolean(userId) && Boolean(room?.admins?.some((admin) => admin.id === userId));
+}
+
+const ROOM_CATEGORIES: readonly ChatRoomCategory[] = ["parent", "colleague", "class_group", "office", "group"];
+
+/**
+ * Narrows a payload value to a known room category (an unknown one is ignored).
+ *
+ * @param value - `category` from a payload.
+ * @returns True for one of {@link ROOM_CATEGORIES}.
+ */
+function isRoomCategory(value: unknown): value is ChatRoomCategory {
+  return typeof value === "string" && (ROOM_CATEGORIES as readonly string[]).includes(value);
+}
+
+/**
+ * Whether a room is a teacher's office thread (Round 4 §28). Its members are
+ * the teacher, every admin and every sub-admin with `manage:messages`; the
+ * server keeps that list, so nobody adds, removes or leaves.
+ *
+ * @param room - A room, or its type and category.
+ * @returns True for `type: 'office'` or `category: 'office'`.
+ */
+export function isOfficeRoom(room: Pick<ChatRoom, "type"> & Partial<Pick<ChatRoom, "category">> | null | undefined): boolean {
+  return Boolean(room) && (room!.type === ChatRoomType.OFFICE || room!.category === "office");
+}
+
+/**
+ * What a room is to the viewer: the API's `category` (Round 4 §27), or, from
+ * an API that doesn't send one yet, a guess from the room type and the other
+ * person's role.
+ *
+ * @param room - The room.
+ * @param currentUserId - The viewer.
+ * @returns The category.
+ */
+export function roomCategory(room: ChatRoom, currentUserId: string): ChatRoomCategory {
+  if (room.category) return room.category;
+  switch (room.type) {
+    case ChatRoomType.OFFICE:
+      return "office";
+    case ChatRoomType.ONE_TO_ONE:
+      return otherParticipant(room, currentUserId)?.role === "parent" ? "parent" : "colleague";
+    case ChatRoomType.CLASS_GROUP:
+    case ChatRoomType.COURSE_GROUP:
+      return "class_group";
+    default:
+      return "group";
+  }
+}
+
+/** The start of an admin's office-thread subtitle (Round 4 §27). */
+export const OFFICE_SUBTITLE_PREFIX = "Office thread · ";
+
+/**
+ * The teacher an office thread belongs to, for its name in the list.
+ *
+ * @param room - An office room.
+ * @returns The teacher's name, from the members, else the API's subtitle or the room name.
+ */
+export function officeTeacherName(room: ChatRoom): string {
+  const teacher = room.participants.find((p) => p.role === "teacher");
+  const fromMembers = teacher ? participantName(teacher) || teacher.email : "";
+  if (fromMembers) return fromMembers;
+  if (room.subtitle?.startsWith(OFFICE_SUBTITLE_PREFIX)) return room.subtitle.slice(OFFICE_SUBTITLE_PREFIX.length).trim();
+  return room.name || "Teacher";
 }
 
 /** The time a room last had activity — the sidebar sort key. */
@@ -168,12 +286,21 @@ export function otherParticipant(room: ChatRoom, currentUserId: string): Partici
 
 /**
  * Replaces the room list with a fresh server list. Rooms the user isn't a
- * member of are dropped; the room being viewed keeps an unread count of 0.
+ * member of are dropped, except office threads (the server lists them for
+ * every office staff member before adding them); the room being viewed keeps
+ * an unread count of 0.
+ *
+ * @param rawRooms - `GET /chat/rooms` or `chat-rooms-update`, in any payload shape.
+ * @param currentUserId - The viewer.
+ * @param viewingRoomId - The room open and focused on screen, if any.
+ * @returns The rooms, newest activity first.
  */
 export function mergeRoomList(rawRooms: unknown[], currentUserId: string, viewingRoomId: string | null): ChatRoom[] {
   const rooms = rawRooms
     .map(normalizeRoom)
-    .filter((room) => room._id && isRoomMember(room, currentUserId))
+    // An office thread is listed for every admin even before the server adds
+    // them to its members (it does so on the next read or post).
+    .filter((room) => room._id && (isRoomMember(room, currentUserId) || isOfficeRoom(room)))
     .map((room) => (room._id === viewingRoomId ? { ...room, unreadCount: 0 } : room));
   return sortRooms(rooms);
 }
@@ -215,10 +342,20 @@ export interface RoomUpdatedEvent {
   name?: string;
   description?: string | null;
   avatarUrl?: string | null;
+  /** Not sent yet; applied when a later API includes the group's admins. */
+  admins?: unknown;
   updatedBy?: string;
 }
 
-/** Applies `room-updated` to the list (name, description, picture). */
+/**
+ * Applies `room-updated` to the list: name, description, picture, and the
+ * admins when the event carries them. Every open view of the room (header,
+ * group info) reads the list, so they update live.
+ *
+ * @param rooms - The room list.
+ * @param event - The socket event.
+ * @returns A new list, or the same one when the room isn't in it.
+ */
 export function applyRoomUpdated(rooms: ChatRoom[], event: RoomUpdatedEvent): ChatRoom[] {
   const roomId = idOf(event?.roomId);
   if (!roomId || !rooms.some((r) => r._id === roomId)) return rooms;
@@ -228,6 +365,8 @@ export function applyRoomUpdated(rooms: ChatRoom[], event: RoomUpdatedEvent): Ch
     if (typeof event.name === "string" && event.name) next.name = event.name;
     if ("description" in event) next.description = event.description || undefined;
     if ("avatarUrl" in event) next.avatarUrl = event.avatarUrl || undefined;
+    const admins = normalizeAdmins(event.admins);
+    if (admins) next.admins = admins;
     return next;
   });
 }
@@ -274,19 +413,52 @@ export const GROUP_MANAGER_ROLES = ["teacher", "school_admin", "school_sub_admin
 /** Rooms whose members may leave on their own. */
 export const LEAVABLE_ROOM_TYPES: string[] = [ChatRoomType.CUSTOM_GROUP, ChatRoomType.PARENT_GROUP];
 
-/** Whether to show group controls: never for direct messages; managers by role, or the creator. */
+/**
+ * Whether to show group controls (add and remove members, and the picture):
+ * never for direct messages or office threads, whose members the server
+ * manages; managers by role, or the creator. The name and description follow
+ * {@link canEditRoomDetails}.
+ *
+ * @param room - The room's type, creator and (when known) category.
+ * @param user - The viewer's id and role.
+ * @returns True when the controls are offered (the server has the final say).
+ */
 export function canManageRoom(
-  room: Pick<ChatRoom, "type" | "createdBy"> | null | undefined,
+  room: (Pick<ChatRoom, "type" | "createdBy"> & Partial<Pick<ChatRoom, "category">>) | null | undefined,
   user: { id: string; role?: string | null }
 ): boolean {
-  if (!room || room.type === ChatRoomType.ONE_TO_ONE) return false;
+  if (!room || room.type === ChatRoomType.ONE_TO_ONE || isOfficeRoom(room)) return false;
   if (user.role && GROUP_MANAGER_ROLES.includes(user.role)) return true;
   return Boolean(user.id) && idOf(room.createdBy) === user.id;
 }
 
-/** Whether "Leave group" is offered. */
-export function canLeaveRoom(room: Pick<ChatRoom, "type"> | null | undefined): boolean {
-  return Boolean(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
+/**
+ * Whether the group's name and description can be edited: school staff and
+ * whoever may manage the group (see {@link canManageRoom}), and the group's
+ * admins; never a direct message or an office thread. The server has the
+ * final say (`PATCH /chat/rooms/:id`).
+ *
+ * @param room - The room, with its `admins` when known.
+ * @param user - The viewer's id and role.
+ * @returns True when the name and description editors are offered.
+ */
+export function canEditRoomDetails(
+  room: (Pick<ChatRoom, "type" | "createdBy"> & Partial<Pick<ChatRoom, "category" | "admins">>) | null | undefined,
+  user: { id: string; role?: string | null }
+): boolean {
+  if (!room || room.type === ChatRoomType.ONE_TO_ONE || isOfficeRoom(room)) return false;
+  return canManageRoom(room, user) || isGroupAdmin(room, user.id);
+}
+
+/**
+ * Whether "Leave group" is offered: only in rooms members may leave, never an
+ * office thread.
+ *
+ * @param room - The room's type and (when known) category.
+ * @returns True when the viewer may leave.
+ */
+export function canLeaveRoom(room: (Pick<ChatRoom, "type"> & Partial<Pick<ChatRoom, "category">>) | null | undefined): boolean {
+  return Boolean(room) && !isOfficeRoom(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
 }
 
 /**
@@ -353,13 +525,28 @@ function participantName(p: Participant): string {
   return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
 }
 
-/** The sidebar / header shape for a room. */
+/**
+ * The sidebar / header shape for a room. An office thread is named after its
+ * teacher, with "Office thread · {teacher}" as its subtitle.
+ *
+ * @param room - The room.
+ * @param currentUserId - The viewer (for a direct message's other person).
+ * @returns What the list and the thread header render.
+ */
 export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayChatRoom {
   const isGroup = room.type !== ChatRoomType.ONE_TO_ONE;
+  const isOffice = isOfficeRoom(room);
+  const category = roomCategory(room, currentUserId);
   let displayName = room.name || (isGroup ? "Group Chat" : "Chat");
+  let subtitle = room.subtitle;
   let isOnline = false;
 
-  if (!isGroup) {
+  if (isOffice) {
+    // Listed under the teacher it belongs to.
+    const teacherName = officeTeacherName(room);
+    displayName = teacherName;
+    subtitle = room.subtitle || `${OFFICE_SUBTITLE_PREFIX}${teacherName}`;
+  } else if (!isGroup) {
     const other = otherParticipant(room, currentUserId);
     if (other) {
       displayName = participantName(other) || other.email || "User";
@@ -397,7 +584,7 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
       isOnline: Boolean(p.isOnline),
     })),
     avatarInfo:
-      isGroup && room.avatarUrl
+      isGroup && !isOffice && room.avatarUrl
         ? { type: "image", value: room.avatarUrl, bgColor: generateColorFromString(displayName) }
         : {
             type: "initials",
@@ -409,6 +596,9 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
     description: isGroup ? room.description : undefined,
     avatarUrl: isGroup ? room.avatarUrl : undefined,
     createdBy: room.createdBy || undefined,
+    category,
+    subtitle,
+    isOffice,
   };
 }
 

@@ -170,7 +170,7 @@ describe("GroupInfoModal", () => {
   it("clears the description when it is saved empty", async () => {
     const user = userEvent.setup();
     open();
-    await user.click(screen.getByRole("button", { name: /Edit$/ }));
+    await user.click(screen.getByRole("button", { name: "Edit group description" }));
     await user.clear(screen.getByLabelText("Group description"));
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(updateRoomDetails).toHaveBeenCalledWith("r1", { description: null }));

@@ -14,6 +14,7 @@ import ThreadNotices from "./ThreadNotices";
 import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { formatDateSeparator } from "@/lib/chat/dates";
+import { OFFICE_THREAD_NOTE } from "./group-info/groupInfo";
 import { Loader2, MessageCircle } from "lucide-react";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import {
@@ -57,6 +58,19 @@ interface GroupChatProps {
   chats: UseChatsReturn;
 }
 
+/**
+ * A group thread (every room but a direct message, office threads included):
+ * header, messages with date separators, reply bar and composer. The header
+ * shows the room's subtitle and description; an office thread explains the
+ * shared inbox instead.
+ *
+ * @param props.room - The room as the list shows it.
+ * @param props.replyingMessage - The message being replied to, if any.
+ * @param props.setReplyingMessage - Starts or cancels a reply.
+ * @param props.onBack - Back to the list (mobile).
+ * @param props.chats - The chat state from `useChats`.
+ * @returns The thread.
+ */
 export default function GroupChat({
   replyingMessage,
   setReplyingMessage,
@@ -177,8 +191,8 @@ export default function GroupChat({
       <ChatHeader
         avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
         name={roomInfo.name}
-        status="Group chat"
-        subtext={roomInfo.participantList}
+        status={room.subtitle || "Group chat"}
+        subtext={room.isOffice ? OFFICE_THREAD_NOTE : room.description || roomInfo.participantList}
         participants={room.participants}
         currentUserId={currentUserId}
         onBack={onBack}

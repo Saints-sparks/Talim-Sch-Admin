@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Circle } from "lucide-react";
-import { evaluatePassword } from "@/lib/passwordPolicy";
+import { evaluatePassword, PASSWORD_RULES, type PasswordRule } from "@/lib/passwordPolicy";
 
 /**
  * Live checklist of the password rules, announced politely to screen readers
@@ -9,23 +9,41 @@ import { evaluatePassword } from "@/lib/passwordPolicy";
  *
  * @param props.password - The password being typed.
  * @param props.id - Element id, for `aria-describedby` on the input.
+ * @param props.rules - The rules to list (from `usePasswordPolicy`); the
+ *   built-in copy of the backend policy when omitted.
+ * @param props.note - A line under the list for what only the server checks,
+ *   e.g. "It can't be one of your last 3 passwords."
+ * @returns The checklist.
  */
-export default function PasswordRequirements({ password, id }: { password: string; id?: string }) {
-  const rules = evaluatePassword(password);
+export default function PasswordRequirements({
+  password,
+  id,
+  rules = PASSWORD_RULES,
+  note,
+}: {
+  password: string;
+  id?: string;
+  rules?: PasswordRule[];
+  note?: string | null;
+}) {
+  const evaluated = evaluatePassword(password, rules);
   return (
-    <ul id={id} aria-live="polite" className="mt-2 grid gap-1.5 text-xs sm:grid-cols-2">
-      {rules.map((rule) => (
-        <li
-          key={rule.id}
-          className={`flex items-center gap-1.5 ${rule.met ? "text-emerald-700 dark:text-emerald-400" : "text-gray-500 dark:text-slate-400"}`}
-        >
-          {rule.met ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <Circle className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-          <span>
-            <span className="sr-only">{rule.met ? "Met: " : "Not yet: "}</span>
-            {rule.label}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div id={id}>
+      <ul aria-live="polite" className="mt-2 grid gap-1.5 text-xs sm:grid-cols-2">
+        {evaluated.map((rule) => (
+          <li
+            key={rule.id}
+            className={`flex items-center gap-1.5 ${rule.met ? "text-emerald-700 dark:text-emerald-400" : "text-gray-500 dark:text-slate-400"}`}
+          >
+            {rule.met ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <Circle className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+            <span>
+              <span className="sr-only">{rule.met ? "Met: " : "Not yet: "}</span>
+              {rule.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {note && <p className="mt-1.5 text-xs text-gray-500 dark:text-slate-400">{note}</p>}
+    </div>
   );
 }

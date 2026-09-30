@@ -75,5 +75,62 @@ describe("SchoolDaySection", () => {
     const sent = mockSave.mock.calls[0][0];
     expect(sent.periods.map((p: { key: string }) => p.key)).toEqual(["p1", "brk", "p2"]);
     expect(sent.periods[2]).toMatchObject({ startTime: "09:00", endTime: "09:40", label: "Period 2" });
+    // Office hours weren't touched, so they aren't sent.
+    expect(sent).not.toHaveProperty("officeHours");
+  });
+
+  describe("office hours", () => {
+    it("block saving when they end before they start, on the field", () => {
+      render(<SchoolDaySection canManage />);
+      fireEvent.change(screen.getByLabelText("Office hours start"), { target: { value: "16:00" } });
+      const end = screen.getByLabelText("Office hours end");
+      fireEvent.change(end, { target: { value: "08:00" } });
+      fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(mockSave).not.toHaveBeenCalled();
+      expect(end).toHaveAttribute("aria-invalid", "true");
+      expect(document.getElementById(end.getAttribute("aria-describedby") ?? "")).toHaveTextContent(
+        "Office hours must end after they start."
+      );
+      expect(screen.getByRole("alert")).toHaveTextContent(/Fix the highlighted fields/);
+    });
+
+    it("need both times", () => {
+      render(<SchoolDaySection canManage />);
+      fireEvent.change(screen.getByLabelText("Office hours start"), { target: { value: "08:00" } });
+      fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(mockSave).not.toHaveBeenCalled();
+      expect(screen.getByLabelText("Office hours end")).toHaveAttribute("aria-invalid", "true");
+    });
+
+    it("save through PATCH /settings/academic", () => {
+      render(<SchoolDaySection canManage />);
+      fireEvent.change(screen.getByLabelText("Office hours start"), { target: { value: "08:00" } });
+      fireEvent.change(screen.getByLabelText("Office hours end"), { target: { value: "15:30" } });
+      fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ officeHours: { start: "08:00", end: "15:30" } }));
+    });
+
+    it("clear to null", () => {
+      mockUseAcademicSettings.mockReturnValue({
+        data: { ...settings, officeHours: { start: "08:00", end: "15:00" } },
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: jest.fn(),
+      });
+      render(<SchoolDaySection canManage />);
+      expect(screen.getByLabelText("Office hours start")).toHaveValue("08:00");
+      fireEvent.click(screen.getByRole("button", { name: "Clear office hours" }));
+      expect(screen.getByLabelText("Office hours start")).toHaveValue("");
+      fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ officeHours: null }));
+    });
+
+    it("are read-only without manage:settings", () => {
+      render(<SchoolDaySection canManage={false} />);
+      expect(screen.getByLabelText("Office hours start")).toBeDisabled();
+      expect(screen.getByLabelText("Office hours end")).toBeDisabled();
+    });
   });
 });

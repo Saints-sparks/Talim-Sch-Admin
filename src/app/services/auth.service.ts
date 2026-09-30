@@ -8,6 +8,7 @@ import type {
   UpdateProfilePayload,
   VerifyResetCodePayload,
 } from "@/types/apiPayloads";
+import type { AuthSession, PasswordPolicy, RevokeOtherSessionsResponse } from "@/types/round4Contract";
 
 /** Body for `POST /auth/login`. */
 export interface LoginCredentials {
@@ -221,4 +222,39 @@ export const authService = {
    */
   updateAvatarUrl: (avatarUrl: string): Promise<{ userAvatar: string }> =>
     api.put<{ userAvatar: string }>(API_URLS.AUTH.UPDATE_AVATAR, { avatarUrl }),
+
+  /**
+   * The signed-in user's devices (Round 4 §34), one per active refresh token.
+   * The refresh cookie goes with the request, so the server can mark this one
+   * `current`.
+   *
+   * @returns The sessions, in the server's order.
+   */
+  listSessions: (): Promise<AuthSession[]> => api.get<AuthSession[]>(API_URLS.AUTH.SESSIONS),
+
+  /**
+   * Signs one of the user's own sessions out; its next refresh fails with 401.
+   *
+   * @param id - The session's id.
+   * @returns The API's answer (nothing the app reads).
+   */
+  revokeSession: (id: string): Promise<unknown> =>
+    api.delete(API_URLS.AUTH.SESSION.replace(":id", encodeURIComponent(id))),
+
+  /**
+   * Signs out every session but this one.
+   *
+   * @returns How many were signed out.
+   */
+  revokeOtherSessions: (): Promise<RevokeOtherSessionsResponse> =>
+    api.post<RevokeOtherSessionsResponse>(API_URLS.AUTH.REVOKE_OTHER_SESSIONS),
+
+  /**
+   * The password rules the server enforces (Round 4 §34). Public: no token
+   * is sent and a failure never triggers a refresh.
+   *
+   * @returns The policy as the server sends it (see `normalizePasswordPolicy`).
+   */
+  getPasswordPolicy: (): Promise<PasswordPolicy> =>
+    api.get<PasswordPolicy>(API_URLS.AUTH.PASSWORD_POLICY, { skipAuth: true }),
 };

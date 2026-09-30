@@ -17,8 +17,10 @@ import {
 } from "@/components/settings/schoolDay/bellSchedule";
 import {
   isSchoolDayDirty,
+  mapServerFieldErrors,
   toAcademicPayload,
   toSchoolDayValues,
+  validateOfficeHours,
   validateSchoolDay,
 } from "@/components/settings/schoolDay/schoolDayForm";
 import type { AcademicSettings } from "@/app/services/school-settings.service";
@@ -199,6 +201,62 @@ describe("school day form", () => {
       registerCloseTime: "11:00",
       registerEditUntil: "16:00",
       periods: saved.periods,
+    });
+  });
+});
+
+describe("office hours (Round 4 §36)", () => {
+  const blank = { officeHoursStart: "", officeHoursEnd: "" };
+
+  it("are optional: both empty is fine", () => {
+    expect(validateOfficeHours("", "")).toEqual({});
+    expect(validateSchoolDay({ ...toSchoolDayValues(saved), ...blank }).fields).toEqual({});
+  });
+
+  it("need both times", () => {
+    expect(validateOfficeHours("08:00", "")).toEqual({ officeHoursEnd: expect.stringMatching(/closes/) });
+    expect(validateOfficeHours("", "16:00")).toEqual({ officeHoursStart: expect.stringMatching(/opens/) });
+  });
+
+  it("must end after they start", () => {
+    expect(validateOfficeHours("08:00", "16:00")).toEqual({});
+    expect(validateOfficeHours("16:00", "08:00").officeHoursEnd).toBe("Office hours must end after they start.");
+    expect(validateOfficeHours("09:00", "09:00").officeHoursEnd).toBe("Office hours must end after they start.");
+  });
+
+  it("reject a malformed time", () => {
+    expect(validateOfficeHours("8am", "16:00").officeHoursStart).toMatch(/Enter a time/);
+  });
+
+  it("start from the saved hours", () => {
+    const values = toSchoolDayValues({ ...saved, officeHours: { start: "07:30", end: "15:00" } });
+    expect(values.officeHoursStart).toBe("07:30");
+    expect(values.officeHoursEnd).toBe("15:00");
+    expect(toSchoolDayValues(saved)).toMatchObject(blank);
+  });
+
+  it("are sent only when they change, and null clears them", () => {
+    const withHours = { ...saved, officeHours: { start: "07:30", end: "15:00" } };
+    // Unchanged: left out, so the rest saves against an API without office hours.
+    expect(toAcademicPayload(toSchoolDayValues(withHours), withHours)).not.toHaveProperty("officeHours");
+    expect(isSchoolDayDirty(toSchoolDayValues(withHours), withHours)).toBe(false);
+
+    const set = { ...toSchoolDayValues(saved), officeHoursStart: "08:00", officeHoursEnd: "16:00" };
+    expect(toAcademicPayload(set, saved).officeHours).toEqual({ start: "08:00", end: "16:00" });
+    expect(isSchoolDayDirty(set, saved)).toBe(true);
+
+    const cleared = { ...toSchoolDayValues(withHours), ...blank };
+    expect(toAcademicPayload(cleared, withHours).officeHours).toBeNull();
+    expect(isSchoolDayDirty(cleared, withHours)).toBe(true);
+  });
+
+  it("take the API's messages", () => {
+    expect(mapServerFieldErrors({ "officeHours.start": "must be HH:mm", timezone: "is unknown" })).toEqual({
+      officeHoursStart: "must be HH:mm",
+      timezone: "is unknown",
+    });
+    expect(mapServerFieldErrors({ officeHours: "end must be after start" })).toEqual({
+      officeHoursEnd: "end must be after start",
     });
   });
 });

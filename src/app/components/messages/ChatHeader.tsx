@@ -6,6 +6,7 @@ import {
   Info,
   UserPlus,
   Users,
+  Building2,
 } from "lucide-react";
 import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
@@ -15,7 +16,7 @@ import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { useAuth } from "@/context/AuthContext";
 import { useChatsContext } from "@/context/ChatsContext";
-import { canManageRoom } from "@/lib/chat/rooms";
+import { canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
 import { ChatRoomType } from "@/types/chat.types";
 import type { ChatParticipant } from "@/types/chat.types";
 import {
@@ -90,6 +91,14 @@ interface ChatHeaderProps {
   onAddParticipants?: () => void; // Callback after adding participants
 }
 
+/**
+ * A thread's header: back button (mobile), avatar, name, status and subtext,
+ * and the group menu. Office threads (Round 4 §28) get the building icon and
+ * no Add control, since the server keeps their members.
+ *
+ * @param props - The room's display details; see {@link ChatHeaderProps}.
+ * @returns The header, with its info, members and add-member dialogs.
+ */
 export default function ChatHeader({
   avatar,
   name,
@@ -112,7 +121,9 @@ export default function ChatHeader({
   const { user } = useAuth();
   const { chatRooms } = useChatsContext();
   const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
-  // Group controls: managers only, never in direct messages (the server has the final say).
+  // An office thread's members are kept by the server: no adding, removing or leaving.
+  const isOffice = isOfficeRoom(room ?? { type: (roomType as ChatRoomType) || ChatRoomType.CUSTOM_GROUP });
+  // Group controls: managers only, never in direct messages or office threads (the server has the final say).
   const canManage =
     isGroup &&
     canManageRoom(room ?? { type: (roomType as ChatRoomType) || ChatRoomType.CUSTOM_GROUP, createdBy: "" }, {
@@ -150,15 +161,24 @@ export default function ChatHeader({
 
         {/* Avatar */}
         <div className="relative">
-          <Avatar className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0">
-            <AvatarImage src={avatar} />
-            <AvatarFallback 
-              className="text-white font-medium text-sm"
-              style={{ backgroundColor: generateColorFromString(name) }}
+          {isOffice ? (
+            <div
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+              aria-hidden
             >
-              {displayInitials}
-            </AvatarFallback>
-          </Avatar>
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+          ) : (
+            <Avatar className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0">
+              <AvatarImage src={avatar} />
+              <AvatarFallback
+                className="text-white font-medium text-sm"
+                style={{ backgroundColor: generateColorFromString(name) }}
+              >
+                {displayInitials}
+              </AvatarFallback>
+            </Avatar>
+          )}
           {/* Online Indicator */}
           {(status === "Online" || status === "Active Now") && (
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full"></span>
@@ -222,8 +242,12 @@ export default function ChatHeader({
               {isGroup && chatRoomId && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors">
-                    <MoreVertical size={18} className="text-gray-600" />
+                  <button
+                    type="button"
+                    aria-label="More options"
+                    className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <MoreVertical size={18} className="text-gray-600" aria-hidden />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">

@@ -8,6 +8,7 @@ import { ModalShell, OutlineBtn, PrimaryBtn } from "@/components/settings/ui";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { isPasswordValid } from "@/lib/passwordPolicy";
+import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
 import { logger } from "@/lib/logger";
 
 type Field = "currentPassword" | "newPassword" | "confirmPassword";
@@ -24,13 +25,16 @@ const FIELDS: Array<{ key: Field; label: string; autoComplete: string }> = [
  * Goes through the auth context rather than the settings service: the server
  * rotates the session and returns a new access token, and only the context can
  * adopt it — the old call left the tab holding a token the server had revoked.
- * The rules shown are the shared password policy, so nothing that passes here
- * is rejected by the server.
+ * The rules shown and checked are the server's policy
+ * (`GET /auth/password-policy`), so nothing that passes here is rejected for
+ * its shape; reuse of an old password is only checked by the server.
  *
  * @param props.onClose - Closes the modal.
+ * @returns The dialog.
  */
 export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const { changePassword } = useAuth();
+  const { rules, historyNote } = usePasswordPolicy();
   const [values, setValues] = useState<Record<Field, string>>({
     currentPassword: "",
     newPassword: "",
@@ -47,7 +51,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const mismatch = values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
   const canSubmit =
     values.currentPassword.length > 0 &&
-    isPasswordValid(values.newPassword) &&
+    isPasswordValid(values.newPassword, rules) &&
     values.confirmPassword.length > 0 &&
     !mismatch &&
     !saving;
@@ -113,7 +117,12 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         ))}
 
-        <PasswordRequirements password={values.newPassword} id="settings-password-rules" />
+        <PasswordRequirements
+          password={values.newPassword}
+          id="settings-password-rules"
+          rules={rules}
+          note={historyNote}
+        />
 
         <div className="flex gap-3 pt-2">
           <OutlineBtn onClick={onClose} disabled={saving} className="flex-1 justify-center">
