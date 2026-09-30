@@ -227,6 +227,18 @@ function GuideCard({
 }
 
 /** How often, and for how long, the first-visit guide waits for its page's targets. */
+/**
+ * Where the floating Guide button sits. Messages fills the window with the
+ * composer along its bottom edge, so there the button rises above it and
+ * never covers Send; elsewhere it keeps the bottom-right corner.
+ *
+ * @param pathname - The current route.
+ * @returns The Tailwind position classes.
+ */
+export function guideButtonPosition(pathname: string | null | undefined): string {
+  return pathname === "/messages" || pathname?.startsWith("/messages/") ? "bottom-24 right-5" : "bottom-5 right-5";
+}
+
 const GUIDE_POLL_MS = 250;
 const GUIDE_WAIT_MS = 10_000;
 
@@ -322,7 +334,7 @@ export default function AppGuide() {
           setStepIndex(0);
           setIsOpen(true);
         }}
-        className="fixed bottom-5 right-5 z-[900] inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/90 px-4 py-3 text-sm font-bold text-[#003366] shadow-xl shadow-blue-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 dark:bg-[#0B1220]/90 dark:text-[#F4B740]"
+        className={`fixed ${guideButtonPosition(pathname)} z-[900] inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/90 px-4 py-3 text-sm font-bold text-[#003366] shadow-xl shadow-blue-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 dark:bg-[#0B1220]/90 dark:text-[#F4B740]`}
       >
         <HelpCircle className="h-4 w-4" />
         Guide

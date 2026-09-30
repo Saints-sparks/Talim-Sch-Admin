@@ -7,7 +7,7 @@
  */
 import React from "react";
 import { act, render, screen } from "@testing-library/react";
-import AppGuide from "@/components/onboarding/AppGuide";
+import AppGuide, { guideButtonPosition } from "@/components/onboarding/AppGuide";
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/settings" }));
 jest.mock("next/image", () => ({ __esModule: true, default: () => null }));
@@ -47,5 +47,16 @@ describe("AppGuide first visit", () => {
     await wait(300);
     expect(screen.getByRole("button", { name: "Close guide" })).toBeInTheDocument();
     expect(Object.keys(localStorage).some((k) => k.endsWith("sub-1:auto-opened"))).toBe(true);
+  });
+});
+
+describe("the Guide button's place", () => {
+  it("rises above the composer on Messages, so it never covers Send", () => {
+    expect(guideButtonPosition("/messages")).toBe("bottom-24 right-5");
+    expect(guideButtonPosition("/messages/")).toBe("bottom-24 right-5");
+  });
+
+  it("keeps the bottom-right corner everywhere else", () => {
+    for (const path of ["/settings", "/dashboard", "/messages-archive", null]) expect(guideButtonPosition(path)).toBe("bottom-5 right-5");
   });
 });
