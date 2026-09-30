@@ -179,7 +179,7 @@ export default function GroupChat({
         avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
         name={roomInfo.name}
         status={room.subtitle || "Group chat"}
-        subtext={room.isOffice ? OFFICE_THREAD_NOTE : roomInfo.participantList}
+        subtext={room.isOffice ? OFFICE_THREAD_NOTE : room.description || roomInfo.participantList}
         participants={room.participants}
         currentUserId={currentUserId}
         onBack={onBack}

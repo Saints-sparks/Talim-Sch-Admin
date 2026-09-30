@@ -1,6 +1,6 @@
 import type { ChatReplyTo } from "@/components/chat-kit";
 import type { CreateChatRoomPayload, CreateGroupChatPayload } from "@/types/apiPayloads";
-import type { ChatRoomCategory } from "@/types/round4Contract";
+import type { ChatRoomCategory, RoomAdmin } from "@/types/round4Contract";
 // types/chat.types.ts
 
 export interface User {
@@ -91,6 +91,8 @@ export interface ChatRoom {
   subtitle?: string;
   /** Round 4 §27: teachers only; null for admins. */
   callPhone?: string | null;
+  /** Round 4 group info: the group's admins (hand-written until the generated contract has it). */
+  admins?: RoomAdmin[];
 }
 
 

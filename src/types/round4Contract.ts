@@ -30,6 +30,17 @@ export interface RoomViewAdditions {
   callPhone: string | null;
 }
 
+/**
+ * A group admin (Round 4 group info, not yet in the written contract): the
+ * room view's `admins: { id, name }[]`. Group admins may edit the group's
+ * name and description like school staff.
+ */
+export interface RoomAdmin {
+  /** The admin's user id. */
+  id: string;
+  name: string;
+}
+
 // ─── §28 Office inbox ─────────────────────────────────────────────────────────
 
 /**

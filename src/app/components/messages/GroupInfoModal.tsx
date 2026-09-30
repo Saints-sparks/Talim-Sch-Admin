@@ -22,7 +22,7 @@ import {
 import { useChatsContext } from "@/context/ChatsContext";
 import { useAuth } from "@/context/AuthContext";
 import { ChatRoomType } from "@/types/chat.types";
-import { canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
+import { canEditRoomDetails, canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
 import { chatService } from "@/app/services/chat.service";
 import { toast } from "@/components/CustomToast";
 import { getErrorMessage } from "@/lib/apiError";
@@ -54,10 +54,11 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
   const type = room?.type ?? roomType;
   const isGroup = Boolean(type) && type !== ChatRoomType.ONE_TO_ONE;
   const isOffice = isOfficeRoom(room ?? { type: type as ChatRoomType });
-  const canManage = isGroup && canManageRoom(room ?? { type: type as ChatRoomType, createdBy: "" }, {
-    id: currentUserId,
-    role: user?.role,
-  });
+  const viewer = { id: currentUserId, role: user?.role };
+  const roomRef = room ?? { type: type as ChatRoomType, createdBy: "" };
+  // Members and the picture: managers. Name and description: staff and group admins too.
+  const canManage = isGroup && canManageRoom(roomRef, viewer);
+  const canEditDetails = isGroup && canEditRoomDetails(roomRef, viewer);
   const groupName = isGroup ? room?.name || name : name;
   const pictureUrl = isGroup ? room?.avatarUrl || "" : avatar;
   // Shared media comes from this conversation's loaded messages.
@@ -171,7 +172,7 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   draft={nameDraft}
                   name={groupName}
                   saving={saving === "name"}
-                  canManage={canManage}
+                  canManage={canEditDetails}
                   onDraftChange={setNameDraft}
                   onStartEdit={() => {
                     setNameDraft(room?.name || groupName);
@@ -199,13 +200,14 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   />
                 )}
 
-                {isGroup && (
+                {/* Office threads and direct messages have no description. */}
+                {isGroup && !isOffice && (
                   <GroupDescriptionField
                     editing={editingDescription}
                     draft={descriptionDraft}
                     description={room?.description}
                     saving={saving === "description"}
-                    canManage={canManage}
+                    canManage={canEditDetails}
                     onDraftChange={setDescriptionDraft}
                     onStartEdit={() => {
                       setDescriptionDraft(room?.description ?? "");
