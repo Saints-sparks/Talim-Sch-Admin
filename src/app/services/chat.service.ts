@@ -172,7 +172,8 @@ class ChatService {
 
       let raw: Payload;
       try {
-        raw = JSON.parse(text);
+        // With the success envelope on, the room is under `data`.
+        raw = unwrapEnvelope(JSON.parse(text));
       } catch {
         throw new Error('Invalid JSON response from server');
       }
@@ -223,7 +224,8 @@ class ChatService {
         return [];
       }
 
-      const result = JSON.parse(text);
+      // With the success envelope on, the list is under `data`.
+      const result = unwrapEnvelope(JSON.parse(text));
       const rooms = Array.isArray(result) ? result : [];
       return rooms.map((room) => normalizeRoom(room));
     } catch (error) {
