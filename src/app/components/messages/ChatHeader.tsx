@@ -185,24 +185,27 @@ export default function ChatHeader({
           )}
         </div>
 
-        {/* Chat Info */}
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
+        {/* Chat info: a button, so the keyboard and screen readers can open it too. */}
+        <button
+          type="button"
+          className="flex-1 min-w-0 cursor-pointer rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           onClick={() => setIsModalOpen(true)}
+          aria-haspopup="dialog"
+          aria-label={`${name}: conversation info`}
         >
-          <div className="flex items-center gap-1">
-            <p className="font-medium text-sm sm:text-base text-gray-900 truncate">
+          <span className="flex items-center gap-1">
+            <span className="block font-medium text-sm sm:text-base text-gray-900 truncate">
               {name}
-            </p>
-            <Info size={14} className="text-gray-400 flex-shrink-0 hidden sm:block" />
-          </div>
+            </span>
+            <Info size={14} className="text-gray-400 flex-shrink-0 hidden sm:block" aria-hidden />
+          </span>
           {status && (
-            <p className="text-xs text-gray-500 truncate">{status}</p>
+            <span className="block text-xs text-gray-500 truncate">{status}</span>
           )}
           {displaySubtext && (
-            <p className="text-xs text-[#7B7B7B] truncate hidden sm:block">{displaySubtext}</p>
+            <span className="text-xs text-[#7B7B7B] truncate hidden sm:block">{displaySubtext}</span>
           )}
-        </div>
+        </button>
 
         {/* Action Icons */}
         <div className="flex items-center gap-1 sm:gap-3">

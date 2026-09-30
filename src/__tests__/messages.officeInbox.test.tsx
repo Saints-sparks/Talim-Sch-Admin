@@ -148,6 +148,17 @@ describe("ChatHeader for an office thread", () => {
     expect(screen.queryByRole("menuitem", { name: /Add Teachers/ })).not.toBeInTheDocument();
   });
 
+  it("opens the conversation info from the keyboard: the name is a button", async () => {
+    const user = userEvent.setup();
+    renderHeader("office-1", "office");
+    const trigger = screen.getByRole("button", { name: "Tola Teacher: conversation info" });
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    // The office room's own name titles its info.
+    expect(await screen.findByRole("dialog", { name: "School office info" })).toBeInTheDocument();
+  });
+
   it("keeps the Add control for an admin in an ordinary group", () => {
     renderHeader("group-1", "custom_group");
     expect(screen.getByTitle("Add Participants to Group")).toBeInTheDocument();
