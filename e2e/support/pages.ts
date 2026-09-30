@@ -34,6 +34,7 @@ export const ADMIN_PAGES: readonly PageSpec[] = [
   { path: "/transit/transfers", content: /No transfers found/, empty: true },
   { path: "/transit/enrollments", content: /No enrollments found/, empty: true },
   { path: "/transit/promotions", content: /No promotion runs found/, empty: true },
-  { path: "/messages", content: /No chats yet/, empty: true },
+  // The seed gives Tolu Teacher a "School office" thread, which every admin reads (Round 4 §28).
+  { path: "/messages", content: /Office thread · Tolu Teacher/ },
   { path: "/settings", content: /School Profile/ },
 ];
