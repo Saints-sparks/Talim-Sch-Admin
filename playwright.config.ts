@@ -7,8 +7,11 @@ import { defineConfig, devices } from "@playwright/test";
  *
  *   E2E_ENVELOPE=false npm run e2e    # backend started with API_ENVELOPE_SUCCESS=false
  *   E2E_ENVELOPE=true  npm run e2e    # ... and =true
+ *   E2E_APP_PORT=3100 E2E_API_URL=http://localhost:5056 npm run e2e   # a second stack
  */
-const PORT = 3000;
+// E2E_APP_PORT runs this app's `next dev` elsewhere, beside a dev server already on 3000
+// (see the backend repo's e2e/README.md, "A second, isolated stack").
+const PORT = Number(process.env.E2E_APP_PORT ?? 3000);
 const API_URL = process.env.E2E_API_URL ?? "http://localhost:5055";
 const ENVELOPE = process.env.E2E_ENVELOPE ?? "false";
 
