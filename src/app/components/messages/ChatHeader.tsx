@@ -215,7 +215,7 @@ export default function ChatHeader({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors text-sm font-medium"
+                      className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white rounded-full transition-colors text-sm font-medium"
                       title="Add Participants to Group"
                     >
                       <UserPlus size={16} />

@@ -65,12 +65,12 @@ export const COLOR_MAP: Record<GroupColor, { bg: string; text: string; border: s
   },
 };
 
-/** Classes of the submit button for each accent colour. */
+/** Classes of the submit button for each accent colour: each at least 4.5:1 with its white label. */
 const SUBMIT_CLASS: Record<GroupColor, string> = {
   blue: "bg-blue-600 hover:bg-blue-700",
-  green: "bg-green-600 hover:bg-green-700",
+  green: "bg-green-700 hover:bg-green-800",
   purple: "bg-purple-600 hover:bg-purple-700",
-  orange: "bg-orange-500 hover:bg-orange-600",
+  orange: "bg-orange-700 hover:bg-orange-800",
 };
 
 /**

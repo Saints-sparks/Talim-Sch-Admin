@@ -13,7 +13,7 @@ export function AddMembersButtons({
     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
       <Button
         onClick={onAddParents}
-        className="bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+        className="bg-green-700 hover:bg-green-800 text-white flex items-center justify-center gap-2"
       >
         <UserPlus size={18} />
         Add Parents

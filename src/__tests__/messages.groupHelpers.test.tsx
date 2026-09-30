@@ -190,7 +190,8 @@ describe("create group helpers", () => {
     expect(nextSteps("parent", "Sunrise")[0]).toBe("All parents in Sunrise are auto-added");
     expect(nextSteps("parent")[0]).toBe("All parents in your school are auto-added");
     expect(nextSteps("custom")).toHaveLength(3);
-    expect(submitButtonClass("orange")).toBe("bg-orange-500 hover:bg-orange-600");
+    expect(submitButtonClass("orange")).toBe("bg-orange-700 hover:bg-orange-800");
+    expect(submitButtonClass("green")).toBe("bg-green-700 hover:bg-green-800");
     expect(GROUP_TYPES.map((g) => submitButtonClass(g.color))).toHaveLength(4);
   });
 
