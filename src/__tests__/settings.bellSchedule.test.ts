@@ -32,6 +32,7 @@ const saved: AcademicSettings = {
   registerCloseTime: "11:00",
   registerEditUntil: "16:00",
   registerTrackingSince: "2026-09-01",
+  officeHours: null,
   gradeScale: [
     { letter: "A", min: 70, remark: "Excellent" },
     { letter: "F", min: 0, remark: null },

@@ -66,6 +66,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teachers/me/school": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calling teacher's school contact card
+         * @description Name, email and address from the school record; the phone of the school's first primary contact; office hours from PATCH /settings/academic (null until set).
+         */
+        get: operations["TeachersMeController_school"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/teachers/me/classes": {
         parameters: {
             query?: never;
@@ -2547,6 +2567,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller's sessions (signed-in devices)
+         * @description One per active refresh token, the current one first. `current` is decided by the refresh token on the request (the cookie, or `x-refresh-token`); when neither identifies a session, every entry has `current: false`.
+         */
+        get: operations["AuthSessionsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign out other devices
+         * @description Revokes every session of the caller except the current one, together (one transaction). Their next refresh fails with 401; access tokens already issued expire on their own. When the current session cannot be identified, every session is revoked.
+         */
+        post: operations["AuthSessionsController_revokeOthers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out one session
+         * @description Revokes one of the caller's sessions (404 for anyone else's). Its next refresh fails with 401. Revoking the current session also clears the refresh cookie.
+         */
+        delete: operations["AuthSessionsController_revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The password policy (public)
+         * @description The rules every password change and reset enforces, with the contract field names. `historyCount` is 1: a new password must differ from the current one.
+         */
+        get: operations["AuthSessionsController_passwordPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/teachers": {
         parameters: {
             query?: never;
@@ -3726,7 +3826,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get settings overview for authenticated teacher */
+        /**
+         * Get settings overview for authenticated teacher
+         * @description The settings page.
+         */
         get: operations["TeacherSettingsController_getSettings"];
         put?: never;
         post?: never;
@@ -3749,7 +3852,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update teacher profile settings */
+        /**
+         * Update the teacher's name, phone or picture
+         * @description Names are 1..60 characters after trimming; the phone is stored as sent after trimming and must be 7..20 characters of "+", digits, spaces and dashes. Email is read-only (400 when sent). Answers the GET /teacher/settings shape.
+         */
         patch: operations["TeacherSettingsController_updateProfile"];
         trace?: never;
     };
@@ -3766,7 +3872,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update teacher notification and workspace preferences */
+        /**
+         * Update teacher message and workspace preferences
+         * @description `messages.showOnlineStatus` and `messages.readReceipts` are the chat preferences chat enforces; `messages.soundEnabled` and the rest are the teacher's. Alert switches are in PATCH /notifications/preferences (a `notifications` section answers 400).
+         */
         patch: operations["TeacherSettingsController_updatePreferences"];
         trace?: never;
     };
@@ -3835,7 +3944,10 @@ export interface paths {
         put?: never;
         /** Register or update FCM device token after login */
         post: operations["MyNotificationsController_registerDeviceToken"];
-        /** Deactivate FCM device token on logout */
+        /**
+         * Deactivate FCM device token on logout
+         * @description Deactivates the caller's token for a device, on logout.
+         */
         delete: operations["MyNotificationsController_deactivateDeviceToken"];
         options?: never;
         head?: never;
@@ -3859,6 +3971,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inbox counts: all and unread, in total and per category
+         * @description Covers both feeds the inbox merges: the caller's notifications and the school announcements they received (announcements count under `announcement`; the per-recipient notification an announcement creates is not counted again). Every category is present.
+         */
+        get: operations["MyNotificationsController_getCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications/read-all": {
         parameters: {
             query?: never;
@@ -3872,7 +4004,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Mark all notifications as read for authenticated user */
+        /**
+         * Mark all notifications and announcements as read
+         * @description Marks the caller's notifications and the announcements they received as read. `updated` counts both.
+         */
         patch: operations["MyNotificationsController_markAllRead"];
         trace?: never;
     };
@@ -3890,7 +4025,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update notification preferences for authenticated user */
+        /**
+         * Update notification preferences for authenticated user
+         * @description Changes the caller's notification preferences.
+         */
         patch: operations["MyNotificationsController_updatePreferences"];
         trace?: never;
     };
@@ -4322,11 +4460,15 @@ export interface paths {
         };
         /**
          * List notifications (own, or any recipient for staff)
-         * @description Non-staff callers only ever see their own notifications.
+         * @description `unread=true` keeps only the notifications the recipient has not read; it combines with `category`, `source` and `type`. Each item carries `attachmentFiles` and, from Round 4 producers, `metadata.target` and `metadata.actionLabel`.
          */
         get: operations["NotificationController_findAll"];
         put?: never;
-        /** Create and send a notification */
+        /**
+         * Create and send a notification
+         * @description Creates a notification and queues it for delivery. School staff always
+         *     send as themselves, to their own school.
+         */
         post: operations["NotificationController_create"];
         delete?: never;
         options?: never;
@@ -4341,7 +4483,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Notification KPI summary (own, or any recipient for staff) */
+        /**
+         * Notification KPI summary (own, or any recipient for staff)
+         * @description KPI totals for the caller's notifications (staff: any recipient's, or
+         *     broadcasts).
+         */
         get: operations["NotificationController_getStats"];
         put?: never;
         post?: never;
@@ -4358,7 +4504,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Unread notifications for a user (self, or any user for staff) */
+        /**
+         * Unread notifications for a user (self, or any user for staff)
+         * @description A user's unread notifications: the caller's own, or (staff) any user's in
+         *     their school.
+         */
         get: operations["NotificationController_getUnreadNotifications"];
         put?: never;
         post?: never;
@@ -4375,12 +4525,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a notification by ID */
+        /**
+         * Get a notification by ID
+         * @description One notification the caller may see.
+         */
         get: operations["NotificationController_findOne"];
-        /** Update a notification */
+        /**
+         * Update a notification
+         * @description Edits a notification of the caller's school. Sender, audience and read
+         *     state cannot be changed.
+         */
         put: operations["NotificationController_update"];
         post?: never;
-        /** Delete a notification */
+        /**
+         * Delete a notification
+         * @description Deletes a notification of the caller's school.
+         */
         delete: operations["NotificationController_delete"];
         options?: never;
         head?: never;
@@ -4438,7 +4598,7 @@ export interface paths {
         };
         /**
          * People the caller can start a direct message with
-         * @description For a student or parent: the teachers of their class (or of each child's class) — the class teacher and whoever teaches it — as user ids ready for POST /chat/rooms. Empty for staff, who pick people from their own directories.
+         * @description For a teacher: the parents of their students (a parent who turned off teacher messages is left out), the school's other teachers and one `office` entry (open it with POST /chat/office); sorted by group (parent, colleague, office), then name. For a student or parent: the teachers of their class (or of each child's class) — the class teacher and whoever teaches it — as user ids ready for POST /chat/rooms. Empty for staff, who pick people from their own directories.
          */
         get: operations["ChatController_getContacts"];
         put?: never;
@@ -4456,10 +4616,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all chat rooms for the authenticated user */
+        /**
+         * Get all chat rooms for the authenticated user
+         * @description The caller's rooms, after bringing staff office membership up to date.
+         */
         get: operations["ChatController_getUserChatRooms"];
         put?: never;
-        /** Create a new chat room */
+        /**
+         * Create a new chat room
+         * @description Creates a chat room, or reuses the existing direct message or class /
+         *     course group.
+         */
         post: operations["ChatController_createChatRoom"];
         delete?: never;
         options?: never;
@@ -4496,7 +4663,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a group chat for admins and parents */
+        /**
+         * Create a group chat for admins and parents
+         * @description Creates a group chat for school admins and parents; same behaviour as
+         *     POST /chat/groups.
+         */
         post: operations["ChatController_createAdminParentGroupChat"];
         delete?: never;
         options?: never;
@@ -4519,9 +4690,49 @@ export interface paths {
         head?: never;
         /**
          * Update a group chat name, description or picture
-         * @description Allowed for whoever may manage the group (creator, teachers in the group, school staff with manage:messages). Members are told with the room-updated socket event.
+         * @description Allowed for the group's admins (its creator is the first), school staff with manage:messages and the platform admin; anyone else gets 403. Direct messages and the school office thread have no editable details (400). The name is 1..80 characters and the description at most 500. Members are told with the room-updated socket event.
          */
         patch: operations["ChatController_updateRoom"];
+        trace?: never;
+    };
+    "/chat/office": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open the teacher's school office thread
+         * @description Returns the caller's office room (one per teacher), creating it when needed. Every school admin and every sub-admin with manage:messages reads and replies; membership is refreshed on every read and post. Teachers cannot add or remove members or leave it.
+         */
+        post: operations["ChatController_openOffice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/rooms/{roomId}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A room's shared images, documents and links
+         * @description Participants only. Deleted messages are left out. `image`: image attachments; `document`: document, other file and video attachments; `link`: URLs found in message text. Newest first; `counts` totals every kind.
+         */
+        get: operations["ChatController_getRoomMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/chat/rooms/{roomId}/read": {
@@ -4551,7 +4762,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search chat rooms */
+        /**
+         * Search chat rooms
+         * @description Searches the caller's rooms by name and type.
+         */
         get: operations["ChatController_searchChatRooms"];
         put?: never;
         post?: never;
@@ -4568,7 +4782,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get messages from a chat room with populated participants */
+        /**
+         * Get messages from a chat room with populated participants
+         * @description One page of a room's messages, with each sender populated.
+         */
         get: operations["ChatController_getChatRoomMessages"];
         put?: never;
         post?: never;
@@ -4607,7 +4824,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a message to a chat room */
+        /**
+         * Send a message to a chat room
+         * @description Sends a message and delivers it in real time, as a socket send would. A
+         *     retry with the same `clientMessageId` is not delivered twice.
+         */
         post: operations["ChatController_sendMessage"];
         delete?: never;
         options?: never;
@@ -4648,7 +4869,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Mark a message as read */
+        /**
+         * Mark a message as read
+         * @description Marks one message read (the room up to that message) and tells the
+         *     other members when read receipts are shared.
+         */
         patch: operations["ChatController_markMessageAsRead"];
         trace?: never;
     };
@@ -4659,7 +4884,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get unread message count for the authenticated user */
+        /**
+         * Get unread message count for the authenticated user
+         * @description The caller's unread total across all rooms.
+         */
         get: operations["ChatController_getUnreadMessageCount"];
         put?: never;
         post?: never;
@@ -4676,7 +4904,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get participants of a chat room */
+        /**
+         * Get participants of a chat room
+         * @description The user ids of a room's participants.
+         */
         get: operations["ChatController_getChatRoomParticipants"];
         put?: never;
         post?: never;
@@ -4715,7 +4946,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add participant to a chat room */
+        /**
+         * Add participant to a chat room
+         * @description Adds one user to a group room and announces them when they are new.
+         */
         post: operations["ChatController_addParticipant"];
         delete?: never;
         options?: never;
@@ -4736,7 +4970,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Remove participant from a chat room */
+        /**
+         * Remove participant from a chat room
+         * @description Removes a user from a group room (or the caller leaves it), detaches
+         *     their sockets from the room and announces the change.
+         */
         patch: operations["ChatController_removeParticipant"];
         trace?: never;
     };
@@ -4747,14 +4985,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get message preferences for the authenticated user */
+        /**
+         * Get message preferences for the authenticated user
+         * @description The caller's chat preferences.
+         */
         get: operations["ChatController_getMessagePreferences"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update message preferences for the authenticated user */
+        /**
+         * Update message preferences for the authenticated user
+         * @description Changes the caller's chat preferences.
+         */
         patch: operations["ChatController_updateMessagePreferences"];
         trace?: never;
     };
@@ -7007,6 +7251,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a support ticket to Talim
+         * @description Any signed-in user. Stored apart from school complaints (the school never sees it) and emailed to Talim support (SUPPORT_EMAIL, default support@mytalim.com). A failed email doesn't fail the request.
+         */
+        post: operations["SupportController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7212,6 +7476,19 @@ export interface components {
             timezone: string;
             /** @description ISO instant. */
             now: string;
+        };
+        SchoolOfficeHoursDto: {
+            /** @example 08:00 */
+            start: string;
+            /** @example 16:00 */
+            end: string;
+        };
+        SchoolContactDto: {
+            phone: string | null;
+            email: string | null;
+            address: string | null;
+            officeHours: components["schemas"]["SchoolOfficeHoursDto"] | null;
+            name: string;
         };
         ClassCourseDto: {
             id: string;
@@ -8814,6 +9091,18 @@ export interface components {
             /** @description Hosted image URL, or an empty string to remove the avatar */
             avatarUrl?: string;
         };
+        SessionDto: {
+            /** @example iPhone */
+            device: string | null;
+            /** @example Chrome 128 */
+            browser: string | null;
+            /** @example iOS */
+            os: string | null;
+            ip: string | null;
+        };
+        RevokeOthersDto: Record<string, never>;
+        RevokeSessionDto: Record<string, never>;
+        PasswordPolicyDto: Record<string, never>;
         UpdateTeacherStatusDto: {
             /** @example false */
             isActive: boolean;
@@ -9689,27 +9978,87 @@ export interface components {
              */
             theme: "light" | "dark" | "system";
         };
+        TeacherSettingsProfileDto: {
+            phoneNumber: string | null;
+            avatar: string | null;
+            id: string;
+            userId: string;
+            fullName: string;
+            firstName: string;
+            lastName: string;
+            /** @description Read-only for teachers. */
+            email: string;
+            role: string;
+            isActive: boolean;
+            isEmailVerified: boolean;
+            /** Format: date-time */
+            joinedAt: string;
+            schoolId: string;
+            schoolName: string;
+            schoolIdentifier: string;
+        };
+        TeacherMessagePreferencesViewDto: {
+            /** @enum {string} */
+            defaultFilter: "all" | "private" | "groups";
+            showOnlineStatus: boolean;
+            readReceipts: boolean;
+            soundEnabled: boolean;
+            groupNotifications: boolean;
+            unreadBadge: boolean;
+        };
+        TeacherTeachingPreferencesViewDto: {
+            landingPage: string;
+            gradingView: string;
+            attendanceMode: string;
+            timetableDisplay: string;
+            resourceDisplay: string;
+        };
+        TeacherGuidePreferencesViewDto: {
+            /** Format: date-time */
+            tourCompletedAt: string | null;
+            showAppTips: boolean;
+        };
+        TeacherPreferencesViewDto: {
+            messages: components["schemas"]["TeacherMessagePreferencesViewDto"];
+            teaching: components["schemas"]["TeacherTeachingPreferencesViewDto"];
+            guides: components["schemas"]["TeacherGuidePreferencesViewDto"];
+            /** @enum {string} */
+            theme: "light" | "dark" | "system";
+        };
+        TeacherSettingsDto: {
+            profile: components["schemas"]["TeacherSettingsProfileDto"];
+            /** @description teacherId, employeeId, staffNumber, employmentType, employmentRole, isFormTeacher */
+            employment: {
+                [key: string]: unknown;
+            };
+            /** @description classesAssigned, subjectsTeaching, studentsTeaching, accountStatus */
+            summary: {
+                [key: string]: unknown;
+            };
+            preferences: components["schemas"]["TeacherPreferencesViewDto"];
+        };
         UpdateTeacherProfileDto: {
+            /** @example Tolu */
+            firstName?: string;
+            /** @example Adebayo */
+            lastName?: string;
+            /**
+             * @description Stored as sent after trimming: 7 to 20 characters of "+", digits, spaces and dashes.
+             * @example +234 803 123 4567
+             */
+            phoneNumber?: string;
             /** @description Avatar URL */
             avatarUrl?: string;
         };
-        TeacherNotificationPreferencesDto: {
-            announcements?: boolean;
-            attendance?: boolean;
-            grading?: boolean;
-            resources?: boolean;
-            messages?: boolean;
-            inApp?: boolean;
-            email?: boolean;
-            quietHoursEnabled?: boolean;
-            quietStart?: string;
-            quietEnd?: string;
-        };
         TeacherMessagePreferencesDto: {
+            /** @description Whether others may see this teacher online (ChatPreference). */
+            showOnlineStatus?: boolean;
+            /** @description Whether others see when this teacher read their messages (ChatPreference). */
+            readReceipts?: boolean;
+            /** @description Play a sound for new messages in the app. */
+            soundEnabled?: boolean;
             groupNotifications?: boolean;
             unreadBadge?: boolean;
-            soundEnabled?: boolean;
-            showOnlineStatus?: boolean;
             /** @enum {string} */
             defaultFilter?: "all" | "private" | "groups";
         };
@@ -9734,12 +10083,16 @@ export interface components {
             tourCompleted?: boolean;
         };
         UpdateTeacherPreferencesDto: {
-            notifications?: components["schemas"]["TeacherNotificationPreferencesDto"];
             messages?: components["schemas"]["TeacherMessagePreferencesDto"];
             teaching?: components["schemas"]["TeacherTeachingPreferencesDto"];
             guides?: components["schemas"]["TeacherGuidePreferencesDto"];
             /** @enum {string} */
             theme?: "light" | "dark" | "system";
+        };
+        TeacherPreferencesResponseDto: {
+            preferences: components["schemas"]["TeacherPreferencesViewDto"];
+            success: boolean;
+            message?: string;
         };
         FileUploadDto: Record<string, never>;
         RegisterDeviceTokenDto: {
@@ -9758,6 +10111,30 @@ export interface components {
         DeactivateDeviceTokenDto: {
             deviceId: string;
         };
+        InboxCountDto: {
+            all: number;
+            unread: number;
+        };
+        InboxCountsByCategoryDto: {
+            announcement: components["schemas"]["InboxCountDto"];
+            attendance: components["schemas"]["InboxCountDto"];
+            academics: components["schemas"]["InboxCountDto"];
+            grading: components["schemas"]["InboxCountDto"];
+            resources: components["schemas"]["InboxCountDto"];
+            messages: components["schemas"]["InboxCountDto"];
+            account: components["schemas"]["InboxCountDto"];
+            other: components["schemas"]["InboxCountDto"];
+        };
+        InboxCountsDto: {
+            byCategory: components["schemas"]["InboxCountsByCategoryDto"];
+            all: number;
+            unread: number;
+        };
+        ReadAllResponseDto: {
+            /** @description Notifications and announcements newly marked read. */
+            updated: number;
+            message: string;
+        };
         NotificationPreference: Record<string, never>;
         UpdateNotificationPreferenceDto: {
             pushEnabled?: boolean;
@@ -9771,6 +10148,12 @@ export interface components {
             resultsEnabled?: boolean;
             timetableEnabled?: boolean;
             resourcesEnabled?: boolean;
+            /** @description Grading alerts: assessment deadline reminders (7 days and 1 day before the end) and "scores awaited" reminders. Default true. */
+            gradingEnabled?: boolean;
+            /** @description Teachers: the register reminder 30 minutes before the register closes when the class's register is not in. Default true. */
+            registerReminderEnabled?: boolean;
+            /** @description Teachers: the 16:00 digest "N students opened '{name}' today". Default true. */
+            resourceOpenedEnabled?: boolean;
             /** @description Leave-request status updates. */
             leaveRequestsEnabled?: boolean;
             securityEnabled?: boolean;
@@ -9925,12 +10308,35 @@ export interface components {
             /** Format: date-time */
             scheduledDate: string;
         };
+        TeacherContactDto: {
+            /** @enum {string} */
+            role: "parent" | "teacher" | "school_admin" | "sub_admin";
+            avatarUrl: string | null;
+            /** @enum {string} */
+            group: "parent" | "colleague" | "office";
+            /** @description Parents only; null for everyone else. */
+            phone: string | null;
+            /** @description A user id, or `office` for the school office (open it with `POST /chat/office`). */
+            userId: string;
+            name: string;
+            /** @description "Parent of Ada Obi · Grade 5A", "Mathematics · colleague". */
+            subtitle: string;
+        };
+        ChatStudentParentContactDto: {
+            userAvatar: string | null;
+            userId: string;
+            firstName: string;
+            lastName: string;
+            role: string;
+            /** @description "Class teacher", or the subjects they teach the caller's class. */
+            subtitle: string;
+        };
         CreateChatRoomDto: {
             /**
              * @description Type of chat room
              * @enum {string}
              */
-            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group";
+            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group" | "office";
             /** @description Class ID for class group chat */
             classId?: string;
             /** @description Course ID for course group chat */
@@ -9943,7 +10349,7 @@ export interface components {
         ChatRoomResponseDto: {
             _id: string;
             /** @enum {string} */
-            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group";
+            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group" | "office";
             schoolId?: string;
             name?: string;
             classId?: string;
@@ -9991,6 +10397,10 @@ export interface components {
             /** @description Group picture URL from POST /upload/chat-attachment; null clears it. */
             avatarUrl?: string | null;
         };
+        ChatRoomAdminDto: {
+            id: string;
+            name: string;
+        };
         ChatParticipantDto: {
             _id: string;
             /** @description Same as `_id`. */
@@ -10032,13 +10442,26 @@ export interface components {
         };
         ChatRoomViewDto: {
             /** @enum {string} */
-            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group";
+            type: "class_group" | "course_group" | "one_to_one" | "admin_parent_group" | "parent_group" | "custom_group" | "office";
+            /** @description The group description; null when there is none, and always for direct and office rooms. */
+            description: string | null;
+            /** @description Group admins (the creator first): they and school staff edit the name and description. */
+            admins: components["schemas"]["ChatRoomAdminDto"][];
+            /**
+             * @description How the viewer's Messages screen groups the room.
+             * @enum {string}
+             */
+            category: "parent" | "colleague" | "class_group" | "office" | "group";
+            /**
+             * @description The number the Voice button dials (`tel:`): set only for a teacher in a
+             *     direct message with a parent of one of their students.
+             */
+            callPhone: string | null;
             _id: string;
             /** @description Same as `_id`. */
             roomId: string;
             /** @description Empty for one-to-one rooms: show the other participant instead. */
             name: string;
-            description?: string;
             avatarUrl?: string;
             classId?: string;
             courseId?: string;
@@ -10054,6 +10477,37 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+            /**
+             * @description For the viewer, e.g. "Parent of Ada Obi · Grade 5A", "Class group · 12
+             *     students", "Mathematics · colleague", "School office · Easy Sparks"; an
+             *     admin sees an office room as "Office thread · {teacher name}".
+             */
+            subtitle: string;
+        };
+        ChatMediaItemDto: {
+            /** @enum {string} */
+            kind: "image" | "document" | "link";
+            name: string | null;
+            mimeType: string | null;
+            size: number | null;
+            sender: {
+                id?: string;
+                name?: string;
+            };
+            messageId: string;
+            url: string;
+            /** Format: date-time */
+            sentAt: string;
+        };
+        ChatMediaCountsDto: {
+            image: number;
+            document: number;
+            link: number;
+        };
+        ChatMediaPageDto: {
+            items: components["schemas"]["ChatMediaItemDto"][];
+            nextCursor: string | null;
+            counts: components["schemas"]["ChatMediaCountsDto"];
         };
         MarkRoomReadDto: {
             /** @description Newest message read; defaults to the newest in the room. */
@@ -10538,8 +10992,8 @@ export interface components {
              */
             week?: number;
             /**
-             * @description Who may see it besides teachers and staff: students (default), or students and their parents
-             * @default students
+             * @description Who may see it besides teachers and staff: students and their parents (default), or students only
+             * @default students_and_parents
              * @enum {string}
              */
             visibility: "students" | "students_and_parents";
@@ -10581,8 +11035,8 @@ export interface components {
              */
             week?: number;
             /**
-             * @description Who may see it besides teachers and staff: students (default), or students and their parents
-             * @default students
+             * @description Who may see it besides teachers and staff: students and their parents (default), or students only
+             * @default students_and_parents
              * @enum {string}
              */
             visibility: "students" | "students_and_parents";
@@ -11401,6 +11855,12 @@ export interface components {
             /** @description Lowest percentage (0..100) that earns the letter. */
             min: number;
         };
+        OfficeHoursDto: {
+            /** @example 08:00 */
+            start: string;
+            /** @example 16:00 */
+            end: string;
+        };
         AcademicSettingsDto: {
             schoolDays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[];
             /** @description Ordered by start time; empty when the school has not set any. */
@@ -11418,6 +11878,8 @@ export interface components {
              *     E 40 Pass, F 0 Fail.
              */
             gradeScale: components["schemas"]["GradeScaleBandResponseDto"][];
+            /** @description When the school office answers; null when not set. Always sent. */
+            officeHours: components["schemas"]["OfficeHoursDto"] | null;
             schoolId: string;
             timezone: string;
             /** @description `HH:mm`. */
@@ -11484,6 +11946,11 @@ export interface components {
              * @example 50
              */
             passMark?: number;
+            /**
+             * @description When the school office answers, shown to teachers (§36); `null`
+             *     clears it. The end must be after the start.
+             */
+            officeHours?: components["schemas"]["OfficeHoursDto"] | null;
             /** @description IANA timezone, e.g. `Africa/Lagos`. */
             timezone?: string;
             /** @description `HH:mm`; the morning register is due by this time. */
@@ -11610,6 +12077,27 @@ export interface components {
              */
             permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:sub_admins")[];
         };
+        SupportTicketContextDto: {
+            /** @example /grading */
+            path?: string;
+            /** @example 2.4.0 */
+            appVersion?: string;
+            userAgent?: string;
+        };
+        CreateSupportTicketDto: {
+            /** @enum {string} */
+            area: "grading" | "attendance" | "timetable" | "messages" | "signing_in" | "other";
+            description: string;
+            /** @description An uploaded screenshot or file (https). */
+            attachmentUrl?: string;
+            context?: components["schemas"]["SupportTicketContextDto"];
+        };
+        SupportTicketCreatedDto: {
+            /** @example TS-7K2QD */
+            reference: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -11670,6 +12158,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeacherTodayDto"];
+                };
+            };
+        };
+    };
+    TeachersMeController_school: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolContactDto"];
                 };
             };
         };
@@ -15830,6 +16337,92 @@ export interface operations {
             };
         };
     };
+    AuthSessionsController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Native apps: the refresh token, so the current session is marked. Browsers send the refresh cookie instead. */
+                "x-refresh-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"][];
+                };
+            };
+        };
+    };
+    AuthSessionsController_revokeOthers: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-refresh-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeOthersDto"];
+                };
+            };
+        };
+    };
+    AuthSessionsController_revoke: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-refresh-token"?: string;
+            };
+            path: {
+                /** @description Session id from GET /auth/sessions */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeSessionDto"];
+                };
+            };
+        };
+    };
+    AuthSessionsController_passwordPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordPolicyDto"];
+                };
+            };
+        };
+    };
     UserController_getTeachers: {
         parameters: {
             query?: {
@@ -17874,7 +18467,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TeacherSettingsDto"];
+                };
             };
         };
     };
@@ -17895,7 +18490,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TeacherSettingsDto"];
+                };
             };
         };
     };
@@ -17917,7 +18514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["TeacherPreferencesResponseDto"];
                 };
             };
         };
@@ -18060,6 +18657,25 @@ export interface operations {
             };
         };
     };
+    MyNotificationsController_getCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxCountsDto"];
+                };
+            };
+        };
+    };
     MyNotificationsController_markAllRead: {
         parameters: {
             query?: never;
@@ -18073,7 +18689,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ReadAllResponseDto"];
+                };
             };
         };
     };
@@ -18776,6 +19394,8 @@ export interface operations {
                 source?: "school" | "talim" | "system";
                 category?: "announcement" | "attendance" | "academics" | "grading" | "resources" | "messages" | "account" | "other";
                 type?: string;
+                /** @description true: only notifications the caller has not read (with the other filters). */
+                unread?: boolean;
             };
             header?: never;
             path?: never;
@@ -18823,6 +19443,8 @@ export interface operations {
                 source?: "school" | "talim" | "system";
                 category?: "announcement" | "attendance" | "academics" | "grading" | "resources" | "messages" | "account" | "other";
                 type?: string;
+                /** @description true: only notifications the caller has not read (with the other filters). */
+                unread?: boolean;
             };
             header?: never;
             path?: never;
@@ -18996,7 +19618,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": (components["schemas"]["TeacherContactDto"] | components["schemas"]["ChatStudentParentContactDto"])[];
                 };
             };
         };
@@ -19115,6 +19737,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatRoomViewDto"];
+                };
+            };
+        };
+    };
+    ChatController_openOffice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatRoomViewDto"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    ChatController_getRoomMedia: {
+        parameters: {
+            query?: {
+                kind?: "image" | "document" | "link";
+                /** @description `nextCursor` of the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the chat room */
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatMediaPageDto"];
                 };
             };
         };
@@ -23124,6 +23800,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    SupportController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSupportTicketDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicketCreatedDto"];
+                };
             };
         };
     };

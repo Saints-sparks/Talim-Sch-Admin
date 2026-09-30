@@ -31,6 +31,7 @@ const settings: AcademicSettings = {
   registerCloseTime: "11:00",
   registerEditUntil: "16:00",
   registerTrackingSince: "2026-09-01",
+  officeHours: null,
   periods: [],
   gradeScale: [
     { letter: "A", min: 70, remark: "Excellent" },
