@@ -286,7 +286,14 @@ export function otherParticipant(room: ChatRoom, currentUserId: string): Partici
 
 /**
  * Replaces the room list with a fresh server list. Rooms the user isn't a
- * member of are dropped; the room being viewed keeps an unread count of 0.
+ * member of are dropped, except office threads (the server lists them for
+ * every office staff member before adding them); the room being viewed keeps
+ * an unread count of 0.
+ *
+ * @param rawRooms - `GET /chat/rooms` or `chat-rooms-update`, in any payload shape.
+ * @param currentUserId - The viewer.
+ * @param viewingRoomId - The room open and focused on screen, if any.
+ * @returns The rooms, newest activity first.
  */
 export function mergeRoomList(rawRooms: unknown[], currentUserId: string, viewingRoomId: string | null): ChatRoom[] {
   const rooms = rawRooms
@@ -407,9 +414,14 @@ export const GROUP_MANAGER_ROLES = ["teacher", "school_admin", "school_sub_admin
 export const LEAVABLE_ROOM_TYPES: string[] = [ChatRoomType.CUSTOM_GROUP, ChatRoomType.PARENT_GROUP];
 
 /**
- * Whether to show group controls (add and remove members, edit the name,
- * description and picture): never for direct messages or office threads, whose
- * members the server manages; managers by role, or the creator.
+ * Whether to show group controls (add and remove members, and the picture):
+ * never for direct messages or office threads, whose members the server
+ * manages; managers by role, or the creator. The name and description follow
+ * {@link canEditRoomDetails}.
+ *
+ * @param room - The room's type, creator and (when known) category.
+ * @param user - The viewer's id and role.
+ * @returns True when the controls are offered (the server has the final say).
  */
 export function canManageRoom(
   room: (Pick<ChatRoom, "type" | "createdBy"> & Partial<Pick<ChatRoom, "category">>) | null | undefined,
@@ -438,7 +450,13 @@ export function canEditRoomDetails(
   return canManageRoom(room, user) || isGroupAdmin(room, user.id);
 }
 
-/** Whether "Leave group" is offered: never for an office thread. */
+/**
+ * Whether "Leave group" is offered: only in rooms members may leave, never an
+ * office thread.
+ *
+ * @param room - The room's type and (when known) category.
+ * @returns True when the viewer may leave.
+ */
 export function canLeaveRoom(room: (Pick<ChatRoom, "type"> & Partial<Pick<ChatRoom, "category">>) | null | undefined): boolean {
   return Boolean(room) && !isOfficeRoom(room) && LEAVABLE_ROOM_TYPES.includes(room!.type);
 }
@@ -507,7 +525,14 @@ function participantName(p: Participant): string {
   return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
 }
 
-/** The sidebar / header shape for a room. */
+/**
+ * The sidebar / header shape for a room. An office thread is named after its
+ * teacher, with "Office thread · {teacher}" as its subtitle.
+ *
+ * @param room - The room.
+ * @param currentUserId - The viewer (for a direct message's other person).
+ * @returns What the list and the thread header render.
+ */
 export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayChatRoom {
   const isGroup = room.type !== ChatRoomType.ONE_TO_ONE;
   const isOffice = isOfficeRoom(room);

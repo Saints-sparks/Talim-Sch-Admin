@@ -37,6 +37,18 @@ interface ChatSidebarProps {
   className?: string;
 }
 
+/**
+ * The Messages room list: search, the filter (All chats, Teachers,
+ * Teachers · Office, Groups), new message and new group, and one row per room
+ * with its subtitle, last message and unread count. Office threads show a
+ * building icon; rows open with a click, Enter or Space.
+ *
+ * @param props.onSelectChat - Opens a room.
+ * @param props.selectedRoomId - The room open now, highlighted.
+ * @param props.chats - The chat state from `useChats`.
+ * @param props.className - Extra classes for the panel.
+ * @returns The panel.
+ */
 export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, className = "" }: ChatSidebarProps) {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);

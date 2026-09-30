@@ -49,6 +49,17 @@ interface PrivateChatProps {
   chats: UseChatsReturn;
 }
 
+/**
+ * A direct-message thread: header (with the room's subtitle), messages
+ * grouped by day, reply bar and composer.
+ *
+ * @param props.room - The room as the list shows it.
+ * @param props.replyingMessage - The message being replied to, if any.
+ * @param props.setReplyingMessage - Starts or cancels a reply.
+ * @param props.onBack - Back to the list (mobile).
+ * @param props.chats - The chat state from `useChats`.
+ * @returns The thread.
+ */
 export default function PrivateChat({
   replyingMessage,
   setReplyingMessage,

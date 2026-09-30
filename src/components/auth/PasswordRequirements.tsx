@@ -13,6 +13,7 @@ import { evaluatePassword, PASSWORD_RULES, type PasswordRule } from "@/lib/passw
  *   built-in copy of the backend policy when omitted.
  * @param props.note - A line under the list for what only the server checks,
  *   e.g. "It can't be one of your last 3 passwords."
+ * @returns The checklist.
  */
 export default function PasswordRequirements({
   password,

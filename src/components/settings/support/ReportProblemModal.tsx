@@ -32,6 +32,12 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
 
   const errors = submitted ? validateSupportTicket(values) : {};
 
+  /**
+   * Checks the form, then sends the ticket and shows its reference.
+   *
+   * @param e - The form's submit event.
+   * @returns Nothing; a failure toasts and keeps what was typed.
+   */
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -51,6 +57,11 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  /**
+   * Copies the ticket's reference to the clipboard.
+   *
+   * @returns Nothing; the toast says whether it worked.
+   */
   const copyReference = async () => {
     if (!ticket) return;
     try {

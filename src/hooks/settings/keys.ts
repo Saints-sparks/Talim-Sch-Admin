@@ -65,7 +65,11 @@ export const settingsKeys = {
    * @returns The query key.
    */
   sessions: (userId: string) => [...queryKeys.settings.all, "sessions", userId] as const,
-  /** The server's password rules — the same for everyone. */
+  /**
+   * The server's password rules — the same for everyone, so not user-scoped.
+   *
+   * @returns The query key.
+   */
   passwordPolicy: () => [...queryKeys.settings.all, "password-policy"] as const,
   /**
    * The bank list for one country — the same for every school, so it is not

@@ -91,6 +91,14 @@ interface ChatHeaderProps {
   onAddParticipants?: () => void; // Callback after adding participants
 }
 
+/**
+ * A thread's header: back button (mobile), avatar, name, status and subtext,
+ * and the group menu. Office threads (Round 4 §28) get the building icon and
+ * no Add control, since the server keeps their members.
+ *
+ * @param props - The room's display details; see {@link ChatHeaderProps}.
+ * @returns The header, with its info, members and add-member dialogs.
+ */
 export default function ChatHeader({
   avatar,
   name,

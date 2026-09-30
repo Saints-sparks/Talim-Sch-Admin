@@ -236,6 +236,7 @@ export const authService = {
    * Signs one of the user's own sessions out; its next refresh fails with 401.
    *
    * @param id - The session's id.
+   * @returns The API's answer (nothing the app reads).
    */
   revokeSession: (id: string): Promise<unknown> =>
     api.delete(API_URLS.AUTH.SESSION.replace(":id", encodeURIComponent(id))),

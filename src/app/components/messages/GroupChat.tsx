@@ -58,6 +58,19 @@ interface GroupChatProps {
   chats: UseChatsReturn;
 }
 
+/**
+ * A group thread (every room but a direct message, office threads included):
+ * header, messages with date separators, reply bar and composer. The header
+ * shows the room's subtitle and description; an office thread explains the
+ * shared inbox instead.
+ *
+ * @param props.room - The room as the list shows it.
+ * @param props.replyingMessage - The message being replied to, if any.
+ * @param props.setReplyingMessage - Starts or cancels a reply.
+ * @param props.onBack - Back to the list (mobile).
+ * @param props.chats - The chat state from `useChats`.
+ * @returns The thread.
+ */
 export default function GroupChat({
   replyingMessage,
   setReplyingMessage,

@@ -207,7 +207,10 @@ function isViewing(): boolean {
 /**
  * The messages page's chat state: the room list, one merged message store
  * per room, and optimistic sends over the socket. Create it once (in
- * `MessagesLayout`) and share it through `ChatsProvider`.
+ * `MessagesLayout`) and share it through `ChatsProvider`. Office threads
+ * (Round 4 §28) open even before the server adds the viewer to them.
+ *
+ * @returns The room list, the open thread and every chat action.
  */
 export const useChats = (): UseChatsReturn => {
   const { user, accessToken, isAuthenticated } = useAuth();

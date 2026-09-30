@@ -21,6 +21,12 @@ import type { AuthSession } from "@/types/round4Contract";
  * @returns A sorted copy.
  */
 export function sortSessions(sessions: AuthSession[]): AuthSession[] {
+  /**
+   * When a session was last used.
+   *
+   * @param s - A session.
+   * @returns Epoch ms, 0 when unknown.
+   */
   const time = (s: AuthSession) => {
     const t = new Date(s.lastUsedAt || s.createdAt).getTime();
     return Number.isNaN(t) ? 0 : t;
@@ -28,6 +34,11 @@ export function sortSessions(sessions: AuthSession[]): AuthSession[] {
   return [...sessions].sort((a, b) => Number(b.current) - Number(a.current) || time(b) - time(a));
 }
 
+/**
+ * The signed-in user's sessions query key.
+ *
+ * @returns The key, scoped to the user.
+ */
 function useSessionsKey() {
   const { user } = useAuth();
   return settingsKeys.sessions(user?.userId ?? user?._id ?? "none");
@@ -78,6 +89,12 @@ export function useRevokeSession(): RevokeSession {
     onSettled: () => void client.invalidateQueries({ queryKey: key }),
   });
   return {
+    /**
+     * Signs one session out.
+     *
+     * @param session - The session.
+     * @returns True on success; false after the error toast.
+     */
     revoke: async (session) => {
       try {
         await mutation.mutateAsync(session);
@@ -126,6 +143,11 @@ export function useRevokeOtherSessions(): RevokeOtherSessions {
     onSettled: () => void client.invalidateQueries({ queryKey: key }),
   });
   return {
+    /**
+     * Signs out every other session.
+     *
+     * @returns True on success; false after the error toast.
+     */
     revokeOthers: async () => {
       try {
         await mutation.mutateAsync();

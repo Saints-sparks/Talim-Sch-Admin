@@ -14,7 +14,10 @@ type Field = "currentPassword" | "newPassword" | "confirmPassword";
 /**
  * Change the signed-in admin's password. Available to every admin role
  * (it uses `POST /auth/change-password`, not the settings permission).
- * The server rotates the session, which AuthContext adopts.
+ * The server rotates the session, which AuthContext adopts. The rules shown
+ * and checked come from `GET /auth/password-policy` (see `usePasswordPolicy`).
+ *
+ * @returns The form.
  */
 export default function ChangePasswordCard() {
   const { changePassword } = useAuth();

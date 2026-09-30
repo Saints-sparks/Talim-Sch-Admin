@@ -30,6 +30,7 @@ const FIELDS: Array<{ key: Field; label: string; autoComplete: string }> = [
  * its shape; reuse of an old password is only checked by the server.
  *
  * @param props.onClose - Closes the modal.
+ * @returns The dialog.
  */
 export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const { changePassword } = useAuth();

@@ -37,6 +37,21 @@ interface GroupInfoModalProps {
   roomType?: string;
 }
 
+/**
+ * Group info: picture, name, description, members and shared media. School
+ * staff and group admins edit the name and description; managers also change
+ * the picture and add or remove members. Office threads explain the shared
+ * inbox and have no description; direct messages have none either. Reads the
+ * room from the list, so `room-updated` shows here live.
+ *
+ * @param props.isOpen - Whether the dialog is shown.
+ * @param props.onClose - Closes it.
+ * @param props.avatar - Picture shown until the room is in the list.
+ * @param props.name - Name shown until the room is in the list.
+ * @param props.chatRoomId - The room.
+ * @param props.roomType - The room's type, until the room is in the list.
+ * @returns The dialog, or null when closed.
+ */
 export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoomId, roomType }: GroupInfoModalProps) {
   const [selectedMenu, setSelectedMenu] = useState<Section>("");
   const [isAddParentModalOpen, setIsAddParentModalOpen] = useState(false);

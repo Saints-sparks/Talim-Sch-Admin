@@ -63,6 +63,7 @@ function DetailRow({
  * itself lives in Payments & Finance, behind `manage:settings`.
  *
  * @param props.onNavigate - Switches the open settings tab.
+ * @returns The section.
  */
 export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) => void }) {
   const { user } = useAuth();

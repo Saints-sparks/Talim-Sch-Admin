@@ -99,6 +99,13 @@ export function toOfficeHours(values: Pick<SchoolDayValues, "officeHoursStart" |
     : null;
 }
 
+/**
+ * Whether two office-hours values are the same (null and absent match).
+ *
+ * @param a - One value.
+ * @param b - The other.
+ * @returns True when both times match.
+ */
 function sameOfficeHours(a: OfficeHours | null | undefined, b: OfficeHours | null | undefined): boolean {
   return (a?.start ?? "") === (b?.start ?? "") && (a?.end ?? "") === (b?.end ?? "");
 }

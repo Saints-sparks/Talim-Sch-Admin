@@ -68,7 +68,14 @@ export function SchoolDaySection({ canManage }: { canManage: boolean }) {
   return <SchoolDayForm key={JSON.stringify(query.data)} settings={query.data} canManage={canManage} />;
 }
 
-/** The editable form, seeded from the saved settings. */
+/**
+ * The editable form, seeded from the saved settings: clock and week, morning
+ * register, office hours and the bell schedule, checked before saving.
+ *
+ * @param props.settings - The saved academic settings.
+ * @param props.canManage - False shows every field read-only.
+ * @returns The form.
+ */
 function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; canManage: boolean }) {
   const { save, saving } = useUpdateAcademicSettings();
   const [values, setValues] = useState<SchoolDayValues>(() => toSchoolDayValues(settings));

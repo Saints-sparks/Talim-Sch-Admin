@@ -15,6 +15,8 @@ const ICONS = { phone: Smartphone, tablet: Tablet, computer: Monitor } as const;
  * phone signed in to this account, "Sign out" for each of the others, and
  * "Sign out of other devices" behind a confirmation. A signed-out device
  * keeps working until its access token expires, then has to sign in again.
+ *
+ * @returns The card, with its confirmation dialog.
  */
 export function SessionsCard() {
   const sessions = useSessions();
@@ -34,6 +36,11 @@ export function SessionsCard() {
         ? "No other devices are signed in."
         : undefined;
 
+  /**
+   * Signs out every other device, closing the dialog when it worked.
+   *
+   * @returns Nothing; failures toast and keep the dialog open.
+   */
   const confirmRevokeOthers = async () => {
     if (await revokeOthers()) setConfirming(false);
   };
@@ -125,7 +132,15 @@ export function SessionsCard() {
   );
 }
 
-/** One device: what it is, where and when it was used, and its action. */
+/**
+ * One device: what it is, where and when it was used, and its action.
+ *
+ * @param props.session - The session.
+ * @param props.canSignOut - False for this device (it signs out from the header menu).
+ * @param props.pending - True while it is being signed out.
+ * @param props.onSignOut - Signs it out.
+ * @returns The list item.
+ */
 function SessionRow({
   session,
   canSignOut,

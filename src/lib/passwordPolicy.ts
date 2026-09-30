@@ -41,8 +41,21 @@ const SYMBOLS = /[!@#$%^&*(),.?":{}|<>]/;
  */
 export function normalizePasswordPolicy(raw: unknown): PasswordPolicy {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  /**
+   * A yes/no field of the payload.
+   *
+   * @param key - The field.
+   * @returns The payload's boolean, else the default's.
+   */
   const bool = (key: keyof PasswordPolicy) =>
     typeof r[key] === "boolean" ? (r[key] as boolean) : (DEFAULT_PASSWORD_POLICY[key] as boolean);
+  /**
+   * A whole-number field of the payload.
+   *
+   * @param key - The field.
+   * @param min - The smallest accepted value.
+   * @returns The payload's number when it is a whole number of at least `min`, else the default's.
+   */
   const count = (key: "minLength" | "historyCount", min: number) => {
     const value = r[key];
     return typeof value === "number" && Number.isInteger(value) && value >= min ? value : DEFAULT_PASSWORD_POLICY[key];
@@ -97,6 +110,8 @@ export function passwordHistoryNote(policy: PasswordPolicy = DEFAULT_PASSWORD_PO
 export const PASSWORD_RULES: PasswordRule[] = rulesFromPolicy(DEFAULT_PASSWORD_POLICY);
 
 /**
+ * Checks a password against each rule, for the checklist.
+ *
  * @param password - Candidate password.
  * @param rules - The rules to check; the default policy's when omitted.
  * @returns Each rule with whether the password satisfies it.
@@ -109,6 +124,8 @@ export function evaluatePassword(
 }
 
 /**
+ * Whether a password passes every rule, before it is sent.
+ *
  * @param password - Candidate password.
  * @param rules - The rules to check; the default policy's when omitted.
  * @returns True when every rule is satisfied.
