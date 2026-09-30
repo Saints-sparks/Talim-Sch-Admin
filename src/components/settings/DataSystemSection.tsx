@@ -1,13 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Download, ExternalLink, FileText, Loader2, Receipt, UserCog, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  FileText,
+  LifeBuoy,
+  Loader2,
+  Receipt,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { useDataExport } from "@/hooks/settings/useDataExport";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import type { ExportType } from "@/app/services/school-settings.service";
-import { Card, CardHeader, SectionHeader } from "@/components/settings/ui";
+import { Card, CardHeader, OutlineBtn, SectionHeader } from "@/components/settings/ui";
+import { ReportProblemModal } from "@/components/settings/support/ReportProblemModal";
+import { APP_VERSION } from "@/components/settings/support/supportTicketForm";
 
 /** A CSV export, or a link into the module that produces the report. */
 interface DataCard {
@@ -55,21 +68,24 @@ const CARDS: DataCard[] = [
 
 const SYSTEM_INFO = [
   { label: "Platform", value: "Talim School Administration" },
-  { label: "Version", value: "2.0.0" },
+  { label: "Version", value: APP_VERSION },
   { label: "Support", value: "support@mytalim.com" },
 ];
 
 /**
- * Settings → Data & System: CSV exports, where the school's backups stand and
- * what this build is.
+ * Settings → Data & System: CSV exports, where the school's backups stand,
+ * what this build is, and "Report a problem" to Talim support (Round 4 §35).
  *
  * Only the exports and reports the role may run are shown. The backup card
  * used to print a "last backup" 24 hours ago and a "next backup" six days out,
  * both computed in the browser from the current time — invented numbers — so
  * it now states the policy without pretending to know the schedule.
+ *
+ * @returns The section.
  */
 export function DataSystemSection() {
   const router = useRouter();
+  const [reporting, setReporting] = useState(false);
   const { hasPermission } = usePermissions();
   const { exporting, run } = useDataExport();
   const cards = CARDS.filter((c) => hasPermission(c.permission));
@@ -167,6 +183,23 @@ export function DataSystemSection() {
           ))}
         </div>
       </Card>
+
+      <Card>
+        <CardHeader title="Help" />
+        <div className="p-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Something not working?</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+              Tell the Talim support team. You&apos;ll get a reference to quote.
+            </p>
+          </div>
+          <OutlineBtn onClick={() => setReporting(true)}>
+            <LifeBuoy className="w-3.5 h-3.5" aria-hidden /> Report a problem
+          </OutlineBtn>
+        </div>
+      </Card>
+
+      <AnimatePresence>{reporting && <ReportProblemModal onClose={() => setReporting(false)} />}</AnimatePresence>
     </div>
   );
 }
