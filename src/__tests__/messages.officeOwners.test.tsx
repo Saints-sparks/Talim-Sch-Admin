@@ -158,6 +158,30 @@ describe("office room owners", () => {
     });
   });
 
+  it("reads a parent room exactly as the API sends it (officeTeacherId null)", () => {
+    // Shape seen on GET /chat/rooms (integration API, 2026-10-04).
+    const live = normalizeRoom({
+      _id: "6ac1be46cabfac93d6b35b53",
+      type: "office",
+      name: "School office",
+      category: "office",
+      subtitle: "Office thread · Paul Parent (parent of Ada, Ben)",
+      ownerRole: "parent",
+      officeOwnerId: "u-paul",
+      officeTeacherId: null,
+      participants: [
+        admin,
+        { _id: "u-paul", userId: "u-paul", firstName: "Paul", lastName: "Parent", role: "parent" },
+      ],
+    });
+    expect(live.officeTeacherId).toBeUndefined();
+    expect(toDisplayRoom(live, ME)).toMatchObject({
+      displayName: "Paul Parent",
+      subtitle: "Office thread · Paul Parent (parent of Ada, Ben)",
+      officeOwnerRole: "parent",
+    });
+  });
+
   it("lists a teacher's thread under the teacher, as before", () => {
     const display = toDisplayRoom(teacherOffice, ME);
     expect(display).toMatchObject({
