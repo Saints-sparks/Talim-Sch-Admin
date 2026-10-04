@@ -10,7 +10,7 @@ import { dismissGuide } from "./support/ui";
 /**
  * Round 4 on the School Admin side, against the real API (backend
  * `e2e/seed.js`, which gives Tolu Teacher a "School office" thread):
- * - the office inbox: Tolu's thread under "Teachers · Office", a reply the
+ * - the office inbox: Tolu's thread under "School office", a reply the
  *   teacher reads through the API, and no add, remove or leave in it;
  * - group info: the description of a group edited by its admin, with the
  *   "Group admin" badge;
@@ -115,12 +115,12 @@ async function openSection(page: Page, section: string, title: string): Promise<
 
 // ─── Office inbox ───────────────────────────────────────────────────────────
 
-test("the teacher's office thread is under Teachers · Office, and the teacher reads the reply", async ({ page, monitor }) => {
+test("the teacher's office thread is under School office, and the teacher reads the reply", async ({ page, monitor }) => {
   await openMessages(page);
   monitor.clear();
   await page.getByRole("button", { name: /^Filter: / }).click();
-  await page.getByRole("menuitem", { name: /Teachers · Office/ }).click();
-  await expect(page.getByRole("button", { name: "Filter: Teachers · Office" })).toBeVisible();
+  await page.getByRole("menuitem", { name: /School office/ }).click();
+  await expect(page.getByRole("button", { name: "Filter: School office" })).toBeVisible();
   const row = page.locator('[data-category="office"]').filter({ hasText: ACCOUNTS.teacher.name });
   await expect(row).toHaveCount(1);
   await expect(row).toContainText(`Office thread · ${ACCOUNTS.teacher.name}`);

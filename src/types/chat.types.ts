@@ -31,7 +31,10 @@ export enum ChatRoomType {
   ADMIN_PARENT_GROUP = 'admin_parent_group',
   PARENT_GROUP = 'parent_group',
   CUSTOM_GROUP = 'custom_group',
-  /** A teacher's thread with the school office (Round 4 §28); server-managed members. */
+  /**
+   * A thread with the school office, owned by a teacher (Round 4 §28) or, from
+   * Part B (B10), a parent; server-managed members.
+   */
   OFFICE = 'office',
 }
 
@@ -93,7 +96,16 @@ export interface ChatRoom {
   callPhone?: string | null;
   /** Round 4 group info: the group's admins (hand-written until the generated contract has it). */
   admins?: RoomAdmin[];
+  /** Office rooms (Round 4): the teacher who owns it. Superseded by `officeOwnerId` (B10). */
+  officeTeacherId?: string;
+  /** Office rooms (B10): the user who owns it, a teacher or a parent. */
+  officeOwnerId?: string;
+  /** Office rooms (B10): who owns it. Absent before Part B; then a teacher. */
+  ownerRole?: OfficeOwnerRole;
 }
+
+/** Who an office room belongs to (B10). */
+export type OfficeOwnerRole = 'teacher' | 'parent';
 
 
 // types/chat.types.ts

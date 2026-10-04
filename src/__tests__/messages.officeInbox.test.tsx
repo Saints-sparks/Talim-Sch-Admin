@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 /**
  * The school office inbox (Round 4 §27–28): office threads are listed under
- * "Teachers · Office" with their subtitle, admins reply as in any room, and
+ * "School office" with their subtitle, admins reply as in any room, and
  * nobody can remove the teacher, add members or leave.
  */
 import React from "react";
@@ -91,7 +91,7 @@ beforeEach(() => {
 describe("room filter", () => {
   const rooms = [office, group, dm].map((r) => toDisplayRoom(r, ME));
 
-  it("lists office threads only under Teachers · Office", () => {
+  it("lists office threads only under School office", () => {
     expect(filterRooms(rooms, "office", "").map((r) => r.roomId)).toEqual(["office-1"]);
     expect(filterRooms(rooms, "groups", "").map((r) => r.roomId)).toEqual(["group-1"]);
     expect(filterRooms(rooms, "teachers", "").map((r) => r.roomId)).toEqual(["dm-1"]);
@@ -209,9 +209,9 @@ describe("ChatSidebar", () => {
     expect(screen.getByText("Group · 3 members")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Filter: All chats" }));
-    await user.click(await screen.findByRole("menuitem", { name: /Teachers · Office/ }));
+    await user.click(await screen.findByRole("menuitem", { name: /School office/ }));
 
-    expect(screen.getByRole("button", { name: "Filter: Teachers · Office" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filter: School office" })).toBeInTheDocument();
     expect(screen.queryByText("Staff room")).not.toBeInTheDocument();
     expect(screen.queryByText("Group · 3 members")).not.toBeInTheDocument();
     const row = screen.getByText("Office thread · Tola Teacher").closest("[role='button']") as HTMLElement;

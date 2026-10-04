@@ -4,14 +4,17 @@
  */
 import type { DisplayChatRoom } from "@/lib/chat/rooms";
 
-/** The sidebar's filters. `office` is the shared "School office" inbox (Round 4 §28). */
+/**
+ * The sidebar's filters. `office` is the shared "School office" inbox: threads
+ * teachers (Round 4 §28) and, from Part B, parents (B10) open with the office.
+ */
 export type RoomFilter = "all" | "teachers" | "office" | "groups";
 
 /** The filters in menu order, with their labels. */
 export const ROOM_FILTERS: ReadonlyArray<{ id: RoomFilter; label: string }> = [
   { id: "all", label: "All chats" },
   { id: "teachers", label: "Teachers" },
-  { id: "office", label: "Teachers · Office" },
+  { id: "office", label: "School office" },
   { id: "groups", label: "Groups" },
 ];
 

@@ -4,7 +4,7 @@
  * and the sidebar display shape.
  */
 import { ChatRoomType } from "@/types/chat.types";
-import type { ChatRoom, ChatRoomLastMessage, Participant } from "@/types/chat.types";
+import type { ChatRoom, ChatRoomLastMessage, OfficeOwnerRole, Participant } from "@/types/chat.types";
 import type { ChatRoomCategory, RoomAdmin } from "@/types/round4Contract";
 import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { idOf } from "./messages";
@@ -61,8 +61,10 @@ export interface DisplayChatRoom {
   category: ChatRoomCategory;
   /** One line under the name, e.g. "Office thread · Tolu Ade"; absent when there is nothing useful to say. */
   subtitle?: string;
-  /** A teacher's thread with the school office (members are managed by the server). */
+  /** A thread with the school office (members are managed by the server). */
   isOffice: boolean;
+  /** Office threads only: whether a teacher or a parent owns it (B10). */
+  officeOwnerRole?: OfficeOwnerRole;
 }
 
 /**
@@ -160,9 +162,12 @@ export function normalizeRoom(raw: unknown): ChatRoom {
     subtitle: typeof room.subtitle === "string" && room.subtitle.trim() ? room.subtitle.trim() : undefined,
     callPhone: typeof room.callPhone === "string" && room.callPhone ? room.callPhone : null,
     admins: normalizeAdmins(room.admins),
+    officeTeacherId: idOf(room.officeTeacherId) || undefined,
+    officeOwnerId: idOf(room.officeOwnerId) || undefined,
+    ownerRole: room.ownerRole === "teacher" || room.ownerRole === "parent" ? room.ownerRole : undefined,
   } as ChatRoom;
   // Absent means "not sent": leave the keys off so merging keeps known values.
-  (["category", "subtitle", "admins"] as const).forEach((key) => {
+  (["category", "subtitle", "admins", "officeTeacherId", "officeOwnerId", "ownerRole"] as const).forEach((key) => {
     if (normalized[key] === undefined) delete normalized[key];
   });
   if (!("callPhone" in room)) delete normalized.callPhone;
@@ -248,18 +253,94 @@ export function roomCategory(room: ChatRoom, currentUserId: string): ChatRoomCat
 /** The start of an admin's office-thread subtitle (Round 4 §27). */
 export const OFFICE_SUBTITLE_PREFIX = "Office thread · ";
 
+/** A parent owner's subtitle ends "(parent of …)" (B10). */
+const PARENT_OF = /\s*\(parent of\b[^)]*\)\s*$/i;
+
+/** Roles that staff the office; never an office room's owner. */
+const OFFICE_STAFF_ROLES = new Set(["school_admin", "school_sub_admin", "admin", "super_admin"]);
+
 /**
- * The teacher an office thread belongs to, for its name in the list.
+ * Who owns an office room: the API's `ownerRole` (B10); else a room from
+ * before Part B, which has `officeTeacherId` and so a teacher; else what the
+ * subtitle or the members say. Defaults to a teacher, the only owner before B10.
  *
  * @param room - An office room.
- * @returns The teacher's name, from the members, else the API's subtitle or the room name.
+ * @returns `teacher` or `parent`.
+ */
+export function officeOwnerRole(room: ChatRoom): OfficeOwnerRole {
+  if (room.ownerRole) return room.ownerRole;
+  if (room.officeTeacherId) return "teacher";
+  if (room.subtitle && PARENT_OF.test(room.subtitle)) return "parent";
+  const ownerId = room.officeOwnerId;
+  const owner = ownerId ? room.participants.find((p) => p.userId === ownerId || p._id === ownerId) : undefined;
+  if (owner?.role === "parent" || owner?.role === "teacher") return owner.role;
+  const members = new Set(room.participants.map((p) => p.role));
+  return members.has("parent") && !members.has("teacher") ? "parent" : "teacher";
+}
+
+/**
+ * The member who owns an office room: by `officeOwnerId` (B10) or
+ * `officeTeacherId` (Round 4), else the first member with the owner's role,
+ * else the first member who is not office staff.
+ *
+ * @param room - An office room.
+ * @returns The owner, or undefined when the members are bare ids.
+ */
+export function officeOwner(room: ChatRoom): Participant | undefined {
+  const ownerId = room.officeOwnerId ?? room.officeTeacherId;
+  if (ownerId) {
+    const byId = room.participants.find((p) => p.userId === ownerId || p._id === ownerId);
+    if (byId) return byId;
+  }
+  const role = officeOwnerRole(room);
+  return (
+    room.participants.find((p) => p.role === role) ??
+    room.participants.find((p) => p.role && !OFFICE_STAFF_ROLES.has(p.role))
+  );
+}
+
+/**
+ * The name an office thread is listed under: its owner's (a teacher or a
+ * parent), from the members, else from the API's subtitle, else the room name.
+ *
+ * @param room - An office room.
+ * @returns The owner's name.
+ */
+export function officeOwnerName(room: ChatRoom): string {
+  const owner = officeOwner(room);
+  const fromMembers = owner ? participantName(owner) || owner.email : "";
+  if (fromMembers) return fromMembers;
+  if (room.subtitle?.startsWith(OFFICE_SUBTITLE_PREFIX)) {
+    const fromSubtitle = room.subtitle.slice(OFFICE_SUBTITLE_PREFIX.length).replace(PARENT_OF, "").trim();
+    if (fromSubtitle) return fromSubtitle;
+  }
+  return room.name || (officeOwnerRole(room) === "parent" ? "Parent" : "Teacher");
+}
+
+/**
+ * Round 4's name for {@link officeOwnerName}, kept for callers from before B10.
+ *
+ * @param room - An office room.
+ * @returns The owner's name.
  */
 export function officeTeacherName(room: ChatRoom): string {
-  const teacher = room.participants.find((p) => p.role === "teacher");
-  const fromMembers = teacher ? participantName(teacher) || teacher.email : "";
-  if (fromMembers) return fromMembers;
-  if (room.subtitle?.startsWith(OFFICE_SUBTITLE_PREFIX)) return room.subtitle.slice(OFFICE_SUBTITLE_PREFIX.length).trim();
-  return room.name || "Teacher";
+  return officeOwnerName(room);
+}
+
+/**
+ * The office thread's subtitle: the API's (staff get "Office thread ·
+ * {teacher}", or "Office thread · {parent} (parent of …)" from B10), else one
+ * built from the owner when an older API sends none.
+ *
+ * @param room - An office room.
+ * @param ownerName - The owner's name, from {@link officeOwnerName}.
+ * @returns The subtitle.
+ */
+export function officeSubtitle(room: ChatRoom, ownerName: string): string {
+  if (room.subtitle) return room.subtitle;
+  return officeOwnerRole(room) === "parent"
+    ? `${OFFICE_SUBTITLE_PREFIX}${ownerName} (parent)`
+    : `${OFFICE_SUBTITLE_PREFIX}${ownerName}`;
 }
 
 /** The time a room last had activity — the sidebar sort key. */
@@ -527,7 +608,8 @@ function participantName(p: Participant): string {
 
 /**
  * The sidebar / header shape for a room. An office thread is named after its
- * teacher, with "Office thread · {teacher}" as its subtitle.
+ * owner, a teacher or a parent (B10), with the API's subtitle ("Office thread ·
+ * {teacher}" or "Office thread · {parent} (parent of …)").
  *
  * @param room - The room.
  * @param currentUserId - The viewer (for a direct message's other person).
@@ -542,10 +624,10 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
   let isOnline = false;
 
   if (isOffice) {
-    // Listed under the teacher it belongs to.
-    const teacherName = officeTeacherName(room);
-    displayName = teacherName;
-    subtitle = room.subtitle || `${OFFICE_SUBTITLE_PREFIX}${teacherName}`;
+    // Listed under the teacher or parent it belongs to.
+    const ownerName = officeOwnerName(room);
+    displayName = ownerName;
+    subtitle = officeSubtitle(room, ownerName);
   } else if (!isGroup) {
     const other = otherParticipant(room, currentUserId);
     if (other) {
@@ -599,6 +681,7 @@ export function toDisplayRoom(room: ChatRoom, currentUserId: string): DisplayCha
     category,
     subtitle,
     isOffice,
+    ...(isOffice ? { officeOwnerRole: officeOwnerRole(room) } : {}),
   };
 }
 

@@ -39,7 +39,7 @@ interface ChatSidebarProps {
 
 /**
  * The Messages room list: search, the filter (All chats, Teachers,
- * Teachers · Office, Groups), new message and new group, and one row per room
+ * School office, Groups), new message and new group, and one row per room
  * with its subtitle, last message and unread count. Office threads show a
  * building icon; rows open with a click, Enter or Space.
  *
@@ -262,7 +262,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
               {!searchTerm && (
                 <p className="text-xs text-gray-400 mt-1">
                   {filterType === "office"
-                    ? "When a teacher messages the school office, the thread appears here."
+                    ? "When a teacher or a parent messages the school office, the thread appears here."
                     : "Start by creating a group chat"}
                 </p>
               )}
@@ -280,6 +280,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
                 tabIndex={0}
                 aria-current={selectedRoomId === room.roomId ? "true" : undefined}
                 data-category={room.category}
+                data-office-owner={room.officeOwnerRole}
                 className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   selectedRoomId === room.roomId
                     ? "bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 shadow-sm"
