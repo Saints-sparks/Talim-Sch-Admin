@@ -3,7 +3,7 @@
  */
 
 /**
- * D8 for payments. Recording a manual payment credits the wallet and issues a
+ * D8 for payments. Recording a manual payment writes the fee ledger and issues a
  * receipt, so it sits behind `manage:payments` — a different permission from
  * the wallet's `manage:finance`, and holding one must not imply the other.
  */

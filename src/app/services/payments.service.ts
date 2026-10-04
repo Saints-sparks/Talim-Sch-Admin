@@ -202,8 +202,9 @@ export const getAdminSummary = (): Promise<AdminSummary & { success?: boolean }>
 
 /**
  * Records a payment taken outside the platform (cash, bank teller, POS). The
- * backend settles it through the same path as an online payment, so it credits
- * the wallet and issues a receipt.
+ * backend settles it through the same path as an online payment: it writes the
+ * fee ledger and issues a receipt. It does not credit the platform wallet (the
+ * money is already in the school's bank).
  *
  * @param data - Student, the fee assignments being settled, amount and method.
  * @returns The created transaction and its receipt.

@@ -19,8 +19,9 @@ import { usePaymentsSummary } from "@/hooks/finance/usePaymentsQueries";
  *
  * The route is gated on `manage:payments` by `RouteGuard` — a different
  * permission from the wallet's `manage:finance` — and recording a manual
- * payment is gated again here, because it credits the wallet and issues a
- * receipt just like an online payment does.
+ * payment is gated again here, because it writes the fee ledger and issues a
+ * receipt just like an online payment does (it does not credit the platform
+ * wallet: only online provider payments do).
  *
  * @returns The payments page.
  */

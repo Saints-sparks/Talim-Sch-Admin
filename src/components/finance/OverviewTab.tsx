@@ -11,6 +11,7 @@ import type {
   WithdrawalRequest,
 } from "@/app/services/finance.service";
 import { useWalletTransactions, useWithdrawals } from "@/hooks/finance/useFinanceQueries";
+import { WalletSourceNote } from "./WalletSourceNote";
 import { LedgerStatusBadge, WithdrawalStatusBadge } from "./FinanceBadges";
 import { StatCard } from "./StatCard";
 import { StatCardsSkeleton } from "./FinanceSkeletons";
@@ -75,6 +76,7 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
 
   return (
     <div className="space-y-6">
+      <WalletSourceNote />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="col-span-2 lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-1">

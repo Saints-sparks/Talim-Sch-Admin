@@ -17,6 +17,7 @@ import {
   useStudentsInClass,
 } from "@/hooks/finance/useManualPaymentOptions";
 import { LedgerStatusBadge } from "@/components/fees/LedgerStatusBadge";
+import { WalletSourceNote } from "@/components/finance/WalletSourceNote";
 import {
   feeBalance,
   feeBalanceSummary,
@@ -415,6 +416,8 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             className={fieldClass}
           />
         </div>
+
+        <WalletSourceNote variant="short" />
 
         <div className="flex gap-3 pt-2">
           <button

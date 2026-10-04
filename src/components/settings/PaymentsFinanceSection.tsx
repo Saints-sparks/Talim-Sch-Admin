@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { AddBankAccountForm } from "@/components/settings/AddBankAccountForm";
 import { PartPaymentSettingsCard } from "@/components/settings/PartPaymentSettingsCard";
+import { WalletSourceNote } from "@/components/finance/WalletSourceNote";
 import {
   Card,
   CardHeader,
@@ -140,6 +141,9 @@ export function PaymentsFinanceSection({ canManage }: { canManage: boolean }) {
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{s.label}</p>
               </div>
             ))}
+          </div>
+          <div className="px-5 pb-5">
+            <WalletSourceNote />
           </div>
         </Card>
       )}

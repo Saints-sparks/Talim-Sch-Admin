@@ -272,6 +272,8 @@ describe("recording a payment against ledger balances", () => {
     expect(screen.getByRole("checkbox", { name: /Uniform/ })).toBeDisabled();
     expect(screen.getByText(/Paid in full/)).toBeInTheDocument();
     expect(screen.getByText(/Unpaid · ₦15,000.00 due/)).toBeInTheDocument();
+    // Product decision: recorded payments don't credit the platform wallet.
+    expect(screen.getByRole("note")).toHaveTextContent(/isn't added to the Talim wallet/);
 
     await user.click(tuition);
     await user.click(screen.getByRole("checkbox", { name: /Bus/ }));

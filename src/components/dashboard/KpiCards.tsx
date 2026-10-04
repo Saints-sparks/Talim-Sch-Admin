@@ -105,6 +105,8 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
     {
       label: "Wallet Balance",
       value: summary ? formatNairaShort(summary.wallet.balance) : "—",
+      // Manual payments and confirmed bank transfers don't credit the wallet.
+      sub1: summary ? "Online payments only" : undefined,
       icon: <WalletCards className="w-4 h-4" />,
       iconCls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
       href: "/finance",
