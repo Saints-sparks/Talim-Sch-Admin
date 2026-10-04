@@ -15,6 +15,7 @@ import {
   FALLBACK_AVATAR,
   STATUS_TEXT,
   formatDate,
+  leaveTypeLabel,
   statusKey,
   studentAvatar,
   studentName,
@@ -81,7 +82,7 @@ export function LeaveRequestCard({
           <div className="flex flex-wrap items-center gap-2 font-semibold">
             <span className="text-[15px] text-slate-900 dark:text-slate-200">Leave Type:</span>
             <span className="rounded-xl border border-slate-100 px-2 py-1 text-[15px] text-[#4D4D4D] dark:border-slate-600 dark:text-slate-300">
-              {request.leaveType}
+              {leaveTypeLabel(request.leaveType)}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 font-semibold">

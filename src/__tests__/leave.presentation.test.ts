@@ -3,6 +3,7 @@ import {
   countByStatus,
   filterLeaveRequests,
   formatDate,
+  leaveTypeLabel,
   statusKey,
   statusValue,
   studentAvatar,
@@ -60,7 +61,9 @@ describe("studentName", () => {
 
   it("falls back to the email local part when there is no name", () => {
     expect(
-      studentName(request({ studentUser: { _id: "u1", userId: "USR-1", email: "grace@talim.test" } }))
+      studentName(
+        request({ studentUser: { _id: "u1", userId: "USR-1", email: "grace@talim.test" } })
+      )
     ).toBe("grace");
   });
 
@@ -137,5 +140,32 @@ describe("filterLeaveRequests", () => {
 
   it("ignores surrounding whitespace in the search", () => {
     expect(filterLeaveRequests(queue, "all", "   ")).toHaveLength(2);
+  });
+});
+
+describe("leaveTypeLabel", () => {
+  it("labels the B9 leave types", () => {
+    expect(leaveTypeLabel("illness")).toBe("Illness");
+    expect(leaveTypeLabel("medical")).toBe("Medical appointment");
+    expect(leaveTypeLabel("family_travel")).toBe("Family or travel");
+    expect(leaveTypeLabel("religious")).toBe("Religious observance");
+    expect(leaveTypeLabel("other")).toBe("Other");
+  });
+
+  it("reads legacy types as the B9 type the backend maps them to", () => {
+    expect(leaveTypeLabel("Health Issue")).toBe("Illness");
+    expect(leaveTypeLabel("Travel")).toBe("Family or travel");
+    expect(leaveTypeLabel("Family Event")).toBe("Family or travel");
+    expect(leaveTypeLabel("Emergency")).toBe("Other");
+  });
+
+  it("shows an unknown type as sent, and a missing one as a dash", () => {
+    expect(leaveTypeLabel("sabbatical")).toBe("sabbatical");
+    expect(leaveTypeLabel(undefined)).toBe("-");
+  });
+
+  it("lets the search find a request by its label", () => {
+    const medical = request({ leaveType: "medical" });
+    expect(filterLeaveRequests([medical], "all", "appointment")).toEqual([medical]);
   });
 });

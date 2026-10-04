@@ -17,6 +17,7 @@ import { LeaveRequestDetails } from "@/components/leave/LeaveRequestDetails";
 import {
   FALLBACK_AVATAR,
   STATUS_BADGE,
+  leaveTypeLabel,
   statusKey,
   statusValue,
   studentAvatar,
@@ -112,7 +113,7 @@ export default function LeaveRequestDetailPage() {
                         {studentName(request.data)}
                       </h2>
                       <p className="text-slate-600 dark:text-slate-400">
-                        {[request.data.studentProfile?.gradeLevel, request.data.leaveType]
+                        {[request.data.studentProfile?.gradeLevel, leaveTypeLabel(request.data.leaveType)]
                           .filter(Boolean)
                           .join(" • ")}
                       </p>

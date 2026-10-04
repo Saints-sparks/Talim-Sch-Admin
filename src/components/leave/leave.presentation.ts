@@ -6,7 +6,37 @@
  * lower-case (`pending`); both spellings live here so no component compares
  * raw strings and silently matches nothing.
  */
-import type { LeaveRequest, LeaveStatus } from "@/app/services/leave.service";
+import type { LeaveRequest, LeaveStatus, LeaveType } from "@/app/services/leave.service";
+
+/**
+ * Label per leave type (B9). Legacy values read as the B9 type the backend
+ * maps them to (`Health Issue` → illness, `Family Event`/`Travel` →
+ * family or travel, `Fees Issue`/`Emergency`/`Other` → other).
+ */
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  illness: "Illness",
+  medical: "Medical appointment",
+  family_travel: "Family or travel",
+  religious: "Religious observance",
+  other: "Other",
+  "Health Issue": "Illness",
+  "Family Event": "Family or travel",
+  Travel: "Family or travel",
+  "Fees Issue": "Other",
+  Emergency: "Other",
+  Other: "Other",
+};
+
+/**
+ * The label for a stored leave type.
+ *
+ * @param type - `leaveType` as the API sent it.
+ * @returns Its label, or the value itself for a type this app does not know.
+ */
+export function leaveTypeLabel(type: string | undefined): string {
+  if (!type) return "-";
+  return (LEAVE_TYPE_LABELS as Record<string, string>)[type] ?? type;
+}
 
 /** The filter tabs above the queue. */
 export const LEAVE_FILTERS = ["all", "pending", "approved", "rejected"] as const;
@@ -136,7 +166,7 @@ export function filterLeaveRequests(
   return requests.filter((request) => {
     if (filter !== "all" && statusKey(request.status) !== filter) return false;
     if (!query) return true;
-    return `${studentName(request)} ${request.leaveType} ${request.reason ?? ""}`
+    return `${studentName(request)} ${request.leaveType} ${leaveTypeLabel(request.leaveType)} ${request.reason ?? ""}`
       .toLowerCase()
       .includes(query);
   });

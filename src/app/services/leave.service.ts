@@ -4,9 +4,9 @@
  *
  * Parents raise these from the parent app; this portal only ever reads them
  * and moves them out of `Pending`. The status values are the backend's
- * `LeaveStatus` enum (`Pending`, `Approved`, `Rejected`) and the leave types
- * its `LeaveType` enum — both are title-cased strings, not upper-case ones, so
- * they are declared here rather than derived from a UI label.
+ * `LeaveStatus` enum (`Pending`, `Approved`, `Rejected`); the leave types come
+ * from the contract (B9 types plus the legacy ones) and are labelled in
+ * `leave.presentation.ts`.
  *
  * `GET /leave-requests/school-admin/all` is scoped to the caller's school by
  * the API and needs `MANAGE_LEAVE_REQUESTS`; so does
@@ -16,6 +16,7 @@
  * See `talimBE-V2/src/modules/user/data/dtos/leaveRequest.dto.ts`.
  */
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import type { UpdateLeaveStatusPayload as ContractLeaveStatusPayload } from "@/types/apiPayloads";
 import { API_ENDPOINTS } from "../lib/api/config";
 
@@ -24,14 +25,12 @@ import { API_ENDPOINTS } from "../lib/api/config";
 /** Where a request stands (`LeaveStatus` on the backend). */
 export type LeaveStatus = "Pending" | "Approved" | "Rejected";
 
-/** Why the leave was asked for (`LeaveType` on the backend). */
-export type LeaveType =
-  | "Health Issue"
-  | "Family Event"
-  | "Fees Issue"
-  | "Travel"
-  | "Emergency"
-  | "Other";
+/**
+ * Why the leave was asked for, as stored (`LeaveRequestDto.leaveType`): a B9
+ * type (`illness`, `medical`, `family_travel`, `religious`, `other`) or, on
+ * older rows and rows the mobile app files, a legacy one (`Health Issue`...).
+ */
+export type LeaveType = Schema<"LeaveRequestDto">["leaveType"];
 
 /** The student's account, as the API allow-lists it onto a leave request. */
 export interface LeaveStudentUser {
