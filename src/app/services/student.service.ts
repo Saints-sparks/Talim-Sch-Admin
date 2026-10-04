@@ -9,6 +9,7 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import { getClasses as getSchoolClasses } from "@/app/services/school.service";
 import type {
   AssignTeacherPayload,
@@ -253,21 +254,14 @@ export const createStudentProfile = async (payload: CreateStudentProfilePayload)
   api.post<CreatedStudent>(API_ENDPOINTS.CREATE_STUDENT, payload);
 
 /**
- * What `POST /students` answers: the student record, plus (when the API says
- * so) how the parent was linked. Since A11 a parent email that already belongs
- * to a parent account links the child to that account instead of failing.
- * `parentLink` is not in the contract yet; it is read when a later API sends it.
+ * What `POST /students` answers (`CreatedStudentDto`): the student record and
+ * `parentLink`, which says whether the parent email already belonged to a
+ * parent account the child was linked to (A11).
  */
-export type CreatedStudent = StudentById & {
-  parentLink?: { existing?: boolean; parentName?: string } | null;
-};
+export type CreatedStudent = Schema<"CreatedStudentDto">;
 
-/** A one-time parent link code (A11), e.g. `ABCD-2345`; it lasts 14 days. */
-export interface ParentLinkCode {
-  code: string;
-  /** ISO date-time the code stops working. */
-  expiresAt: string;
-}
+/** A one-time parent link code (A11), e.g. `ABCD-2345`; it lasts 14 days (`LinkCodeResponseDto`). */
+export type ParentLinkCode = Schema<"LinkCodeResponseDto">;
 
 /**
  * Issues a code a parent enters in their app to link this child to their

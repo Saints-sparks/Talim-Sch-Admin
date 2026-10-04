@@ -12,10 +12,12 @@ export const EXISTING_PARENT_NOTICE = "Linked to an existing parent account";
  * The notice to show after creating a student, when the API says the parent
  * email already belonged to a parent account and the child was linked to it.
  *
- * @param created - What `POST /students` answered.
- * @returns The notice (with the parent's name when sent), or null for a new parent or an API that does not say.
+ * @param created - What `POST /students` answered (its `parentLink`).
+ * @returns The notice (with the parent's name when sent), or null for a new parent.
  */
-export function parentLinkNotice(created: CreatedStudent | null | undefined): string | null {
+export function parentLinkNotice(
+  created: Pick<CreatedStudent, "parentLink"> | null | undefined
+): string | null {
   const link = created?.parentLink;
   if (!link?.existing) return null;
   const name = link.parentName?.trim();
