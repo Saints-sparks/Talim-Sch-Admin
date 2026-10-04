@@ -17,6 +17,7 @@ import {
   StudentProfileSkeleton,
 } from "@/components/users/students/StudentProfileSkeleton";
 import StudentAttendanceTab from "@/components/users/students/StudentAttendanceTab";
+import { ParentLinkCodeCard } from "@/components/users/students/ParentLinkCodeCard";
 import {
   StudentAcademicTab,
   StudentGuardianTab,
@@ -33,6 +34,12 @@ const TABS = [
 const triggerClass =
   "flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50 dark:hover:bg-slate-700/50";
 
+/**
+ * One student's profile: personal details, parent/guardian (with the parent
+ * link code), academic info and attendance.
+ *
+ * @returns The profile, or its loading and error states.
+ */
 function StudentProfile() {
   const params = useParams();
   const router = useRouter();
@@ -148,6 +155,15 @@ function StudentProfile() {
                     </TabsContent>
                     <TabsContent value="parent-guardian" className="mt-0">
                       <StudentGuardianTab student={student} />
+                      {/* A11: gated like the profile's other student actions. */}
+                      <PermissionGate permission={Permission.MANAGE_STUDENTS}>
+                        <div className="mt-6">
+                          <ParentLinkCodeCard
+                            studentId={student._id}
+                            studentName={`${student.userId?.firstName ?? ""} ${student.userId?.lastName ?? ""}`.trim()}
+                          />
+                        </div>
+                      </PermissionGate>
                     </TabsContent>
                     <TabsContent value="academic-info" className="mt-0">
                       <StudentAcademicTab student={student} />

@@ -132,6 +132,35 @@ describe("AddStudentModal", () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  it("says a new parent account was not needed when the API linked an existing one (A11)", async () => {
+    mockCreateProfile.mockResolvedValue({ _id: "st1", parentLink: { existing: true, parentName: "Tunde Bello" } });
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+    render(<AddStudentModal onClose={onClose} />);
+
+    await fillAccount(user);
+    await fillProfile(user);
+    await user.click(screen.getByRole("button", { name: /create student/i }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockToast.success).toHaveBeenCalledWith(
+      "Student profile created. Linked to an existing parent account (Tunde Bello)."
+    );
+  });
+
+  it("keeps the usual message when the API says nothing about the parent link", async () => {
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+    render(<AddStudentModal onClose={onClose} />);
+
+    await fillAccount(user);
+    await fillProfile(user);
+    await user.click(screen.getByRole("button", { name: /create student/i }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(mockToast.success).toHaveBeenCalledWith("Student profile created successfully!");
+  });
+
   it("keeps the form and shows the server's message when the email is taken", async () => {
     mockRegister.mockRejectedValue(new ApiError("CONFLICT", "exists", 409));
     const user = userEvent.setup();

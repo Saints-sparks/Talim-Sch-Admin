@@ -35,6 +35,7 @@ import {
   type StudentFormState,
   type StudentStep,
 } from "@/components/users/students/create/studentForm";
+import { parentLinkNotice } from "@/components/users/students/parentLink";
 
 /** Options for {@link useAddStudentForm}. */
 export interface UseAddStudentFormOptions {
@@ -146,14 +147,16 @@ export function useAddStudentForm({ onClose, onSuccess }: UseAddStudentFormOptio
     inFlight.current = true;
     setPending(true);
     setFormError(null);
+    let notice: string | null = null;
     try {
-      await createStudent.mutateAsync({
+      const created = await createStudent.mutateAsync({
         ...buildStudentCreateInput(form, targetSchoolId),
         existingAccount: createdAccount.current ?? undefined,
         onAccountCreated: (account) => {
           createdAccount.current = account;
         },
       });
+      notice = parentLinkNotice(created);
     } catch (error) {
       logger.error("students", "Failed to create student", error);
       const accountCreated = createdAccount.current !== null;
@@ -178,7 +181,8 @@ export function useAddStudentForm({ onClose, onSuccess }: UseAddStudentFormOptio
       return;
     }
 
-    toast.success("Student profile created successfully!");
+    // A11: an email that already belongs to a parent links the child to that account.
+    toast.success(notice ? `Student profile created. ${notice}.` : "Student profile created successfully!");
     try {
       await onSuccess?.();
     } catch (error) {

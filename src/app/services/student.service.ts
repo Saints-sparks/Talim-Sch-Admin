@@ -249,8 +249,37 @@ export const registerStudent = async (
  * @returns The created student.
  * @throws `ApiError` — `VALIDATION_FAILED` when a field fails the DTO.
  */
-export const createStudentProfile = async (payload: CreateStudentProfilePayload): Promise<StudentById> =>
-  api.post<StudentById>(API_ENDPOINTS.CREATE_STUDENT, payload);
+export const createStudentProfile = async (payload: CreateStudentProfilePayload): Promise<CreatedStudent> =>
+  api.post<CreatedStudent>(API_ENDPOINTS.CREATE_STUDENT, payload);
+
+/**
+ * What `POST /students` answers: the student record, plus (when the API says
+ * so) how the parent was linked. Since A11 a parent email that already belongs
+ * to a parent account links the child to that account instead of failing.
+ * `parentLink` is not in the contract yet; it is read when a later API sends it.
+ */
+export type CreatedStudent = StudentById & {
+  parentLink?: { existing?: boolean; parentName?: string } | null;
+};
+
+/** A one-time parent link code (A11), e.g. `ABCD-2345`; it lasts 14 days. */
+export interface ParentLinkCode {
+  code: string;
+  /** ISO date-time the code stops working. */
+  expiresAt: string;
+}
+
+/**
+ * Issues a code a parent enters in their app to link this child to their
+ * account, even from another school. Issuing a new one retires the student's
+ * unused codes. School admin, or a sub-admin with `manage:students`.
+ *
+ * @param studentId - The student record id (not the user id).
+ * @returns The code and when it expires.
+ * @throws `ApiError` — `NOT_FOUND` for a student of another school, `FORBIDDEN` without `manage:students`.
+ */
+export const issueParentLinkCode = async (studentId: string): Promise<ParentLinkCode> =>
+  api.post<ParentLinkCode>(`/students/${encodeURIComponent(studentId)}/link-code`);
 
 /**
  * The school's classes.

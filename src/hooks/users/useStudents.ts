@@ -19,12 +19,15 @@ import { useSchoolId } from "@/hooks/useSchoolId";
 import {
   createStudentProfile,
   getStudentAttendanceKpis,
+  issueParentLinkCode,
   registerStudent,
   studentService,
   updateStudent,
   updateStudentStatus,
   type CreateStudentProfilePayload,
+  type CreatedStudent,
   type GetStudentsResponse,
+  type ParentLinkCode,
   type RegisterStudentPayload,
   type StudentAttendanceKpis,
   type StudentById,
@@ -135,9 +138,10 @@ export interface CreateStudentInput {
  * onboarding email quotes the password the student can actually sign in with.
  * Invalidates the student, parent and class lists.
  *
- * @returns Mutation that resolves to the created student.
+ * @returns Mutation that resolves to the created student (with `parentLink`
+ *   when the API says the parent already had an account).
  */
-export function useCreateStudent(): UseMutationResult<StudentById, Error, CreateStudentInput> {
+export function useCreateStudent(): UseMutationResult<CreatedStudent, Error, CreateStudentInput> {
   const client = useQueryClient();
 
   return useMutation({
@@ -216,5 +220,18 @@ export function useUpdateStudentStatus(): UseMutationResult<
       client.invalidateQueries({ queryKey: queryKeys.students.detail(schoolId ?? "none", studentId) });
       client.invalidateQueries({ queryKey: queryKeys.students.all });
     },
+  });
+}
+
+/**
+ * Issues a parent link code for a student (A11). Nothing cached changes: the
+ * code is shown once and only its hash is stored, so there is nothing to
+ * invalidate.
+ *
+ * @returns Mutation taking the student record id, resolving to `{ code, expiresAt }`.
+ */
+export function useIssueParentLinkCode(): UseMutationResult<ParentLinkCode, Error, string> {
+  return useMutation({
+    mutationFn: (studentId: string) => issueParentLinkCode(studentId),
   });
 }
