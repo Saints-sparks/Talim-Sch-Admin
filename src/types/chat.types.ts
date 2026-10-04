@@ -1,5 +1,6 @@
 import type { ChatReplyTo } from "@/components/chat-kit";
 import type { CreateChatRoomPayload, CreateGroupChatPayload } from "@/types/apiPayloads";
+import type { Schema } from "@/types/apiContract";
 import type { ChatRoomCategory, RoomAdmin } from "@/types/round4Contract";
 // types/chat.types.ts
 
@@ -96,16 +97,16 @@ export interface ChatRoom {
   callPhone?: string | null;
   /** Round 4 group info: the group's admins (hand-written until the generated contract has it). */
   admins?: RoomAdmin[];
-  /** Office rooms (Round 4): the teacher who owns it. Superseded by `officeOwnerId` (B10). */
-  officeTeacherId?: string;
+  /** Office rooms: the teacher who owns a teacher's room (Round 4); the same as `officeOwnerId`. */
+  officeTeacherId?: Schema<"ChatRoomViewDto">["officeTeacherId"];
   /** Office rooms (B10): the user who owns it, a teacher or a parent. */
-  officeOwnerId?: string;
-  /** Office rooms (B10): who owns it. Absent before Part B; then a teacher. */
+  officeOwnerId?: Schema<"ChatRoomViewDto">["officeOwnerId"];
+  /** Office rooms (B10): who owns it. */
   ownerRole?: OfficeOwnerRole;
 }
 
-/** Who an office room belongs to (B10). */
-export type OfficeOwnerRole = 'teacher' | 'parent';
+/** Who an office room belongs to (B10), from the room view's contract. */
+export type OfficeOwnerRole = NonNullable<Schema<"ChatRoomViewDto">["ownerRole"]>;
 
 
 // types/chat.types.ts
