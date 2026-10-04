@@ -88,3 +88,37 @@ export function useClassMutations(classId?: string) {
     }),
   };
 }
+
+/** What {@link useAssignClassTeacher} takes. */
+export interface AssignClassTeacherInput {
+  /** The class whose class teacher changes. */
+  classId: string;
+  /** The teacher's *user* id; the API resolves the profile. */
+  teacherUserId: string;
+}
+
+/**
+ * Makes a teacher the class teacher of a class from anywhere (the teacher
+ * editor as well as the class editor). It goes through
+ * `PUT /classes/:id/assign-teacher`, which writes `Class.classTeacherId`: since
+ * A6 that is the only thing that grants class-teacher (register) access.
+ * Invalidates the class list, that class's detail and the teacher caches.
+ *
+ * @returns Mutation taking `{ classId, teacherUserId }`, resolving to the updated class.
+ */
+export function useAssignClassTeacher() {
+  const client = useQueryClient();
+  const schoolId = useSchoolId();
+  const reference = useInvalidateReference();
+  return useMutation({
+    mutationFn: ({ classId, teacherUserId }: AssignClassTeacherInput) =>
+      assignTeacherToClass(classId, teacherUserId),
+    onSuccess: async (_updated, { classId }) => {
+      await Promise.all([
+        reference.classes(),
+        client.invalidateQueries({ queryKey: queryKeys.classes.detail(schoolId ?? "none", classId) }),
+        client.invalidateQueries({ queryKey: queryKeys.teachers.all }),
+      ]);
+    },
+  });
+}

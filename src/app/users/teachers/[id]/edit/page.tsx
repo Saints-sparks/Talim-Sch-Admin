@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import {
   TeacherProfileError,
   TeacherProfileSkeleton,
 } from "@/components/users/teachers/TeacherProfileStates";
+import { classTeacherClassIds } from "@/components/users/teachers/classTeacher";
 import {
   TeacherEditAssignmentsTab,
   TeacherEditAvailabilityTab,
@@ -49,6 +50,11 @@ const TABS = [
 const triggerClass =
   "data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md text-xs sm:text-sm";
 
+/**
+ * The teacher editor: one tab per section, each saved on its own.
+ *
+ * @returns The editor, or its loading and error states.
+ */
 function TeacherEditor() {
   const router = useRouter();
   const params = useParams();
@@ -64,6 +70,11 @@ function TeacherEditor() {
 
   const teacher = profileQuery.data;
   const userId = teacher?.userId?._id || teacherId;
+  // A6: class-teacher access comes from Class.classTeacherId alone, read from the class list.
+  const classTeacherOf = useMemo(
+    () => (teacher?.hasTeacherProfile === false ? undefined : classTeacherClassIds(classes, teacher?._id)),
+    [classes, teacher?._id, teacher?.hasTeacherProfile],
+  );
   const savingSection = saveSection.isPending
     ? (saveSection.variables as SaveTeacherSectionInput | undefined)?.section
     : undefined;
@@ -204,6 +215,10 @@ function TeacherEditor() {
                   toggleInList={toggleInList}
                   classes={classes}
                   courses={coursesQuery.data ?? []}
+                  classTeacherOf={classTeacherOf}
+                  teacherUserId={teacher.hasTeacherProfile === false ? undefined : userId}
+                  teacherProfileId={teacher._id}
+                  teacherName={`${teacher.userId?.firstName ?? ""} ${teacher.userId?.lastName ?? ""}`.trim()}
                   isSaving={savingSection === "assignments"}
                   onSubmit={submit(
                     () => ({ userId, section: "assignments", payload: assignmentsPayload(draft) }),

@@ -35,7 +35,8 @@ export function TeacherClassPicker({ classes, selected, onToggle }: TeacherClass
           </h4>
           <p className={`mt-1 text-sm ${mutedTextClass}`}>
             Select the classes this teacher can support. Course and subject links still happen from
-            course setup.
+            course setup. Picking a class does not make them its class teacher: only a class&apos;s
+            class teacher can take its morning register, and that is set on the class&apos;s page.
           </p>
         </div>
         <span className="rounded-full bg-[#003366]/10 dark:bg-blue-400/15 px-3 py-1 text-xs font-semibold text-[#003366] dark:text-blue-300">

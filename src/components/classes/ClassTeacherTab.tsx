@@ -57,7 +57,10 @@ export function ClassTeacherTab({ classData, onAssignTeacher }: ClassTeacherTabP
         <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
           Class Teacher Information
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mt-1">Teacher assigned to this class</p>
+        <p className="text-gray-600 dark:text-slate-400 mt-1">
+          The class teacher takes this class&apos;s morning register. Teachers who are only assigned
+          to the class, or who teach its courses, cannot.
+        </p>
       </div>
 
       {user ? (

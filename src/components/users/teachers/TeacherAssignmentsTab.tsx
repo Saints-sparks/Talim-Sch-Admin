@@ -10,11 +10,23 @@ import {
   ProfileHeading,
   tabGridClass,
 } from "./teacherProfileAtoms";
+import { ClassTeacherHint } from "./ClassTeacherHint";
 
 type ClassRow = TeacherById["assignedClasses"][number];
 
-function ClassCard({ cls, role }: { cls: ClassRow; role: "Subject Teacher" | "Form Teacher" }) {
-  const isForm = role === "Form Teacher";
+/** How the teacher stands in a class (A6: class teacher only from `Class.classTeacherId`). */
+type ClassRole = "Class Teacher" | "Assigned";
+
+/**
+ * One class the teacher is assigned to, with their role in it.
+ *
+ * @param props - The class and the teacher's role in it.
+ * @param props.cls - The class.
+ * @param props.role - "Class Teacher" or "Assigned".
+ * @returns The card.
+ */
+function ClassCard({ cls, role }: { cls: ClassRow; role: ClassRole }) {
+  const isForm = role === "Class Teacher";
   const card = isForm
     ? "from-emerald-50 to-emerald-100 border-emerald-200 dark:from-emerald-900/20 dark:to-emerald-900/30 dark:border-emerald-900/40"
     : "from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-900/30 dark:border-blue-900/40";
@@ -62,16 +74,41 @@ function EmptyBox({
   );
 }
 
-/** Classes the teacher teaches or is form teacher for, and their courses. */
-export function TeacherAssignmentsTab({ teacher }: { teacher: TeacherById }) {
-  const assignedClasses = teacher.assignedClasses ?? [];
-  const formClasses = teacher.classTeacherClasses ?? [];
+/**
+ * The classes the teacher is assigned to, which of them they are the class
+ * teacher of, and their courses.
+ *
+ * Since A6 class-teacher (register) access comes only from
+ * `Class.classTeacherId`, which `classTeacherOf` carries (read from the class
+ * list). The profile's own `classTeacherClasses` merges in the assigned
+ * classes, so it cannot say who the class teacher is. Classes the teacher is
+ * assigned to without being their class teacher get a hint.
+ *
+ * @param props - The teacher and the classes they are the class teacher of.
+ * @param props.teacher - The teacher's profile.
+ * @param props.classTeacherOf - Class ids from `Class.classTeacherId`; omit while unknown.
+ * @returns The tab.
+ */
+export function TeacherAssignmentsTab({
+  teacher,
+  classTeacherOf,
+}: {
+  teacher: TeacherById;
+  classTeacherOf?: ReadonlySet<string>;
+}) {
   const courses = teacher.assignedCourses ?? [];
-  const noClasses = assignedClasses.length === 0 && formClasses.length === 0;
+  // One card per class, whichever list(s) it came in.
+  const classes = [
+    ...new Map(
+      [...(teacher.assignedClasses ?? []), ...(teacher.classTeacherClasses ?? [])].map((cls) => [cls._id, cls]),
+    ).values(),
+  ];
+  const noClasses = classes.length === 0;
+  const roleIn = (classId: string): ClassRole => (classTeacherOf?.has(classId) ? "Class Teacher" : "Assigned");
+  const classTeacherNames = classes.filter((cls) => classTeacherOf?.has(cls._id)).map((cls) => cls.name);
 
-  /** The class name for a course, from either list, falling back to its id. */
-  const classNameFor = (classId: string) =>
-    [...assignedClasses, ...formClasses].find((cls) => cls._id === classId)?.name ?? classId;
+  /** The class name for a course, falling back to its id. */
+  const classNameFor = (classId: string) => classes.find((cls) => cls._id === classId)?.name ?? classId;
 
   return (
     <div className="space-y-8">
@@ -81,19 +118,26 @@ export function TeacherAssignmentsTab({ teacher }: { teacher: TeacherById }) {
         <ProfileCircle icon={BookOpen} tone="indigo" label="Teaching Overview">
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700 dark:text-slate-300">
-              Form Teacher Status
+              Class Teacher Status
             </Label>
             <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg px-4 py-3 shadow-sm">
               <span
                 className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                  teacher.isFormTeacher
+                  classTeacherNames.length > 0
                     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
                     : "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"
                 }`}
               >
-                <Badge className="w-3 h-3" />
-                {teacher.isFormTeacher ? "Form Teacher" : "Subject Teacher"}
+                <Badge className="w-3 h-3" aria-hidden />
+                {classTeacherOf === undefined
+                  ? "Checking…"
+                  : classTeacherNames.length > 0
+                    ? `Class teacher of ${classTeacherNames.join(", ")}`
+                    : "Not a class teacher"}
               </span>
+              {teacher.isFormTeacher && (
+                <p className="mt-2 text-xs text-gray-600 dark:text-slate-400">Labelled as a form teacher.</p>
+              )}
             </div>
           </div>
         </ProfileCircle>
@@ -106,13 +150,17 @@ export function TeacherAssignmentsTab({ teacher }: { teacher: TeacherById }) {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Assigned Classes</h3>
               </div>
               <div className="space-y-3">
-                {assignedClasses.map((cls) => (
-                  <ClassCard key={`assigned-${cls._id}`} cls={cls} role="Subject Teacher" />
-                ))}
-                {formClasses.map((cls) => (
-                  <ClassCard key={`form-${cls._id}`} cls={cls} role="Form Teacher" />
+                {classes.map((cls) => (
+                  <ClassCard key={cls._id} cls={cls} role={roleIn(cls._id)} />
                 ))}
                 {noClasses && <EmptyBox icon={Users} message="No classes assigned" />}
+                {classTeacherOf && (
+                  <ClassTeacherHint
+                    assigned={classes.map((cls) => ({ id: cls._id, name: cls.name }))}
+                    classTeacherOf={classTeacherOf}
+                    action="Set the class teacher on the class's page or in Edit Profile."
+                  />
+                )}
               </div>
             </div>
 

@@ -106,10 +106,11 @@ export function TeacherSchedulePanel({ form, errors, setField, onToggleDay }: Te
           />
           <span>
             <span className="block text-sm font-semibold text-gray-800 dark:text-gray-100">
-              Assign as Form Teacher
+              Label as Form Teacher
             </span>
             <span className="mt-1 block text-xs leading-5 text-gray-600 dark:text-gray-300">
-              Marks this teacher as the primary class coordinator where applicable.
+              A label only. To let them take a class&apos;s register, make them its class teacher on
+              the class&apos;s page (or in the teacher&apos;s profile) once the account exists.
             </span>
           </span>
         </label>

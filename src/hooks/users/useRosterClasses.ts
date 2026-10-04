@@ -21,6 +21,8 @@ export interface RosterClass {
   gradeLevel?: string;
   /** Populated or raw school reference. */
   schoolId?: string | { _id?: string; id?: string };
+  /** The class teacher's Teacher profile id, bare or populated (A6: the only source of class-teacher access). */
+  classTeacherId?: string | { _id?: string; userId?: unknown } | null;
 }
 
 /** What `useRosterClasses` returns. */

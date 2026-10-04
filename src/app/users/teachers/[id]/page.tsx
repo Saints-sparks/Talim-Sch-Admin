@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiEdit } from "react-icons/fi";
 import {
@@ -32,6 +32,8 @@ import {
   TeacherAssignmentsTab,
   TeacherAvailabilityTab,
 } from "@/components/users/teachers/TeacherAssignmentsTab";
+import { classTeacherClassIds } from "@/components/users/teachers/classTeacher";
+import { useClasses } from "@/hooks/queries/reference";
 
 const TABS = [
   { value: "personal-details", icon: User, long: "Personal Details", short: "Personal", wide: false },
@@ -44,6 +46,12 @@ const TABS = [
 const triggerClass =
   "flex items-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 sm:px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none font-medium transition-all text-xs sm:text-sm hover:bg-white/50 dark:hover:bg-slate-700/50";
 
+/**
+ * One teacher's profile: personal details, qualifications, employment,
+ * assignments (with who they are the class teacher of) and availability.
+ *
+ * @returns The profile, or its loading and error states.
+ */
 function TeacherProfile() {
   const params = useParams();
   const router = useRouter();
@@ -51,6 +59,13 @@ function TeacherProfile() {
   const [activeTab, setActiveTab] = useState<string>("personal-details");
 
   const profileQuery = useTeacherProfile(teacherId);
+  // A6: class-teacher access is Class.classTeacherId alone; one cached class list says which.
+  const classesQuery = useClasses();
+  const profileId = profileQuery.data?.hasTeacherProfile === false ? undefined : profileQuery.data?._id;
+  const classTeacherOf = useMemo(
+    () => (classesQuery.data && profileId ? classTeacherClassIds(classesQuery.data, profileId) : undefined),
+    [classesQuery.data, profileId],
+  );
   const backToRoster = () => router.push("/users/teachers");
 
   if (profileQuery.isPending) return <TeacherProfileSkeleton />;
@@ -152,7 +167,7 @@ function TeacherProfile() {
                   <TeacherEmploymentTab teacher={teacher} />
                 </TabsContent>
                 <TabsContent value="assign" className="mt-0">
-                  <TeacherAssignmentsTab teacher={teacher} />
+                  <TeacherAssignmentsTab teacher={teacher} classTeacherOf={classTeacherOf} />
                 </TabsContent>
                 <TabsContent value="availability" className="mt-0">
                   <TeacherAvailabilityTab teacher={teacher} />
