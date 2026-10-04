@@ -2,6 +2,10 @@
  * Fees API — categories, fee items, class assignments, receipt settings and the
  * fees dashboard summary.
  *
+ * Receipt settings live in Settings (A5): they are read and written through
+ * `/settings/receipt`. `/fees/receipt-settings` is a deprecated alias that
+ * nothing here calls any more.
+ *
  * Every request payload is the backend DTO itself, generated into
  * `src/types/apiPayloads.ts` from `talimBE-V2` (`npm run types:api`). The API validates with
  * `whitelist: true, forbidNonWhitelisted: true`, so an unknown property is a
@@ -19,7 +23,7 @@ import type {
   UpdateFeeAssignmentPayload,
   UpdateFeeCategoryPayload,
   UpdateFeeItemPayload,
-  UpdateFeeReceiptSettingsPayload,
+  UpdateReceiptSettingsPayload,
 } from "@/types/apiPayloads";
 
 // Request payloads come straight from the backend contract, so `tsc` fails when
@@ -462,28 +466,39 @@ export async function getCategoriesSummary(): Promise<FeeCategory[]> {
 
 // ─── Receipt Settings APIs ────────────────────────────────────────────────────
 
+/** The one receipt-settings route (A5); it answers `{ success, settings }`. */
+export const RECEIPT_SETTINGS_PATH = "/settings/receipt";
+
 /**
- * The school's receipt settings. The API returns defaults rather than 404
- * when the school has never saved any.
+ * The school's receipt settings, from `GET /settings/receipt`. The API
+ * returns defaults rather than 404 when the school has never saved any. The
+ * route needs `manage:settings`.
  *
- * @returns The settings.
- * @throws ApiError - On any non-2xx response.
+ * @returns The settings, unwrapped from the `{ success, settings }` body.
+ * @throws ApiError - On any non-2xx response (`FORBIDDEN` without `manage:settings`).
  */
 export async function getReceiptSettings(): Promise<ReceiptSettings> {
-  return api.get<ReceiptSettings>(`${BASE}/receipt-settings`);
+  const body = await api.get<{ success?: boolean; settings: ReceiptSettings }>(
+    RECEIPT_SETTINGS_PATH
+  );
+  return body.settings;
 }
 
 /**
- * Saves receipt settings.
+ * Saves receipt settings through `PATCH /settings/receipt`.
  *
  * @param payload - The fields to change.
- * @returns The saved settings.
- * @throws ApiError - On any non-2xx response.
+ * @returns The saved settings, unwrapped from the `{ success, settings }` body.
+ * @throws ApiError - On any non-2xx response (`FORBIDDEN` without `manage:settings`).
  */
 export async function updateReceiptSettings(
-  payload: UpdateFeeReceiptSettingsPayload
+  payload: UpdateReceiptSettingsPayload
 ): Promise<ReceiptSettings> {
-  return api.patch<ReceiptSettings>(`${BASE}/receipt-settings`, payload);
+  const body = await api.patch<{ success?: boolean; settings: ReceiptSettings }>(
+    RECEIPT_SETTINGS_PATH,
+    payload
+  );
+  return body.settings;
 }
 
 /**

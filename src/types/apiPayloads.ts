@@ -35,8 +35,6 @@ export type AssignFeePayload = RequestBody<"/fees/assignments", "post">;
 export type ClassAssignmentOverride = AssignFeePayload["classes"][number];
 /** Body of `PATCH /fees/assignments/{id}`. */
 export type UpdateFeeAssignmentPayload = RequestBody<"/fees/assignments/{id}", "patch">;
-/** Body of `PATCH /fees/receipt-settings`. */
-export type UpdateFeeReceiptSettingsPayload = RequestBody<"/fees/receipt-settings", "patch">;
 
 // ─── Finance ──────────────────────────────────────────────────────────────────
 

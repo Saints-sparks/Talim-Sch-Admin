@@ -15,6 +15,9 @@
 import { keepPreviousData, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { queryKeys, staleTimes } from "@/lib/queryKeys";
 import { useSchoolId } from "@/hooks/useSchoolId";
+import { usePermissions } from "@/hooks/usePermissions";
+import { settingsKeys } from "@/hooks/settings/keys";
+import { Permission } from "@/lib/permissions";
 import {
   getCategoriesSummary,
   getFeeAssignments,
@@ -150,17 +153,31 @@ export function useFeeAssignments(
 }
 
 /**
- * Receipt signature settings.
+ * Whether the signed-in admin may read and change receipt settings. They live
+ * at `/settings/receipt` (A5), which needs `manage:settings`; a fees-only
+ * sub-admin is refused there, so the UI neither asks nor offers the controls.
+ *
+ * @returns True for the school admin and for a sub-admin with `manage:settings`.
+ */
+export function useCanManageReceiptSettings(): boolean {
+  return usePermissions().hasPermission(Permission.MANAGE_SETTINGS);
+}
+
+/**
+ * Receipt signature settings, from `/settings/receipt`. Shares its cache entry
+ * with Settings → Fees & Receipts, so a change in either place shows in both.
+ * Idle for an admin without `manage:settings` (the route would answer 403).
  *
  * @returns Query result; the API returns defaults rather than 404 when the
  *   school has never saved any.
  */
 export function useReceiptSettings(): UseQueryResult<ReceiptSettings> {
   const schoolId = useSchoolId();
+  const allowed = useCanManageReceiptSettings();
   return useQuery({
-    queryKey: [...queryKeys.fees.all, schoolId ?? NO_SCHOOL, "receiptSettings"],
+    queryKey: settingsKeys.receipt(schoolId ?? NO_SCHOOL),
     queryFn: getReceiptSettings,
-    enabled: Boolean(schoolId),
+    enabled: Boolean(schoolId) && allowed,
     staleTime: staleTimes.reference,
   });
 }
@@ -207,6 +224,6 @@ export function useInvalidateFees(): FeesInvalidators {
       await Promise.all([invalidate(queryKeys.fees.assignments(schoolId)), summary()]);
     },
     summary,
-    receiptSettings: () => invalidate([...queryKeys.fees.all, schoolId, "receiptSettings"]),
+    receiptSettings: () => invalidate(settingsKeys.receipt(schoolId)),
   };
 }

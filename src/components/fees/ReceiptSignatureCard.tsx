@@ -16,7 +16,7 @@ interface ReceiptSignatureCardProps {
   settings?: ReceiptSettings;
   loading: boolean;
   error: unknown;
-  /** False for an admin without MANAGE_FEES: the card shows, the controls don't. */
+  /** False for an admin without `manage:settings` (the receipt route's permission): the card shows, the controls don't. */
   canEdit: boolean;
 }
 

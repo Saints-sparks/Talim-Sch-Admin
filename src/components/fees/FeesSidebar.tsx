@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { SectionSkeleton } from "@/components/ui/loading";
-import { useFeeCategoriesSummary, useReceiptSettings } from "@/hooks/fees/queries";
+import {
+  useCanManageReceiptSettings,
+  useFeeCategoriesSummary,
+  useReceiptSettings,
+} from "@/hooks/fees/queries";
 import { feesErrorMessage } from "./errors";
 import { ReceiptSignatureCard } from "./ReceiptSignatureCard";
 import { brandTextClass, cardClass, mutedTextClass } from "./ui";
@@ -21,12 +25,19 @@ interface FeesSidebarProps {
  * The right-hand column: category counts, the shortcuts, and the receipt
  * signature card.
  *
+ * The signature is a receipt setting, kept at `/settings/receipt` (A5), which
+ * needs `manage:settings`: the card is shown only to an admin who holds it,
+ * so a fees-only sub-admin is never shown a card that cannot load.
+ *
  * @param props - Tab switcher and whether the user may change fees.
+ * @param props.onViewCategories - Switches the main area to the Fee Categories tab.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The sidebar.
  */
 export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
   const router = useRouter();
   const categories = useFeeCategoriesSummary();
+  const canManageReceipt = useCanManageReceiptSettings();
   const receipt = useReceiptSettings();
 
   const active = (categories.data ?? []).filter((category) => category.status === "active");
@@ -90,12 +101,14 @@ export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
         </div>
       )}
 
-      <ReceiptSignatureCard
-        settings={receipt.data}
-        loading={receipt.isPending}
-        error={receipt.error}
-        canEdit={canManage}
-      />
+      {canManageReceipt && (
+        <ReceiptSignatureCard
+          settings={receipt.data}
+          loading={receipt.isPending}
+          error={receipt.error}
+          canEdit={canManageReceipt}
+        />
+      )}
     </div>
   );
 }

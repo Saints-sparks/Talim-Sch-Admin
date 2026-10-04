@@ -289,7 +289,7 @@ describe("getCategoriesSummary", () => {
 // ─── Receipt Settings ─────────────────────────────────────────────────────────
 
 describe("getReceiptSettings", () => {
-  it("fetches the receipt settings", async () => {
+  it("reads GET /settings/receipt (A5) and unwraps `settings`", async () => {
     const settings = {
       signatureUrl: "",
       signatureName: "Principal",
@@ -297,18 +297,24 @@ describe("getReceiptSettings", () => {
       showSchoolLogo: true,
       allowParentDownload: false,
     };
-    mockGet.mockResolvedValueOnce(settings);
+    mockGet.mockResolvedValueOnce({ success: true, settings });
     await expect(getReceiptSettings()).resolves.toEqual(settings);
-    expect(mockGet).toHaveBeenCalledWith("/fees/receipt-settings");
+    expect(mockGet).toHaveBeenCalledWith("/settings/receipt");
+  });
+
+  it("never calls the deprecated /fees/receipt-settings alias", async () => {
+    mockGet.mockResolvedValueOnce({ success: true, settings: {} });
+    await getReceiptSettings();
+    expect(mockGet.mock.calls.flat()).not.toContain("/fees/receipt-settings");
   });
 });
 
 describe("updateReceiptSettings", () => {
-  it("patches the receipt settings", async () => {
+  it("patches PATCH /settings/receipt and returns the saved settings", async () => {
     const patch = { signatureName: "New Principal" };
-    mockPatch.mockResolvedValueOnce({ ...patch, signatureUrl: "" });
-    await updateReceiptSettings(patch);
-    expect(mockPatch).toHaveBeenCalledWith("/fees/receipt-settings", patch);
+    mockPatch.mockResolvedValueOnce({ success: true, settings: { ...patch, signatureUrl: "" } });
+    await expect(updateReceiptSettings(patch)).resolves.toEqual({ ...patch, signatureUrl: "" });
+    expect(mockPatch).toHaveBeenCalledWith("/settings/receipt", patch);
   });
 });
 
