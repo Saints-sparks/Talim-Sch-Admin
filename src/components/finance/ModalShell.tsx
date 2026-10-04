@@ -26,6 +26,9 @@ function lockBodyScroll(): () => void {
   };
 }
 
+/** Open panels, oldest first: only the newest one keeps Tab inside it. */
+const openPanels: HTMLElement[] = [];
+
 /** What can take keyboard focus inside a panel. */
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -119,9 +122,15 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
 
   // Focus in on open, back to the opener on close.
   useEffect(() => {
+    const panel = panelRef.current;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (panelRef.current) focusIntoPanel(panelRef.current);
+    if (panel) {
+      openPanels.push(panel);
+      focusIntoPanel(panel);
+    }
     return () => {
+      const at = panel ? openPanels.lastIndexOf(panel) : -1;
+      if (at !== -1) openPanels.splice(at, 1);
       if (opener && opener.isConnected) opener.focus();
     };
   }, []);
@@ -129,7 +138,10 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
-      else if (panelRef.current) trapTab(event, panelRef.current);
+      // With modals stacked, only the newest one traps Tab.
+      else if (panelRef.current && openPanels[openPanels.length - 1] === panelRef.current) {
+        trapTab(event, panelRef.current);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
