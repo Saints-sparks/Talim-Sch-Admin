@@ -3,11 +3,11 @@
  * contract while the backend is built in parallel:
  * `talimBE-V2/docs/redesign-teachers-round4-inbox-settings.md`.
  *
- * None of these are in the generated contract (`./api.d.ts`) yet. Once the
- * backend lands and `npm run types:api` regenerates it, replace each one with
- * an alias of its `Schema<...>` (as `gradingContract.ts` does) so `tsc` flags
- * any drift. The section numbers below are the contract's.
+ * `ChatRoomCategory` now aliases the generated contract. Replace the others
+ * with an alias of their `Schema<...>` (as `gradingContract.ts` does) once
+ * the contract has them, so `tsc` flags any drift. The section numbers below are the contract's.
  */
+import type { Schema } from "./apiContract";
 
 // ─── §27 Room view additions ──────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@
  * What a room is to the viewer (§27). Per viewer: the same room can be a
  * `colleague` chat for one person and something else for another.
  */
-export type ChatRoomCategory = "parent" | "colleague" | "class_group" | "office" | "group";
+export type ChatRoomCategory = Schema<"ChatRoomViewDto">["category"];
 
 /** The per-viewer fields every room list and room read gains (§27). */
 export interface RoomViewAdditions {
