@@ -4,6 +4,12 @@
  * A labelled on/off switch used by the fee settings section.
  *
  * @param props - Current value, change handler and the label/description.
+ * @param props.checked - Whether the switch is on.
+ * @param props.onChange - Called with the new value.
+ * @param props.label - The switch's name.
+ * @param props.description - A line under the label.
+ * @param props.disabled - Locks the switch.
+ * @param props.describedBy - Id of extra text that explains the switch.
  * @returns The toggle row.
  */
 export function FeeToggle({
@@ -12,12 +18,14 @@ export function FeeToggle({
   label,
   description,
   disabled = false,
+  describedBy,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
   description?: string;
   disabled?: boolean;
+  describedBy?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -32,6 +40,7 @@ export function FeeToggle({
         role="switch"
         aria-checked={checked}
         aria-label={label}
+        aria-describedby={describedBy}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${

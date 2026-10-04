@@ -64,16 +64,19 @@ export function useBankAccounts(): UseQueryResult<BankAccount[]> {
 }
 
 /**
- * The school's withdrawal safeguards.
+ * The school's withdrawal safeguards and minimum part payment.
  *
+ * @param options - `enabled: false` keeps it idle, e.g. for an admin without
+ *   `manage:settings` (the route's permission) or while nothing needs it.
+ * @param options.enabled - False to keep the query idle.
  * @returns Query result; `data` is undefined until the first load finishes.
  */
-export function useFinanceSettings(): UseQueryResult<FinanceSettings> {
+export function useFinanceSettings(options: { enabled?: boolean } = {}): UseQueryResult<FinanceSettings> {
   const schoolId = useSchoolId();
   return useQuery({
     queryKey: settingsKeys.finance(schoolId ?? "none"),
     queryFn: async () => (await getFinanceSettings()).settings,
-    enabled: Boolean(schoolId),
+    enabled: Boolean(schoolId) && options.enabled !== false,
     staleTime: staleTimes.reference,
   });
 }
@@ -114,7 +117,7 @@ export function useUpdateFinanceSettings(): UpdateFinanceSettings {
     onError: (err, _vars, context) => {
       if (context?.previous) client.setQueryData(key, context.previous);
       logger.error("settings/finance", "save failed", err);
-      toast.error(getErrorMessage(err, "Failed to save withdrawal settings"));
+      toast.error(getErrorMessage(err, "Failed to save the finance settings"));
     },
     onSuccess: (settings, { successMessage }) => {
       client.setQueryData(key, settings);

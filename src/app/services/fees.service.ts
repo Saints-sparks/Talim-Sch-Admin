@@ -16,6 +16,7 @@
  * school id. Every function throws `ApiError` on a non-2xx response.
  */
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import type {
   AssignFeePayload,
   CreateFeeCategoryPayload,
@@ -57,8 +58,8 @@ export type FeeAssignmentStatus = "draft" | "active" | "inactive" | "archived";
 /** How often a fee falls due (`FeeType` on the backend). */
 export type FeeType = "one_time" | "recurring" | "termly" | "annual";
 
-/** State of a payment against an assignment (`PaymentStatus` on the backend). */
-export type FeePaymentStatus = "pending" | "successful" | "failed" | "refunded" | "partial";
+/** Where one child's fee stands in the ledger (`FeePayment.status`, C1). */
+export type FeeLedgerStatus = Schema<"FeePaymentDto">["status"];
 
 /** A named grouping of fee items, e.g. "Tuition". */
 export interface FeeCategory {
@@ -115,21 +116,12 @@ export interface AssignFeeResult {
   assignments: FeeAssignment[];
 }
 
-/** A recorded payment against an assignment. */
-export interface FeePayment {
-  _id: string;
-  studentId: Ref<{ _id: string; firstName: string; lastName: string }>;
-  feeAssignmentId: string;
-  amountExpected: number;
-  amountPaid: number;
-  balance: number;
-  paymentMethod: string;
-  paymentStatus: FeePaymentStatus;
-  receiptNumber: string;
-  transactionReference: string;
-  paidAt: string;
-  createdAt: string;
-}
+/**
+ * One child's position on one fee: a fee-ledger row (C1), in naira. A row
+ * exists once anything was paid or held against the fee; a fee with no row is
+ * unpaid in full.
+ */
+export type FeeLedgerRow = Schema<"FeePaymentDto">;
 
 /** Signature and visibility settings printed on fee receipts. */
 export interface ReceiptSettings {
@@ -462,6 +454,23 @@ export async function getFeesDashboardSummary(): Promise<DashboardSummary> {
  */
 export async function getCategoriesSummary(): Promise<FeeCategory[]> {
   return api.get<FeeCategory[]>(`${BASE}/dashboard/categories-summary`);
+}
+
+// ─── Fee ledger (C1) ──────────────────────────────────────────────────────────
+
+/**
+ * One child's fee-ledger rows: what is due, paid and still owed on each fee
+ * someone has paid towards. One request per child, never one per fee.
+ *
+ * @param studentId - The child's Student profile id.
+ * @returns The rows (amounts in naira); a fee with no row is unpaid in full.
+ * @throws ApiError - On any non-2xx response (`FORBIDDEN` without `manage:fees`).
+ */
+export async function getStudentFeeLedger(studentId: string): Promise<FeeLedgerRow[]> {
+  const body = await api.get<FeeLedgerRow[] | { data?: FeeLedgerRow[] }>(
+    `${BASE}/payments/student/${encodeURIComponent(studentId)}`
+  );
+  return Array.isArray(body) ? body : (body?.data ?? []);
 }
 
 // ─── Receipt Settings APIs ────────────────────────────────────────────────────

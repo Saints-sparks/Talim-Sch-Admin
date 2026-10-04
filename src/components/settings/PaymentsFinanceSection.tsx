@@ -15,6 +15,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { AddBankAccountForm } from "@/components/settings/AddBankAccountForm";
+import { PartPaymentSettingsCard } from "@/components/settings/PartPaymentSettingsCard";
 import {
   Card,
   CardHeader,
@@ -41,7 +42,7 @@ const PROVIDERS = [
 
 /**
  * Settings → Payments & Finance: the wallet at a glance, the withdrawal
- * safeguards and the payout bank accounts.
+ * safeguards, the minimum part payment and the payout bank accounts.
  *
  * The wallet and account list belong to Finance (`manage:finance`); the
  * safeguards belong to Settings (`manage:settings`). Each part is shown only
@@ -189,6 +190,13 @@ export function PaymentsFinanceSection({ canManage }: { canManage: boolean }) {
           </div>
         </div>
       </Card>
+
+      <PartPaymentSettingsCard
+        settings={settings.data}
+        canManage={canManage}
+        saving={saving}
+        save={save}
+      />
 
       {canSeeFinance && (
         <Card>

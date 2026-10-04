@@ -3,8 +3,9 @@
  *
  * Transaction totals and the transaction list are money, so they use
  * `staleTimes.live` and refetch on every mount. Recording a manual payment
- * settles through the same path as an online one — it credits the wallet and
- * issues a receipt — so it invalidates the finance caches as well as its own.
+ * writes the fee ledger and issues a receipt, so it invalidates the fees
+ * caches (balances) as well as its own. It does not credit the platform
+ * wallet any more: only online provider payments do.
  *
  * Lives under `hooks/finance` because payments and the wallet are one area;
  * the permission is different though, `manage:payments` rather than
@@ -115,9 +116,11 @@ export function usePaymentProviders(): UseQueryResult<PaymentProvider[]> {
 /**
  * Records a payment taken outside the platform.
  *
- * The backend credits the wallet and issues a receipt, so this drops the
- * payments caches *and* the finance ones — otherwise the wallet balance on the
- * finance page would still show the figure from before the payment.
+ * The backend writes the fee ledger and issues a receipt (the money is in the
+ * school's own bank, so the platform wallet is not credited). This drops the
+ * payments caches and the fees caches, so balances and part-paid states are
+ * current; the finance ones are dropped too, which is cheap and keeps a
+ * refund of an older, wallet-credited payment honest.
  *
  * @returns Mutation resolving to the created transaction and receipt.
  */
@@ -145,6 +148,7 @@ export function useCreateManualPayment(): UseMutationResult<
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: listPrefix }),
         queryClient.invalidateQueries({ queryKey: queryKeys.payments.summary(schoolId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.fees.all }),
         invalidateFinance.money(),
       ]);
     },

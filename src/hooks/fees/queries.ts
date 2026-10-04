@@ -26,12 +26,14 @@ import {
   getFeeItems,
   getFeesDashboardSummary,
   getReceiptSettings,
+  getStudentFeeLedger,
   type DashboardSummary,
   type FeeAssignment,
   type FeeAssignmentQuery,
   type FeeCategory,
   type FeeItem,
   type FeeItemQuery,
+  type FeeLedgerRow,
   type FeePage,
   type ReceiptSettings,
 } from "@/app/services/fees.service";
@@ -149,6 +151,25 @@ export function useFeeAssignments(
     enabled: Boolean(schoolId) && options.enabled !== false,
     staleTime: staleTimes.list,
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * One child's fee-ledger rows: balances and part-paid status per fee. Money,
+ * so it is never served stale. Idle without a child, or for an admin without
+ * `manage:fees` (the route's permission).
+ *
+ * @param studentId - The child's Student profile id, or "" while none is chosen.
+ * @returns Query result; `data` is the rows (a fee with no row is unpaid in full).
+ */
+export function useStudentFeeLedger(studentId: string): UseQueryResult<FeeLedgerRow[]> {
+  const schoolId = useSchoolId();
+  const canReadFees = usePermissions().hasPermission(Permission.MANAGE_FEES);
+  return useQuery({
+    queryKey: queryKeys.fees.ledger(schoolId ?? NO_SCHOOL, studentId || "none"),
+    queryFn: () => getStudentFeeLedger(studentId),
+    enabled: Boolean(schoolId) && Boolean(studentId) && canReadFees,
+    staleTime: staleTimes.live,
   });
 }
 

@@ -57,6 +57,8 @@ export const queryKeys = {
       (params ? ["fees", schoolId, "items", params] : ["fees", schoolId, "items"]) as readonly unknown[],
     assignments: (schoolId: string, params?: Record<string, unknown>) => ["fees", schoolId, "assignments", params ?? {}] as const,
     summary: (schoolId: string) => ["fees", schoolId, "summary"] as const,
+    /** One child's fee-ledger rows (balances per fee). */
+    ledger: (schoolId: string, studentId: string) => ["fees", schoolId, "ledger", studentId] as const,
   },
   payments: {
     all: ["payments"] as const,

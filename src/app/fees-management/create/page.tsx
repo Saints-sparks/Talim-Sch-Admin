@@ -9,6 +9,7 @@ import { ClassSelector } from "@/components/fees/ClassSelector";
 import { FeeInformationSection } from "@/components/fees/FeeInformationSection";
 import { FeeSummaryPanel } from "@/components/fees/FeeSummaryPanel";
 import { FeeToggle } from "@/components/fees/FeeToggle";
+import { PartPaymentHint } from "@/components/fees/PartPaymentHint";
 import { FeesPanelState } from "@/components/fees/FeesPanelState";
 import type { FeeClass } from "@/components/fees/types";
 import {
@@ -250,13 +251,21 @@ function CreateFeeScreen() {
                     description="Include this fee in the fee collection process."
                     disabled={submitting}
                   />
-                  <FeeToggle
-                    checked={form.values.allowPartialPayment}
-                    onChange={(value) => form.setField("allowPartialPayment", value)}
-                    label="Allow Partial Payment"
-                    description="Students can pay a portion of this fee."
-                    disabled={submitting}
-                  />
+                  <div className="space-y-2">
+                    <FeeToggle
+                      checked={form.values.allowPartialPayment}
+                      onChange={(value) => form.setField("allowPartialPayment", value)}
+                      label="Allow Partial Payment"
+                      description="Parents can pay this fee in parts."
+                      disabled={submitting}
+                      describedBy="fee-part-payment-hint"
+                    />
+                    <PartPaymentHint
+                      id="fee-part-payment-hint"
+                      allowPartialPayment={form.values.allowPartialPayment}
+                      defaultAmount={form.values.defaultAmount}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

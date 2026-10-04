@@ -10,11 +10,32 @@ import { formatDate, formatNaira } from "@/components/finance/formatters";
 import { MANUAL_PAYMENT_METHODS } from "@/app/services/payments.service";
 import { useClasses } from "@/hooks/queries/reference";
 import { useCreateManualPayment } from "@/hooks/finance/usePaymentsQueries";
+import { useStudentFeeLedger } from "@/hooks/fees/queries";
 import {
   refLabel,
   useClassFeeAssignments,
   useStudentsInClass,
 } from "@/hooks/finance/useManualPaymentOptions";
+import { LedgerStatusBadge } from "@/components/fees/LedgerStatusBadge";
+import {
+  feeBalance,
+  feeBalanceSummary,
+  ledgerByAssignment,
+  manualAmountProblem,
+  totalOwed,
+  type FeeBalance,
+} from "@/components/fees/partPayments";
+
+/**
+ * Today as `YYYY-MM-DD` in the browser's timezone, for the "Paid on" field.
+ *
+ * @returns Today's date.
+ */
+function todayInputValue(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
 
 /**
  * Records a payment taken outside the platform.
@@ -25,7 +46,13 @@ import {
  * load in order — class, then that class's roster and its active fee
  * assignments — so nothing is ever populated with the wrong class's data.
  *
+ * Once a student is chosen, their fee ledger (one request) shows each fee as
+ * paid, part paid or unpaid with what is still owed; a fee paid in full
+ * cannot be picked, the amount defaults to the balance and may not exceed it
+ * (the API refuses an overpayment).
+ *
  * @param props - Close handler; fires after a successful record too.
+ * @param props.onClose - Closes the modal.
  * @returns The manual payment modal.
  */
 export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
@@ -40,9 +67,12 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
   const [paymentMethod, setPaymentMethod] = useState<string>(MANUAL_PAYMENT_METHODS[0].value);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+  const [paidOn, setPaidOn] = useState(todayInputValue);
+  const today = todayInputValue();
 
   const students = useStudentsInClass(classId);
   const assignments = useClassFeeAssignments(classId);
+  const ledger = useStudentFeeLedger(studentId);
 
   // Changing class invalidates everything picked from the old one.
   useEffect(() => {
@@ -50,23 +80,52 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     setSelectedFeeIds([]);
   }, [classId]);
 
-  const selectedTotal = useMemo(
+  // Each fee's position for the chosen student, from one ledger read.
+  const balances = useMemo(() => {
+    const rows = ledgerByAssignment(ledger.data);
+    const map = new Map<string, FeeBalance>();
+    for (const assignment of assignments.data ?? []) {
+      map.set(
+        assignment._id,
+        feeBalance(assignment, studentId ? rows.get(assignment._id) : undefined)
+      );
+    }
+    return map;
+  }, [assignments.data, ledger.data, studentId]);
+
+  // A fee the ledger says is paid in full can't be selected; drop it if it was.
+  useEffect(() => {
+    setSelectedFeeIds((current) => {
+      const next = current.filter((id) => (balances.get(id)?.balance ?? 0) > 0);
+      return next.length === current.length ? current : next;
+    });
+  }, [balances]);
+
+  const owed = useMemo(
     () =>
-      (assignments.data ?? [])
-        .filter((assignment) => selectedFeeIds.includes(assignment._id))
-        .reduce((total, assignment) => total + (assignment.amount ?? 0), 0),
-    [assignments.data, selectedFeeIds]
+      totalOwed(
+        selectedFeeIds.map((id) => balances.get(id)).filter((b): b is FeeBalance => Boolean(b))
+      ),
+    [balances, selectedFeeIds]
   );
 
-  // The amount defaults to what the selected fees add up to; the admin can
-  // override it for a part payment.
+  // The amount defaults to what the selected fees still owe; the admin can
+  // lower it for a part payment.
   useEffect(() => {
-    if (!amountTouched) setAmount(selectedTotal > 0 ? String(selectedTotal) : "");
-  }, [selectedTotal, amountTouched]);
+    if (!amountTouched) setAmount(owed > 0 ? String(owed) : "");
+  }, [owed, amountTouched]);
 
   const amountValue = Number.parseFloat(amount) || 0;
+  const amountProblem =
+    selectedFeeIds.length > 0 && amount !== "" ? manualAmountProblem(amountValue, owed) : null;
+  const paidOnProblem = paidOn > today ? "The payment date can't be in the future." : null;
   const canSubmit =
-    Boolean(studentId) && selectedFeeIds.length > 0 && amountValue > 0 && !record.isPending;
+    Boolean(studentId) &&
+    selectedFeeIds.length > 0 &&
+    !amountProblem &&
+    !paidOnProblem &&
+    amountValue > 0 &&
+    !record.isPending;
 
   const toggleFee = (assignmentId: string) => {
     setSelectedFeeIds((current) =>
@@ -87,6 +146,8 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         paymentMethod,
         reference: reference.trim() || undefined,
         notes: notes.trim() || undefined,
+        // Today means "now" (the server's default); an earlier day is sent as that day.
+        paidAt: paidOn && paidOn !== today ? paidOn : undefined,
       });
       toast.success(
         result.receiptNumber
@@ -107,7 +168,10 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     <ModalShell title="Record Manual Payment" onClose={onClose}>
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div>
-          <label htmlFor="manual-class" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-class"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Class
           </label>
           <select
@@ -128,7 +192,10 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-student" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-student"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Student
           </label>
           <select
@@ -156,12 +223,16 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             ))}
           </select>
           {students.isError && (
-            <p className="text-xs text-red-500 mt-1">Couldn&apos;t load this class&apos;s students.</p>
+            <p className="text-xs text-red-500 mt-1">
+              Couldn&apos;t load this class&apos;s students.
+            </p>
           )}
         </div>
 
         <div>
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">Fees being paid</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+            Fees being paid
+          </span>
           {!classId ? (
             <p className="text-xs text-gray-400">Pick a class to see its fees.</p>
           ) : assignments.isPending ? (
@@ -175,37 +246,65 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
               against.
             </p>
           ) : (
-            <div className="max-h-44 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100">
-              {(assignments.data ?? []).map((assignment) => (
-                <label
-                  key={assignment._id}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedFeeIds.includes(assignment._id)}
-                    onChange={() => toggleFee(assignment._id)}
-                    className="w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
-                  />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-sm text-gray-800 dark:text-slate-100 truncate">
-                      {refLabel(assignment.feeItemId, (item) => item.name)}
+            <div className="max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-800">
+              {(assignments.data ?? []).map((assignment) => {
+                const balance = balances.get(assignment._id);
+                const settled = Boolean(studentId && balance?.fromLedger && balance.balance <= 0);
+                const name = refLabel(assignment.feeItemId, (item) => item.name);
+                return (
+                  <label
+                    key={assignment._id}
+                    className={`flex items-center gap-3 px-3 py-2.5 ${
+                      settled
+                        ? "cursor-not-allowed opacity-70"
+                        : "cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedFeeIds.includes(assignment._id)}
+                      onChange={() => toggleFee(assignment._id)}
+                      disabled={settled}
+                      aria-describedby={`fee-balance-${assignment._id}`}
+                      className="w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm text-gray-800 dark:text-slate-100 truncate">
+                        {name}
+                      </span>
+                      <span
+                        id={`fee-balance-${assignment._id}`}
+                        className="block text-xs text-gray-500 dark:text-slate-400"
+                      >
+                        Due {formatDate(assignment.dueDate)}
+                        {studentId && balance ? ` · ${feeBalanceSummary(balance)}` : ""}
+                      </span>
                     </span>
-                    <span className="block text-xs text-gray-400">
-                      Due {formatDate(assignment.dueDate)}
+                    <span className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">
+                        {formatNaira(studentId && balance ? balance.due : assignment.amount)}
+                      </span>
+                      {studentId && balance?.fromLedger && (
+                        <LedgerStatusBadge status={balance.status} />
+                      )}
                     </span>
-                  </span>
-                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 shrink-0">
-                    {formatNaira(assignment.amount)}
-                  </span>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
+          )}
+          {studentId && ledger.isError && (
+            <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+              Couldn&apos;t load this student&apos;s balances; amounts shown are the full fees.
+            </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="manual-amount" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-amount"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Amount (₦)
           </label>
           <input
@@ -221,19 +320,52 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             placeholder="0.00"
             className={fieldClass}
             required
+            aria-invalid={amountProblem ? true : undefined}
+            aria-describedby="manual-amount-help"
           />
-          {selectedTotal > 0 && (
-            <p className="text-xs text-gray-400 mt-1">
-              Selected fees total {formatNaira(selectedTotal)}
-              {amountValue > 0 && amountValue !== selectedTotal
-                ? " — recording a different amount as a part payment"
-                : ""}
+          <div id="manual-amount-help" aria-live="polite">
+            {amountProblem ? (
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">{amountProblem}</p>
+            ) : owed > 0 ? (
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                Still owed on the selected fees: {formatNaira(owed)}
+                {amountValue > 0 && amountValue < owed
+                  ? " — this is recorded as a part payment, applied to the earliest due fee first"
+                  : ""}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="manual-paid-on"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
+            Paid on
+          </label>
+          <input
+            id="manual-paid-on"
+            type="date"
+            value={paidOn}
+            max={today}
+            onChange={(event) => setPaidOn(event.target.value)}
+            className={fieldClass}
+            aria-invalid={paidOnProblem ? true : undefined}
+            aria-describedby={paidOnProblem ? "manual-paid-on-error" : undefined}
+          />
+          {paidOnProblem && (
+            <p id="manual-paid-on-error" className="text-xs text-red-700 dark:text-red-300 mt-1">
+              {paidOnProblem}
             </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="manual-method" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-method"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Payment Method
           </label>
           <select
@@ -251,7 +383,10 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-reference" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-reference"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Reference <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
@@ -265,7 +400,10 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="manual-notes" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label
+            htmlFor="manual-notes"
+            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+          >
             Notes <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input

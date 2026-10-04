@@ -70,12 +70,17 @@ export interface ReceiptSettings {
   footerNote: string;
 }
 
-/** Withdrawal safeguards for the school wallet. */
+/** Withdrawal safeguards for the school wallet, and the part-payment minimum. */
 export interface FinanceSettings {
   schoolId: string;
   requireEmailOtpForWithdrawals: boolean;
   minimumWithdrawalAmount: number;
   defaultBankAccountId: string | null;
+  /**
+   * The smallest part payment a parent may make, in naira (0: no minimum). A
+   * payment of the whole balance is always allowed. Absent from an older API.
+   */
+  minimumPartPayment?: number;
 }
 
 /** A weekday the school may teach on. */
