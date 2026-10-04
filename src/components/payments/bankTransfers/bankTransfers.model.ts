@@ -23,15 +23,13 @@ export const BANK_TRANSFER_EMPTY_COPY: Record<BankTransferStatus, string> = {
 };
 
 /**
- * The child's class, when the API sends it. The list route does not include
- * a class yet, so this falls back to an em dash rather than guessing.
+ * The child's class from the list row (`child.class`).
  *
  * @param transfer - A transfer from the list.
- * @returns The class name, or "—".
+ * @returns The class name, or "—" for a child with no class.
  */
 export function transferClassName(transfer: AdminBankTransfer): string {
-  const name = transfer.child?.class?.name ?? transfer.child?.className ?? "";
-  return name.trim() || "—";
+  return transfer.child?.class?.name?.trim() || "—";
 }
 
 /** One line of the confirm dialog's allocation preview. */

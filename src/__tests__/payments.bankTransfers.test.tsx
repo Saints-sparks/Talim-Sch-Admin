@@ -41,7 +41,12 @@ const pending: AdminBankTransfer = {
   status: "pending",
   amount: 75000,
   submittedAt: "2026-10-01T09:30:00.000Z",
-  child: { id: "s1", name: "Ada Obi", admissionNumber: "ADM-001" },
+  child: {
+    id: "s1",
+    name: "Ada Obi",
+    admissionNumber: "ADM-001",
+    class: { id: "c5a", name: "Grade 5A" },
+  },
   parent: { id: "p1", name: "Chidi Obi" },
   items: [
     { feeAssignmentId: "fa1", label: "Tuition", amount: 50000 },
@@ -130,8 +135,9 @@ describe("the pending list", () => {
       "https://cdn.test/proof.png"
     );
     expect(cells.getByText(formatDateTime("2026-10-01T09:30:00.000Z"))).toBeInTheDocument();
-    // The list has no class yet: an em dash, not a guess.
+    // `child.class` from the list (one $in on the server).
     expect(screen.getByRole("columnheader", { name: "Class" })).toBeInTheDocument();
+    expect(cells.getByText("Grade 5A")).toBeInTheDocument();
     expect(mockGet).toHaveBeenCalledWith(
       "/payments/admin/bank-transfers?status=pending&page=1&limit=20"
     );
@@ -281,17 +287,12 @@ describe("reconciliation rules", () => {
     expect(validateRejectReason("Not received")).toBeNull();
   });
 
-  it("links only http(s) proof and reads a class when the API sends one", () => {
+  it("links only http(s) proof and reads the child's class", () => {
     expect(safeProofUrl("javascript:alert(1)")).toBeNull();
     expect(safeProofUrl("")).toBeNull();
     expect(safeProofUrl("https://cdn.test/a.png")).toBe("https://cdn.test/a.png");
-    expect(transferClassName(pending)).toBe("—");
-    expect(
-      transferClassName({ ...pending, child: { ...pending.child, class: { name: "JSS 2A" } } })
-    ).toBe("JSS 2A");
-    expect(
-      transferClassName({ ...pending, child: { ...pending.child, className: "Grade 5" } })
-    ).toBe("Grade 5");
+    expect(transferClassName(pending)).toBe("Grade 5A");
+    expect(transferClassName({ ...pending, child: { ...pending.child, class: null } })).toBe("—");
   });
 
   it("words the failures the bursar can act on", () => {

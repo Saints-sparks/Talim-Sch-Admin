@@ -262,13 +262,13 @@ export const BANK_TRANSFER_STATUSES: readonly BankTransferStatus[] = [
  * server made when the parent submitted it: what each fee will receive once
  * the transfer is confirmed.
  *
- * `child.class` / `child.className` are not in the contract yet (the list has
- * no class); they are read when a later API sends them.
+ * `child.class` is sent by the API (School Admin gap 1, read with one `$in`)
+ * but `ChildRefDto` does not document it yet, so it is added here.
  */
 export type AdminBankTransfer = Schema<"AdminBankTransferDto"> & {
   child: Schema<"AdminBankTransferDto">["child"] & {
-    class?: { id?: string; name?: string } | null;
-    className?: string | null;
+    /** The child's class; null when the child has none. */
+    class?: { id: string; name: string } | null;
   };
 };
 
