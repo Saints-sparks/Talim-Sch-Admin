@@ -49,7 +49,9 @@ const PROVIDERS = [
  * safeguards belong to Settings (`manage:settings`). Each part is shown only
  * to a role that holds the permission governing it.
  *
+ * @param props - The section props.
  * @param props.canManage - True when the user holds `manage:settings`.
+ * @returns The section.
  */
 export function PaymentsFinanceSection({ canManage }: { canManage: boolean }) {
   const router = useRouter();

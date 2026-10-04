@@ -122,6 +122,11 @@ function StatusTabs({
             id={`${panelId}-tab-${status}`}
             aria-selected={selected}
             aria-controls={panelId}
+            aria-label={
+              status === "pending" && pendingCount
+                ? `${BANK_TRANSFER_TAB_LABELS[status]}, ${pendingCount} waiting`
+                : undefined
+            }
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(status)}
             onKeyDown={(event) => onKeyDown(event, index)}

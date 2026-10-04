@@ -105,7 +105,7 @@ describe("who may reconcile", () => {
     unmount();
 
     render(<BankTransfersLink />, { user: mockAdmin });
-    const link = await screen.findByRole("link", { name: /bank transfers.*1 waiting/i });
+    const link = await screen.findByRole("link", { name: "Bank transfers, 1 waiting" });
     expect(link).toHaveAttribute("href", "/fees-management/bank-transfers");
     expect(mockGet).toHaveBeenCalledWith(
       "/payments/admin/bank-transfers?status=pending&page=1&limit=1"
@@ -134,6 +134,10 @@ describe("the pending list", () => {
     expect(screen.getByRole("columnheader", { name: "Class" })).toBeInTheDocument();
     expect(mockGet).toHaveBeenCalledWith(
       "/payments/admin/bank-transfers?status=pending&page=1&limit=20"
+    );
+    expect(await screen.findByRole("tab", { name: "Pending, 1 waiting" })).toHaveAttribute(
+      "aria-selected",
+      "true"
     );
   });
 

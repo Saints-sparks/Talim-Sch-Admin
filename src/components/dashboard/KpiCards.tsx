@@ -46,6 +46,17 @@ interface KpiCardDef {
   permission?: string;
 }
 
+/**
+ * The dashboard's headline tiles, each shown only to an admin who may open the
+ * page it links to. The wallet tile says it holds online payments only.
+ *
+ * @param props - See `KpiCardsProps`.
+ * @param props.base - Counts that need no extra permission.
+ * @param props.summary - The dashboard summary, once loaded.
+ * @param props.isLoading - True while the summary loads.
+ * @param props.can - Permission check for the signed-in admin.
+ * @returns The tiles.
+ */
 export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
   const router = useRouter();
 
