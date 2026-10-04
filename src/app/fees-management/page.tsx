@@ -10,11 +10,18 @@ import { CategoriesTab } from "@/components/fees/CategoriesTab";
 import { FeeStructuresTab } from "@/components/fees/FeeStructuresTab";
 import { FeesSidebar } from "@/components/fees/FeesSidebar";
 import { OverviewTab } from "@/components/fees/OverviewTab";
+import { BankTransfersLink } from "@/components/payments/bankTransfers/BankTransfersLink";
 import { headingClass, mutedTextClass, pageClass, primaryButtonClass } from "@/components/fees/ui";
 import { useCanManageFees } from "@/hooks/fees/permissions";
 import { Permission } from "@/lib/permissions";
 
-const TABS = ["Overview", "Fee Categories", "Fee Structures", "Fee Assignments", "Archived"] as const;
+const TABS = [
+  "Overview",
+  "Fee Categories",
+  "Fee Structures",
+  "Fee Assignments",
+  "Archived",
+] as const;
 
 type Tab = (typeof TABS)[number];
 
@@ -57,42 +64,45 @@ function FeesManagementScreen() {
             </p>
           </div>
 
-          {canManage && (
-            <div className="relative" ref={createMenuRef}>
-              <button
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={createMenuOpen}
-                onClick={() => setCreateMenuOpen((open) => !open)}
-                className={`flex items-center gap-2 text-sm rounded-xl px-4 py-2 ${primaryButtonClass}`}
-              >
-                <FiPlus size={15} /> Create New Fee <FiChevronDown size={14} />
-              </button>
-              {createMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-11 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg py-1 z-20 w-52"
+          <div className="flex items-center gap-3 flex-wrap">
+            <BankTransfersLink />
+            {canManage && (
+              <div className="relative" ref={createMenuRef}>
+                <button
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={createMenuOpen}
+                  onClick={() => setCreateMenuOpen((open) => !open)}
+                  className={`flex items-center gap-2 text-sm rounded-xl px-4 py-2 ${primaryButtonClass}`}
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => go("/fees-management/create")}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                  <FiPlus size={15} /> Create New Fee <FiChevronDown size={14} />
+                </button>
+                {createMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-11 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg py-1 z-20 w-52"
                   >
-                    <FiPlus size={14} /> Create New Fee
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => go("/fees-management/assign")}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
-                  >
-                    <FiPlus size={14} /> Add Existing Fee to Classes
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => go("/fees-management/create")}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <FiPlus size={14} /> Create New Fee
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => go("/fees-management/assign")}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <FiPlus size={14} /> Add Existing Fee to Classes
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">

@@ -63,6 +63,9 @@ export const queryKeys = {
     transactions: (schoolId: string, params?: Record<string, unknown>) => ["payments", schoolId, "transactions", params ?? {}] as const,
     summary: (schoolId: string) => ["payments", schoolId, "summary"] as const,
     providers: (schoolId: string) => ["payments", schoolId, "providers"] as const,
+    /** Parents' reported bank transfers (C4), per status and page. */
+    bankTransfers: (schoolId: string, params?: Record<string, unknown>) =>
+      ["payments", schoolId, "bank-transfers", params ?? {}] as const,
   },
   finance: {
     all: ["finance"] as const,

@@ -5,6 +5,7 @@ import { Plus, RefreshCw } from "lucide-react";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import { ManualPaymentModal } from "@/components/payments/ManualPaymentModal";
+import { BankTransfersLink } from "@/components/payments/bankTransfers/BankTransfersLink";
 import { PaymentTransactionsTab } from "@/components/payments/PaymentTransactionsTab";
 import { PaymentsOverviewTab } from "@/components/payments/PaymentsOverviewTab";
 import { ProvidersTab } from "@/components/payments/ProvidersTab";
@@ -39,7 +40,9 @@ export default function PaymentsPage() {
               Payment transactions, receipts, and provider settings
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Reconciling transfers is fee work: shown only with manage:fees. */}
+            <BankTransfersLink />
             <button
               type="button"
               onClick={() => void summary.refetch()}

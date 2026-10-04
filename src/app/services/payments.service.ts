@@ -12,10 +12,11 @@
  * taken from the caller's session server-side and is never sent in a payload.
  */
 import { api } from "@/lib/apiClient";
-import type { ManualPaymentPayload } from "@/types/apiPayloads";
+import type { Schema } from "@/types/apiContract";
+import type { ManualPaymentPayload, RejectBankTransferPayload } from "@/types/apiPayloads";
 
 // The request payload is the backend DTO (`src/types/apiPayloads.ts`).
-export type { ManualPaymentPayload } from "@/types/apiPayloads";
+export type { ManualPaymentPayload, RejectBankTransferPayload } from "@/types/apiPayloads";
 
 const BASE = "/payments";
 
@@ -241,3 +242,90 @@ export const getAdminReceipts = (
  */
 export const getEnabledProviders = (): Promise<{ success: boolean; providers: PaymentProvider[] }> =>
   api.get<{ success: boolean; providers: PaymentProvider[] }>(`${BASE}/admin/providers`);
+
+// ─── Bank transfers (C4) ──────────────────────────────────────────────────────
+
+/** Where a parent's reported bank transfer stands with the bursary. */
+export type BankTransferStatus = "pending" | "confirmed" | "rejected";
+
+/** The three lists the reconciliation screen shows, in tab order. */
+export const BANK_TRANSFER_STATUSES: readonly BankTransferStatus[] = [
+  "pending",
+  "confirmed",
+  "rejected",
+];
+
+/**
+ * One transfer as `GET /payments/admin/bank-transfers` returns it
+ * (`AdminBankTransferDto`; amounts in naira). `items` is the allocation the
+ * server made when the parent submitted it: what each fee will receive once
+ * the transfer is confirmed.
+ *
+ * `child.class` / `child.className` are not in the contract yet (the list has
+ * no class); they are read when a later API sends them.
+ */
+export type AdminBankTransfer = Schema<"AdminBankTransferDto"> & {
+  child: Schema<"AdminBankTransferDto">["child"] & {
+    class?: { id?: string; name?: string } | null;
+    className?: string | null;
+  };
+};
+
+/** Body of `GET /payments/admin/bank-transfers`. */
+export type BankTransferPage = Omit<Schema<"AdminBankTransferListResponseDto">, "data"> & {
+  data: AdminBankTransfer[];
+};
+
+/** Body of the confirm and reject routes. */
+export type BankTransferDecision = Schema<"BankTransferDecisionResponseDto">;
+
+/** Query accepted by `GET /payments/admin/bank-transfers` (`BankTransferQueryDto`). */
+export interface BankTransferQuery {
+  status?: BankTransferStatus;
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * A page of the bank transfers parents reported, by status (default
+ * `pending`). School admin, or a sub-admin with `manage:fees`.
+ *
+ * @param params - Status and paging.
+ * @returns `{ data, total, page, limit }`, amounts in naira.
+ * @throws ApiError (`FORBIDDEN`) without `manage:fees`.
+ */
+export const getBankTransfers = (params: BankTransferQuery = {}): Promise<BankTransferPage> =>
+  api.get<BankTransferPage>(`${BASE}/admin/bank-transfers?${toQuery({ ...params })}`);
+
+/**
+ * Confirms that a transfer reached the school account. The server writes the
+ * fee ledger and the receipt in one transaction, then tells the parent. It
+ * does not credit the platform wallet: the money is already in the school's
+ * own bank.
+ *
+ * @param transactionId - The transfer's id.
+ * @returns The settled transaction and its receipt.
+ * @throws ApiError (`INVALID_STATE_TRANSITION`) when it was already decided, (`NOT_FOUND`) for another school's.
+ */
+export const confirmBankTransfer = (transactionId: string): Promise<BankTransferDecision> =>
+  api.post<BankTransferDecision>(
+    `${BASE}/admin/bank-transfers/${encodeURIComponent(transactionId)}/confirm`
+  );
+
+/**
+ * Rejects a transfer that never arrived; its fees are released and the parent
+ * is told the reason.
+ *
+ * @param transactionId - The transfer's id.
+ * @param payload - `{ reason }`, shown to the parent.
+ * @returns The failed transaction.
+ * @throws ApiError (`VALIDATION_FAILED`) without a reason, (`INVALID_STATE_TRANSITION`) when already decided.
+ */
+export const rejectBankTransfer = (
+  transactionId: string,
+  payload: RejectBankTransferPayload
+): Promise<BankTransferDecision> =>
+  api.post<BankTransferDecision>(
+    `${BASE}/admin/bank-transfers/${encodeURIComponent(transactionId)}/reject`,
+    payload
+  );

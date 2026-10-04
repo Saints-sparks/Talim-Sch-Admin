@@ -34,6 +34,26 @@ export function formatDate(iso?: string | null): string {
 }
 
 /**
+ * Formats a calendar date (a day someone picked, stored as midnight UTC, such
+ * as the day a bank transfer was made) without shifting it into the viewer's
+ * timezone, where it could read as the day before.
+ *
+ * @param iso - ISO date or timestamp; nullish or unparseable renders as an em dash.
+ * @returns The formatted day, e.g. `30 Sep 2026`.
+ */
+export function formatCalendarDate(iso?: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
  * Formats an ISO timestamp as a date and time.
  *
  * @param iso - ISO timestamp; nullish or unparseable renders as an em dash.

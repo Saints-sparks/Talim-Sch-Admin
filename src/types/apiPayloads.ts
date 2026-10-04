@@ -59,6 +59,11 @@ export type Require2faPayload = RequestBody<"/finance/security/withdrawals/requi
 
 /** Body of `POST /payments/admin/manual-payment`. */
 export type ManualPaymentPayload = RequestBody<"/payments/admin/manual-payment", "post">;
+/** Body of `POST /payments/admin/bank-transfers/{transactionId}/reject`. */
+export type RejectBankTransferPayload = RequestBody<
+  "/payments/admin/bank-transfers/{transactionId}/reject",
+  "post"
+>;
 /** Body of `POST /payments/admin/transactions/{transactionId}/refund`. */
 export type RefundPaymentPayload = RequestBody<
   "/payments/admin/transactions/{transactionId}/refund",
