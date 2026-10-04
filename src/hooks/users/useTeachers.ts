@@ -1,10 +1,9 @@
 /**
  * Cached teacher roster and the mutations that change it.
  *
- * The list endpoint returns accounts without profile fields, so the roster
- * query stitches the two together in `teacherService.getTeacherRoster`. Caching
- * it here matters: that stitching costs one request per teacher on the page,
- * and before this it ran on every mount of the teachers page.
+ * The list endpoint sends each account with its `teacherProfile` (batched on
+ * the server), so one request fills a roster page;
+ * `teacherService.getTeacherRoster` spreads the profile onto each row.
  */
 "use client";
 

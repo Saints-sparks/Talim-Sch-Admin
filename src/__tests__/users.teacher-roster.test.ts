@@ -39,62 +39,50 @@ describe("teacherService.getTeachers", () => {
 describe("teacherService.getTeacherRoster", () => {
   const page = {
     data: [
-      { _id: "a1", userId: { _id: "u1", firstName: "Ada" }, isActive: true },
-      { _id: "b1", userId: { _id: "u2", firstName: "Bimpe" }, isActive: true },
-    ],
-    meta: { total: 2, page: 1, lastPage: 1, limit: 9 },
-  };
-
-  it("stitches each teacher's profile onto their account row", async () => {
-    mockFetch
-      .mockReturnValueOnce(respond(200, page))
-      .mockReturnValueOnce(
-        respond(200, {
+      {
+        _id: "a1",
+        userId: { _id: "u1", firstName: "Ada" },
+        isActive: true,
+        teacherProfile: {
+          hasTeacherProfile: true,
           staffNumber: "TCH-001",
           isFormTeacher: true,
           classTeacherClasses: [{ _id: "c1", name: "JSS1" }],
           assignedCourses: [{ _id: "k1" }],
-        }),
-      )
-      .mockReturnValueOnce(
-        respond(200, { staffNumber: "TCH-002", isFormTeacher: false, assignedClasses: [], assignedCourses: [] }),
-      );
+          classTeacherOf: [{ id: "c1", name: "JSS1" }],
+        },
+      },
+      { _id: "b1", userId: { _id: "u2", firstName: "Bimpe" }, isActive: true, teacherProfile: null },
+    ],
+    meta: { total: 2, page: 1, lastPage: 1, limit: 9 },
+  };
+
+  it("fills the page from one list request, with each row's teacherProfile", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, page));
 
     const result = await teacherService.getTeacherRoster(1, 9);
 
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(urls()[0]).toContain("/users/teachers?");
     expect(result.data[0]).toMatchObject({
       staffNumber: "TCH-001",
       isFormTeacher: true,
       hasTeacherProfile: true,
       assignedClasses: [{ _id: "c1", name: "JSS1" }],
+      assignedCourses: [{ _id: "k1" }],
+      classTeacherOf: [{ id: "c1", name: "JSS1" }],
     });
-    expect(result.data[1]).toMatchObject({ staffNumber: "TCH-002", hasTeacherProfile: true });
     expect(result.meta.total).toBe(2);
   });
 
-  it("keeps a teacher whose profile request fails, flagged as setup pending", async () => {
-    mockFetch
-      .mockReturnValueOnce(respond(200, page))
-      .mockReturnValueOnce(respond(404, { error: { code: "NOT_FOUND", message: "Teacher not found" } }))
-      .mockReturnValueOnce(respond(200, { staffNumber: "TCH-002" }));
+  it("keeps a teacher without a profile, flagged as setup pending", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, page));
 
     const result = await teacherService.getTeacherRoster(1, 9);
 
     expect(result.data).toHaveLength(2);
-    expect(result.data[0]).toMatchObject({ _id: "a1", hasTeacherProfile: false });
-    expect(result.data[1]).toMatchObject({ _id: "b1", hasTeacherProfile: true });
-  });
-
-  it("addresses each profile by the teacher's user id, not the profile id", async () => {
-    mockFetch
-      .mockReturnValueOnce(respond(200, page))
-      .mockReturnValue(respond(200, {}));
-
-    await teacherService.getTeacherRoster(1, 9);
-
-    const profileUrls = urls().slice(1);
-    expect(profileUrls.some((url) => url.endsWith("/teachers/u1"))).toBe(true);
-    expect(profileUrls.some((url) => url.endsWith("/teachers/u2"))).toBe(true);
+    expect(result.data[1]).toMatchObject({ _id: "b1", hasTeacherProfile: false });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
 

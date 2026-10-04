@@ -79,9 +79,9 @@ function EmptyBox({
  * teacher of, and their courses.
  *
  * Since A6 class-teacher (register) access comes only from
- * `Class.classTeacherId`, which `classTeacherOf` carries (read from the class
- * list). The profile's own `classTeacherClasses` merges in the assigned
- * classes, so it cannot say who the class teacher is. Classes the teacher is
+ * `Class.classTeacherId`, which the profile's `classTeacherOf` reports. The
+ * older `classTeacherClasses` merges in the assigned classes, so it cannot say
+ * who the class teacher is. Classes the teacher is
  * assigned to without being their class teacher get a hint.
  *
  * @param props - The teacher and the classes they are the class teacher of.
@@ -130,7 +130,7 @@ export function TeacherAssignmentsTab({
               >
                 <Badge className="w-3 h-3" aria-hidden />
                 {classTeacherOf === undefined
-                  ? "Checking…"
+                  ? "Not reported"
                   : classTeacherNames.length > 0
                     ? `Class teacher of ${classTeacherNames.join(", ")}`
                     : "Not a class teacher"}

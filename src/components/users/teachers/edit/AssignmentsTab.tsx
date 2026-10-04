@@ -91,6 +91,7 @@ export function TeacherEditAssignmentsTab({
           teacherProfileId={teacherProfileId}
           teacherName={teacherName}
           classes={classes}
+          classTeacherOf={classTeacherOf}
         />
       )}
 

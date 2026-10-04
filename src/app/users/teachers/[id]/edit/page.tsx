@@ -30,7 +30,7 @@ import {
   TeacherProfileError,
   TeacherProfileSkeleton,
 } from "@/components/users/teachers/TeacherProfileStates";
-import { classTeacherClassIds } from "@/components/users/teachers/classTeacher";
+import { classTeacherIdsOf } from "@/components/users/teachers/classTeacher";
 import {
   TeacherEditAssignmentsTab,
   TeacherEditAvailabilityTab,
@@ -70,10 +70,14 @@ function TeacherEditor() {
 
   const teacher = profileQuery.data;
   const userId = teacher?.userId?._id || teacherId;
-  // A6: class-teacher access comes from Class.classTeacherId alone, read from the class list.
+  // A6: class-teacher access comes from Class.classTeacherId alone; the profile's
+  // `classTeacherOf` says which (the class list is the fallback for an older API).
   const classTeacherOf = useMemo(
-    () => (teacher?.hasTeacherProfile === false ? undefined : classTeacherClassIds(classes, teacher?._id)),
-    [classes, teacher?._id, teacher?.hasTeacherProfile],
+    () =>
+      teacher?.hasTeacherProfile === false
+        ? undefined
+        : classTeacherIdsOf(teacher?.classTeacherOf, classes, teacher?._id),
+    [classes, teacher?._id, teacher?.classTeacherOf, teacher?.hasTeacherProfile],
   );
   const savingSection = saveSection.isPending
     ? (saveSection.variables as SaveTeacherSectionInput | undefined)?.section

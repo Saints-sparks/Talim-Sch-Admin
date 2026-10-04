@@ -12,6 +12,7 @@ import { render, screen, waitFor, within, mockAdmin, mockSubAdmin } from "@/test
 import {
   REGISTER_RULE,
   classTeacherClassIds,
+  classTeacherIdsOf,
   classTeacherDisplayName,
   classTeacherHint,
   classTeacherRef,
@@ -79,6 +80,10 @@ describe("class-teacher rules", () => {
     expect(classTeacherRef({ classTeacherId: null })).toBe("");
     expect([...classTeacherClassIds(classes, TEACHER_PROFILE)]).toEqual(["c1"]);
     expect(classTeacherClassIds(classes, undefined).size).toBe(0);
+    // The profile's classTeacherOf (GET /teachers/:userId) wins; the class list is the fallback.
+    expect([...(classTeacherIdsOf([{ id: "c2" }], classes, TEACHER_PROFILE) ?? [])]).toEqual(["c2"]);
+    expect([...(classTeacherIdsOf(undefined, classes, TEACHER_PROFILE) ?? [])]).toEqual(["c1"]);
+    expect(classTeacherIdsOf(undefined)).toBeUndefined();
     expect(classTeacherDisplayName(classes[1])).toBe("Bayo Ade");
     expect(classTeacherDisplayName(classes[2])).toBe("");
   });
@@ -123,9 +128,9 @@ describe("the teacher profile", () => {
     expect(screen.queryByRole("note", { name: "Class teacher" })).not.toBeInTheDocument();
   });
 
-  it("does not claim anything while the class list is loading", () => {
+  it("does not claim anything when the API does not report classTeacherOf", () => {
     render(<TeacherAssignmentsTab teacher={teacher} />);
-    expect(screen.getByText("Checking…")).toBeInTheDocument();
+    expect(screen.getByText("Not reported")).toBeInTheDocument();
     expect(screen.queryByRole("note", { name: "Class teacher" })).not.toBeInTheDocument();
   });
 });

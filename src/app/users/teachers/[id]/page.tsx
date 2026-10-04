@@ -32,8 +32,7 @@ import {
   TeacherAssignmentsTab,
   TeacherAvailabilityTab,
 } from "@/components/users/teachers/TeacherAssignmentsTab";
-import { classTeacherClassIds } from "@/components/users/teachers/classTeacher";
-import { useClasses } from "@/hooks/queries/reference";
+import { classTeacherIdsOf } from "@/components/users/teachers/classTeacher";
 
 const TABS = [
   { value: "personal-details", icon: User, long: "Personal Details", short: "Personal", wide: false },
@@ -59,12 +58,10 @@ function TeacherProfile() {
   const [activeTab, setActiveTab] = useState<string>("personal-details");
 
   const profileQuery = useTeacherProfile(teacherId);
-  // A6: class-teacher access is Class.classTeacherId alone; one cached class list says which.
-  const classesQuery = useClasses();
-  const profileId = profileQuery.data?.hasTeacherProfile === false ? undefined : profileQuery.data?._id;
+  // A6: class-teacher access is Class.classTeacherId alone; the profile's `classTeacherOf` says which.
   const classTeacherOf = useMemo(
-    () => (classesQuery.data && profileId ? classTeacherClassIds(classesQuery.data, profileId) : undefined),
-    [classesQuery.data, profileId],
+    () => classTeacherIdsOf(profileQuery.data?.classTeacherOf),
+    [profileQuery.data?.classTeacherOf],
   );
   const backToRoster = () => router.push("/users/teachers");
 

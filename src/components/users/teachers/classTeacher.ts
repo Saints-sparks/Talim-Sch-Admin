@@ -49,6 +49,26 @@ export function classTeacherClassIds(
 }
 
 /**
+ * The class ids a teacher is the class teacher of: the API's `classTeacherOf`
+ * (`GET /teachers/:userId`, from `Class.classTeacherId`), else, from an API
+ * that does not send it, worked out from the class list.
+ *
+ * @param classTeacherOf - The profile's `classTeacherOf`, if sent.
+ * @param classes - The school's classes, for the fallback.
+ * @param teacherProfileId - The teacher's profile id, for the fallback.
+ * @returns The class ids, or undefined when neither source is available yet.
+ */
+export function classTeacherIdsOf(
+  classTeacherOf: ReadonlyArray<{ id: string }> | undefined,
+  classes?: readonly Pick<ClassWithTeacher, "_id" | "classTeacherId">[],
+  teacherProfileId?: string
+): Set<string> | undefined {
+  if (Array.isArray(classTeacherOf)) return new Set(classTeacherOf.map((cls) => cls.id));
+  if (classes && teacherProfileId) return classTeacherClassIds(classes, teacherProfileId);
+  return undefined;
+}
+
+/**
  * The name of a class's current class teacher, when the list populated it.
  *
  * @param cls - A class from the list.

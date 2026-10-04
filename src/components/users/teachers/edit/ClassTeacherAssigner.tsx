@@ -25,6 +25,11 @@ export interface ClassTeacherAssignerProps {
   teacherName: string;
   /** The school's classes, with their class teachers. */
   classes: readonly ClassWithTeacher[];
+  /**
+   * Class ids the teacher is the class teacher of (the profile's
+   * `classTeacherOf`); the class list decides when it is absent.
+   */
+  classTeacherOf?: ReadonlySet<string>;
 }
 
 /**
@@ -46,20 +51,22 @@ export function ClassTeacherAssigner({
   teacherProfileId,
   teacherName,
   classes,
+  classTeacherOf,
 }: ClassTeacherAssignerProps) {
   const assign = useAssignClassTeacher();
   const [classId, setClassId] = useState("");
   const [confirming, setConfirming] = useState(false);
   const selectId = useId();
 
-  const mine = useMemo(
-    () => classes.filter((cls) => teacherProfileId && classTeacherRef(cls) === teacherProfileId),
-    [classes, teacherProfileId]
+  const isMine = useMemo(
+    () => (cls: ClassWithTeacher) =>
+      classTeacherOf
+        ? classTeacherOf.has(cls._id)
+        : Boolean(teacherProfileId) && classTeacherRef(cls) === teacherProfileId,
+    [classTeacherOf, teacherProfileId]
   );
-  const others = useMemo(
-    () => classes.filter((cls) => !teacherProfileId || classTeacherRef(cls) !== teacherProfileId),
-    [classes, teacherProfileId]
-  );
+  const mine = useMemo(() => classes.filter(isMine), [classes, isMine]);
+  const others = useMemo(() => classes.filter((cls) => !isMine(cls)), [classes, isMine]);
   const chosen = others.find((cls) => cls._id === classId);
   const replacing = chosen
     ? classTeacherDisplayName(chosen) ||

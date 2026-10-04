@@ -72,9 +72,31 @@ export interface Course {
   updatedAt?: Date;
 }
 
+/** A class named by id and name, e.g. in `classTeacherOf`. */
+export interface ClassRef {
+  id: string;
+  name: string;
+}
+
 /**
- * A row in the teacher roster: the user account, plus whatever profile fields
- * the roster has stitched onto it.
+ * The roster fields `GET /users/teachers` attaches to each account row
+ * (School Admin gap 5), batched for the page; `null` before the profile is
+ * created. Hand-written: the route's response is untyped in the contract.
+ */
+export interface TeacherRosterProfile {
+  hasTeacherProfile: boolean;
+  staffNumber?: string;
+  isFormTeacher?: boolean;
+  /** Classes the profile lists (assigned and class-teacher classes merged). */
+  classTeacherClasses?: Class[];
+  assignedCourses?: Course[];
+  /** Classes whose `Class.classTeacherId` is this teacher (A6). */
+  classTeacherOf?: ClassRef[];
+}
+
+/**
+ * A row in the teacher roster: the user account, plus the profile fields the
+ * list sends with it (`teacherProfile`), spread onto the row.
  */
 export interface Teacher {
   _id: string;
@@ -104,6 +126,10 @@ export interface Teacher {
   schoolId?: string;
   /** False when the account exists but no teacher profile has been created yet. */
   hasTeacherProfile?: boolean;
+  /** Classes this teacher is the class teacher of (A6). */
+  classTeacherOf?: ClassRef[];
+  /** As `GET /users/teachers` sends it, before the roster spreads it onto the row. */
+  teacherProfile?: TeacherRosterProfile | null;
 }
 
 /** A teacher profile as `GET /teachers/:userId` returns it, with refs populated. */
@@ -167,6 +193,11 @@ export interface TeacherById {
   __v: number;
   /** False for a placeholder built from the account when no profile exists. */
   hasTeacherProfile?: boolean;
+  /**
+   * Classes whose `Class.classTeacherId` is this teacher (A6), the only source
+   * of class-teacher (register) access. Untyped in the contract.
+   */
+  classTeacherOf?: ClassRef[];
 }
 
 /** Pagination envelope the teacher list answers with. */
@@ -276,6 +307,27 @@ function placeholderProfile(user: Teacher): TeacherById {
 export const teacherUserId = (teacher: Teacher): string =>
   (typeof teacher.userId === "object" ? teacher.userId?._id : undefined) || teacher._id;
 
+/**
+ * Spreads a list row's `teacherProfile` onto it, in the shape the roster
+ * cards read.
+ *
+ * @param teacher - A row of `GET /users/teachers`.
+ * @returns The row with its profile fields, or flagged as having no profile.
+ */
+export function withRosterProfile(teacher: Teacher): Teacher {
+  const profile = teacher.teacherProfile;
+  if (!profile?.hasTeacherProfile) return { ...teacher, hasTeacherProfile: false };
+  return {
+    ...teacher,
+    assignedClasses: profile.classTeacherClasses ?? [],
+    assignedCourses: profile.assignedCourses ?? [],
+    isFormTeacher: profile.isFormTeacher,
+    staffNumber: profile.staffNumber,
+    classTeacherOf: profile.classTeacherOf ?? [],
+    hasTeacherProfile: true,
+  };
+}
+
 export const teacherService = {
   /**
    * A page of the school's teacher accounts.
@@ -303,38 +355,21 @@ export const teacherService = {
   },
 
   /**
-   * A page of teacher accounts with their profiles stitched on, so the roster
-   * can show staff numbers and class assignments.
+   * A page of teacher accounts with their profile fields, so the roster can
+   * show staff numbers, classes and courses. One request: `GET /users/teachers`
+   * sends each row's `teacherProfile` (batched on the server), so there is no
+   * request per teacher.
    *
-   * A teacher whose profile request fails keeps their account row and is
-   * marked `hasTeacherProfile: false` rather than disappearing from the list.
+   * A teacher without a profile (`teacherProfile: null`) keeps their account
+   * row and is marked `hasTeacherProfile: false`.
    *
    * @param page - 1-based page number.
    * @param limit - Rows per page; capped at the API's maximum of 500.
-   * @returns The enriched page and its `meta`.
+   * @returns The page, each row carrying its profile fields, and its `meta`.
    */
   async getTeacherRoster(page = 1, limit = 10): Promise<GetTeachersResponse> {
     const response = await this.getTeachers(page, limit);
-    const rows = response.data ?? [];
-
-    const profiles = await Promise.allSettled(
-      rows.map((teacher) => this.getTeacherById(teacherUserId(teacher))),
-    );
-
-    const data = rows.map((teacher, index) => {
-      const settled = profiles[index];
-      if (settled.status !== "fulfilled") return { ...teacher, hasTeacherProfile: false };
-      const profile = settled.value;
-      return {
-        ...teacher,
-        assignedClasses: profile.classTeacherClasses || profile.assignedClasses || [],
-        assignedCourses: profile.assignedCourses || [],
-        isFormTeacher: profile.isFormTeacher,
-        staffNumber: profile.staffNumber,
-        hasTeacherProfile: true,
-      } as Teacher;
-    });
-
+    const data = (response.data ?? []).map(withRosterProfile);
     return { data, meta: response.meta ?? { total: data.length, page, lastPage: 1, limit } };
   },
 
