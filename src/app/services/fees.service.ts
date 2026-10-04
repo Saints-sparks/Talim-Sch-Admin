@@ -123,15 +123,8 @@ export interface AssignFeeResult {
  */
 export type FeeLedgerRow = Schema<"FeePaymentDto">;
 
-/** Signature and visibility settings printed on fee receipts. */
-export interface ReceiptSettings {
-  schoolId?: string;
-  signatureUrl: string;
-  signatureName: string;
-  signatureTitle: string;
-  showSchoolLogo: boolean;
-  allowParentDownload: boolean;
-}
+/** Signature and visibility settings printed on fee receipts (owned by settings, A5). */
+export type ReceiptSettings = Schema<"ReceiptSettingsDto">;
 
 /** Money and counters for the fees dashboard. Changes with every payment. */
 export interface DashboardSummary {
@@ -480,21 +473,20 @@ export const RECEIPT_SETTINGS_PATH = "/settings/receipt";
 
 /**
  * The school's receipt settings, from `GET /settings/receipt`. The API
- * returns defaults rather than 404 when the school has never saved any. The
- * route needs `manage:settings`.
+ * returns defaults rather than 404 when the school has never saved any.
+ * Readable with `manage:settings` or `manage:fees`.
  *
  * @returns The settings, unwrapped from the `{ success, settings }` body.
- * @throws ApiError - On any non-2xx response (`FORBIDDEN` without `manage:settings`).
+ * @throws ApiError - On any non-2xx response (`FORBIDDEN` without either permission).
  */
 export async function getReceiptSettings(): Promise<ReceiptSettings> {
-  const body = await api.get<{ success?: boolean; settings: ReceiptSettings }>(
-    RECEIPT_SETTINGS_PATH
-  );
+  const body = await api.get<Schema<"ReceiptSettingsResponseDto">>(RECEIPT_SETTINGS_PATH);
   return body.settings;
 }
 
 /**
- * Saves receipt settings through `PATCH /settings/receipt`.
+ * Saves receipt settings through `PATCH /settings/receipt`, which needs
+ * `manage:settings`.
  *
  * @param payload - The fields to change.
  * @returns The saved settings, unwrapped from the `{ success, settings }` body.
@@ -503,7 +495,7 @@ export async function getReceiptSettings(): Promise<ReceiptSettings> {
 export async function updateReceiptSettings(
   payload: UpdateReceiptSettingsPayload
 ): Promise<ReceiptSettings> {
-  const body = await api.patch<{ success?: boolean; settings: ReceiptSettings }>(
+  const body = await api.patch<Schema<"ReceiptSettingsResponseDto">>(
     RECEIPT_SETTINGS_PATH,
     payload
   );

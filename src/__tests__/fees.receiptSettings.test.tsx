@@ -2,8 +2,8 @@
 /**
  * Receipt settings live in Settings (A5): the Fees sidebar's signature card
  * reads and writes `/settings/receipt`, never the deprecated
- * `/fees/receipt-settings`, and is shown only to an admin with
- * `manage:settings` (the route's permission).
+ * `/fees/receipt-settings`. `GET` takes `manage:settings` or `manage:fees`,
+ * so the bursary sees the signature; changing it needs `manage:settings`.
  */
 import React from "react";
 import userEvent from "@testing-library/user-event";
@@ -69,9 +69,21 @@ describe("receipt settings in Fees", () => {
     );
   });
 
-  it("neither shows the card nor calls the route for a fees-only sub-admin", async () => {
+  it("shows a fees-only sub-admin the signature read-only (GET takes manage:fees)", async () => {
     const feesOnly = { ...mockSubAdmin, permissions: ["manage:fees"] };
     render(<FeesSidebar canManage onViewCategories={jest.fn()} />, { user: feesOnly });
+
+    expect(await screen.findByText("Signature for Receipts")).toBeInTheDocument();
+    expect(await screen.findByText("Mrs Ade · Principal")).toBeInTheDocument();
+    expect(screen.getByText(/needs the Manage Settings permission/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^save$/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Authorized name")).not.toBeInTheDocument();
+    expect(mockGet).toHaveBeenCalledWith("/settings/receipt");
+  });
+
+  it("neither shows the card nor calls the route without manage:fees or manage:settings", async () => {
+    const studentsOnly = { ...mockSubAdmin, permissions: ["manage:students"] };
+    render(<FeesSidebar canManage={false} onViewCategories={jest.fn()} />, { user: studentsOnly });
 
     expect(await screen.findByText("Fee Categories")).toBeInTheDocument();
     expect(screen.queryByText("Signature for Receipts")).not.toBeInTheDocument();

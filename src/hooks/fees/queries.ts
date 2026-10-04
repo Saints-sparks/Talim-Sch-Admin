@@ -174,27 +174,30 @@ export function useStudentFeeLedger(studentId: string): UseQueryResult<FeeLedger
 }
 
 /**
- * Whether the signed-in admin may read and change receipt settings. They live
- * at `/settings/receipt` (A5), which needs `manage:settings`; a fees-only
- * sub-admin is refused there, so the UI neither asks nor offers the controls.
+ * Who may read and who may change receipt settings. They live at
+ * `/settings/receipt` (A5): `GET` takes `manage:settings` or `manage:fees`
+ * (the bursary prints receipts), `PATCH` takes `manage:settings`.
  *
- * @returns True for the school admin and for a sub-admin with `manage:settings`.
+ * @returns `canRead` and `canEdit`; both true for the school admin.
  */
-export function useCanManageReceiptSettings(): boolean {
-  return usePermissions().hasPermission(Permission.MANAGE_SETTINGS);
+export function useReceiptSettingsAccess(): { canRead: boolean; canEdit: boolean } {
+  const { hasPermission } = usePermissions();
+  const canEdit = hasPermission(Permission.MANAGE_SETTINGS);
+  return { canRead: canEdit || hasPermission(Permission.MANAGE_FEES), canEdit };
 }
 
 /**
  * Receipt signature settings, from `/settings/receipt`. Shares its cache entry
  * with Settings → Fees & Receipts, so a change in either place shows in both.
- * Idle for an admin without `manage:settings` (the route would answer 403).
+ * Idle for an admin with neither `manage:settings` nor `manage:fees` (the
+ * route would answer 403).
  *
  * @returns Query result; the API returns defaults rather than 404 when the
  *   school has never saved any.
  */
 export function useReceiptSettings(): UseQueryResult<ReceiptSettings> {
   const schoolId = useSchoolId();
-  const allowed = useCanManageReceiptSettings();
+  const allowed = useReceiptSettingsAccess().canRead;
   return useQuery({
     queryKey: settingsKeys.receipt(schoolId ?? NO_SCHOOL),
     queryFn: getReceiptSettings,

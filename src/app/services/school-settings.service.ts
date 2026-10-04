@@ -57,18 +57,11 @@ export interface SchoolProfile {
   primaryContacts?: PrimaryContact[];
 }
 
-/** Receipt appearance and parent-facing options. */
-export interface ReceiptSettings {
-  schoolId: string;
-  signatureUrl: string;
-  signatureName: string;
-  signatureTitle: string;
-  showSchoolLogo: boolean;
-  allowParentDownload: boolean;
-  showQrVerification: boolean;
-  showAuthorizedSignature: boolean;
-  footerNote: string;
-}
+/** Receipt appearance and parent-facing options (`ReceiptSettingsDto`, owned by settings). */
+export type ReceiptSettings = Schema<"ReceiptSettingsDto">;
+
+/** Body of `GET` and `PATCH /settings/receipt`. */
+export type ReceiptSettingsResponse = Schema<"ReceiptSettingsResponseDto">;
 
 /** Withdrawal safeguards for the school wallet, and the part-payment minimum. */
 export interface FinanceSettings {
@@ -78,9 +71,9 @@ export interface FinanceSettings {
   defaultBankAccountId: string | null;
   /**
    * The smallest part payment a parent may make, in naira (0: no minimum). A
-   * payment of the whole balance is always allowed. Absent from an older API.
+   * payment of the whole balance is always allowed. The API fills in 0.
    */
-  minimumPartPayment?: number;
+  minimumPartPayment: number;
 }
 
 /** A weekday the school may teach on. */
@@ -152,25 +145,25 @@ export const updateSchoolProfile = async (
 // ─── Receipt Settings ─────────────────────────────────────────────────────────
 
 /**
- * Loads the receipt settings, creating the defaults server-side on first read.
+ * Loads the receipt settings (the defaults when none are saved). Readable with
+ * `manage:settings` or `manage:fees`.
  *
- * @returns The receipt settings.
+ * @returns `{ success, settings }`.
  * @throws `ApiError` when the request fails.
  */
-export const getReceiptSettings = async (): Promise<{ success: boolean; settings: ReceiptSettings }> =>
-  api.get<{ success: boolean; settings: ReceiptSettings }>(`${BASE}/receipt`);
+export const getReceiptSettings = async (): Promise<ReceiptSettingsResponse> =>
+  api.get<ReceiptSettingsResponse>(`${BASE}/receipt`);
 
 /**
- * Saves receipt settings.
+ * Saves receipt settings. Needs `manage:settings`.
  *
  * @param dto - Only the fields being changed.
- * @returns The saved receipt settings.
+ * @returns `{ success, settings }` with the saved settings.
  * @throws `ApiError` — `VALIDATION_FAILED` when a field breaks the DTO rules.
  */
 export const updateReceiptSettings = async (
   dto: UpdateReceiptSettingsDto
-): Promise<{ success: boolean; settings: ReceiptSettings }> =>
-  api.patch<{ success: boolean; settings: ReceiptSettings }>(`${BASE}/receipt`, dto);
+): Promise<ReceiptSettingsResponse> => api.patch<ReceiptSettingsResponse>(`${BASE}/receipt`, dto);
 
 // ─── Finance Settings ─────────────────────────────────────────────────────────
 

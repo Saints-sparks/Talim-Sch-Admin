@@ -6,9 +6,10 @@
  * - The school sets one minimum part payment (`FinanceSettings.minimumPartPayment`,
  *   naira, 0 = no minimum). Paying the whole balance is always allowed, even
  *   when it is smaller than the minimum.
- * - Balances come from the fee ledger (`GET /fees/payments/student/:id`,
- *   one row per child and fee). A fee nobody has paid towards has no row yet;
- *   it is unpaid with its full amount due.
+ * - Balances come from the fee ledger (`GET /fees/payments/student/:id`):
+ *   one row for every active fee of the child's class. A fee nobody has paid
+ *   towards is filled in on read (`recorded: false`, `_id: null`), with the
+ *   late fee inside `amountDue` once it applies.
  */
 import type { FeeAssignment, FeeLedgerRow, FeeLedgerStatus } from "@/app/services/fees.service";
 import { formatNaira } from "@/components/finance/formatters";
@@ -32,7 +33,9 @@ export interface FeeBalance {
   /** Still owed (naira). */
   balance: number;
   status: FeeLedgerStatus;
-  /** True when the figures come from a ledger row, false when assumed from the fee. */
+  /** The late fee inside `due` (0 until it applies). */
+  lateFee: number;
+  /** True when the API sent the figures (a stored or filled-in row), false when assumed from the fee. */
   fromLedger: boolean;
 }
 
@@ -68,8 +71,8 @@ export function ledgerByAssignment(
 }
 
 /**
- * Where one fee stands for a child: the ledger row when there is one, else
- * the fee's amount, unpaid.
+ * Where one fee stands for a child: the API's row (stored, or filled in with
+ * `recorded: false`), else, before the ledger loads, the fee's amount, unpaid.
  *
  * @param assignment - The class's fee assignment.
  * @param row - The child's ledger row for it, if any.
@@ -88,11 +91,19 @@ export function feeBalance(
       paid: row.amountPaid ?? 0,
       balance,
       status,
+      lateFee: Math.max(0, row.lateFee ?? 0),
       fromLedger: true,
     };
   }
   const due = assignment.amount ?? 0;
-  return { due, paid: 0, balance: due, status: due > 0 ? "unpaid" : "paid", fromLedger: false };
+  return {
+    due,
+    paid: 0,
+    balance: due,
+    status: due > 0 ? "unpaid" : "paid",
+    lateFee: 0,
+    fromLedger: false,
+  };
 }
 
 /**
@@ -103,8 +114,9 @@ export function feeBalance(
  */
 export function feeBalanceSummary(balance: FeeBalance): string {
   if (balance.status === "paid") return "Paid in full";
-  if (balance.status === "part_paid") return `Part paid · ${formatNaira(balance.balance)} left`;
-  return `Unpaid · ${formatNaira(balance.balance)} due`;
+  const late = balance.lateFee > 0 ? ` (incl. ${formatNaira(balance.lateFee)} late fee)` : "";
+  if (balance.status === "part_paid") return `Part paid · ${formatNaira(balance.balance)} left${late}`;
+  return `Unpaid · ${formatNaira(balance.balance)} due${late}`;
 }
 
 /**

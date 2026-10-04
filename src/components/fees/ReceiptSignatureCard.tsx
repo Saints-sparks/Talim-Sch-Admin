@@ -95,6 +95,19 @@ export function ReceiptSignatureCard({
         </div>
       )}
 
+      {!canEdit && !loading && !error && (
+        <div className="space-y-1">
+          {(settings?.signatureName || settings?.signatureTitle) && (
+            <p className="text-xs text-gray-700 dark:text-gray-200">
+              {[settings?.signatureName, settings?.signatureTitle].filter(Boolean).join(" · ")}
+            </p>
+          )}
+          <p className={`text-xs ${mutedTextClass}`}>
+            Changing the signature needs the Manage Settings permission.
+          </p>
+        </div>
+      )}
+
       {canEdit && (
         <>
           <div className="space-y-2">

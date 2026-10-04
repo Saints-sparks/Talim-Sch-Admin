@@ -47,8 +47,9 @@ function todayInputValue(): string {
  * load in order — class, then that class's roster and its active fee
  * assignments — so nothing is ever populated with the wrong class's data.
  *
- * Once a student is chosen, their fee ledger (one request) shows each fee as
- * paid, part paid or unpaid with what is still owed; a fee paid in full
+ * Once a student is chosen, their fee ledger (one request; unpaid fees are
+ * filled in by the API, late fees included) shows each fee as paid, part paid
+ * or unpaid with what is still owed; a fee paid in full
  * cannot be picked, the amount defaults to the balance and may not exceed it
  * (the API refuses an overpayment).
  *

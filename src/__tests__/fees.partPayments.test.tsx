@@ -151,9 +151,15 @@ describe("the fee form hint with the live minimum", () => {
     expect(mockGet).toHaveBeenCalledWith("/settings/finance");
   });
 
-  it("asks nothing of a fees-only sub-admin, and still states the rule", () => {
+  it("reads the minimum for a fees-only sub-admin too (GET takes manage:fees)", async () => {
     const feesOnly = { ...mockSubAdmin, permissions: ["manage:fees"] };
     render(<PartPaymentHint allowPartialPayment defaultAmount="50000" />, { user: feesOnly });
+    expect(await screen.findByText(/at least ₦7,500.00/)).toBeInTheDocument();
+  });
+
+  it("asks nothing of an admin with neither permission, and still states the rule", () => {
+    const studentsOnly = { ...mockSubAdmin, permissions: ["manage:students"] };
+    render(<PartPaymentHint allowPartialPayment defaultAmount="50000" />, { user: studentsOnly });
     expect(screen.getByText(/school's minimum part payment/)).toBeInTheDocument();
     expect(mockGet).not.toHaveBeenCalled();
   });
@@ -184,6 +190,17 @@ describe("ledger balances", () => {
     expect(feeBalanceSummary(feeBalance({ amount: 10000 }, byId.get("fa3")))).toBe("Paid in full");
 
     expect(totalOwed([part, none])).toBe(35000);
+  });
+
+  it("reads a fee nobody has paid towards, filled in by the API with its late fee", () => {
+    const filled = row(
+      { _id: "fa4" },
+      { _id: null, recorded: false, status: "unpaid", amountDue: 21000, balance: 21000, lateFee: 1000 }
+    );
+    expect(ledgerByAssignment([filled]).has("fa4")).toBe(true);
+    const balance = feeBalance({ amount: 20000 }, filled);
+    expect(balance).toMatchObject({ due: 21000, balance: 21000, status: "unpaid", lateFee: 1000, fromLedger: true });
+    expect(feeBalanceSummary(balance)).toBe("Unpaid · ₦21,000.00 due (incl. ₦1,000.00 late fee)");
   });
 
   it("refuses an amount above what is owed, or of zero", () => {

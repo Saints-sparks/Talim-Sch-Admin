@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import { SectionSkeleton } from "@/components/ui/loading";
 import {
-  useCanManageReceiptSettings,
   useFeeCategoriesSummary,
   useReceiptSettings,
+  useReceiptSettingsAccess,
 } from "@/hooks/fees/queries";
 import { feesErrorMessage } from "./errors";
 import { ReceiptSignatureCard } from "./ReceiptSignatureCard";
@@ -25,9 +25,9 @@ interface FeesSidebarProps {
  * The right-hand column: category counts, the shortcuts, and the receipt
  * signature card.
  *
- * The signature is a receipt setting, kept at `/settings/receipt` (A5), which
- * needs `manage:settings`: the card is shown only to an admin who holds it,
- * so a fees-only sub-admin is never shown a card that cannot load.
+ * The signature is a receipt setting, kept at `/settings/receipt` (A5). A
+ * fees admin may read it (the card shows the signature), but changing it
+ * needs `manage:settings`, so only then are the controls offered.
  *
  * @param props - Tab switcher and whether the user may change fees.
  * @param props.onViewCategories - Switches the main area to the Fee Categories tab.
@@ -37,7 +37,7 @@ interface FeesSidebarProps {
 export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
   const router = useRouter();
   const categories = useFeeCategoriesSummary();
-  const canManageReceipt = useCanManageReceiptSettings();
+  const receiptAccess = useReceiptSettingsAccess();
   const receipt = useReceiptSettings();
 
   const active = (categories.data ?? []).filter((category) => category.status === "active");
@@ -101,12 +101,12 @@ export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
         </div>
       )}
 
-      {canManageReceipt && (
+      {receiptAccess.canRead && (
         <ReceiptSignatureCard
           settings={receipt.data}
           loading={receipt.isPending}
           error={receipt.error}
-          canEdit={canManageReceipt}
+          canEdit={receiptAccess.canEdit}
         />
       )}
     </div>
