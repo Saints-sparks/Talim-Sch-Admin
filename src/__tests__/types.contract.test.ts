@@ -98,6 +98,7 @@ describe("write payloads follow the backend contract", () => {
       "paymentMethod",
       "reference",
       "notes",
+      "paidAt",
     ]);
     expect(payment.feeAssignmentIds).toHaveLength(1);
   });
