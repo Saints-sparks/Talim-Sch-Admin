@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import type { ReceiptSettings } from "@/app/services/fees.service";
 import type { AdminNotification } from "@/app/services/notification.service";
-import { parseAmount } from "./notification.presentation";
+import { CATEGORY_LABELS, parseAmount } from "./notification.presentation";
 
 /** Escapes text for interpolation into the print document. */
 function escapeHtml(value: string): string {
@@ -156,7 +156,7 @@ export function ReceiptModal({
           <ReceiptRow label="Reference No." value={reference} />
           <ReceiptRow label="Date & Time" value={issuedAt} />
           <ReceiptRow label="Source" value={notification.sourceLabel} />
-          <ReceiptRow label="Category" value={notification.category.replace(/_/g, " ")} />
+          <ReceiptRow label="Category" value={CATEGORY_LABELS[notification.category] ?? notification.category} />
           <ReceiptRow label="Description" value={notification.message} wrap />
           <ReceiptRow
             label="Status"

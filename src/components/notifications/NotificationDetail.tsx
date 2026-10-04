@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { AdminNotification } from "@/app/services/notification.service";
 import {
   CATEGORY_BADGES,
+  CATEGORY_LABELS,
   SOURCE_BADGES,
   isPaymentNotification,
   parseAmount,
@@ -159,7 +160,7 @@ export function NotificationDetail({
 
         <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-2 dark:border-slate-700">
           <MetaPill label="Source" value={notification.sourceLabel} />
-          <MetaPill label="Category" value={notification.category.replace(/_/g, " ")} />
+          <MetaPill label="Category" value={CATEGORY_LABELS[notification.category] ?? notification.category} />
           <MetaPill label="Priority" value={notification.priority} />
           <MetaPill label="Status" value={notification.status} />
           <MetaPill label="Sent by" value={notification.sentBy} />

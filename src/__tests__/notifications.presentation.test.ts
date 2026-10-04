@@ -1,9 +1,16 @@
 import {
+  CATEGORY_BADGES,
+  CATEGORY_LABELS,
   filterNotifications,
   isPaymentNotification,
   parseAmount,
 } from "@/components/notifications/notification.presentation";
-import type { AdminNotification } from "@/app/services/notification.service";
+import { getNotification, type AdminNotification } from "@/app/services/notification.service";
+import { api } from "@/lib/apiClient";
+
+jest.mock("@/lib/apiClient", () => ({
+  api: { get: jest.fn(), patch: jest.fn(), post: jest.fn() },
+}));
 
 function notification(overrides: Partial<AdminNotification> = {}): AdminNotification {
   return {
@@ -53,6 +60,35 @@ describe("isPaymentNotification", () => {
 
   it("leaves ordinary notices alone", () => {
     expect(isPaymentNotification(notification())).toBe(false);
+  });
+
+  it("trusts the payments category (B11) whatever the wording", () => {
+    expect(
+      isPaymentNotification(
+        notification({ category: "payments", title: "Bank transfer submitted" })
+      )
+    ).toBe(true);
+    expect(isPaymentNotification(notification({ category: "leave", title: "Leave request" }))).toBe(
+      false
+    );
+  });
+});
+
+describe("the B11 categories", () => {
+  it("have a badge and a label", () => {
+    for (const category of ["payments", "leave"] as const) {
+      expect(CATEGORY_BADGES[category]).toBeDefined();
+    }
+    expect(CATEGORY_LABELS.payments).toBe("Payments");
+    expect(CATEGORY_LABELS.leave).toBe("Leave");
+  });
+
+  it("survive normalisation instead of falling back to other", async () => {
+    const get = api.get as jest.Mock;
+    get.mockResolvedValueOnce({ _id: "n1", title: "t", message: "m", category: "payments" });
+    expect((await getNotification("n1")).category).toBe("payments");
+    get.mockResolvedValueOnce({ _id: "n2", title: "t", message: "m", category: "leave" });
+    expect((await getNotification("n2")).category).toBe("leave");
   });
 });
 

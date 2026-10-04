@@ -12,6 +12,7 @@
  * and `fcm.controller.ts`. Every function throws `ApiError` on a non-2xx
  * response.
  */
+import type { Schema } from "@/types/apiContract";
 import { api } from "@/lib/apiClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -19,16 +20,11 @@ import { api } from "@/lib/apiClient";
 /** Who sent a notification (`NotificationSource` on the backend). */
 export type NotificationSource = "school" | "talim" | "system";
 
-/** What a notification is about (`NotificationCategory` on the backend). */
-export type NotificationCategory =
-  | "announcement"
-  | "attendance"
-  | "academics"
-  | "grading"
-  | "resources"
-  | "messages"
-  | "account"
-  | "other";
+/**
+ * What a notification is about (`NotificationCategory` on the backend, from
+ * the contract), including B11's `payments` and `leave`.
+ */
+export type NotificationCategory = NonNullable<Schema<"CreateNotificationDto">["category"]>;
 
 /** How loudly it should be shown (`NotificationPriority` on the backend). */
 export type NotificationPriority = "low" | "medium" | "high";
@@ -94,6 +90,8 @@ const CATEGORIES = new Set<NotificationCategory>([
   "resources",
   "messages",
   "account",
+  "payments",
+  "leave",
   "other",
 ]);
 const PRIORITIES = new Set<NotificationPriority>(["low", "medium", "high"]);
