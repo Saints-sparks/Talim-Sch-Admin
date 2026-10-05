@@ -1,13 +1,12 @@
 /**
- * Round 4 (Messages, Notifications and Settings) types, hand-written from the
- * contract while the backend is built in parallel:
- * `talimBE-V2/docs/redesign-teachers-round4-inbox-settings.md`.
- *
- * `ChatRoomCategory` now aliases the generated contract. Replace the others
- * with an alias of their `Schema<...>` (as `gradingContract.ts` does) once
- * the contract has them, so `tsc` flags any drift. The section numbers below are the contract's.
+ * Round 4 (Messages, Notifications and Settings) types, from
+ * `talimBE-V2/docs/redesign-teachers-round4-inbox-settings.md`. Every wire
+ * shape here aliases the generated contract (`./api.d.ts`, as
+ * `gradingContract.ts` does), so `tsc` flags any drift; what stays written
+ * here is not in the OpenAPI document (the validator limits and the office
+ * room type). The section numbers below are the contract's.
  */
-import type { Schema } from "./apiContract";
+import type { RequestBody, Schema } from "./apiContract";
 
 // ─── §27 Room view additions ──────────────────────────────────────────────────
 
@@ -17,29 +16,20 @@ import type { Schema } from "./apiContract";
  */
 export type ChatRoomCategory = Schema<"ChatRoomViewDto">["category"];
 
-/** The per-viewer fields every room list and room read gains (§27). */
-export interface RoomViewAdditions {
-  category: ChatRoomCategory;
-  /**
-   * One line describing the room, e.g. "Parent of Ada Obi · Grade 5A",
-   * "Class group · 12 students". An admin viewing an office room gets
-   * "Office thread · {teacher name}".
-   */
-  subtitle: string;
-  /** Teachers only (a parent in a one-to-one); always null for admins. */
-  callPhone: string | null;
-}
+/**
+ * The per-viewer fields every room list and room read gains (§27): the
+ * `category`, a one-line `subtitle` (an admin viewing an office room gets
+ * "Office thread · {teacher name}") and `callPhone` (teachers only; always
+ * null for admins).
+ */
+export type RoomViewAdditions = Pick<Schema<"ChatRoomViewDto">, "category" | "subtitle" | "callPhone">;
 
 /**
- * A group admin (Round 4 group info, not yet in the written contract): the
- * room view's `admins: { id, name }[]`. Group admins may edit the group's
- * name and description like school staff.
+ * A group admin (Round 4 group info): one of the room view's
+ * `admins: { id, name }[]`, `id` being their user id. Group admins may edit
+ * the group's name and description like school staff.
  */
-export interface RoomAdmin {
-  /** The admin's user id. */
-  id: string;
-  name: string;
-}
+export type RoomAdmin = Schema<"ChatRoomAdminDto">;
 
 // ─── §28 Office inbox ─────────────────────────────────────────────────────────
 
@@ -82,28 +72,18 @@ export type PasswordPolicy = Pick<
 // ─── §35 Support tickets ──────────────────────────────────────────────────────
 
 /** What a support ticket is about (§35). */
-export type SupportTicketArea = "grading" | "attendance" | "timetable" | "messages" | "signing_in" | "other";
+export type SupportTicketArea = CreateSupportTicketPayload["area"];
 
-/** Shortest description `POST /support/tickets` accepts (§35). */
+/** Shortest description `POST /support/tickets` accepts (§35; a validator limit, not in the OpenAPI document). */
 export const SUPPORT_DESCRIPTION_MIN = 10;
 /** Longest description `POST /support/tickets` accepts (§35). */
 export const SUPPORT_DESCRIPTION_MAX = 2000;
 
-/** Body of `POST /support/tickets` (§35). */
-export interface CreateSupportTicketPayload {
-  area: SupportTicketArea;
-  /** 10–2000 characters. */
-  description: string;
-  attachmentUrl?: string;
-  context?: { path: string; appVersion: string; userAgent: string };
-}
+/** Body of `POST /support/tickets` (§35); `description` is 10–2000 characters. */
+export type CreateSupportTicketPayload = RequestBody<"/support/tickets", "post">;
 
-/** `POST /support/tickets` answer (§35). */
-export interface SupportTicketResponse {
-  /** e.g. "TS-4F2K9". */
-  reference: string;
-  createdAt: string;
-}
+/** `POST /support/tickets` answer (§35): the `reference` (e.g. "TS-4F2K9") and `createdAt`. */
+export type SupportTicketResponse = Schema<"SupportTicketCreatedDto">;
 
 // ─── §36 Office hours ─────────────────────────────────────────────────────────
 
@@ -112,7 +92,4 @@ export interface SupportTicketResponse {
  * school hasn't set any. Edited through `PATCH /settings/academic`, where
  * `null` clears it.
  */
-export interface OfficeHours {
-  start: string;
-  end: string;
-}
+export type OfficeHours = Schema<"OfficeHoursDto">;

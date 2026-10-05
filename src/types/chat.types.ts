@@ -95,7 +95,7 @@ export interface ChatRoom {
   subtitle?: string;
   /** Round 4 §27: teachers only; null for admins. */
   callPhone?: string | null;
-  /** Round 4 group info: the group's admins (hand-written until the generated contract has it). */
+  /** Round 4 group info: the group's admins (`ChatRoomViewDto.admins`). Absent from an older API. */
   admins?: RoomAdmin[];
   /** Office rooms: the teacher who owns a teacher's room (Round 4); the same as `officeOwnerId`. */
   officeTeacherId?: Schema<"ChatRoomViewDto">["officeTeacherId"];

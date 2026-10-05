@@ -26,11 +26,10 @@ export type UpdateReceiptSettingsDto = UpdateReceiptSettingsPayload;
 /** Fields `PATCH /settings/finance` accepts (the backend DTO). */
 export type UpdateFinanceSettingsDto = UpdateFinanceSettingsPayload;
 /**
- * Fields `PATCH /settings/academic` accepts (the backend DTO), plus Round 4
- * §36 `officeHours` (hand-written until the generated contract has it; `null`
- * clears them).
+ * Fields `PATCH /settings/academic` accepts (the backend DTO), Round 4 §36
+ * `officeHours` included (`null` clears them).
  */
-export type UpdateAcademicSettingsDto = UpdateAcademicSettingsPayload & { officeHours?: OfficeHours | null };
+export type UpdateAcademicSettingsDto = UpdateAcademicSettingsPayload;
 
 const BASE = "/settings";
 
@@ -63,18 +62,16 @@ export type ReceiptSettings = Schema<"ReceiptSettingsDto">;
 /** Body of `GET` and `PATCH /settings/receipt`. */
 export type ReceiptSettingsResponse = Schema<"ReceiptSettingsResponseDto">;
 
-/** Withdrawal safeguards for the school wallet, and the part-payment minimum. */
-export interface FinanceSettings {
-  schoolId: string;
-  requireEmailOtpForWithdrawals: boolean;
-  minimumWithdrawalAmount: number;
-  defaultBankAccountId: string | null;
-  /**
-   * The smallest part payment a parent may make, in naira (0: no minimum). A
-   * payment of the whole balance is always allowed. The API fills in 0.
-   */
-  minimumPartPayment: number;
-}
+/**
+ * Withdrawal safeguards for the school wallet, and the part-payment minimum:
+ * `minimumPartPayment` is the smallest part payment a parent may make, in
+ * naira (0: no minimum; the API fills in 0). A payment of the whole balance
+ * is always allowed.
+ */
+export type FinanceSettings = Schema<"FinanceSettingsDto">;
+
+/** Body of `GET` and `PATCH /settings/finance`. */
+export type FinanceSettingsResponse = Schema<"FinanceSettingsResponseDto">;
 
 /** A weekday the school may teach on. */
 export type SchoolWeekday = Schema<"AcademicSettingsDto">["schoolDays"][number];
@@ -83,17 +80,12 @@ export type SchoolWeekday = Schema<"AcademicSettingsDto">["schoolDays"][number];
 export type SchoolPeriod = Schema<"AcademicPeriodResponseDto">;
 
 /**
- * The school's clock, bell schedule, grade scale and pass mark. The API fills
- * in defaults (`Africa/Lagos`, Monday–Friday, 11:00 / 16:00, no periods; the
- * A–F scale and a pass mark of 50), so every field is always present.
+ * The school's clock, bell schedule, grade scale, pass mark and (Round 4 §36)
+ * office hours. The API fills in defaults (`Africa/Lagos`, Monday–Friday,
+ * 11:00 / 16:00, no periods; the A–F scale and a pass mark of 50), so every
+ * field is present; `officeHours` is null until the school sets them.
  */
-export type AcademicSettings = Schema<"AcademicSettingsDto"> & {
-  /**
-   * Round 4 §36: when the school office is open, or null / absent when the
-   * school hasn't set it. Hand-written until the generated contract has it.
-   */
-  officeHours?: OfficeHours | null;
-};
+export type AcademicSettings = Schema<"AcademicSettingsDto">;
 
 export type { OfficeHours };
 
@@ -173,8 +165,8 @@ export const updateReceiptSettings = async (
  * @returns The finance settings.
  * @throws `ApiError` when the request fails.
  */
-export const getFinanceSettings = async (): Promise<{ success: boolean; settings: FinanceSettings }> =>
-  api.get<{ success: boolean; settings: FinanceSettings }>(`${BASE}/finance`);
+export const getFinanceSettings = async (): Promise<FinanceSettingsResponse> =>
+  api.get<FinanceSettingsResponse>(`${BASE}/finance`);
 
 /**
  * Saves the withdrawal safeguards.
@@ -185,8 +177,8 @@ export const getFinanceSettings = async (): Promise<{ success: boolean; settings
  */
 export const updateFinanceSettings = async (
   dto: UpdateFinanceSettingsDto
-): Promise<{ success: boolean; settings: FinanceSettings }> =>
-  api.patch<{ success: boolean; settings: FinanceSettings }>(`${BASE}/finance`, dto);
+): Promise<FinanceSettingsResponse> =>
+  api.patch<FinanceSettingsResponse>(`${BASE}/finance`, dto);
 
 // ─── Academic Settings ────────────────────────────────────────────────────────
 
