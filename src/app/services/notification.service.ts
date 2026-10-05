@@ -18,7 +18,7 @@ import { api } from "@/lib/apiClient";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Who sent a notification (`NotificationSource` on the backend). */
-export type NotificationSource = "school" | "talim" | "system";
+export type NotificationSource = Schema<"NotificationItemDto">["source"];
 
 /**
  * What a notification is about (`NotificationCategory` on the backend, from
@@ -27,10 +27,10 @@ export type NotificationSource = "school" | "talim" | "system";
 export type NotificationCategory = NonNullable<Schema<"CreateNotificationDto">["category"]>;
 
 /** How loudly it should be shown (`NotificationPriority` on the backend). */
-export type NotificationPriority = "low" | "medium" | "high";
+export type NotificationPriority = NonNullable<Schema<"NotificationItemDto">["priority"]>;
 
 /** Where delivery got to (`NotificationStatus` on the backend). */
-export type NotificationDeliveryStatus = "pending" | "sent" | "failed";
+export type NotificationDeliveryStatus = NonNullable<Schema<"NotificationItemDto">["status"]>;
 
 /** One notification, normalised for the inbox. */
 export interface AdminNotification {
@@ -52,7 +52,12 @@ export interface AdminNotification {
   attachments: string[];
 }
 
-/** A notification exactly as the API sends it, before normalisation. */
+/**
+ * A notification as the API sends it, before normalisation. Stays hand-written
+ * (not `NotificationItemDto`): it is read defensively, every field possibly
+ * missing, with the legacy names (`body`, `attachment`, `senderEmail`) the DTO
+ * does not carry.
+ */
 interface RawNotification {
   _id?: string;
   id?: string;
@@ -73,7 +78,7 @@ interface RawNotification {
   createdAt?: string;
 }
 
-/** The pagination envelope `GET /notifications` replies with. */
+/** The pagination envelope `GET /notifications` replies with (`NotificationListResponseDto`, read as {@link RawNotification}s). */
 interface NotificationPage {
   data?: RawNotification[];
   meta?: { total?: number };
