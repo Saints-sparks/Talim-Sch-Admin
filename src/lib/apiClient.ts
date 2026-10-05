@@ -154,19 +154,23 @@ class ApiClient {
    * own refresh cookie; set last, a caller cannot rename the app), and the
    * bearer token unless `skipAuth` is set or the caller sent its own.
    *
-   * @param config - The caller's options; updated in place.
-   * @returns The same options, ready for `fetch`.
+   * The caller's options are copied, not changed: the retry after a token
+   * refresh starts again from them, so it carries the new token rather than
+   * the one the first attempt was sent with.
+   *
+   * @param config - The caller's options.
+   * @returns New options, ready for `fetch`.
    */
   private withAuth(config: RequestConfig): RequestConfig {
-    config.credentials = "include";
-    config.headers = { ...(config.headers as Record<string, string>), ...TALIM_APP_HEADERS };
-    if (config.skipAuth) return config;
+    const headers: Record<string, string> = { ...(config.headers as Record<string, string>), ...TALIM_APP_HEADERS };
+    const prepared: RequestConfig = { ...config, credentials: "include", headers };
+    if (config.skipAuth) return prepared;
     const token = this.getStoredAccessToken();
     if (token) {
       if (!this.accessToken) this.accessToken = token;
-      config.headers = { Authorization: `Bearer ${token}`, ...(config.headers as Record<string, string>) };
+      prepared.headers = { Authorization: `Bearer ${token}`, ...headers };
     }
-    return config;
+    return prepared;
   }
 
   /**

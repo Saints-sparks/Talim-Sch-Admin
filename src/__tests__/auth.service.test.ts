@@ -206,6 +206,20 @@ describe("X-Talim-App: every call names this app, so the API keeps this portal's
     expect(sent()).toEqual({ method: "GET", path: "/classes", app: "school-admin" });
   });
 
+  it("names the app on the retry after a token refresh, which carries the new token", async () => {
+    apiClient.setRefreshCallback(async () => {
+      apiClient.setAccessToken("refreshed");
+      return true;
+    });
+    mockFetch.mockReturnValueOnce(respond(401, { error: { code: "TOKEN_EXPIRED", message: "expired" } }));
+    mockFetch.mockReturnValueOnce(respond(200, []));
+    await authService.listSessions();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("Bearer stored-token");
+    expect(lastCall().options.headers).toMatchObject({ Authorization: "Bearer refreshed", "X-Talim-App": "school-admin" });
+    apiClient.setAccessToken(null);
+  });
+
   it("surfaces the API's role refusal at sign-in (403) with the portal's own access-denied wording", async () => {
     const message = portalAccessDeniedMessage("teacher");
     mockFetch.mockReturnValueOnce(respond(403, { success: false, error: { code: "FORBIDDEN", message } }));
