@@ -262,11 +262,13 @@ export const BANK_TRANSFER_STATUSES: readonly BankTransferStatus[] = [
  * server made when the parent submitted it: what each fee will receive once
  * the transfer is confirmed.
  *
- * `child.class` is sent by the API (School Admin gap 1, read with one `$in`)
- * but `ChildRefDto` does not document it yet, so it is added here.
+ * `child` is `TransferChildRefDto` except `class`, which stays hand-written:
+ * the backend has two schemas named `ClassRefDto` and the OpenAPI document
+ * keeps the fees one (`_id`, `gradeLevel`), while this route sends
+ * `{ id, name }` (`PaymentsDirectory.classes`).
  */
-export type AdminBankTransfer = Schema<"AdminBankTransferDto"> & {
-  child: Schema<"AdminBankTransferDto">["child"] & {
+export type AdminBankTransfer = Omit<Schema<"AdminBankTransferDto">, "child"> & {
+  child: Omit<Schema<"TransferChildRefDto">, "class"> & {
     /** The child's class; null when the child has none. */
     class?: { id: string; name: string } | null;
   };
