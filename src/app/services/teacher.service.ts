@@ -208,7 +208,13 @@ export const createTeacherProfile = async (
   return api.post<TeacherById>(`${API_ENDPOINTS.CREATE_TEACHER}${encodeURIComponent(userId)}`, payload);
 };
 
-/** Builds a placeholder profile from an account that has no teacher profile yet. */
+/**
+ * Builds a placeholder profile from an account that has no teacher profile
+ * yet. It leaves `classTeacherOf` out, so the class list decides.
+ *
+ * @param user - The teacher's roster row.
+ * @returns A profile with `hasTeacherProfile: false` and empty lists.
+ */
 function placeholderProfile(user: Teacher): TeacherById {
   return {
     _id: user._id,

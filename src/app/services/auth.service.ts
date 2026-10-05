@@ -208,6 +208,7 @@ export const authService = {
    * Saves a hosted avatar URL, or removes the avatar with an empty string.
    *
    * @param avatarUrl - Hosted image URL or `""`.
+   * @returns The avatar URL now stored on the account.
    */
   updateAvatarUrl: (avatarUrl: string): Promise<{ userAvatar: string }> => {
     const body: UpdateAvatarPayload = { avatarUrl };
