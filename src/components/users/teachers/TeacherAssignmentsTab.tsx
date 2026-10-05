@@ -107,8 +107,22 @@ export function TeacherAssignmentsTab({
   const roleIn = (classId: string): ClassRole => (classTeacherOf?.has(classId) ? "Class Teacher" : "Assigned");
   const classTeacherNames = classes.filter((cls) => classTeacherOf?.has(cls._id)).map((cls) => cls.name);
 
-  /** The class name for a course, falling back to its id. */
-  const classNameFor = (classId: string) => classes.find((cls) => cls._id === classId)?.name ?? classId;
+  /**
+   * The class name for a course, falling back to its id. `GET /teachers/:userId`
+   * populates a course's `classId` (`{ _id, name, ... }`); other answers send
+   * the bare id.
+   *
+   * @param classId - The course's `classId`, populated or not.
+   * @returns The class's name, else its id.
+   */
+  const classNameFor = (classId: string | Record<string, unknown> | undefined) => {
+    if (classId && typeof classId === "object") {
+      const id = String(classId._id ?? "");
+      const populatedName = typeof classId.name === "string" ? classId.name : "";
+      return populatedName || classes.find((cls) => cls._id === id)?.name || id;
+    }
+    return classes.find((cls) => cls._id === classId)?.name ?? classId;
+  };
 
   return (
     <div className="space-y-8">

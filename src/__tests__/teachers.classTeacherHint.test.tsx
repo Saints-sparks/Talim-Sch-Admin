@@ -133,6 +133,20 @@ describe("the teacher profile", () => {
     expect(screen.getByText("Not reported")).toBeInTheDocument();
     expect(screen.queryByRole("note", { name: "Class teacher" })).not.toBeInTheDocument();
   });
+
+  it("names each course's class, whether the API populates classId (the profile does) or sends an id", () => {
+    const withCourses = {
+      ...teacher,
+      assignedCourses: [
+        // GET /teachers/:userId populates the course's class, here one the teacher has no card for.
+        { _id: "k1", courseCode: "MTH101", title: "Maths", description: "", classId: { _id: "c9", name: "SS 1A" } },
+        { _id: "k2", courseCode: "ENG101", title: "English", description: "", classId: "c1" },
+      ],
+    } as unknown as TeacherById;
+    render(<TeacherAssignmentsTab teacher={withCourses} />);
+    expect(screen.getByText("Class: SS 1A")).toBeInTheDocument();
+    expect(screen.getByText("Class: JSS 1A")).toBeInTheDocument();
+  });
 });
 
 // ─── The editor ───────────────────────────────────────────────────────────────
