@@ -47,20 +47,17 @@ export interface AcademicYearResponse {
   status?: AcademicPeriodStatus;
 }
 
-/** A term as the API returns it. */
-export interface TermResponse {
-  _id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  schoolId: string;
-  academicYearId: string;
-  isCurrent: boolean;
-  createdAt: string;
-  updatedAt: string;
+/**
+ * A term as `GET /academic-year-term/term/school` returns it (`SchoolTermDto`:
+ * `id` and `_id` alike, and its `session`, e.g. "2025/2026"). The other term
+ * routes answer the stored document, hence the optional extras.
+ */
+export type TermResponse = Schema<"SchoolTermDto"> & {
+  createdAt?: string;
+  updatedAt?: string;
   /** Present once the school starts closing periods. */
   status?: AcademicPeriodStatus;
-}
+};
 
 /**
  * What `POST /term` replies with. Today the API answers `{ message }` only, so
@@ -251,7 +248,7 @@ export const createTerm = async (data: Omit<Term, "schoolId">): Promise<CreateTe
  * @throws ApiError When the request fails.
  */
 export const getTerms = async (): Promise<TermResponse[]> => {
-  const body = await api.get<{ terms?: TermResponse[] } | null>(API_ENDPOINTS.GET_TERMS);
+  const body = await api.get<Partial<Schema<"SchoolTermsResponseDto">> | null>(API_ENDPOINTS.GET_TERMS);
   const terms = body?.terms;
   return Array.isArray(terms) ? terms : [];
 };

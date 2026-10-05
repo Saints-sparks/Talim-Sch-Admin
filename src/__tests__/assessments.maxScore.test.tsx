@@ -27,6 +27,8 @@ const NOW = new Date("2026-03-15T10:00:00Z");
 
 const term: Term = {
   _id: "term-1",
+  id: "term-1",
+  session: "2025/2026",
   name: "First Term",
   startDate: "2026-01-01",
   endDate: "2026-04-30",
