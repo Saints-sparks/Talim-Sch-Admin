@@ -403,8 +403,15 @@ test("Security: the signed-in devices mark this one, and Sign out of other devic
     await expect(signOutOne).toHaveCount(0);
     await expect(devices.getByText("This device", { exact: true })).toHaveCount(1);
 
-    // The other browser's refresh token is dead.
-    const status = await otherPage.evaluate(async (api) => (await fetch(`${api}/auth/refresh`, { method: "POST", credentials: "include" })).status, API_URL);
+    // The other browser's refresh token is dead. Asked as the app asks, naming
+    // itself in X-Talim-App, so the API reads this portal's own
+    // `refreshToken_school-admin` cookie rather than the shared one.
+    const status = await otherPage.evaluate(
+      async (api) =>
+        (await fetch(`${api}/auth/refresh`, { method: "POST", credentials: "include", headers: { "X-Talim-App": "school-admin" } }))
+          .status,
+      API_URL,
+    );
     expect(status).toBe(401);
   } finally {
     await context.close();
