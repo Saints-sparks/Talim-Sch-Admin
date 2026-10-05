@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/app/lib/api/config";
+import { API_BASE_URL, TALIM_APP_HEADERS } from "@/app/lib/api/config";
 import { ApiError } from "./apiError";
 
 /** Request options accepted by the client (a superset of `fetch`'s). */
@@ -148,8 +148,18 @@ class ApiClient {
     return `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   }
 
+  /**
+   * Adds what every request carries: the cookies (for the refresh cookie),
+   * `X-Talim-App` naming this app (so the API reads and writes this portal's
+   * own refresh cookie; set last, a caller cannot rename the app), and the
+   * bearer token unless `skipAuth` is set or the caller sent its own.
+   *
+   * @param config - The caller's options; updated in place.
+   * @returns The same options, ready for `fetch`.
+   */
   private withAuth(config: RequestConfig): RequestConfig {
     config.credentials = "include";
+    config.headers = { ...(config.headers as Record<string, string>), ...TALIM_APP_HEADERS };
     if (config.skipAuth) return config;
     const token = this.getStoredAccessToken();
     if (token) {

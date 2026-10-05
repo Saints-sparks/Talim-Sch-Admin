@@ -1,3 +1,5 @@
+import type { operations } from "@/types/api";
+
 // The API origin comes from the environment so each deployment (local, preview,
 // production) points at its own backend. Next.js inlines NEXT_PUBLIC_* at build
 // time, so a missing value fails the build here rather than at runtime.
@@ -9,6 +11,31 @@ if (!configuredApiBaseUrl) {
 }
 
 export const API_BASE_URL = configuredApiBaseUrl.replace(/\/+$/, "");
+
+/** The values the API accepts in `X-Talim-App`, from the generated contract. */
+export type TalimAppName = NonNullable<
+  NonNullable<operations["AuthenticationController_refreshToken"]["parameters"]["header"]>["X-Talim-App"]
+>;
+
+/** The request header a Talim web app names itself in. */
+export const TALIM_APP_HEADER = "X-Talim-App";
+
+/**
+ * This app, as named in `X-Talim-App`. With it the API keeps this portal's
+ * refresh token in its own httpOnly cookie (`refreshToken_school-admin`), so
+ * signing in to another Talim portal in the same browser no longer replaces
+ * this session, and it refuses a sign-in or refresh by a role this portal does
+ * not admit.
+ */
+export const TALIM_APP = "school-admin" satisfies TalimAppName;
+
+/**
+ * The headers that name this app to the API. `apiClient` sends them on every
+ * request; the one raw upload XHR sets the same pair.
+ */
+export const TALIM_APP_HEADERS: Readonly<Record<typeof TALIM_APP_HEADER, TalimAppName>> = {
+  [TALIM_APP_HEADER]: TALIM_APP,
+};
 
 /**
  * Turns a relative API path into a full URL, for the few callers that cannot

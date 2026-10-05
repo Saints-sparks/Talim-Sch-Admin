@@ -1,6 +1,6 @@
 import { sessionStore } from "@/lib/session";
 import { unwrapEnvelope } from "@/lib/apiClient";
-import { API_ENDPOINTS, absoluteUrl } from "../lib/api/config";
+import { API_ENDPOINTS, TALIM_APP, TALIM_APP_HEADER, absoluteUrl } from "../lib/api/config";
 
 interface UploadResponse {
   url?: string;
@@ -11,6 +11,16 @@ interface UploadResponse {
 /** The session token wherever it is kept (session-only sign-ins use sessionStorage). */
 const getAuthToken = () => sessionStore.getToken();
 
+/**
+ * Posts one file to an upload route with an XMLHttpRequest, which (unlike
+ * `fetch`) reports upload progress. Sends what `apiClient` sends: the cookies,
+ * the bearer token and `X-Talim-App`.
+ *
+ * @param endpoint - The absolute upload URL.
+ * @param file - The file the user chose.
+ * @param onProgress - Called with 0-100 as the upload proceeds.
+ * @returns The hosted URL the API answers with.
+ */
 const uploadWithProgress = (
   endpoint: string,
   file: File,
@@ -28,6 +38,7 @@ const uploadWithProgress = (
     const xhr = new XMLHttpRequest();
     xhr.open("POST", endpoint);
     xhr.withCredentials = true;
+    xhr.setRequestHeader(TALIM_APP_HEADER, TALIM_APP);
 
     const token = getAuthToken();
     if (token) {

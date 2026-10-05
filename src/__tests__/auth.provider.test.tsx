@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/apiClient";
 import { ApiError } from "@/lib/apiError";
 import { dropLocalWebPush } from "@/app/hooks/usePushNotifications";
 import { sessionStore } from "@/lib/session";
+import { portalAccessDeniedMessage } from "@/lib/authPolicy";
 
 jest.mock("@/app/services/auth.service", () => ({
   authService: {
@@ -217,6 +218,21 @@ describe("login", () => {
         'Access denied. This portal is for school administrators only. Your account is registered as "school teacher". Please use the correct Talim app for your role.',
       );
     });
+    expect(localStorage.getItem("accessToken")).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+  });
+
+  it("shows the API's own role refusal (403 with X-Talim-App) exactly as the client-side gate words it", async () => {
+    const { result } = await mount();
+    const clientSide = portalAccessDeniedMessage("school_teacher");
+    auth.login.mockRejectedValue(new ApiError("FORBIDDEN", clientSide, 403));
+    auth.introspectToken.mockClear();
+    await act(async () => {
+      await expect(result.current.login("t@b.c", "pw")).rejects.toThrow(
+        'Access denied. This portal is for school administrators only. Your account is registered as "school teacher". Please use the correct Talim app for your role.',
+      );
+    });
+    expect(auth.introspectToken).not.toHaveBeenCalled();
     expect(localStorage.getItem("accessToken")).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
   });

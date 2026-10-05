@@ -135,4 +135,11 @@ describe("file upload (raw XMLHttpRequest, so it reads its own body)", () => {
       "https://cdn/x.png",
     );
   });
+
+  it("names this app in X-Talim-App, like every apiClient request", async () => {
+    await uploadReturning({ url: "https://cdn/x.png" });
+    const [xhr] = FakeXhr.instances;
+    expect(xhr.withCredentials).toBe(true);
+    expect(xhr.setRequestHeader).toHaveBeenCalledWith("X-Talim-App", "school-admin");
+  });
 });

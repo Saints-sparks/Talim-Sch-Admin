@@ -1,6 +1,8 @@
 /** @jest-environment jsdom */
 import { authService } from "@/app/services/auth.service";
 import { ApiError } from "@/lib/apiError";
+import { apiClient } from "@/lib/apiClient";
+import { portalAccessDeniedMessage } from "@/lib/authPolicy";
 
 // auth.service goes through the shared API client, which calls fetch.
 global.fetch = jest.fn();
@@ -149,5 +151,67 @@ describe("authService.logout", () => {
     expect(url).toMatch(/\/auth\/logout$/);
     expect(options.method).toBe("POST");
     expect(options.headers.Authorization).toBe("Bearer stored-token");
+  });
+});
+
+describe("X-Talim-App: every call names this app, so the API keeps this portal's own refresh cookie", () => {
+  /** The method, path and `X-Talim-App` of the last request. */
+  const sent = () => {
+    const { url, options } = lastCall();
+    return { method: options.method, path: new URL(url).pathname, app: options.headers["X-Talim-App"] };
+  };
+
+  it("names the app on sign-in, refresh and sign-out (public calls included)", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { access_token: "abc" }));
+    await authService.login({ email: "a@b.com", password: "pass" });
+    expect(sent()).toEqual({ method: "POST", path: "/auth/login", app: "school-admin" });
+    expect(lastCall().options.credentials).toBe("include");
+
+    mockFetch.mockReturnValueOnce(respond(201, { access_token: "fresh" }));
+    await authService.refresh();
+    expect(sent()).toEqual({ method: "POST", path: "/auth/refresh", app: "school-admin" });
+    expect(lastCall().options.credentials).toBe("include");
+
+    mockFetch.mockReturnValueOnce(respond(201, { message: "Logged out" }));
+    await authService.logout();
+    expect(sent()).toEqual({ method: "POST", path: "/auth/logout", app: "school-admin" });
+    expect(lastCall().options.headers.Authorization).toBe("Bearer stored-token");
+  });
+
+  it("names the app on change-password and the session routes", async () => {
+    mockFetch.mockReturnValueOnce(respond(201, { access_token: "fresh", message: "changed" }));
+    await authService.changePassword("Temp#1234", "N3w-Passw0rd!", "N3w-Passw0rd!");
+    expect(sent()).toEqual({ method: "POST", path: "/auth/change-password", app: "school-admin" });
+
+    mockFetch.mockReturnValueOnce(respond(200, []));
+    await authService.listSessions();
+    expect(sent()).toEqual({ method: "GET", path: "/auth/sessions", app: "school-admin" });
+
+    mockFetch.mockReturnValueOnce(respond(200, { revoked: true }));
+    await authService.revokeSession("s1");
+    expect(sent()).toEqual({ method: "DELETE", path: "/auth/sessions/s1", app: "school-admin" });
+
+    mockFetch.mockReturnValueOnce(respond(201, { revoked: 2 }));
+    await authService.revokeOtherSessions();
+    expect(sent()).toEqual({ method: "POST", path: "/auth/sessions/revoke-others", app: "school-admin" });
+  });
+
+  it("keeps a caller's own headers beside it, and a caller cannot rename the app", async () => {
+    mockFetch.mockReturnValueOnce(respond(200, { active: false }));
+    await authService.introspectToken("tok");
+    expect(lastCall().options.headers).toMatchObject({ Authorization: "Bearer tok", "X-Talim-App": "school-admin" });
+
+    mockFetch.mockReturnValueOnce(respond(200, {}));
+    await apiClient.get("/classes", { headers: { "X-Talim-App": "teachers" } });
+    expect(sent()).toEqual({ method: "GET", path: "/classes", app: "school-admin" });
+  });
+
+  it("surfaces the API's role refusal at sign-in (403) with the portal's own access-denied wording", async () => {
+    const message = portalAccessDeniedMessage("teacher");
+    mockFetch.mockReturnValueOnce(respond(403, { success: false, error: { code: "FORBIDDEN", message } }));
+    const error = await authService.login({ email: "t@school.edu", password: "pw" }).catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: "FORBIDDEN", status: 403, message });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

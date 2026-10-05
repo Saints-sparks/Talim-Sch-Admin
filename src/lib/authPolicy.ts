@@ -47,7 +47,9 @@ export function isAdminPortalRole(role: string): boolean {
 }
 
 /**
- * The message for an account signing in with the wrong kind of role.
+ * The message for an account signing in with the wrong kind of role. The API
+ * words its own refusal (403 `FORBIDDEN` from `/auth/login`, sent because the
+ * client names this app in `X-Talim-App`) exactly the same way.
  *
  * @param role - The account's role, e.g. "school_teacher".
  * @returns A sentence naming the role and sending them to the right app.
@@ -63,7 +65,10 @@ export function portalAccessDeniedMessage(role: string): string {
 
 /**
  * Maps a failed sign-in request to what the user should see: wrong
- * credentials get a plain sentence, anything else is passed through.
+ * credentials get a plain sentence, anything else is passed through. That
+ * includes the API's 403 for a role this portal does not admit, whose message
+ * is {@link portalAccessDeniedMessage}'s, so the sign-in page shows it in the
+ * same access-denied banner as the client-side check.
  *
  * @param error - What the login request threw.
  * @returns The error to throw to the sign-in form.
