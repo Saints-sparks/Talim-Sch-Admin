@@ -53,46 +53,31 @@ export const OFFICE_ROOM_TYPE = "office" as const;
 
 // ─── §34 Sessions and password policy ─────────────────────────────────────────
 
-/** One signed-in device, from `GET /auth/sessions` (§34). */
-export interface AuthSession {
-  id: string;
-  /** e.g. "iPhone", "Desktop"; null when the server couldn't tell. */
-  device: string | null;
-  /** e.g. "Chrome 128". */
-  browser: string | null;
-  /** e.g. "macOS 15". */
-  os: string | null;
-  ip: string | null;
-  /** ISO date-time the session last refreshed. */
-  lastUsedAt: string;
-  /** ISO date-time the session signed in. */
-  createdAt: string;
-  /**
-   * The session this request came from (decided by the refresh cookie). When
-   * the server can't tell, every entry is false.
-   */
-  current: boolean;
-}
+/**
+ * One signed-in device, from `GET /auth/sessions` (§34). `current` marks the
+ * session this request came from (decided by the refresh cookie); when the
+ * server can't tell, every entry is false.
+ */
+export type AuthSession = Schema<"SessionDto">;
 
-/** `POST /auth/sessions/revoke-others` (§34). */
-export interface RevokeOtherSessionsResponse {
-  /** How many sessions were signed out. */
-  revoked: number;
-}
+/** `POST /auth/sessions/revoke-others` (§34): how many sessions were signed out. */
+export type RevokeOtherSessionsResponse = Schema<"RevokeOthersDto">;
+
+/** `DELETE /auth/sessions/:id` (§34). */
+export type RevokeSessionResponse = Schema<"RevokeSessionDto">;
+
+/** `GET /auth/password-policy` (§34, public), as the server sends it. */
+export type PasswordPolicyResponse = Schema<"PasswordPolicyDto">;
 
 /**
- * `GET /auth/password-policy` (§34, public), from the backend's
- * `security-config.service.ts`.
+ * The password rules the checklist applies: the fields of
+ * {@link PasswordPolicyResponse} it reads (`normalizePasswordPolicy` keeps
+ * only these; the symbol set is the backend's, fixed in `passwordPolicy.ts`).
  */
-export interface PasswordPolicy {
-  minLength: number;
-  requireUppercase: boolean;
-  requireLowercase: boolean;
-  requireNumber: boolean;
-  requireSymbol: boolean;
-  /** How many previous passwords can't be reused. */
-  historyCount: number;
-}
+export type PasswordPolicy = Pick<
+  PasswordPolicyResponse,
+  "minLength" | "requireUppercase" | "requireLowercase" | "requireNumber" | "requireSymbol" | "historyCount"
+>;
 
 // ─── §35 Support tickets ──────────────────────────────────────────────────────
 

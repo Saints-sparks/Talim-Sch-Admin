@@ -14,8 +14,6 @@
  *   `@ApiBody` (`subjectName`), while the validated DTO needs `subjectId`.
  * - `POST /subjects-courses/subjects`, `POST /timetable`: ids are typed as
  *   `Record<string, never>` (a raw ObjectId), which no string satisfies.
- * - `PUT /auth/profile/avatar`: documented as multipart only; the app sends
- *   `{ avatarUrl }` as JSON, which the endpoint also accepts.
  */
 import type { RequestBody } from "./apiContract";
 
@@ -189,6 +187,8 @@ export type ResetPasswordPayload = RequestBody<"/auth/reset-password", "post">;
 export type LoginPayload = RequestBody<"/auth/login", "post">;
 /** Body of `PUT /auth/profile/update`. */
 export type UpdateProfilePayload = RequestBody<"/auth/profile/update", "put">;
+/** JSON body of `PUT /auth/profile/avatar`: a hosted URL, or `""` to remove the avatar. */
+export type UpdateAvatarPayload = RequestBody<"/auth/profile/avatar", "put">;
 
 // ─── Timetable, subjects ──────────────────────────────────────────────────────
 

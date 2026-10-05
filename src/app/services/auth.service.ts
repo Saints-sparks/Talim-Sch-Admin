@@ -5,10 +5,17 @@ import type {
   ForgotPasswordPayload,
   LoginPayload,
   ResetPasswordPayload,
+  UpdateAvatarPayload,
   UpdateProfilePayload,
   VerifyResetCodePayload,
 } from "@/types/apiPayloads";
-import type { AuthSession, PasswordPolicy, RevokeOtherSessionsResponse } from "@/types/round4Contract";
+import type { Schema } from "@/types/apiContract";
+import type {
+  AuthSession,
+  PasswordPolicyResponse,
+  RevokeOtherSessionsResponse,
+  RevokeSessionResponse,
+} from "@/types/round4Contract";
 
 /** Body for `POST /auth/login`. */
 export interface LoginCredentials {
@@ -21,27 +28,14 @@ export interface LoginCredentials {
   platform?: string;
 }
 
-/** `POST /auth/login` body. The refresh token is set as an httpOnly cookie, never returned. */
-export interface LoginResponse {
-  access_token: string;
-}
+/**
+ * Body of `POST /auth/login` and `/auth/refresh`. In a browser the refresh
+ * token is set as this app's httpOnly cookie, never returned.
+ */
+export type LoginResponse = Schema<"AccessTokenResponseDto">;
 
 /** The signed-in user as `/auth/introspect` returns them. */
-export interface User {
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  schoolId: string | null;
-  phoneNumber: string;
-  isActive: boolean;
-  isEmailVerified: boolean;
-  /** True while the account still has a temporary password. */
-  mustChangePassword?: boolean;
-  onboardingCompleted?: boolean;
-  permissions?: string[];
-}
+export type User = Schema<"IntrospectUserDto">;
 
 /** Roles the API issues tokens for. */
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT" | "SCHOOL_ADMIN";
@@ -97,12 +91,7 @@ export interface UserProfile {
 }
 
 /** `POST /auth/introspect` body. `active: false` (with no user) for an invalid token. */
-export interface TokenIntrospectResponse {
-  active: boolean;
-  exp?: number;
-  iat?: number;
-  user?: User;
-}
+export type TokenIntrospectResponse = Schema<"IntrospectResponseDto">;
 
 /** `POST /auth/change-password` body: a fresh access token (refresh cookie is rotated too). */
 export interface ChangePasswordResponse {
@@ -220,8 +209,10 @@ export const authService = {
    *
    * @param avatarUrl - Hosted image URL or `""`.
    */
-  updateAvatarUrl: (avatarUrl: string): Promise<{ userAvatar: string }> =>
-    api.put<{ userAvatar: string }>(API_URLS.AUTH.UPDATE_AVATAR, { avatarUrl }),
+  updateAvatarUrl: (avatarUrl: string): Promise<{ userAvatar: string }> => {
+    const body: UpdateAvatarPayload = { avatarUrl };
+    return api.put<{ userAvatar: string }>(API_URLS.AUTH.UPDATE_AVATAR, body);
+  },
 
   /**
    * The signed-in user's devices (Round 4 §34), one per active refresh token.
@@ -236,10 +227,10 @@ export const authService = {
    * Signs one of the user's own sessions out; its next refresh fails with 401.
    *
    * @param id - The session's id.
-   * @returns The API's answer (nothing the app reads).
+   * @returns The API's answer: `{ id, revoked, current }` (nothing the app reads yet).
    */
-  revokeSession: (id: string): Promise<unknown> =>
-    api.delete(API_URLS.AUTH.SESSION.replace(":id", encodeURIComponent(id))),
+  revokeSession: (id: string): Promise<RevokeSessionResponse> =>
+    api.delete<RevokeSessionResponse>(API_URLS.AUTH.SESSION.replace(":id", encodeURIComponent(id))),
 
   /**
    * Signs out every session but this one.
@@ -255,6 +246,6 @@ export const authService = {
    *
    * @returns The policy as the server sends it (see `normalizePasswordPolicy`).
    */
-  getPasswordPolicy: (): Promise<PasswordPolicy> =>
-    api.get<PasswordPolicy>(API_URLS.AUTH.PASSWORD_POLICY, { skipAuth: true }),
+  getPasswordPolicy: (): Promise<PasswordPolicyResponse> =>
+    api.get<PasswordPolicyResponse>(API_URLS.AUTH.PASSWORD_POLICY, { skipAuth: true }),
 };
