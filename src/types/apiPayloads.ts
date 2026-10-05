@@ -10,9 +10,7 @@
  *
  * Deliberately NOT here (the generated type is too loose or wrong, so the
  * hand-written type stays in the service; see each service's comment):
- * - `POST/PUT /subjects-courses/courses`: the contract documents an outdated
- *   `@ApiBody` (`subjectName`), while the validated DTO needs `subjectId`.
- * - `POST /subjects-courses/subjects`, `POST /timetable`: ids are typed as
+ * - `POST /subjects-courses/subjects`: `schoolId` is typed as
  *   `Record<string, never>` (a raw ObjectId), which no string satisfies.
  */
 import type { RequestBody } from "./apiContract";
@@ -192,8 +190,12 @@ export type UpdateAvatarPayload = RequestBody<"/auth/profile/avatar", "put">;
 
 // ─── Timetable, subjects ──────────────────────────────────────────────────────
 
-/** Body of `POST /timetable`; its ids are generated as `Record<string, never>` (a raw ObjectId). */
+/** Body of `POST /timetable`. */
 export type CreateTimetableContractPayload = RequestBody<"/timetable", "post">;
+/** Body of `POST /subjects-courses/courses` (`schoolId` is accepted and ignored: the token decides). */
+export type CreateCoursePayload = RequestBody<"/subjects-courses/courses", "post">;
+/** Body of `PUT /subjects-courses/courses/{id}`; every field is optional. */
+export type UpdateCoursePayload = RequestBody<"/subjects-courses/courses/{id}", "put">;
 /** Body of `POST /subjects-courses/subjects`; `schoolId` is generated as an object. */
 export type CreateSubjectContractPayload = RequestBody<"/subjects-courses/subjects", "post">;
 /** Body of `PUT /subjects-courses/subjects/{id}`. */

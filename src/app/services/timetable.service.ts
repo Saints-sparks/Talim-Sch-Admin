@@ -65,15 +65,8 @@ export interface TeacherDirectoryEntry {
   userId?: string | { _id?: string; firstName?: string; lastName?: string; email?: string };
 }
 
-/**
- * Body of `POST /timetable` (the backend DTO). The contract types the two ids as
- * a raw ObjectId (`Record<string, never>`), which no string satisfies, so they
- * are restated as strings; every other field still comes from the DTO.
- */
-export type CreateTimetableEntryPayload = Omit<CreateTimetableContractPayload, "classId" | "courseId"> & {
-  classId: string;
-  courseId: string;
-};
+/** Body of `POST /timetable` (the backend DTO). */
+export type CreateTimetableEntryPayload = CreateTimetableContractPayload;
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
 

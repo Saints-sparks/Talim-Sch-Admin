@@ -11,7 +11,12 @@
 import { API_URLS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
 import { logger } from "@/lib/logger";
-import type { CreateSubjectContractPayload, UpdateSubjectContractPayload } from "@/types/apiPayloads";
+import type {
+  CreateCoursePayload,
+  CreateSubjectContractPayload,
+  UpdateCoursePayload,
+  UpdateSubjectContractPayload,
+} from "@/types/apiPayloads";
 import { getClasses as getSchoolClasses, type Class as SchoolClass } from "./school.service";
 import { teacherService, type Teacher } from "./teacher.service";
 
@@ -68,33 +73,9 @@ export interface Course {
   createdAt?: string;
 }
 
-/**
- * Body for `POST /subjects-courses/courses`, mirroring `CreateCourseDto`.
- * `schoolId` is accepted but ignored by the API — the token decides the school.
- *
- * Hand-typed on purpose: the generated contract for this endpoint is wrong (its
- * `@ApiBody` documents `subjectName` and `teacherRole`, while the validated DTO
- * needs `subjectId`), and `UpdateCourseDto` is generated as an empty object.
- * Both are read from `talimBE-V2/src/modules/academic/data/dtos/courses.ts`.
- */
-export interface CreateCoursePayload {
-  title: string;
-  description: string;
-  courseCode: string;
-  subjectId: string;
-  teacherId: string;
-  classId: string;
-  schoolId?: string;
-}
-
-/** Body for `PUT /subjects-courses/courses/:id`, mirroring `UpdateCourseDto`. */
-export interface UpdateCoursePayload {
-  title?: string;
-  description?: string;
-  courseCode?: string;
-  teacherId?: string;
-  classId?: string;
-}
+// Course bodies are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
+// for the callers that import them from here.
+export type { CreateCoursePayload, UpdateCoursePayload } from "@/types/apiPayloads";
 
 /**
  * Body of `POST` / `PUT /subjects-courses/subjects` (the backend DTOs). The
