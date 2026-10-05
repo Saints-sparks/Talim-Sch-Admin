@@ -10,6 +10,7 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import type {
   CreateTeacherProfilePayload,
   RegisterUserPayload,
@@ -49,59 +50,34 @@ interface TeacherUser {
   isEmailVerified?: boolean;
 }
 
-/** A class as it appears on a teacher's profile. */
-export interface Class {
-  _id?: string;
-  name: string;
-  schoolId?: string;
-  classCapacity?: number;
-  classDescription?: string;
-  assignedCourses?: string[];
-}
-
-/** A course as it appears on a teacher's profile. */
-export interface Course {
-  _id: string;
-  courseCode: string;
-  title: string;
-  description: string;
-  schoolId?: string;
-  teacherId?: string;
-  classId: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 /** A class named by id and name, e.g. in `classTeacherOf`. */
-export interface ClassRef {
-  id: string;
-  name: string;
-}
+export type ClassRef = Schema<"TeacherClassRefDto">;
+
+/** A class on a teacher's profile, with its size (`classCapacity` is stored as text). */
+export type TeacherClass = Schema<"TeacherClassDto">;
+
+/** A course on a teacher's profile: `classId` is populated on the profile, an id on the roster. */
+export type TeacherCourse = Schema<"TeacherCourseDto">;
 
 /**
  * The roster fields `GET /users/teachers` attaches to each account row
  * (School Admin gap 5), batched for the page; `null` before the profile is
- * created. Hand-written: the route's response is untyped in the contract.
+ * created. `classTeacherClasses` merges the assigned and class-teacher
+ * classes; `classTeacherOf` is only the classes whose `Class.classTeacherId`
+ * is this teacher (A6).
  */
-export interface TeacherRosterProfile {
-  hasTeacherProfile: boolean;
-  staffNumber?: string;
-  isFormTeacher?: boolean;
-  /** Classes the profile lists (assigned and class-teacher classes merged). */
-  classTeacherClasses?: Class[];
-  assignedCourses?: Course[];
-  /** Classes whose `Class.classTeacherId` is this teacher (A6). */
-  classTeacherOf?: ClassRef[];
-}
+export type TeacherRosterProfile = Schema<"TeacherRosterProfileDto">;
 
 /**
  * A row in the teacher roster: the user account, plus the profile fields the
- * list sends with it (`teacherProfile`), spread onto the row.
+ * list sends with it (`teacherProfile`), spread onto the row. Stays
+ * hand-written: it is the client's merged row (`TeacherRosterRowDto` plus
+ * the spread profile), also used for the status route's answer.
  */
 export interface Teacher {
   _id: string;
   userId?: TeacherUser | string;
-  staffNumber?: string;
+  staffNumber?: string | null;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -116,8 +92,10 @@ export interface Teacher {
   availabilityDays?: string[];
   availableTime?: string;
   isFormTeacher?: boolean;
-  assignedClasses?: Class[];
-  assignedCourses?: Course[];
+  /** From the roster's `teacherProfile.classTeacherClasses`. */
+  assignedClasses?: TeacherClass[];
+  /** From the roster's `teacherProfile.assignedCourses`. */
+  assignedCourses?: TeacherCourse[];
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -132,10 +110,15 @@ export interface Teacher {
   teacherProfile?: TeacherRosterProfile | null;
 }
 
-/** A teacher profile as `GET /teachers/:userId` returns it, with refs populated. */
-export interface TeacherById {
-  _id: string;
-  staffNumber?: string;
+/**
+ * A teacher profile as `GET /teachers/:userId` returns it
+ * (`TeacherProfileResponseDto`): its courses with their periods,
+ * `classTeacherClasses` (the classes they lead or are assigned, with student
+ * counts) and `classTeacherOf` (only the classes whose `Class.classTeacherId`
+ * is theirs: the one source of class-teacher, register, access).
+ */
+export type TeacherById = Omit<Schema<"TeacherProfileResponseDto">, "userId" | "availableTime" | "classTeacherOf"> & {
+  /** Hand-written: the DTO documents an id, but the route populates the account. */
   userId: {
     _id: string;
     userId: string;
@@ -157,56 +140,18 @@ export interface TeacherById {
     gender?: string;
     userAvatar?: string;
   };
-  assignedClasses: {
-    _id: string;
-    name: string;
-    classCapacity: number;
-    classDescription: string;
-    assignedCourses: string[];
-  }[];
-  /** Classes where this teacher is the form teacher. */
-  classTeacherClasses?: {
-    _id: string;
-    name: string;
-    classCapacity: number;
-    classDescription: string;
-    assignedCourses: string[];
-  }[];
-  assignedCourses: {
-    _id: string;
-    courseCode: string;
-    title: string;
-    description: string;
-    classId: string;
-    subjectId: string;
-  }[];
-  isFormTeacher: boolean;
-  highestAcademicQualification: string;
-  yearsOfExperience: number;
-  specialization: string;
-  employmentType: string;
-  employmentRole: string;
-  availabilityDays: string[];
-  availableTime: string;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
+  /** Hand-written: stored as text (e.g. "08:00 AM - 03:00 PM"), while the DTO documents an object. */
+  availableTime?: string;
+  /** Optional here only for the placeholder, which leaves it out so the class list decides. */
+  classTeacherOf?: ClassRef[];
+  /** Not sent by `GET /teachers/:userId` (its classes are in `classTeacherClasses`); empty on a placeholder. */
+  assignedClasses?: TeacherClass[];
   /** False for a placeholder built from the account when no profile exists. */
   hasTeacherProfile?: boolean;
-  /**
-   * Classes whose `Class.classTeacherId` is this teacher (A6), the only source
-   * of class-teacher (register) access. Untyped in the contract.
-   */
-  classTeacherOf?: ClassRef[];
-}
+};
 
 /** Pagination envelope the teacher list answers with. */
-export interface TeacherPaginationMeta {
-  total: number;
-  page: number;
-  lastPage: number;
-  limit: number;
-}
+export type TeacherPaginationMeta = Schema<"TeacherRosterMetaDto">;
 
 /** A page of teacher accounts. */
 export interface GetTeachersResponse {
@@ -296,9 +241,6 @@ function placeholderProfile(user: Teacher): TeacherById {
     employmentRole: "",
     availabilityDays: [],
     availableTime: "",
-    createdAt: user.createdAt?.toString() || "",
-    updatedAt: user.updatedAt?.toString() || "",
-    __v: user.__v || 0,
     hasTeacherProfile: false,
   };
 }

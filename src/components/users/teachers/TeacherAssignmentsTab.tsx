@@ -3,7 +3,7 @@
 import React from "react";
 import { Badge, BookOpen, Calendar as CalendarIcon, Clock, User, Users } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import type { TeacherById } from "@/app/services/teacher.service";
+import type { TeacherById, TeacherClass } from "@/app/services/teacher.service";
 import {
   AccentField,
   ProfileCircle,
@@ -12,7 +12,7 @@ import {
 } from "./teacherProfileAtoms";
 import { ClassTeacherHint } from "./ClassTeacherHint";
 
-type ClassRow = TeacherById["assignedClasses"][number];
+type ClassRow = TeacherClass;
 
 /** How the teacher stands in a class (A6: class teacher only from `Class.classTeacherId`). */
 type ClassRole = "Class Teacher" | "Assigned";
