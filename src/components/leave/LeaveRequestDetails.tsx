@@ -134,7 +134,7 @@ export function LeaveRequestDetails({ request }: LeaveRequestDetailsProps) {
                   href={attachment}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 rounded bg-tl-brand-fill px-3 py-1 text-sm text-white transition hover:bg-[#123a5e]"
+                  className="inline-flex min-h-[44px] shrink-0 items-center rounded-[11px] bg-tl-brand-fill px-3.5 text-sm font-bold text-tl-on-brand transition hover:bg-tl-brand-fill-hover"
                 >
                   Open
                 </a>
