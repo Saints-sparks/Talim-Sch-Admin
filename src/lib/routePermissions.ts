@@ -25,11 +25,17 @@ const ROUTE_PERMISSIONS: Array<[prefix: string, permission: PermissionValue]> = 
   ["/leave-requests", Permission.MANAGE_LEAVE_REQUESTS],
   ["/transit", Permission.MANAGE_TRANSIT],
   ["/messages", Permission.MANAGE_MESSAGES],
+  // The school's support desk (v1.5 §1). `/help` (the admin's own tickets to
+  // Talim) is open to every signed-in admin, as are the old `/complaints`
+  // links, which redirect.
+  ["/support", Permission.MANAGE_SUPPORT],
   ["/settings", Permission.MANAGE_SETTINGS],
 ];
 
 /** The route prefixes that need a permission, for tests and tooling that compare them with other maps. */
-export const PROTECTED_ROUTE_PREFIXES: readonly string[] = ROUTE_PERMISSIONS.map(([prefix]) => prefix);
+export const PROTECTED_ROUTE_PREFIXES: readonly string[] = ROUTE_PERMISSIONS.map(
+  ([prefix]) => prefix
+);
 
 const SORTED = [...ROUTE_PERMISSIONS].sort((a, b) => b[0].length - a[0].length);
 

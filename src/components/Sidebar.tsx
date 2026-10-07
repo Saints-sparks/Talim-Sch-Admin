@@ -89,7 +89,7 @@ function FullSidebarContent({
       <div className="mt-6 flex flex-col gap-0.5 border-t border-tl-line-soft pt-3.5">
         {account.length > 0 ? <ul className="flex flex-col gap-0.5">{account.map(row)}</ul> : null}
         <SidebarLogout variant="row" isLoggingOut={nav.isLoggingOut} onLogout={nav.handleLogout} />
-        <SidebarFooter />
+        <SidebarFooter onNavigate={nav.handleLinkClick} />
       </div>
     </>
   );

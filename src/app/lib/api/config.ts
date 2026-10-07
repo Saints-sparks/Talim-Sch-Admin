@@ -14,7 +14,9 @@ export const API_BASE_URL = configuredApiBaseUrl.replace(/\/+$/, "");
 
 /** The values the API accepts in `X-Talim-App`, from the generated contract. */
 export type TalimAppName = NonNullable<
-  NonNullable<operations["AuthenticationController_refreshToken"]["parameters"]["header"]>["X-Talim-App"]
+  NonNullable<
+    operations["AuthenticationController_refreshToken"]["parameters"]["header"]
+  >["X-Talim-App"]
 >;
 
 /** The request header a Talim web app names itself in. */
@@ -120,8 +122,7 @@ export const API_URLS = {
   NOTIFICATION: {
     CREATE_ANNOUNCEMENT: "/notifications/announcements",
     GET_ANNOUNCEMENTS_BY_SENDER: "/notifications/announcements/sender/:senderId",
-    GET_ANNOUNCEMENT_STATS_BY_SENDER:
-      "/notifications/announcements/sender/:senderId/stats",
+    GET_ANNOUNCEMENT_STATS_BY_SENDER: "/notifications/announcements/sender/:senderId/stats",
   },
   FILES: {
     UPLOAD_IMAGE: "/upload/image",
@@ -140,15 +141,6 @@ export const API_URLS = {
     UPDATE_TIMETABLE_ENTRY: "/timetable/:entryId",
     DELETE_TIMETABLE_ENTRY: "/timetable/:entryId",
     GET_TIMETABLE_BY_CLASS: "/timetable/class/",
-  },
-  COMPLAINTS: {
-    CREATE_COMPLAINT: "/complaints",
-    /** School staff: every complaint raised from their school. */
-    GET_COMPLAINTS_BY_SCHOOL: "/complaints/by-school",
-    /** Anyone: the complaints they raised themselves. */
-    GET_COMPLAINTS_BY_USER: "/complaints/by-user",
-    /** One complaint, by its id or its ticket number. */
-    GET_COMPLAINT_BY_TICKET: "/complaints/:ticket",
   },
   LEAVE_REQUESTS: {
     GET_LEAVE_REQUESTS: "/leave-requests/school-admin/all",
@@ -178,8 +170,7 @@ export const API_ENDPOINTS = {
   FORGOT_PASSWORD: `${API_URLS.AUTH.FORGOT_PASSWORD}`,
   RESET_PASSWORD: `${API_URLS.AUTH.RESET_PASSWORD}`,
   REGISTER: `${API_URLS.AUTH.REGISTER}`,
-  GET_USER_PROFILE: (userId: string) =>
-    `${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
+  GET_USER_PROFILE: (userId: string) => `${API_URLS.AUTH.GET_PROFILE.replace(":userId", userId)}`,
   UPDATE_USER_PROFILE: `${API_URLS.AUTH.UPDATE_PROFILE}`,
   COMPLETE_ONBOARDING: `${API_URLS.AUTH.COMPLETE_ONBOARDING}`,
   GET_CLASS: `/classes`,
@@ -188,64 +179,32 @@ export const API_ENDPOINTS = {
   GET_SUBJECTS_BY_SCHOOL: `${API_URLS.SUBJECTS.GET_SUBJECTS_BY_SCHOOL}`,
   CREATE_SUBJECT: `${API_URLS.SUBJECTS.CREATE_SUBJECT}`,
   DELETE_SUBJECT: (subjectId: string) =>
-    `${API_URLS.SUBJECTS.DELETE_SUBJECT.replace(
-      ":subjectId", subjectId )}`,
+    `${API_URLS.SUBJECTS.DELETE_SUBJECT.replace(":subjectId", subjectId)}`,
   UPDATE_COURSES_BY_CLASS: (classId: string) =>
-    `${API_URLS.SCHOOL.UPDATE_COURSES.replace(
-      ":classId",
-      classId
-    )}`,
-  EDIT_CLASS: (classId: string) =>
-    `${API_URLS.SCHOOL.EDIT_CLASS.replace(":classId", classId)}`,
+    `${API_URLS.SCHOOL.UPDATE_COURSES.replace(":classId", classId)}`,
+  EDIT_CLASS: (classId: string) => `${API_URLS.SCHOOL.EDIT_CLASS.replace(":classId", classId)}`,
   CREATE_ANNOUNCEMENT: `${API_URLS.NOTIFICATION.CREATE_ANNOUNCEMENT}`,
   CREATE_STUDENT: `${API_URLS.STUDENT.CREATE}`,
   UPLOAD_IMAGE: `${API_URLS.FILES.UPLOAD_IMAGE}`,
   UPLOAD_FILE: `${API_URLS.FILES.UPLOAD_FILE}`,
   GET_ANNOUNCEMENTS_BY_SENDER: (senderId: string) =>
-    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENTS_BY_SENDER.replace(
-      ":senderId",
-      senderId
-    )}`,
+    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENTS_BY_SENDER.replace(":senderId", senderId)}`,
   GET_ANNOUNCEMENT_STATS_BY_SENDER: (senderId: string) =>
-    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENT_STATS_BY_SENDER.replace(
-      ":senderId",
-      senderId
-    )}`,
+    `${API_URLS.NOTIFICATION.GET_ANNOUNCEMENT_STATS_BY_SENDER.replace(":senderId", senderId)}`,
   CREATE_ACADEMIC_YEAR: `${API_URLS.ACADEMIC.CREATE_ACADEMIC_YEAR}`,
   GET_ACADEMIC_YEARS: `${API_URLS.ACADEMIC.GET_ACADEMIC_YEARS}`,
   CREATE_TERM: `${API_URLS.ACADEMIC.CREATE_TERM}`,
   GET_TERMS: `${API_URLS.ACADEMIC.GET_TERMS}`,
   SET_CURRENT_TERM: (termId: string) =>
-    `${API_URLS.ACADEMIC.SET_CURRENT_TERM.replace(
-      ":termId",
-      termId
-    )}`,
+    `${API_URLS.ACADEMIC.SET_CURRENT_TERM.replace(":termId", termId)}`,
   CREATE_TIMETABLE_ENTRY: `${API_URLS.TIMETABLE.CREATE_TIMETABLE_ENTRY}`,
   GET_TIMETABLE_BY_DAY: (day: string) =>
-    `${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(
-      ":day",
-      day
-    )}`,
-  GET_TIMETABLE_BY_CLASS: (classId: string) =>
-    `/timetable/class/${classId}`,
+    `${API_URLS.TIMETABLE.GET_TIMETABLE_BY_DAY.replace(":day", day)}`,
+  GET_TIMETABLE_BY_CLASS: (classId: string) => `/timetable/class/${classId}`,
   UPDATE_TIMETABLE_ENTRY: (entryId: string) =>
-    `${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(
-      ":entryId",
-      entryId
-    )}`,
+    `${API_URLS.TIMETABLE.UPDATE_TIMETABLE_ENTRY.replace(":entryId", entryId)}`,
   DELETE_TIMETABLE_ENTRY: (entryId: string) =>
-    `${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(
-      ":entryId",
-      entryId
-    )}`,
-  CREATE_COMPLAINT: `${API_URLS.COMPLAINTS.CREATE_COMPLAINT}`,
-  GET_COMPLAINTS_BY_SCHOOL: `${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_SCHOOL}`,
-  GET_COMPLAINTS_BY_USER: `${API_URLS.COMPLAINTS.GET_COMPLAINTS_BY_USER}`,
-  GET_COMPLAINT_BY_TICKET: (ticket: string) =>
-    `${API_URLS.COMPLAINTS.GET_COMPLAINT_BY_TICKET.replace(
-      ":ticket",
-      ticket
-    )}`,
+    `${API_URLS.TIMETABLE.DELETE_TIMETABLE_ENTRY.replace(":entryId", entryId)}`,
   GET_STUDENTS: `${API_URLS.STUDENTS.GET_STUDENTS}`,
   GET_PARENT: (schoolId: string) => `${API_URLS.SCHOOL.GET_PARENT.replace(":schoolId", schoolId)}`,
   CREATE_STUDENT_NEW: `${API_URLS.STUDENTS.CREATE_STUDENT}`,
@@ -255,16 +214,10 @@ export const API_ENDPOINTS = {
   CREATE_TEACHER: `${API_URLS.TEACHERS.CREATE_TEACHER}`,
   GET_TEACHER: `${API_URLS.TEACHERS.GET_TEACHER}`,
   GET_TEACHER_BY_ID: (userId: string) =>
-    `${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(
-      ":teacherId",
-      userId
-    )}`,
+    `${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(":teacherId", userId)}`,
   // GET_TEACHER_BY_ID: (userId: string) => `${API_URLS.TEACHERS.GET_TEACHER_BY_ID.replace(':teacherId', userId)}`,
   UPDATE_TEACHER_BY_COURSE: (userId: string) =>
-    `${API_URLS.TEACHERS.UPDATE_TEACHER_BY_COURSE.replace(
-      ":teacherId",
-      userId
-    )}`,
+    `${API_URLS.TEACHERS.UPDATE_TEACHER_BY_COURSE.replace(":teacherId", userId)}`,
   GET_TEACHERS: `${API_URLS.TEACHERS.GET_TEACHERS}`,
   REGISTER_TEACHER: `${API_URLS.TEACHERS.REGISTER_TEACHER}`,
   DEACTIVATE_TEACHER: `${API_URLS.TEACHERS.DEACTIVATE_TEACHER}`,
@@ -278,18 +231,13 @@ export const API_ENDPOINTS = {
   GET_COURSE_BY_ID: `${API_URLS.COURSES.GET_COURSE_BY_ID}`,
   GET_COURSES_BY_SUBJECT: `${API_URLS.COURSES.GET_COURSES_BY_SUBJECT}`,
   GET_COURSES_BY_SCHOOL: `${API_URLS.COURSES.GET_COURSES_BY_SCHOOL}`,
-  GET_COURSES_BY_CLASS: (classId: string) =>
-    `${API_URLS.COURSES.GET_COURSES_BY_CLASS}/${classId}`,
+  GET_COURSES_BY_CLASS: (classId: string) => `${API_URLS.COURSES.GET_COURSES_BY_CLASS}/${classId}`,
   GET_STUDENTS_BY_CLASS: `${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS}`,
   GET_STUDENTS_BY_CLASS_ID: (classId: string) =>
-    `${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(
-      ":classId",
-      classId
-    )}`,
+    `${API_URLS.STUDENTS.GET_STUDENTS_BY_CLASS.replace(":classId", classId)}`,
 
   GET_LEAVE_REQUESTS: `${API_URLS.LEAVE_REQUESTS.GET_LEAVE_REQUESTS}`,
-  UPDATE_SCHOOL: (schoolId: string) =>
-    `${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
+  UPDATE_SCHOOL: (schoolId: string) => `${API_URLS.SCHOOL.UPDATE_SCHOOL.replace(":id", schoolId)}`,
 
   // Transit
   TRANSIT_DASHBOARD: `/transit/dashboard`,
@@ -308,7 +256,8 @@ export const API_ENDPOINTS = {
   TRANSIT_VALIDATE_PROMOTION: (id: string) => `/transit/promotions/${id}/validate`,
   TRANSIT_COMMIT_PROMOTION: (id: string) => `/transit/promotions/${id}/commit`,
   TRANSIT_CANCEL_PROMOTION: (id: string) => `/transit/promotions/${id}/cancel`,
-  TRANSIT_PRE_CLOSE_SUMMARY: (yearId: string) => `/transit/academic-years/${yearId}/pre-close-summary`,
+  TRANSIT_PRE_CLOSE_SUMMARY: (yearId: string) =>
+    `/transit/academic-years/${yearId}/pre-close-summary`,
   TRANSIT_CLOSE_YEAR: (yearId: string) => `/transit/academic-years/${yearId}/close`,
   TRANSIT_CLOSURE_SNAPSHOT: (yearId: string) => `/transit/academic-years/${yearId}/snapshot`,
   SCHOOLS_SEARCH: `/schools/search`,
@@ -318,10 +267,7 @@ export const API_ENDPOINTS = {
   SUB_ADMIN_BY_ID: (id: string) => `/sub-admins/${id}`,
   SUB_ADMIN_CREATE: `/sub-admins`,
   SUB_ADMIN_PROMOTE_TEACHER: `/sub-admins/promote-teacher`,
-  SUB_ADMIN_PERMISSIONS: (id: string) =>
-    `/sub-admins/${id}/permissions`,
-  SUB_ADMIN_TOGGLE_STATUS: (id: string) =>
-    `/sub-admins/${id}/toggle-status`,
-  SUB_ADMIN_DEMOTE: (id: string) =>
-    `/sub-admins/${id}/demote`,
+  SUB_ADMIN_PERMISSIONS: (id: string) => `/sub-admins/${id}/permissions`,
+  SUB_ADMIN_TOGGLE_STATUS: (id: string) => `/sub-admins/${id}/toggle-status`,
+  SUB_ADMIN_DEMOTE: (id: string) => `/sub-admins/${id}/demote`,
 } as const;

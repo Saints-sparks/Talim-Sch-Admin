@@ -30,21 +30,25 @@ export const queryKeys = {
   courses: {
     all: ["courses"] as const,
     bySchool: (schoolId: string) => ["courses", schoolId, "school"] as const,
-    byClass: (schoolId: string, classId: string) => ["courses", schoolId, "class", classId] as const,
+    byClass: (schoolId: string, classId: string) =>
+      ["courses", schoolId, "class", classId] as const,
   },
   students: {
     all: ["students"] as const,
-    list: (schoolId: string, params?: Record<string, unknown>) => ["students", schoolId, "list", params ?? {}] as const,
+    list: (schoolId: string, params?: Record<string, unknown>) =>
+      ["students", schoolId, "list", params ?? {}] as const,
     detail: (schoolId: string, studentId: string) => ["students", schoolId, studentId] as const,
   },
   teachers: {
     all: ["teachers"] as const,
-    list: (schoolId: string, params?: Record<string, unknown>) => ["teachers", schoolId, "list", params ?? {}] as const,
+    list: (schoolId: string, params?: Record<string, unknown>) =>
+      ["teachers", schoolId, "list", params ?? {}] as const,
     detail: (schoolId: string, teacherId: string) => ["teachers", schoolId, teacherId] as const,
   },
   parents: {
     all: ["parents"] as const,
-    list: (schoolId: string, params?: Record<string, unknown>) => ["parents", schoolId, "list", params ?? {}] as const,
+    list: (schoolId: string, params?: Record<string, unknown>) =>
+      ["parents", schoolId, "list", params ?? {}] as const,
   },
   subAdmins: {
     all: ["subAdmins"] as const,
@@ -54,15 +58,20 @@ export const queryKeys = {
     all: ["fees"] as const,
     categories: (schoolId: string) => ["fees", schoolId, "categories"] as const,
     items: (schoolId: string, params?: Record<string, unknown>) =>
-      (params ? ["fees", schoolId, "items", params] : ["fees", schoolId, "items"]) as readonly unknown[],
-    assignments: (schoolId: string, params?: Record<string, unknown>) => ["fees", schoolId, "assignments", params ?? {}] as const,
+      (params
+        ? ["fees", schoolId, "items", params]
+        : ["fees", schoolId, "items"]) as readonly unknown[],
+    assignments: (schoolId: string, params?: Record<string, unknown>) =>
+      ["fees", schoolId, "assignments", params ?? {}] as const,
     summary: (schoolId: string) => ["fees", schoolId, "summary"] as const,
     /** One child's fee-ledger rows (balances per fee). */
-    ledger: (schoolId: string, studentId: string) => ["fees", schoolId, "ledger", studentId] as const,
+    ledger: (schoolId: string, studentId: string) =>
+      ["fees", schoolId, "ledger", studentId] as const,
   },
   payments: {
     all: ["payments"] as const,
-    transactions: (schoolId: string, params?: Record<string, unknown>) => ["payments", schoolId, "transactions", params ?? {}] as const,
+    transactions: (schoolId: string, params?: Record<string, unknown>) =>
+      ["payments", schoolId, "transactions", params ?? {}] as const,
     summary: (schoolId: string) => ["payments", schoolId, "summary"] as const,
     providers: (schoolId: string) => ["payments", schoolId, "providers"] as const,
     /** Parents' reported bank transfers (C4), per status and page. */
@@ -72,9 +81,11 @@ export const queryKeys = {
   finance: {
     all: ["finance"] as const,
     wallet: (schoolId: string) => ["finance", schoolId, "wallet"] as const,
-    ledger: (schoolId: string, params?: Record<string, unknown>) => ["finance", schoolId, "ledger", params ?? {}] as const,
+    ledger: (schoolId: string, params?: Record<string, unknown>) =>
+      ["finance", schoolId, "ledger", params ?? {}] as const,
     bankAccounts: (schoolId: string) => ["finance", schoolId, "bankAccounts"] as const,
-    withdrawals: (schoolId: string, params?: Record<string, unknown>) => ["finance", schoolId, "withdrawals", params ?? {}] as const,
+    withdrawals: (schoolId: string, params?: Record<string, unknown>) =>
+      ["finance", schoolId, "withdrawals", params ?? {}] as const,
     security: (schoolId: string) => ["finance", schoolId, "security"] as const,
     /** Bank list from the payment provider — the same for every school. */
     banks: (country: string) => ["finance", "banks", country] as const,
@@ -84,14 +95,16 @@ export const queryKeys = {
   },
   timetable: {
     all: ["timetable"] as const,
-    byClass: (schoolId: string, classId: string) => ["timetable", schoolId, "class", classId] as const,
+    byClass: (schoolId: string, classId: string) =>
+      ["timetable", schoolId, "class", classId] as const,
   },
   calendarEvents: {
     all: ["calendarEvents"] as const,
     /** Every range of one school, for invalidating after a write. */
     school: (schoolId: string) => ["calendarEvents", schoolId] as const,
     /** Events overlapping `[from, to]` (`YYYY-MM-DD`, either may be empty). */
-    range: (schoolId: string, from: string, to: string) => ["calendarEvents", schoolId, "range", from, to] as const,
+    range: (schoolId: string, from: string, to: string) =>
+      ["calendarEvents", schoolId, "range", from, to] as const,
   },
   termResults: {
     all: ["termResults"] as const,
@@ -101,7 +114,8 @@ export const queryKeys = {
     queue: (schoolId: string, termId: string, status: string) =>
       ["termResults", schoolId, "queue", termId, status] as const,
     /** How many submissions of a term are in each status. */
-    counts: (schoolId: string, termId: string) => ["termResults", schoolId, "counts", termId] as const,
+    counts: (schoolId: string, termId: string) =>
+      ["termResults", schoolId, "counts", termId] as const,
     /** One submission, as it stands now. */
     detail: (schoolId: string, submissionId: string) =>
       ["termResults", schoolId, "detail", submissionId] as const,
@@ -114,20 +128,29 @@ export const queryKeys = {
   },
   announcements: {
     all: ["announcements"] as const,
-    list: (schoolId: string, params?: Record<string, unknown>) => ["announcements", schoolId, "list", params ?? {}] as const,
+    list: (schoolId: string, params?: Record<string, unknown>) =>
+      ["announcements", schoolId, "list", params ?? {}] as const,
   },
   leaveRequests: {
     all: ["leaveRequests"] as const,
-    list: (schoolId: string, params?: Record<string, unknown>) => ["leaveRequests", schoolId, "list", params ?? {}] as const,
+    list: (schoolId: string, params?: Record<string, unknown>) =>
+      ["leaveRequests", schoolId, "list", params ?? {}] as const,
     detail: (schoolId: string, id: string) => ["leaveRequests", schoolId, id] as const,
   },
-  complaints: {
-    all: ["complaints"] as const,
-    list: (schoolId: string) => ["complaints", schoolId, "list"] as const,
+  /** Support tickets (v1.5 §1): the school desk and the admin's own tickets to Talim. */
+  tickets: {
+    all: ["tickets"] as const,
+    desk: (schoolId: string, params?: Record<string, unknown>) =>
+      ["tickets", schoolId, "desk", params ?? {}] as const,
+    deskCounts: (schoolId: string) => ["tickets", schoolId, "deskCounts"] as const,
+    mine: (userId: string, params?: Record<string, unknown>) =>
+      ["tickets", userId, "mine", params ?? {}] as const,
+    detail: (ticketId: string) => ["tickets", "detail", ticketId] as const,
   },
   notifications: {
     all: ["notifications"] as const,
-    list: (userId: string, params?: Record<string, unknown>) => ["notifications", userId, "list", params ?? {}] as const,
+    list: (userId: string, params?: Record<string, unknown>) =>
+      ["notifications", userId, "list", params ?? {}] as const,
     unreadCount: (userId: string) => ["notifications", userId, "unread"] as const,
   },
   settings: {

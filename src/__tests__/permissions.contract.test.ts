@@ -19,7 +19,7 @@ const BACKEND_ENUM = join(
   "modules",
   "auth",
   "enums",
-  "permission.enum.ts",
+  "permission.enum.ts"
 );
 
 /** Every `page.tsx` under src/app, as the route a browser would open. */
@@ -51,8 +51,12 @@ const OPEN_ROUTES = new Set([
   "/profile",
   "/notifications",
   "/notifications/[id]",
+  // Replaced by the support desk (v1.5 §1): they redirect to /support or /help.
   "/complaints",
   "/complaints/[id]",
+  // Help & support: the admin's own tickets to Talim, open to every admin.
+  "/help",
+  "/help/tickets/[id]",
 ]);
 
 describe("permission vocabulary", () => {
@@ -62,7 +66,10 @@ describe("permission vocabulary", () => {
       return;
     }
     const source = readFileSync(BACKEND_ENUM, "utf8");
-    const body = source.slice(source.indexOf("export enum Permission"), source.indexOf("}", source.indexOf("export enum Permission")));
+    const body = source.slice(
+      source.indexOf("export enum Permission"),
+      source.indexOf("}", source.indexOf("export enum Permission"))
+    );
     const backend = [...body.matchAll(/=\s*'([^']+)'/g)].map((m) => m[1]).sort();
     const frontend = Object.values(Permission).sort();
     expect(frontend).toEqual(backend);
@@ -84,7 +91,9 @@ describe("route permissions", () => {
   });
 
   it("gates every page that is not deliberately open", () => {
-    const ungated = all.filter((route) => !OPEN_ROUTES.has(route) && requiredPermissionFor(route) === null);
+    const ungated = all.filter(
+      (route) => !OPEN_ROUTES.has(route) && requiredPermissionFor(route) === null
+    );
     expect(ungated).toEqual([]);
   });
 

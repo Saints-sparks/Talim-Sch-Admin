@@ -10,6 +10,11 @@ import { APP_VERSION, versionLabel } from "@/lib/appVersion";
 import { APP_VERSION as TICKET_VERSION } from "@/components/settings/support/supportTicketForm";
 import { SidebarFooter } from "@/components/sidebar/SidebarFooter";
 
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/dashboard",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
 describe("version 1.5.0", () => {
   it("package.json is 1.5.0 and the app reads it from there", () => {
     expect(packageJson.version).toBe("1.5.0");
@@ -21,5 +26,6 @@ describe("version 1.5.0", () => {
     expect(versionLabel()).toBe("Version 1.5.0");
     render(<SidebarFooter />);
     expect(screen.getByText("Version 1.5.0")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Help & support/ })).toHaveAttribute("href", "/help");
   });
 });

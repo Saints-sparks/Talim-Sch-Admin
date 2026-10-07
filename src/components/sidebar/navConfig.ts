@@ -215,6 +215,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     badge: "unreadMessages",
   },
   {
+    path: "/support",
+    label: "Support desk",
+    tooltip: "Tickets parents, students and staff raise with the school",
+    icon: "support",
+    permission: Permission.MANAGE_SUPPORT,
+    section: "communication",
+  },
+  {
     path: "/settings",
     section: "account",
     label: "Settings",
