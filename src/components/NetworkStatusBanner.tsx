@@ -45,12 +45,20 @@ export default function NetworkStatusBanner() {
     <div
       role="status"
       aria-live="polite"
-      className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium shadow-md ${
-        offline ? "bg-amber-500 text-amber-950" : "bg-emerald-600 text-white"
+      className={`fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-2 border-b px-4 py-2.5 text-sm font-bold ${
+        offline
+          ? "border-tl-warning/30 bg-tl-warning-bg text-tl-warning"
+          : "border-tl-success/30 bg-tl-success-bg text-tl-success"
       }`}
     >
-      {offline ? <WifiOff className="h-4 w-4" aria-hidden /> : <Wifi className="h-4 w-4" aria-hidden />}
-      {offline ? "You're offline. Changes can't be saved until your connection is back." : "Back online."}
+      {offline ? (
+        <WifiOff className="h-4 w-4" aria-hidden />
+      ) : (
+        <Wifi className="h-4 w-4" aria-hidden />
+      )}
+      {offline
+        ? "You're offline. Changes can't be saved until your connection is back."
+        : "Back online."}
     </div>
   );
 }

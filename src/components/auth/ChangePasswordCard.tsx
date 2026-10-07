@@ -8,6 +8,14 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { isPasswordValid } from "@/lib/passwordPolicy";
 import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
+import {
+  fieldControl,
+  fieldError,
+  fieldLabel,
+  primaryButton,
+  quietButton,
+  sectionTitle,
+} from "@/components/tl/styles";
 
 type Field = "currentPassword" | "newPassword" | "confirmPassword";
 
@@ -22,18 +30,38 @@ type Field = "currentPassword" | "newPassword" | "confirmPassword";
 export default function ChangePasswordCard() {
   const { changePassword } = useAuth();
   const { rules, historyNote } = usePasswordPolicy();
-  const [values, setValues] = useState<Record<Field, string>>({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [values, setValues] = useState<Record<Field, string>>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
 
-  const mismatch = values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
+  const mismatch =
+    values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
   const canSubmit =
-    values.currentPassword.length > 0 && isPasswordValid(values.newPassword, rules) && !mismatch && values.confirmPassword.length > 0 && !saving;
+    values.currentPassword.length > 0 &&
+    isPasswordValid(values.newPassword, rules) &&
+    !mismatch &&
+    values.confirmPassword.length > 0 &&
+    !saving;
 
+  /**
+   * The change handler of one field.
+   *
+   * @param field - Which field.
+   * @returns The handler.
+   */
   const set = (field: Field) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setValues((prev) => ({ ...prev, [field]: e.target.value }));
 
+  /**
+   * Changes the password, or shows the API's field errors.
+   *
+   * @param e - The form's submit event.
+   */
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -52,9 +80,18 @@ export default function ChangePasswordCard() {
     }
   };
 
+  /**
+   * One labelled password input with its error.
+   *
+   * @param field - Which field.
+   * @param label - Its label.
+   * @param autoComplete - The browser's autocomplete hint.
+   * @param describedBy - Ids that describe it (the rules).
+   * @returns The field.
+   */
   const input = (field: Field, label: string, autoComplete: string, describedBy?: string) => (
-    <div>
-      <label htmlFor={`cp-${field}`} className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-slate-200">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={`cp-${field}`} className={fieldLabel}>
         {label}
       </label>
       <input
@@ -66,11 +103,11 @@ export default function ChangePasswordCard() {
         aria-invalid={Boolean(errors[field]) || (field === "confirmPassword" && mismatch)}
         aria-describedby={describedBy}
         disabled={saving}
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-[#003366]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+        className={fieldControl}
       />
-      {errors[field] && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[field]}</p>}
+      {errors[field] && <p className={fieldError}>{errors[field]}</p>}
       {field === "confirmPassword" && mismatch && !errors[field] && (
-        <p className="mt-1 text-xs text-red-600 dark:text-red-400">Passwords do not match</p>
+        <p className={fieldError}>Passwords do not match</p>
       )}
     </div>
   );
@@ -78,33 +115,36 @@ export default function ChangePasswordCard() {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-slate-200">
-          <KeyRound className="h-4 w-4 text-[#003366] dark:text-blue-300" aria-hidden />
+        <h3 className={`flex items-center gap-2 ${sectionTitle}`}>
+          <KeyRound className="h-4 w-4 text-tl-brand" aria-hidden />
           Change password
         </h3>
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-slate-400"
+          className={quietButton}
           aria-label={show ? "Hide passwords" : "Show passwords"}
         >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {show ? (
+            <EyeOff className="h-4 w-4" aria-hidden />
+          ) : (
+            <Eye className="h-4 w-4" aria-hidden />
+          )}
           {show ? "Hide" : "Show"}
         </button>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {input("currentPassword", "Current password", "current-password")}
-        <div>
-          {input("newPassword", "New password", "new-password", "cp-rules")}
-        </div>
+        <div>{input("newPassword", "New password", "new-password", "cp-rules")}</div>
         {input("confirmPassword", "Confirm new password", "new-password")}
       </div>
-      <PasswordRequirements password={values.newPassword} id="cp-rules" rules={rules} note={historyNote} />
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="inline-flex items-center gap-2 rounded-lg bg-[#003366] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#002244] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-600"
-      >
+      <PasswordRequirements
+        password={values.newPassword}
+        id="cp-rules"
+        rules={rules}
+        note={historyNote}
+      />
+      <button type="submit" disabled={!canSubmit} className={primaryButton}>
         {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
         {saving ? "Saving…" : "Change password"}
       </button>

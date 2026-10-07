@@ -9,6 +9,14 @@ interface ModernLoaderProps {
   visible?: boolean;
 }
 
+/**
+ * The full-screen "Talim" loader shown while signing in and between routes,
+ * on the tl canvas with the navy tile.
+ *
+ * @param props - Whether to show it.
+ * @param props.visible - Shows it; when left out it follows the route transition.
+ * @returns The loader, or nothing.
+ */
 const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
   const { isTransitioning } = useTransition();
   const shouldShow = visible !== undefined ? visible : isTransitioning;
@@ -19,7 +27,7 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
     <AnimatePresence>
       {shouldShow && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-tl-bg/95 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -30,7 +38,7 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
             <div className="relative">
               {/* Glow Background */}
               <motion.div
-                className="absolute inset-0 bg-blue-400 rounded-full blur-xl"
+                className="absolute inset-0 rounded-full bg-tl-link/40 blur-xl"
                 initial={{ opacity: 0 }}
                 animate={{
                   opacity: [0.3, 0.7, 0.3],
@@ -43,7 +51,7 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
 
               {/* Logo Background Circle */}
               <motion.div
-                className="relative bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-2xl shadow-2xl"
+                className="relative rounded-[22px] bg-tl-brand-fill p-6 shadow-[0_30px_70px_-30px_rgba(15,27,46,0.45)]"
                 initial={{ scale: 0, rotate: -180, opacity: 0 }}
                 animate={{
                   scale: [1, 1.1, 1],
@@ -94,7 +102,7 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
                       delay: index * 0.1,
                     },
                   }}
-                  className="text-4xl font-bold text-gray-800"
+                  className="text-4xl font-extrabold text-tl-ink"
                   style={{
                     textShadow: "0 2px 4px rgba(0,0,0,0.1)",
                   }}
@@ -115,7 +123,7 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
                 {[0, 1, 2].map((index) => (
                   <motion.div
                     key={index}
-                    className="w-2 h-2 bg-blue-600 rounded-full"
+                    className="h-2 w-2 rounded-full bg-tl-brand-fill"
                     animate={{
                       scale: [1, 1.2, 1],
                       opacity: [0.4, 1, 0.4],
@@ -128,18 +136,17 @@ const ModernLoader: React.FC<ModernLoaderProps> = ({ visible }) => {
                   />
                 ))}
               </div>
-             
             </motion.div>
 
             {/* Progress Bar
             <motion.div
-              className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden"
+              className="h-1 w-48 overflow-hidden rounded-full bg-tl-track"
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: 192 }}
               transition={{ delay: 1, duration: 0.5 }}
             >
               <motion.div
-                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+                className="h-full rounded-full bg-tl-link"
                 animate={{
                   x: [-192, 192],
                 }}

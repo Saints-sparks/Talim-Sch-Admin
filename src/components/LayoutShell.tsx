@@ -6,6 +6,9 @@ import PageTransition from "@/components/PageTransition";
 import RouteGuard from "@/components/RouteGuard";
 import { usePathname } from "next/navigation";
 
+/** Signed-out pages that render their own `main` landmark (the shared sign-in look). */
+const OWN_MAIN_ROUTES = ["/", "/forgot-password", "/set-password", "/onboarding/setup"];
+
 type LayoutShellProps = {
   children: React.ReactNode;
   showSidebar: boolean;
@@ -26,10 +29,12 @@ export default function LayoutShell({ children, showSidebar }: LayoutShellProps)
   const pathname = usePathname();
 
   if (!showSidebar) {
+    // The sign-in family (SignInShell) and the setup wizard draw their own `main`.
+    const Wrapper = OWN_MAIN_ROUTES.includes(pathname) ? "div" : "main";
     return (
-      <main className="min-h-dvh bg-tl-bg font-manrope text-tl-ink">
+      <Wrapper className="min-h-dvh bg-tl-bg font-manrope text-tl-ink">
         <PageTransition key={pathname}>{children}</PageTransition>
-      </main>
+      </Wrapper>
     );
   }
 
