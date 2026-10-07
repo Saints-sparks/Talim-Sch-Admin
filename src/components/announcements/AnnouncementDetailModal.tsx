@@ -45,7 +45,7 @@ export function AnnouncementDetailModal({ announcement, onClose }: AnnouncementD
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,27,46,0.45)] p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={announcement.title}
@@ -66,12 +66,7 @@ export function AnnouncementDetailModal({ announcement, onClose }: AnnouncementD
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className={iconButton}
-          >
+          <button type="button" onClick={onClose} aria-label="Close" className={iconButton}>
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
@@ -91,12 +86,8 @@ export function AnnouncementDetailModal({ announcement, onClose }: AnnouncementD
           </p>
 
           <div className="rounded-2xl border border-tl-line bg-tl-subtle px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-tl-faint">
-              Read rate
-            </p>
-            <p className="mt-1 text-lg font-bold text-tl-ink">
-              {announcement.readRate}%
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-tl-faint">Read rate</p>
+            <p className="mt-1 text-lg font-bold text-tl-ink">{announcement.readRate}%</p>
           </div>
         </div>
       </div>

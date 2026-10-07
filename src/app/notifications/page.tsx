@@ -30,6 +30,7 @@ import { useReceiptSettings } from "@/hooks/fees/queries";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
+import { iconButton, segment, segmentTrack } from "@/components/tl/styles";
 
 /**
  * The notifications inbox.
@@ -78,17 +79,17 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col gap-4 bg-[#F8F8F8] p-4 dark:bg-slate-900 sm:p-6">
+    <div className="mx-auto flex w-full max-w-[1460px] flex-col gap-[18px] px-[clamp(14px,3vw,26px)] pb-16 pt-[clamp(18px,3vw,28px)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-[19px] font-semibold text-tl-ink">
+          <h1 className="m-0 text-[clamp(24px,3.4vw,32px)] font-extrabold tracking-[-0.6px] text-tl-ink">
             Notifications
           </h1>
-          <span className="rounded-full border border-[#E4E4E4] bg-white px-3 py-1 text-[15px] font-medium text-tl-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+          <span className="rounded-full border border-tl-line bg-tl-surface px-3 py-1 text-[15px] font-medium text-tl-ink">
             {notifications.length}
           </span>
           {unreadCount > 0 && (
-            <span className="rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+            <span className="rounded-full bg-tl-danger-bg px-2.5 py-1 text-xs font-extrabold text-tl-danger">
               {unreadCount} unread
             </span>
           )}
@@ -100,7 +101,7 @@ export default function NotificationsPage() {
             disabled={inbox.isFetching}
             title="Refresh"
             aria-label="Refresh notifications"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E0E0E0] bg-white text-gray-500 transition hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            className={`${iconButton} border border-tl-line`}
           >
             <RefreshCw className={cn("h-4 w-4", inbox.isFetching && "animate-spin")} />
           </button>
@@ -109,7 +110,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={() => void handleMarkAllRead()}
               disabled={markAllRead.isPending}
-              className="flex items-center gap-2 rounded-lg bg-[#154473] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#123a5e] disabled:opacity-60"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-[14px] bg-tl-brand-fill px-[18px] py-2.5 text-sm font-bold text-tl-on-brand transition hover:bg-tl-brand-fill-hover disabled:opacity-40"
             >
               <CheckCheck className="h-4 w-4" />
               {markAllRead.isPending ? "Marking..." : "Mark all read"}
@@ -118,23 +119,18 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#E4E4E4] bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+      <div role="group" aria-label="Show notifications" className={`${segmentTrack} w-fit`}>
         {NOTIFICATION_TABS.map(({ key, label }) => (
           <button
             key={key}
             type="button"
             onClick={() => setTab(key)}
             aria-pressed={tab === key}
-            className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-medium transition",
-              tab === key
-                ? "bg-[#154473] text-white"
-                : "text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700"
-            )}
+            className={segment(tab === key)}
           >
             {label}
             {key === "unread" && unreadCount > 0 && (
-              <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-tl-badge px-1.5 py-0.5 text-[11px] font-extrabold text-white">
                 {unreadCount}
               </span>
             )}
@@ -144,7 +140,7 @@ export default function NotificationsPage() {
 
       {inbox.isLoading ? (
         <div className="flex min-h-[300px] flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#154473]" />
+          <Loader2 className="h-8 w-8 animate-spin text-tl-brand" />
         </div>
       ) : inbox.isError ? (
         <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 text-center">
@@ -154,15 +150,15 @@ export default function NotificationsPage() {
           <button
             type="button"
             onClick={() => void inbox.refetch()}
-            className="rounded-lg bg-[#154473] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#123a5e]"
+            className="inline-flex min-h-[44px] items-center rounded-[14px] bg-tl-brand-fill px-[18px] py-2.5 text-sm font-bold text-tl-on-brand transition hover:bg-tl-brand-fill-hover"
           >
             Try again
           </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-[#E4E4E4] bg-white text-center dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-tl-line bg-tl-surface text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-tl-track">
-            <Bell className="h-8 w-8 text-gray-300 dark:text-slate-500" />
+            <Bell className="h-8 w-8 text-tl-faint" />
           </div>
           <p className="font-semibold text-tl-ink">
             {tab === "unread" ? "You're all caught up!" : "No notifications"}
@@ -190,7 +186,7 @@ export default function NotificationsPage() {
                 onOpenReceipt={() => setReceiptOpen(true)}
               />
             ) : (
-              <div className="flex flex-1 items-center justify-center rounded-2xl border border-[#E4E4E4] bg-white text-sm text-gray-400 dark:border-slate-700 dark:bg-slate-800">
+              <div className="flex flex-1 items-center justify-center rounded-2xl border border-tl-line bg-tl-surface text-sm text-tl-faint">
                 Select a notification to view details
               </div>
             )}

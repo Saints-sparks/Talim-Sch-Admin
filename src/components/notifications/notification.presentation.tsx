@@ -30,33 +30,33 @@ export interface CategoryBadge {
 export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   announcement: {
     icon: <Volume2 className="h-4 w-4" />,
-    bg: "bg-amber-100 dark:bg-amber-900/30",
+    bg: "bg-tl-warning-bg",
     text: "text-tl-warning",
   },
   attendance: {
     icon: <User className="h-4 w-4" />,
-    bg: "bg-cyan-100 dark:bg-cyan-900/30",
-    text: "text-cyan-700 dark:text-cyan-400",
+    bg: "bg-tl-accent-bg",
+    text: "text-tl-accent",
   },
   academics: {
     icon: <BookOpen className="h-4 w-4" />,
-    bg: "bg-blue-100 dark:bg-blue-900/30",
+    bg: "bg-tl-select",
     text: "text-tl-link",
   },
   grading: {
     icon: <BookOpen className="h-4 w-4" />,
-    bg: "bg-indigo-100 dark:bg-indigo-900/30",
-    text: "text-indigo-700 dark:text-indigo-400",
+    bg: "bg-tl-select",
+    text: "text-tl-accent",
   },
   resources: {
     icon: <BookOpen className="h-4 w-4" />,
-    bg: "bg-cyan-100 dark:bg-cyan-900/30",
-    text: "text-cyan-700 dark:text-cyan-400",
+    bg: "bg-tl-accent-bg",
+    text: "text-tl-accent",
   },
   messages: {
     icon: <MessageCircle className="h-4 w-4" />,
-    bg: "bg-purple-100 dark:bg-purple-900/30",
-    text: "text-purple-700 dark:text-purple-400",
+    bg: "bg-tl-accent-bg",
+    text: "text-tl-accent",
   },
   account: {
     icon: <User className="h-4 w-4" />,
@@ -65,13 +65,13 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   },
   payments: {
     icon: <Receipt className="h-4 w-4" />,
-    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    bg: "bg-tl-success-bg",
     text: "text-tl-success",
   },
   leave: {
     icon: <CalendarOff className="h-4 w-4" />,
-    bg: "bg-orange-100 dark:bg-orange-900/30",
-    text: "text-orange-700 dark:text-orange-400",
+    bg: "bg-tl-warning-bg",
+    text: "text-tl-warning",
   },
   other: {
     icon: <Bell className="h-4 w-4" />,
@@ -99,17 +99,17 @@ export const SOURCE_BADGES = {
   talim: {
     label: "Talim",
     icon: <Shield className="h-3 w-3" />,
-    pill: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    pill: "bg-tl-select text-tl-link",
   },
   system: {
     label: "System",
     icon: <Zap className="h-3 w-3" />,
-    pill: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
+    pill: "bg-tl-track text-tl-muted",
   },
   school: {
     label: "School",
     icon: <Settings className="h-3 w-3" />,
-    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    pill: "bg-tl-success-bg text-tl-success",
   },
 } as const;
 

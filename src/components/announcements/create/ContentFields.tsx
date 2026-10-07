@@ -9,7 +9,12 @@ interface ContentFieldsProps {
 }
 
 /** The title input and the content box, each with its character counter. */
-export function ContentFields({ title, content, onTitleChange, onContentChange }: ContentFieldsProps) {
+export function ContentFields({
+  title,
+  content,
+  onTitleChange,
+  onContentChange,
+}: ContentFieldsProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -22,7 +27,7 @@ export function ContentFields({ title, content, onTitleChange, onContentChange }
           onChange={(event) => onTitleChange(event.target.value)}
           maxLength={TITLE_MAX}
           placeholder="Enter announcement title..."
-          className="mt-2 h-12 w-full rounded-xl border border-tl-line bg-tl-surface text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 px-4 text-sm shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
+          className="mt-2 h-12 w-full rounded-xl border border-tl-line bg-tl-surface text-tl-ink placeholder:text-tl-faint px-4 text-sm shadow-sm focus:border-tl-link focus:ring-2 focus:ring-tl-link"
         />
         <p className="mt-1 text-right text-xs text-tl-faint">
           {title.length}/{TITLE_MAX}
@@ -50,7 +55,7 @@ export function ContentFields({ title, content, onTitleChange, onContentChange }
             maxLength={CONTENT_MAX}
             rows={7}
             placeholder="Write your announcement content..."
-            className="w-full resize-none border-0 bg-tl-surface p-4 text-sm text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0"
+            className="w-full resize-none border-0 bg-tl-surface p-4 text-sm text-tl-ink placeholder:text-tl-faint focus:ring-0"
           />
         </div>
         <p className="mt-1 text-right text-xs text-tl-faint">

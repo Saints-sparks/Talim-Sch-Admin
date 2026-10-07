@@ -42,8 +42,8 @@ export function NotificationDetail({
   const showReceipt = Boolean(onOpenReceipt) && isPaymentNotification(notification);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#E4E4E4] bg-white dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-tl-line bg-tl-surface">
+      <div className="flex items-start justify-between gap-4 border-b border-tl-line-soft px-6 py-4">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={cn(
@@ -55,9 +55,7 @@ export function NotificationDetail({
             {badge.icon}
           </div>
           <div className="min-w-0">
-            <p className="text-base font-semibold leading-snug text-tl-ink">
-              {notification.title}
-            </p>
+            <p className="text-base font-semibold leading-snug text-tl-ink">{notification.title}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span
                 className={cn(
@@ -74,9 +72,7 @@ export function NotificationDetail({
               <span
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                  notification.isRead
-                    ? "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-300"
-                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                  notification.isRead ? "bg-tl-track text-tl-muted" : "bg-tl-select text-tl-link"
                 )}
               >
                 {notification.isRead ? (
@@ -97,7 +93,7 @@ export function NotificationDetail({
             type="button"
             onClick={onMarkRead}
             disabled={isMarkingRead}
-            className="shrink-0 text-xs font-medium text-[#154473] hover:underline disabled:opacity-60 dark:text-blue-400"
+            className="shrink-0 text-xs font-medium text-tl-brand hover:underline disabled:opacity-60"
           >
             {isMarkingRead ? "Marking..." : "Mark as read"}
           </button>
@@ -110,15 +106,13 @@ export function NotificationDetail({
         </p>
 
         {showReceipt && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-900/20">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-tl-success/30 bg-tl-success-bg p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tl-success-bg">
                 <CreditCard className="h-5 w-5 text-tl-success" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-                  Payment Receipt
-                </p>
+                <p className="text-sm font-semibold text-tl-success">Payment Receipt</p>
                 <p className="text-xs text-tl-success">
                   {parseAmount(notification.message) ?? "View amount in receipt"}
                 </p>
@@ -127,7 +121,7 @@ export function NotificationDetail({
             <button
               type="button"
               onClick={onOpenReceipt}
-              className="flex items-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800"
+              className="flex items-center gap-2 rounded-lg bg-tl-success px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
             >
               <CreditCard className="h-3.5 w-3.5" />
               View Receipt
@@ -147,20 +141,23 @@ export function NotificationDetail({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="flex items-center gap-3 rounded-xl border border-tl-line bg-tl-subtle px-4 py-3 text-sm text-tl-body transition hover:bg-white"
                 >
-                  <Paperclip className="h-4 w-4 shrink-0 text-gray-400" />
+                  <Paperclip className="h-4 w-4 shrink-0 text-tl-faint" />
                   <span className="flex-1 truncate">{url.split("/").pop() || "Attachment"}</span>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-tl-faint" />
                 </a>
               ))}
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-2 dark:border-slate-700">
+        <div className="grid grid-cols-2 gap-3 border-t border-tl-line-soft pt-2">
           <MetaPill label="Source" value={notification.sourceLabel} />
-          <MetaPill label="Category" value={CATEGORY_LABELS[notification.category] ?? notification.category} />
+          <MetaPill
+            label="Category"
+            value={CATEGORY_LABELS[notification.category] ?? notification.category}
+          />
           <MetaPill label="Priority" value={notification.priority} />
           <MetaPill label="Status" value={notification.status} />
           <MetaPill label="Sent by" value={notification.sentBy} />
@@ -174,13 +171,9 @@ export function NotificationDetail({
 /** One label/value tile in the meta grid. */
 function MetaPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-[#FAFAFA] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-700/60">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-tl-muted">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-sm font-semibold capitalize text-tl-ink">
-        {value}
-      </p>
+    <div className="rounded-xl border border-tl-line bg-tl-subtle px-3 py-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-tl-muted">{label}</p>
+      <p className="mt-0.5 truncate text-sm font-semibold capitalize text-tl-ink">{value}</p>
     </div>
   );
 }

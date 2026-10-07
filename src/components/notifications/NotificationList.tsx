@@ -25,8 +25,8 @@ interface NotificationListProps {
  */
 export function NotificationList({ notifications, selectedId, onSelect }: NotificationListProps) {
   return (
-    <div className="flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-[#E4E4E4] bg-white dark:border-slate-700 dark:bg-slate-800 lg:w-[380px] xl:w-[420px]">
-      <div className="border-b border-gray-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-slate-700 dark:text-slate-300">
+    <div className="flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-tl-line bg-tl-surface lg:w-[380px] xl:w-[420px]">
+      <div className="border-b border-tl-line-soft px-4 py-3 text-xs font-semibold uppercase tracking-wide text-tl-muted">
         {notifications.length} notification{notifications.length === 1 ? "" : "s"}
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -42,10 +42,10 @@ export function NotificationList({ notifications, selectedId, onSelect }: Notifi
               onClick={() => onSelect(notification)}
               aria-current={isSelected}
               className={cn(
-                "flex w-full gap-3 border-b border-gray-50 px-4 py-3.5 text-left transition hover:bg-[#F4F8FF]",
-                "dark:border-slate-700 dark:hover:bg-slate-700/60",
-                isSelected && "border-l-2 border-l-[#154473] bg-[#EBF2FF] dark:bg-slate-700/70",
-                unread && !isSelected && "bg-[#FAFCFF] dark:bg-slate-800/70"
+                "flex w-full gap-3 border-b border-tl-line-soft px-4 py-3.5 text-left transition hover:bg-tl-bg",
+                " ",
+                isSelected && "border-l-2 border-l-tl-brand bg-tl-select",
+                unread && !isSelected && "bg-tl-subtle"
               )}
             >
               <span
@@ -62,14 +62,14 @@ export function NotificationList({ notifications, selectedId, onSelect }: Notifi
                   <span
                     className={cn(
                       "truncate text-sm leading-snug",
-                      unread
-                        ? "font-semibold text-tl-ink"
-                        : "font-medium text-tl-body"
+                      unread ? "font-semibold text-tl-ink" : "font-medium text-tl-body"
                     )}
                   >
                     {notification.title}
                   </span>
-                  {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#154473]" />}
+                  {unread && (
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-tl-brand-fill" />
+                  )}
                 </span>
                 <span className="mt-0.5 line-clamp-1 block text-xs text-tl-muted">
                   {notification.message}

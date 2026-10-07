@@ -13,10 +13,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ErrorState, LoadingState } from "@/components/StateComponents";
 import { NotificationDetail } from "@/components/notifications/NotificationDetail";
-import {
-  useMarkNotificationRead,
-  useNotification,
-} from "@/hooks/notifications/useNotifications";
+import { useMarkNotificationRead, useNotification } from "@/hooks/notifications/useNotifications";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 
@@ -42,11 +39,11 @@ export default function NotificationDetailPage() {
   }, [notificationId, isUnread, markAsRead]);
 
   return (
-    <div className="flex min-h-screen flex-col gap-4 bg-[#F8F8F8] p-4 dark:bg-slate-900 sm:p-6">
+    <div className="mx-auto flex w-full max-w-[1460px] flex-col gap-[18px] px-[clamp(14px,3vw,26px)] pb-16 pt-[clamp(18px,3vw,28px)]">
       <button
         type="button"
         onClick={() => router.push("/notifications")}
-        className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-[14px] border border-tl-control bg-tl-surface px-[18px] py-2.5 text-sm font-bold text-tl-brand transition hover:bg-tl-bg"
       >
         <ArrowLeft className="h-4 w-4" />
         All notifications

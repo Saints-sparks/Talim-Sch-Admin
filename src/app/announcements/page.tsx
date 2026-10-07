@@ -32,6 +32,7 @@ import {
   useAnnouncements,
   useDebouncedValue,
 } from "@/hooks/announcements/useAnnouncements";
+import { fieldControl, primaryButton } from "@/components/tl/styles";
 
 /** Rows per page — the API's own default. */
 const PAGE_SIZE = 10;
@@ -82,22 +83,22 @@ export default function AnnouncementsPage() {
 
   return (
     <>
-      <div className="min-h-full max-w-full overflow-x-hidden bg-tl-surface">
+      <div className="min-h-full max-w-full overflow-x-hidden">
         <section
-          className="border-b border-tl-line bg-tl-surface px-4 py-6 sm:px-6 lg:px-8"
+          className="px-[clamp(14px,3vw,26px)] pt-[clamp(18px,3vw,28px)]"
           data-guide="announcements-header"
         >
           <div className="mx-auto w-full max-w-[1480px]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 dark:border-blue-800 bg-tl-select px-3 py-1 text-xs font-semibold text-tl-brand">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-tl-control bg-tl-select px-3 py-1 text-xs font-semibold text-tl-brand">
                   <Megaphone className="h-3.5 w-3.5" />
                   School-wide communications
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-tl-ink">
+                <h1 className="m-0 text-[clamp(24px,3.4vw,32px)] font-extrabold tracking-[-0.6px] text-tl-ink">
                   Announcements
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm text-tl-muted">
+                <p className="mt-[5px] max-w-2xl text-[15px] text-tl-muted">
                   Create, schedule, analyze, and manage every school announcement from one calm
                   command center.
                 </p>
@@ -105,13 +106,13 @@ export default function AnnouncementsPage() {
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative min-w-0">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tl-faint" />
                   <input
                     value={searchTerm}
                     onChange={(event) => changeSearch(event.target.value)}
                     placeholder="Search announcements..."
                     aria-label="Search announcements"
-                    className="h-11 w-full rounded-xl border border-tl-line bg-tl-surface pl-10 pr-4 text-sm text-tl-body placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 sm:w-72"
+                    className={`${fieldControl} min-h-[44px] pl-10 text-sm sm:w-72`}
                   />
                 </div>
                 <PermissionGate permission={Permission.MANAGE_ANNOUNCEMENTS}>
@@ -119,7 +120,7 @@ export default function AnnouncementsPage() {
                     type="button"
                     onClick={() => setIsCreateOpen(true)}
                     data-guide="announcements-create"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-tl-brand-fill px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
+                    className={primaryButton}
                   >
                     <Plus className="h-4 w-4" />
                     New Announcement
@@ -132,7 +133,7 @@ export default function AnnouncementsPage() {
           </div>
         </section>
 
-        <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1480px] px-[clamp(14px,3vw,26px)] pb-16 pt-[18px]">
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-6">
               <AnnouncementTable
@@ -141,7 +142,9 @@ export default function AnnouncementsPage() {
                 onTabChange={changeTab}
                 isLoading={list.isFetching && !list.data}
                 errorMessage={
-                  list.isError ? getErrorMessage(list.error, "Failed to fetch announcements.") : null
+                  list.isError
+                    ? getErrorMessage(list.error, "Failed to fetch announcements.")
+                    : null
                 }
                 onRetry={() => void list.refetch()}
                 onView={setViewing}
@@ -155,7 +158,7 @@ export default function AnnouncementsPage() {
 
             <AnnouncementAnalytics stats={stats} />
           </div>
-        </main>
+        </div>
       </div>
 
       <PermissionGate permission={Permission.MANAGE_ANNOUNCEMENTS}>

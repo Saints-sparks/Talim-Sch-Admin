@@ -13,7 +13,9 @@ export function PushNotificationToggle() {
           <p className="text-sm font-bold text-tl-ink">Browser Notifications</p>
           <p className="text-xs text-tl-muted mt-0.5">Not supported in this browser</p>
         </div>
-        <span className="rounded-full bg-tl-track px-2.5 py-1 text-xs font-extrabold text-tl-muted">Unavailable</span>
+        <span className="rounded-full bg-tl-track px-2.5 py-1 text-xs font-extrabold text-tl-muted">
+          Unavailable
+        </span>
       </div>
     );
   }
@@ -28,12 +30,14 @@ export function PushNotificationToggle() {
           </span>
         </div>
         <p className="mt-1 text-xs text-tl-muted">
-          Your browser is set not to show Talim alerts, so you will not see pop-up notifications while Talim is closed
-          or in the background. Notifications inside Talim keep working as usual.
+          Your browser is set not to show Talim alerts, so you will not see pop-up notifications
+          while Talim is closed or in the background. Notifications inside Talim keep working as
+          usual.
         </p>
         <p className="mt-1 text-xs text-tl-muted">
-          To turn them back on, open this site&apos;s settings from your browser&apos;s address bar (usually the icon
-          beside the web address), set Notifications to Allow, and reload the page.
+          To turn them back on, open this site&apos;s settings from your browser&apos;s address bar
+          (usually the icon beside the web address), set Notifications to Allow, and reload the
+          page.
         </p>
       </div>
     );
@@ -60,7 +64,11 @@ export function PushNotificationToggle() {
             ? "Receive Talim alerts and school announcements in this browser."
             : "Get notified about school updates and Talim alerts even when the tab is closed."}
         </p>
-        {error && <p className="mt-1 text-xs font-semibold text-tl-danger" role="alert">{error}</p>}
+        {error && (
+          <p className="mt-1 text-xs font-semibold text-tl-danger" role="alert">
+            {error}
+          </p>
+        )}
       </div>
 
       <button
@@ -77,7 +85,7 @@ export function PushNotificationToggle() {
             isSubscribed ? "justify-end bg-tl-brand-fill" : "justify-start bg-tl-control"
           }`}
         >
-          <span className="h-[23px] w-[23px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.2)]" />
+          <span className="h-[23px] w-[23px] rounded-full bg-tl-surface shadow-[0_1px_2px_rgba(0,0,0,0.2)]" />
         </span>
       </button>
     </div>

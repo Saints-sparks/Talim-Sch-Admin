@@ -36,7 +36,7 @@ export function CreateAnnouncementModal({ open, onClose }: CreateAnnouncementMod
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,27,46,0.45)] p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Create announcement"
@@ -58,7 +58,7 @@ export function CreateAnnouncementModal({ open, onClose }: CreateAnnouncementMod
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-tl-track text-tl-muted hover:bg-slate-200 dark:hover:bg-slate-600"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-tl-track text-tl-muted hover:bg-tl-bg"
           >
             <X className="h-5 w-5" />
           </button>
@@ -110,7 +110,7 @@ export function CreateAnnouncementModal({ open, onClose }: CreateAnnouncementMod
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl px-5 py-3 text-sm font-semibold text-tl-muted hover:bg-white dark:hover:bg-slate-700"
+            className="rounded-xl px-5 py-3 text-sm font-semibold text-tl-muted hover:bg-white"
           >
             Cancel
           </button>
@@ -118,7 +118,7 @@ export function CreateAnnouncementModal({ open, onClose }: CreateAnnouncementMod
             type="submit"
             form="announcement-form"
             disabled={isSubmitting || isUploading}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-tl-brand-fill px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-tl-brand-fill px-5 py-3 text-sm font-semibold text-white hover:bg-tl-brand-fill-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus className="h-4 w-4" />
             {isSubmitting ? "Creating..." : "Create Announcement"}

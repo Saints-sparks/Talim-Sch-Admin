@@ -41,8 +41,8 @@ export function AudienceSchedulePanel({
               className={cn(
                 "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition",
                 audience.includes(option.value)
-                  ? "border-tl-brand bg-tl-select text-tl-brand dark:border-blue-700"
-                  : "border-tl-line text-tl-muted hover:bg-tl-bg",
+                  ? "border-tl-brand bg-tl-select text-tl-brand"
+                  : "border-tl-line text-tl-muted hover:bg-tl-bg"
               )}
             >
               <Users className="h-4 w-4" />
@@ -64,8 +64,8 @@ export function AudienceSchedulePanel({
               className={cn(
                 "rounded-xl border p-3 text-left transition",
                 schedule === option.value
-                  ? "border-tl-brand bg-tl-select dark:border-blue-700"
-                  : "border-tl-line hover:bg-tl-bg",
+                  ? "border-tl-brand bg-tl-select"
+                  : "border-tl-line hover:bg-tl-bg"
               )}
             >
               <p className="text-sm font-bold text-tl-ink">{option.title}</p>
@@ -79,7 +79,7 @@ export function AudienceSchedulePanel({
             aria-label="Scheduled date and time"
             value={scheduledFor}
             onChange={(event) => onScheduledForChange(event.target.value)}
-            className="mt-3 h-11 w-full rounded-xl border border-tl-line bg-tl-surface px-3 text-sm font-semibold text-tl-body shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
+            className="mt-3 h-11 w-full rounded-xl border border-tl-line bg-tl-surface px-3 text-sm font-semibold text-tl-body shadow-sm focus:border-tl-link focus:ring-2 focus:ring-tl-link"
           />
         )}
       </div>

@@ -118,17 +118,17 @@ export function ReceiptModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,27,46,0.45)] p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Payment receipt"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-800"
+        className="w-full max-w-sm overflow-hidden rounded-2xl bg-tl-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="bg-[#154473] px-6 py-5 text-center text-white">
+        <div className="bg-tl-brand-fill px-6 py-5 text-center text-white">
           {showSchoolLogo && schoolLogo && (
             /* Plain <img>: school logos come from arbitrary upload hosts and next/image has no remotePatterns configured. */
             <img
@@ -137,16 +137,17 @@ export function ReceiptModal({
               className="mx-auto mb-2 h-10 max-w-[120px] object-contain"
             />
           )}
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest opacity-70">{schoolName}</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest opacity-70">
+            {schoolName}
+          </p>
           <p className="text-lg font-semibold">{notification.title}</p>
           {amount && <p className="mt-2 text-3xl font-bold tracking-tight">{amount}</p>}
         </div>
 
         <div
-          className="h-4 bg-[#F8F8F8] dark:bg-slate-900"
+          className="h-4 bg-tl-subtle"
           style={{
-            backgroundImage:
-              "radial-gradient(circle at 50% 0%, currentColor 70%, transparent 70%)",
+            backgroundImage: "radial-gradient(circle at 50% 0%, currentColor 70%, transparent 70%)",
             backgroundSize: "24px 16px",
             backgroundRepeat: "repeat-x",
           }}
@@ -156,12 +157,15 @@ export function ReceiptModal({
           <ReceiptRow label="Reference No." value={reference} />
           <ReceiptRow label="Date & Time" value={issuedAt} />
           <ReceiptRow label="Source" value={notification.sourceLabel} />
-          <ReceiptRow label="Category" value={CATEGORY_LABELS[notification.category] ?? notification.category} />
+          <ReceiptRow
+            label="Category"
+            value={CATEGORY_LABELS[notification.category] ?? notification.category}
+          />
           <ReceiptRow label="Description" value={notification.message} wrap />
           <ReceiptRow
             label="Status"
             value={
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <span className="inline-flex items-center gap-1 rounded-full bg-tl-success-bg px-2 py-0.5 text-xs font-semibold text-tl-success">
                 <CheckCircle className="h-3 w-3" /> Completed
               </span>
             }
@@ -169,18 +173,20 @@ export function ReceiptModal({
 
           {notification.attachments.length > 0 && (
             <div className="space-y-2 pt-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Attachments</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-tl-faint">
+                Attachments
+              </p>
               {notification.attachments.map((url) => (
                 <a
                   key={url}
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="flex items-center gap-2 rounded-lg border border-tl-line px-3 py-2 text-xs text-tl-body transition hover:bg-tl-bg"
                 >
-                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-tl-faint" />
                   <span className="flex-1 truncate">{url.split("/").pop() || "Receipt"}</span>
-                  <ExternalLink className="h-3 w-3 shrink-0 text-gray-400" />
+                  <ExternalLink className="h-3 w-3 shrink-0 text-tl-faint" />
                 </a>
               ))}
             </div>
@@ -195,13 +201,9 @@ export function ReceiptModal({
                 className="ml-auto h-10 object-contain"
               />
               {signatureName && (
-                <p className="mt-1 text-xs font-semibold text-tl-ink">
-                  {signatureName}
-                </p>
+                <p className="mt-1 text-xs font-semibold text-tl-ink">{signatureName}</p>
               )}
-              {signatureTitle && (
-                <p className="text-[11px] text-tl-muted">{signatureTitle}</p>
-              )}
+              {signatureTitle && <p className="text-[11px] text-tl-muted">{signatureTitle}</p>}
             </div>
           )}
         </div>
@@ -210,7 +212,7 @@ export function ReceiptModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#154473] py-2.5 text-sm font-medium text-white transition hover:bg-[#123a5e]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-tl-brand-fill py-2.5 text-sm font-medium text-white transition hover:bg-tl-brand-fill-hover"
           >
             <Download className="h-4 w-4" />
             Print / Save
@@ -218,7 +220,7 @@ export function ReceiptModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-tl-line py-2.5 text-sm font-medium text-tl-body transition hover:bg-tl-bg"
           >
             Close
           </button>
@@ -241,7 +243,7 @@ function ReceiptRow({
   return (
     <div
       className={cn(
-        "flex gap-4 border-b border-dashed border-gray-100 py-2.5 last:border-0 dark:border-slate-700",
+        "flex gap-4 border-b border-dashed border-tl-line-soft py-2.5 last:border-0",
         wrap ? "flex-col" : "items-start justify-between"
       )}
     >
