@@ -13956,7 +13956,7 @@ export interface components {
              *       "manage:payments"
              *     ]
              */
-            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:sub_admins")[];
+            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:support" | "manage:sub_admins")[];
         };
         PromoteTeacherDto: {
             /**
@@ -13971,7 +13971,7 @@ export interface components {
              *       "manage:timetable"
              *     ]
              */
-            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:sub_admins")[];
+            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:support" | "manage:sub_admins")[];
         };
         UpdatePermissionsDto: {
             /**
@@ -13981,7 +13981,7 @@ export interface components {
              *       "manage:finance"
              *     ]
              */
-            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:sub_admins")[];
+            permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:support" | "manage:sub_admins")[];
         };
         SupportTicketContextDto: {
             /** @example /grading */
