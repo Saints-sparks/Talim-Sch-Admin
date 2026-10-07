@@ -13,14 +13,14 @@ const CARDS = [
   {
     label: "Total announcements",
     icon: Megaphone,
-    tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400",
+    tone: "bg-blue-50 text-tl-brand dark:bg-blue-900/30 dark:text-blue-400",
     value: (stats: AnnouncementStats) => stats.totalAnnouncements,
     change: (stats: AnnouncementStats) => stats.weeklyChange?.totalAnnouncements ?? 0,
   },
   {
     label: "Published",
     icon: Send,
-    tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400",
+    tone: "bg-blue-50 text-tl-brand dark:bg-blue-900/30 dark:text-blue-400",
     value: (stats: AnnouncementStats) => stats.published,
     change: (stats: AnnouncementStats) => stats.weeklyChange?.published ?? 0,
   },
@@ -62,18 +62,18 @@ export function AnnouncementStatsCards({ stats }: AnnouncementStatsCardsProps) {
         return (
           <div
             key={card.label}
-            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
+            className="rounded-2xl border border-tl-line bg-tl-surface p-5 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div className={cn("rounded-2xl p-3", card.tone)}>
                 <Icon className="h-5 w-5" />
               </div>
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+              <span className="text-xs font-medium text-tl-muted">
                 {formatWeeklyChange(card.change(stats))}
               </span>
             </div>
-            <p className="mt-5 text-3xl font-bold text-slate-950 dark:text-white">{card.value(stats)}</p>
-            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
+            <p className="mt-5 text-3xl font-bold text-tl-ink">{card.value(stats)}</p>
+            <p className="mt-1 text-sm font-medium text-tl-muted">{card.label}</p>
           </div>
         );
       })}

@@ -39,8 +39,8 @@ describe("PushNotificationToggle when the browser blocks notifications", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(container.innerHTML).not.toMatch(/red-/);
-    // Readable in both themes.
-    expect(container.innerHTML).toMatch(/dark:text-slate-400/);
+    // Readable in both themes: the tl tokens switch with the theme.
+    expect(container.innerHTML).toMatch(/text-tl-muted/);
   });
 
   it("still offers the switch when permission has not been decided", () => {

@@ -1,7 +1,7 @@
 /**
  * Everything the announcements screen needs to turn an API announcement into
  * something readable: the tab-to-status mapping, audience labels, and the
- * badge colours for both themes.
+ * pill tones of audiences and statuses.
  *
  * The API stores audiences as the backend enum (`all_parents`); the UI shows
  * "All Parents". Both directions live here so no component invents its own
@@ -12,6 +12,7 @@ import type {
   AnnouncementStatus,
   CreateAnnouncementResponse,
 } from "@/app/services/announcement.service";
+import type { Tone } from "@/components/tl";
 
 /** The list tabs, in the order they are shown. */
 export const ANNOUNCEMENT_TABS = ["Published", "Scheduled", "Drafts", "Archived"] as const;
@@ -53,28 +54,20 @@ const AUDIENCE_LABELS: Record<string, string> = {
   custom: "Selected people",
 };
 
-/** Badge colours per audience label, light and dark. */
-export const AUDIENCE_STYLES: Record<string, string> = {
-  "All Parents":
-    "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  "All Students":
-    "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  "All Teachers":
-    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-  "Selected people":
-    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
+/** The pill tone of each audience label (the design system's colours switch with the theme). */
+export const AUDIENCE_TONES: Record<string, Tone> = {
+  "All Parents": "info",
+  "All Students": "accent",
+  "All Teachers": "success",
+  "Selected people": "muted",
 };
 
-/** Badge colours per status, light and dark. */
-export const STATUS_STYLES: Record<AnnouncementStatusLabel, string> = {
-  Published:
-    "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  Scheduled:
-    "bg-blue-50 text-[#003366] border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-  Draft:
-    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-  Archived:
-    "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600",
+/** The pill tone of each status. */
+export const STATUS_TONES: Record<AnnouncementStatusLabel, Tone> = {
+  Published: "success",
+  Scheduled: "info",
+  Draft: "warning",
+  Archived: "muted",
 };
 
 /** One announcement, ready to render. */

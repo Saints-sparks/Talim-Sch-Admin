@@ -63,18 +63,18 @@ export function NotificationList({ notifications, selectedId, onSelect }: Notifi
                     className={cn(
                       "truncate text-sm leading-snug",
                       unread
-                        ? "font-semibold text-[#030E18] dark:text-slate-100"
-                        : "font-medium text-gray-700 dark:text-slate-200"
+                        ? "font-semibold text-tl-ink"
+                        : "font-medium text-tl-body"
                     )}
                   >
                     {notification.title}
                   </span>
                   {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#154473]" />}
                 </span>
-                <span className="mt-0.5 line-clamp-1 block text-xs text-gray-600 dark:text-slate-300">
+                <span className="mt-0.5 line-clamp-1 block text-xs text-tl-muted">
                   {notification.message}
                 </span>
-                <span className="mt-1 block text-[11px] text-gray-500 dark:text-slate-400">
+                <span className="mt-1 block text-[11px] text-tl-muted">
                   {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                 </span>
               </span>

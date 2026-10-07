@@ -55,7 +55,7 @@ export function NotificationDetail({
             {badge.icon}
           </div>
           <div className="min-w-0">
-            <p className="text-base font-semibold leading-snug text-[#030E18] dark:text-slate-100">
+            <p className="text-base font-semibold leading-snug text-tl-ink">
               {notification.title}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -68,7 +68,7 @@ export function NotificationDetail({
                 {source.icon}
                 {source.label}
               </span>
-              <span className="text-xs text-gray-500 dark:text-slate-300">
+              <span className="text-xs text-tl-muted">
                 {format(new Date(notification.createdAt), "dd MMM yyyy, h:mm a")}
               </span>
               <span
@@ -105,7 +105,7 @@ export function NotificationDetail({
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-        <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700 dark:text-slate-200">
+        <p className="whitespace-pre-line text-sm leading-relaxed text-tl-body">
           {notification.message}
         </p>
 
@@ -113,13 +113,13 @@ export function NotificationDetail({
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-900/20">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
-                <CreditCard className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
+                <CreditCard className="h-5 w-5 text-tl-success" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
                   Payment Receipt
                 </p>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                <p className="text-xs text-tl-success">
                   {parseAmount(notification.message) ?? "View amount in receipt"}
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function NotificationDetail({
 
         {notification.attachments.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-tl-muted">
               Attachments
             </p>
             <div className="space-y-2">
@@ -175,10 +175,10 @@ export function NotificationDetail({
 function MetaPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-[#FAFAFA] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-700/60">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-slate-300">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-tl-muted">
         {label}
       </p>
-      <p className="mt-0.5 truncate text-sm font-semibold capitalize text-[#030E18] dark:text-slate-100">
+      <p className="mt-0.5 truncate text-sm font-semibold capitalize text-tl-ink">
         {value}
       </p>
     </div>

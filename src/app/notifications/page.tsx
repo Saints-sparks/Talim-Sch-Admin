@@ -81,10 +81,10 @@ export default function NotificationsPage() {
     <div className="flex min-h-screen flex-col gap-4 bg-[#F8F8F8] p-4 dark:bg-slate-900 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-[19px] font-semibold text-[#030E18] dark:text-slate-100">
+          <h1 className="text-[19px] font-semibold text-tl-ink">
             Notifications
           </h1>
-          <span className="rounded-full border border-[#E4E4E4] bg-white px-3 py-1 text-[15px] font-medium text-[#030E18] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+          <span className="rounded-full border border-[#E4E4E4] bg-white px-3 py-1 text-[15px] font-medium text-tl-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             {notifications.length}
           </span>
           {unreadCount > 0 && (
@@ -148,7 +148,7 @@ export default function NotificationsPage() {
         </div>
       ) : inbox.isError ? (
         <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 text-center">
-          <p className="font-semibold text-red-600 dark:text-red-400">
+          <p className="font-semibold text-tl-danger">
             {getErrorMessage(inbox.error, "Failed to load notifications")}
           </p>
           <button
@@ -161,13 +161,13 @@ export default function NotificationsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-[#E4E4E4] bg-white text-center dark:border-slate-700 dark:bg-slate-800">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-tl-track">
             <Bell className="h-8 w-8 text-gray-300 dark:text-slate-500" />
           </div>
-          <p className="font-semibold text-gray-900 dark:text-slate-100">
+          <p className="font-semibold text-tl-ink">
             {tab === "unread" ? "You're all caught up!" : "No notifications"}
           </p>
-          <p className="max-w-xs text-sm text-gray-500 dark:text-slate-300">
+          <p className="max-w-xs text-sm text-tl-muted">
             {tab === "unread"
               ? "No unread notifications right now."
               : "Alerts from Talim and system events will appear here."}

@@ -6,15 +6,15 @@ import React from "react";
  * takes so nothing shifts when the data lands.
  */
 const AnnouncementsSkeleton: React.FC = () => {
-  const bar = "rounded bg-slate-200 dark:bg-slate-700";
+  const bar = "rounded bg-tl-line";
   const card =
-    "rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5";
+    "rounded-2xl border border-tl-line bg-tl-surface p-5";
 
   return (
-    <div className="min-h-full bg-white dark:bg-slate-900" aria-busy="true" aria-live="polite">
+    <div className="min-h-full bg-tl-surface" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading announcements</span>
 
-      <section className="animate-pulse border-b border-slate-200 dark:border-slate-700 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="animate-pulse border-b border-tl-line px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1480px]">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div className="space-y-3">
@@ -42,8 +42,8 @@ const AnnouncementsSkeleton: React.FC = () => {
 
       <main className="mx-auto w-full max-w-[1480px] animate-pulse px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-            <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+          <div className="rounded-2xl border border-tl-line bg-tl-surface">
+            <div className="flex gap-2 border-b border-tl-line px-5 py-4">
               {[0, 1, 2, 3].map((tab) => (
                 <div key={tab} className={`h-9 w-24 ${bar}`} />
               ))}

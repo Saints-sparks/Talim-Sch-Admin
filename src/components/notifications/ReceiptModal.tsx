@@ -195,12 +195,12 @@ export function ReceiptModal({
                 className="ml-auto h-10 object-contain"
               />
               {signatureName && (
-                <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-slate-100">
+                <p className="mt-1 text-xs font-semibold text-tl-ink">
                   {signatureName}
                 </p>
               )}
               {signatureTitle && (
-                <p className="text-[11px] text-gray-500 dark:text-slate-300">{signatureTitle}</p>
+                <p className="text-[11px] text-tl-muted">{signatureTitle}</p>
               )}
             </div>
           )}
@@ -245,10 +245,10 @@ function ReceiptRow({
         wrap ? "flex-col" : "items-start justify-between"
       )}
     >
-      <span className="shrink-0 text-xs font-medium text-gray-500 dark:text-slate-300">{label}</span>
+      <span className="shrink-0 text-xs font-medium text-tl-muted">{label}</span>
       <span
         className={cn(
-          "text-sm font-semibold text-[#030E18] dark:text-slate-100",
+          "text-sm font-semibold text-tl-ink",
           wrap ? "break-words" : "max-w-[55%] text-right"
         )}
       >

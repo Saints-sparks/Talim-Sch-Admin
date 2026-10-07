@@ -37,19 +37,19 @@ export function AnnouncementAnalytics({ stats }: AnnouncementAnalyticsProps) {
 
   return (
     <aside className="min-w-0 space-y-6" data-guide="announcements-analytics">
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="rounded-2xl border border-tl-line bg-tl-surface p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Read rate</p>
-            <p className="mt-1 text-3xl font-bold text-slate-950 dark:text-white">{averageReadRate}%</p>
+            <p className="text-sm font-semibold text-tl-muted">Read rate</p>
+            <p className="mt-1 text-3xl font-bold text-tl-ink">{averageReadRate}%</p>
           </div>
-          <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/30 p-3 text-[#003366] dark:text-blue-400">
+          <div className="rounded-2xl bg-tl-select p-3 text-tl-brand">
             <BarChart3 className="h-6 w-6" />
           </div>
         </div>
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-tl-track">
           <div
-            className="h-full rounded-full bg-[#003366] dark:bg-blue-500"
+            className="h-full rounded-full bg-tl-brand-fill"
             style={{ width: `${averageReadRate}%` }}
           />
         </div>
@@ -70,34 +70,34 @@ export function AnnouncementAnalytics({ stats }: AnnouncementAnalyticsProps) {
         ].map((card) => (
           <div
             key={card.label}
-            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
+            className="rounded-2xl border border-tl-line bg-tl-surface p-5 shadow-sm"
           >
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{card.label}</p>
-            <p className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{card.value}</p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{card.caption}</p>
+            <p className="text-sm font-semibold text-tl-muted">{card.label}</p>
+            <p className="mt-2 text-2xl font-bold text-tl-ink">{card.value}</p>
+            <p className="mt-1 text-sm text-tl-muted">{card.caption}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="rounded-2xl border border-tl-line bg-tl-surface p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-bold text-slate-950 dark:text-white">Daily announcement views</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Views over the last school week</p>
+            <h2 className="font-bold text-tl-ink">Daily announcement views</h2>
+            <p className="mt-1 text-sm text-tl-muted">Views over the last school week</p>
           </div>
-          <Eye className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+          <Eye className="h-5 w-5 text-tl-faint" />
         </div>
         <div className="mt-6 flex h-44 items-end gap-3">
           {dailyViews.map((item) => (
             <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
               <div
-                className="w-full rounded-t-xl bg-[#003366] dark:bg-blue-500"
+                className="w-full rounded-t-xl bg-tl-brand-fill"
                 style={{
                   height: `${Math.max(item.views ? (item.views / maxDailyViews) * 100 : 4, 4)}%`,
                 }}
                 title={`${item.views} views`}
               />
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold text-tl-muted">
                 {new Intl.DateTimeFormat("en-GB", { weekday: "short" })
                   .format(new Date(item.date))
                   .slice(0, 1)}

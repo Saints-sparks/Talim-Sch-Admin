@@ -82,22 +82,22 @@ export default function AnnouncementsPage() {
 
   return (
     <>
-      <div className="min-h-full max-w-full overflow-x-hidden bg-white dark:bg-slate-900">
+      <div className="min-h-full max-w-full overflow-x-hidden bg-tl-surface">
         <section
-          className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-6 sm:px-6 lg:px-8"
+          className="border-b border-tl-line bg-tl-surface px-4 py-6 sm:px-6 lg:px-8"
           data-guide="announcements-header"
         >
           <div className="mx-auto w-full max-w-[1480px]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-semibold text-[#003366] dark:text-blue-400">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 dark:border-blue-800 bg-tl-select px-3 py-1 text-xs font-semibold text-tl-brand">
                   <Megaphone className="h-3.5 w-3.5" />
                   School-wide communications
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
+                <h1 className="text-3xl font-bold tracking-tight text-tl-ink">
                   Announcements
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-2 max-w-2xl text-sm text-tl-muted">
                   Create, schedule, analyze, and manage every school announcement from one calm
                   command center.
                 </p>
@@ -111,7 +111,7 @@ export default function AnnouncementsPage() {
                     onChange={(event) => changeSearch(event.target.value)}
                     placeholder="Search announcements..."
                     aria-label="Search announcements"
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 pl-10 pr-4 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 sm:w-72"
+                    className="h-11 w-full rounded-xl border border-tl-line bg-tl-surface pl-10 pr-4 text-sm text-tl-body placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 sm:w-72"
                   />
                 </div>
                 <PermissionGate permission={Permission.MANAGE_ANNOUNCEMENTS}>
@@ -119,7 +119,7 @@ export default function AnnouncementsPage() {
                     type="button"
                     onClick={() => setIsCreateOpen(true)}
                     data-guide="announcements-create"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-tl-brand-fill px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/15 hover:bg-[#002952]"
                   >
                     <Plus className="h-4 w-4" />
                     New Announcement

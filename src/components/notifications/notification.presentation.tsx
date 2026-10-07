@@ -31,7 +31,7 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   announcement: {
     icon: <Volume2 className="h-4 w-4" />,
     bg: "bg-amber-100 dark:bg-amber-900/30",
-    text: "text-amber-700 dark:text-amber-400",
+    text: "text-tl-warning",
   },
   attendance: {
     icon: <User className="h-4 w-4" />,
@@ -41,7 +41,7 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   academics: {
     icon: <BookOpen className="h-4 w-4" />,
     bg: "bg-blue-100 dark:bg-blue-900/30",
-    text: "text-blue-700 dark:text-blue-400",
+    text: "text-tl-link",
   },
   grading: {
     icon: <BookOpen className="h-4 w-4" />,
@@ -60,13 +60,13 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   },
   account: {
     icon: <User className="h-4 w-4" />,
-    bg: "bg-slate-100 dark:bg-slate-700",
-    text: "text-slate-600 dark:text-slate-300",
+    bg: "bg-tl-track",
+    text: "text-tl-muted",
   },
   payments: {
     icon: <Receipt className="h-4 w-4" />,
     bg: "bg-emerald-100 dark:bg-emerald-900/30",
-    text: "text-emerald-700 dark:text-emerald-400",
+    text: "text-tl-success",
   },
   leave: {
     icon: <CalendarOff className="h-4 w-4" />,
@@ -75,8 +75,8 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
   },
   other: {
     icon: <Bell className="h-4 w-4" />,
-    bg: "bg-slate-100 dark:bg-slate-700",
-    text: "text-slate-600 dark:text-slate-300",
+    bg: "bg-tl-track",
+    text: "text-tl-muted",
   },
 };
 

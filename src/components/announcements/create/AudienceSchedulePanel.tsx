@@ -30,7 +30,7 @@ export function AudienceSchedulePanel({
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Audience</p>
+        <p className="text-sm font-bold text-tl-body">Audience</p>
         <div className="mt-2 grid gap-2">
           {AUDIENCE_OPTIONS.map((option) => (
             <button
@@ -41,8 +41,8 @@ export function AudienceSchedulePanel({
               className={cn(
                 "flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition",
                 audience.includes(option.value)
-                  ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400 dark:border-blue-700"
-                  : "border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700",
+                  ? "border-tl-brand bg-tl-select text-tl-brand dark:border-blue-700"
+                  : "border-tl-line text-tl-muted hover:bg-tl-bg",
               )}
             >
               <Users className="h-4 w-4" />
@@ -53,7 +53,7 @@ export function AudienceSchedulePanel({
       </div>
 
       <div>
-        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Schedule</p>
+        <p className="text-sm font-bold text-tl-body">Schedule</p>
         <div className="mt-2 grid gap-2">
           {SCHEDULE_OPTIONS.map((option) => (
             <button
@@ -64,12 +64,12 @@ export function AudienceSchedulePanel({
               className={cn(
                 "rounded-xl border p-3 text-left transition",
                 schedule === option.value
-                  ? "border-[#003366] bg-blue-50 dark:bg-blue-900/30 dark:border-blue-700"
-                  : "border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700",
+                  ? "border-tl-brand bg-tl-select dark:border-blue-700"
+                  : "border-tl-line hover:bg-tl-bg",
               )}
             >
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{option.title}</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{option.caption}</p>
+              <p className="text-sm font-bold text-tl-ink">{option.title}</p>
+              <p className="mt-1 text-xs text-tl-muted">{option.caption}</p>
             </button>
           ))}
         </div>
@@ -79,7 +79,7 @@ export function AudienceSchedulePanel({
             aria-label="Scheduled date and time"
             value={scheduledFor}
             onChange={(event) => onScheduledForChange(event.target.value)}
-            className="mt-3 h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
+            className="mt-3 h-11 w-full rounded-xl border border-tl-line bg-tl-surface px-3 text-sm font-semibold text-tl-body shadow-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
           />
         )}
       </div>
