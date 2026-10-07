@@ -1,11 +1,12 @@
 /**
  * Support tickets (v1.5 §1, "one system, two desks"), hand-written from the
- * contract `talimBE-V2/docs/v1.5-platform-sync.md` §1 and the backend's
- * in-progress `TicketDto` / `TicketSummaryDto` (talimBE-V2
- * `src/modules/complaints/data/dtos/ticket.dto.ts`). The backend is being
- * built in parallel, so these are not generated: when `npm run types:api`
- * carries the ticket schemas, replace these with aliases of the generated
- * ones and keep the comments.
+ * contract `talimBE-V2/docs/v1.5-platform-sync.md` §1 and its "v1.5 as
+ * built" section (backend, 2026-10-07), which wins where they differ: the
+ * un-prefixed 409 codes, `closed` and `total` in the counts, the staff list,
+ * `requester.email` in staff views. These were written while the backend was
+ * built, so they are not generated: when `npm run types:api` carries the
+ * ticket schemas, replace these with aliases of the generated ones and keep
+ * the comments.
  *
  * Dates arrive as ISO strings. Ids are strings. A person on a ticket is
  * `{ id, name, role }` and never carries an email.
@@ -49,12 +50,22 @@ export type TicketPriority = "low" | "normal" | "high" | "urgent";
  */
 export type TicketAccess = "requester" | "desk" | "observer";
 
-/** A person on a ticket: the requester, a message's author. Never an email. */
+/** A person on a ticket: the requester, a message's author. */
 export interface TicketPerson {
   id: string;
   name: string;
   /** `parent`, `student`, `teacher`, `school_admin`, `school_sub_admin`, `platform_admin`… */
   role: string;
+  /** The requester's email, in staff and observer views only (never in a requester's own view). */
+  email?: string;
+}
+
+/** One member of a desk's staff (`GET /tickets/desk/:desk/staff`): who a ticket can be assigned to. */
+export interface TicketStaffMember {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
 }
 
 /** A named reference: the school, the child, the assignee. */
@@ -127,7 +138,7 @@ export interface TicketSummary {
 
 /** One ticket with its messages (`GET /tickets/:id` and the answer to every write). */
 export interface Ticket extends TicketSummary {
-  /** Oldest first. At most 500; the 501st answers 409 `TICKET_MESSAGE_CAP`. */
+  /** Oldest first. At most 500; the 501st answers 409 `MESSAGE_CAP`. */
   messages: TicketMessage[];
   /** While resolved: the last moment the requester can reopen it (7 days). */
   reopenableUntil: string | null;
@@ -149,15 +160,21 @@ export interface TicketListResponse {
   meta: TicketPageMeta;
 }
 
-/** `GET /tickets/desk/school/counts`: the status tabs' numbers. */
+/**
+ * `GET /tickets/desk/school/counts`: the status tabs' numbers. The school
+ * desk counts its own desk only (not what it escalated).
+ */
 export interface TicketDeskCounts {
   open: number;
   in_progress: number;
   waiting_on_user: number;
   resolved: number;
-  /** Not resolved or closed, and nobody assigned. */
+  closed: number;
+  /** Every ticket on the desk. */
+  total: number;
+  /** Active (open, in progress, waiting) and nobody assigned. */
   unassigned: number;
-  /** Not resolved or closed, and assigned to the caller. */
+  /** Active and assigned to the caller. */
   mine: number;
 }
 
@@ -167,7 +184,7 @@ export interface DeskTicketQuery {
   status?: TicketStatus[];
   area?: TicketArea;
   priority?: TicketPriority;
-  /** A staff user id, `me`, or `none` for unassigned tickets. */
+  /** A staff user id, `me`, or `none` (alias `unassigned`) for unassigned tickets. */
   assigneeId?: string;
   /** A reference (exact) or words of the subject. At most 100 characters. */
   q?: string;
@@ -220,19 +237,22 @@ export interface EscalateTicketBody {
 }
 
 /**
- * The sub-codes a ticket write's 409 carries (`ApiError.meta.code`):
- * closed, the 500-message cap, read-only after escalation, a concurrent
- * change, already with Talim, and the reopen rules.
+ * The sub-codes a ticket write's 409 carries (`ApiError.meta.code`, while
+ * `error.code` stays `CONFLICT`), as built: closed, the 500-message cap, a
+ * transition the rules do not allow (or reopening a ticket that is not
+ * resolved), read-only after escalation, a concurrent change, already with
+ * Talim, and the 7-day reopen window. `MESSAGE_CAP`, `INVALID_TRANSITION`
+ * and `REOPEN_WINDOW_PASSED` carry no `TICKET_` prefix.
  */
 export type TicketConflictCode =
   | "TICKET_CLOSED"
-  | "TICKET_MESSAGE_CAP"
+  | "MESSAGE_CAP"
+  | "INVALID_TRANSITION"
   | "TICKET_ESCALATED"
   | "TICKET_NOT_ESCALATED"
   | "TICKET_CHANGED"
   | "TICKET_ALREADY_TALIM"
-  | "TICKET_NOT_RESOLVED"
-  | "TICKET_REOPEN_WINDOW_PASSED";
+  | "REOPEN_WINDOW_PASSED";
 
 /** Limits the forms check before sending (the backend checks them too). */
 export const TICKET_LIMITS = {

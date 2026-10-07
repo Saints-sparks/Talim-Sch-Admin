@@ -48,8 +48,8 @@ import {
 const PAGE_SIZE = 20;
 
 /**
- * The status tabs with their counts. Closed and All have no count of their
- * own (the counts route reports the working statuses).
+ * The status tabs with their counts (the desk's own tickets; what it
+ * escalated is listed but not counted).
  *
  * @param counts - The desk's counts, once loaded.
  * @returns The tabs.
@@ -67,8 +67,8 @@ export function deskTabs(counts: TicketDeskCounts | undefined): TabOption<DeskTa
     { value: "in_progress", label: "In progress", count: counts?.in_progress },
     { value: "waiting_on_user", label: "Waiting on requester", count: counts?.waiting_on_user },
     { value: "resolved", label: "Resolved", count: counts?.resolved },
-    { value: "closed", label: "Closed" },
-    { value: "all", label: "All" },
+    { value: "closed", label: "Closed", count: counts?.closed },
+    { value: "all", label: "All", count: counts?.total },
   ];
 }
 

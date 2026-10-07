@@ -143,6 +143,7 @@ export const queryKeys = {
     desk: (schoolId: string, params?: Record<string, unknown>) =>
       ["tickets", schoolId, "desk", params ?? {}] as const,
     deskCounts: (schoolId: string) => ["tickets", schoolId, "deskCounts"] as const,
+    deskStaff: (schoolId: string) => ["tickets", schoolId, "deskStaff"] as const,
     mine: (userId: string, params?: Record<string, unknown>) =>
       ["tickets", userId, "mine", params ?? {}] as const,
     detail: (ticketId: string) => ["tickets", "detail", ticketId] as const,

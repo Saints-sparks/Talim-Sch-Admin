@@ -121,7 +121,8 @@ function storeTicket(client: QueryClient, ticket: Ticket): void {
   client.setQueryData(queryKeys.tickets.detail(ticket.id), ticket);
   void client.invalidateQueries({
     queryKey: queryKeys.tickets.all,
-    predicate: (query) => query.queryKey[1] !== "detail",
+    // Not the ticket itself (now current) nor the staff list (unchanged by a ticket write).
+    predicate: (query) => query.queryKey[1] !== "detail" && query.queryKey[2] !== "deskStaff",
   });
 }
 

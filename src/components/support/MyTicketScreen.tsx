@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Page } from "@/components/tl/Page";
@@ -20,6 +21,7 @@ import {
   canReopen,
   formatTicketDate,
   ticketErrorMessage,
+  ticketHref,
 } from "./ticket.presentation";
 
 /**
@@ -56,8 +58,16 @@ export function MyTicketScreen({ ticketId }: MyTicketScreenProps) {
   const actions = useTicketActions(ticketId);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const router = useRouter();
+  const isDeskTicket = ticket.data !== undefined && ticket.data.access !== "requester";
 
-  if (ticket.isPending) return <PageSkeleton label="Loading your ticket" blocks={[140, 360]} />;
+  // A desk ticket (a notification can link here) belongs on the support desk.
+  useEffect(() => {
+    if (isDeskTicket) router.replace(ticketHref(ticketId, "desk"));
+  }, [isDeskTicket, router, ticketId]);
+
+  if (ticket.isPending || isDeskTicket)
+    return <PageSkeleton label="Loading your ticket" blocks={[140, 360]} />;
   if (ticket.isError && !ticket.data) {
     return (
       <Page>

@@ -23,6 +23,7 @@ import type {
   Ticket,
   TicketDeskCounts,
   TicketListResponse,
+  TicketStaffMember,
   UpdateTicketBody,
 } from "@/types/tickets";
 
@@ -32,6 +33,7 @@ export const TICKET_ROUTES = {
   mine: "/tickets/mine",
   schoolDesk: "/tickets/desk/school",
   schoolDeskCounts: "/tickets/desk/school/counts",
+  schoolDeskStaff: "/tickets/desk/school/staff",
   one: (id: string) => `/tickets/${encodeURIComponent(id)}`,
   messages: (id: string) => `/tickets/${encodeURIComponent(id)}/messages`,
   escalate: (id: string) => `/tickets/${encodeURIComponent(id)}/escalate`,
@@ -89,6 +91,15 @@ export const ticketService = {
    */
   schoolDeskCounts: (): Promise<TicketDeskCounts> =>
     api.get<TicketDeskCounts>(TICKET_ROUTES.schoolDeskCounts),
+
+  /**
+   * The school desk's staff, who a ticket can be assigned to: the school's
+   * admins and the sub-admins holding `manage:support`.
+   *
+   * @returns The staff, one request for the whole list.
+   */
+  schoolDeskStaff: (): Promise<TicketStaffMember[]> =>
+    api.get<TicketStaffMember[]>(TICKET_ROUTES.schoolDeskStaff),
 
   /**
    * The tickets the signed-in admin raised (to Talim), newest activity first.

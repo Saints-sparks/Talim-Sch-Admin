@@ -50,6 +50,11 @@ export interface AdminNotification {
   isRead: boolean;
   createdAt: string;
   attachments: string[];
+  /**
+   * The support ticket a `support` notification is about (its target
+   * `{ page: 'support', ticketId }`, v1.5 §1), for the "Open ticket" link.
+   */
+  supportTicketId?: string;
 }
 
 /**
@@ -76,6 +81,8 @@ interface RawNotification {
   attachment?: string;
   attachments?: string[];
   createdAt?: string;
+  /** Where the notification leads (`NotificationTarget`); a ticket's is `{ page: 'support', ticketId }`. */
+  target?: { page?: string; ticketId?: string } | null;
 }
 
 /** The pagination envelope `GET /notifications` replies with (`NotificationListResponseDto`, read as {@link RawNotification}s). */
@@ -127,7 +134,12 @@ function oneOf<T extends string>(value: unknown, allowed: Set<T>, fallback: T): 
   return allowed.has(candidate) ? candidate : fallback;
 }
 
-/** Turns an API notification into the shape the inbox renders. */
+/**
+ * Turns an API notification into the shape the inbox renders.
+ *
+ * @param raw - The notification as the API sent it.
+ * @returns The inbox's notification.
+ */
 function normalize(raw: RawNotification): AdminNotification {
   const source = oneOf<NotificationSource>(raw.source, SOURCES, "system");
 
@@ -136,7 +148,8 @@ function normalize(raw: RawNotification): AdminNotification {
     title: raw.title || "Notification",
     message: raw.message || raw.body || "No message provided.",
     source,
-    sourceLabel: raw.sourceLabel || (source === "talim" ? "Talim Notification" : "System Notification"),
+    sourceLabel:
+      raw.sourceLabel || (source === "talim" ? "Talim Notification" : "System Notification"),
     category: oneOf<NotificationCategory>(raw.category, CATEGORIES, "other"),
     priority: oneOf<NotificationPriority>(raw.priority, PRIORITIES, "medium"),
     status: oneOf<NotificationDeliveryStatus>(raw.status, STATUSES, "sent"),
@@ -148,6 +161,10 @@ function normalize(raw: RawNotification): AdminNotification {
       ...(Array.isArray(raw.attachments) ? raw.attachments : []),
       ...(raw.attachment ? [raw.attachment] : []),
     ],
+    supportTicketId:
+      raw.target?.page === "support" && typeof raw.target.ticketId === "string"
+        ? raw.target.ticketId
+        : undefined,
   };
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, RefreshCw } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Page } from "@/components/tl/Page";
@@ -28,12 +29,13 @@ import { TicketThread } from "./TicketThread";
 import {
   SUPPORT_DESK_HREF,
   TICKET_PRIORITIES,
-  TICKET_STATUSES,
   areaLabel,
   formatTicketDate,
   roleLabel,
+  staffTransitions,
   statusLabel,
   ticketErrorMessage,
+  ticketHref,
 } from "./ticket.presentation";
 
 /**
@@ -102,8 +104,16 @@ export function DeskTicketScreen({ ticketId }: DeskTicketScreenProps) {
   const [problem, setProblem] = useState<string | null>(null);
   const [escalating, setEscalating] = useState(false);
   const { options: assignees, myId } = useDeskAssignees([ticket.data?.assignee]);
+  const router = useRouter();
+  const isOwnTicket = ticket.data?.access === "requester";
 
-  if (ticket.isPending) return <PageSkeleton label="Loading the ticket" blocks={[160, 360]} />;
+  // The admin's own ticket (a notification can link here) belongs in Help & support.
+  useEffect(() => {
+    if (isOwnTicket) router.replace(ticketHref(ticketId, "requester"));
+  }, [isOwnTicket, router, ticketId]);
+
+  if (ticket.isPending || isOwnTicket)
+    return <PageSkeleton label="Loading the ticket" blocks={[160, 360]} />;
   if (ticket.isError && !ticket.data) {
     return (
       <Page>
@@ -313,7 +323,7 @@ export function DeskTicketScreen({ ticketId }: DeskTicketScreenProps) {
                 }}
                 className={`${selectControl} w-full`}
               >
-                {TICKET_STATUSES.map((s) => (
+                {staffTransitions(t.status).map((s) => (
                   <option key={s} value={s}>
                     {statusLabel(s)}
                   </option>

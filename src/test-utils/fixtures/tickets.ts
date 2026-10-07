@@ -11,6 +11,7 @@ import type {
   TicketDeskCounts,
   TicketListResponse,
   TicketMessage,
+  TicketStaffMember,
   TicketSummary,
 } from "@/types/tickets";
 
@@ -218,10 +219,30 @@ export function deskCounts(overrides: Partial<TicketDeskCounts> = {}): TicketDes
     in_progress: 2,
     waiting_on_user: 1,
     resolved: 4,
+    closed: 5,
+    total: 15,
     unassigned: 2,
     mine: 1,
     ...overrides,
   };
+}
+
+/**
+ * The school desk's staff (`GET /tickets/desk/school/staff`): the admin and
+ * the sub-admin holding `manage:support`.
+ *
+ * @returns The staff list.
+ */
+export function deskStaff(): TicketStaffMember[] {
+  return [
+    { id: ADMIN.id, name: ADMIN.name, role: "school_admin", email: "sade@school.test" },
+    {
+      id: DESK_SUB_ADMIN.id,
+      name: DESK_SUB_ADMIN.name,
+      role: "school_sub_admin",
+      email: "dayo@school.test",
+    },
+  ];
 }
 
 /**

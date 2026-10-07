@@ -154,6 +154,21 @@ export function visibleMessages(
   return viewer === "desk" ? [...messages] : messages.filter((m) => !m.internal);
 }
 
+/**
+ * The statuses desk staff may move a ticket to from `from` (the backend's
+ * `STAFF_TRANSITIONS`): open, in progress and waiting go anywhere; resolved
+ * goes back to open or in progress, or to closed; closed is final. The
+ * current status is always listed (choosing it changes nothing).
+ *
+ * @param from - Where the ticket stands.
+ * @returns The statuses the status control offers.
+ */
+export function staffTransitions(from: TicketStatus): TicketStatus[] {
+  if (from === "closed") return ["closed"];
+  if (from === "resolved") return ["open", "in_progress", "resolved", "closed"];
+  return [...TICKET_STATUSES];
+}
+
 /** The status tabs of the desk queue. `active` is everything not resolved or closed. */
 export type DeskTab =
   | "active"
@@ -194,16 +209,16 @@ export function statusesForMineTab(tab: MineTab): TicketStatus[] | undefined {
 /** What to tell the user for each 409 sub-code, from the desk's side and the requester's. */
 const CONFLICT_MESSAGES: Record<TicketConflictCode, string> = {
   TICKET_CLOSED: "This ticket is closed, so it can't take replies or changes.",
-  TICKET_MESSAGE_CAP:
-    "This ticket has reached its 500-message limit. Ask for a new ticket to carry on.",
+  MESSAGE_CAP: "This ticket has reached its 500-message limit. Ask for a new ticket to carry on.",
+  INVALID_TRANSITION:
+    "That status change isn't allowed from where the ticket stands now. The latest version is loaded.",
   TICKET_ESCALATED:
     "This ticket was escalated to Talim support. Your desk can read it but no longer change it.",
   TICKET_NOT_ESCALATED: "This school ticket hasn't been escalated, so Talim can't act on it yet.",
   TICKET_CHANGED:
     "Someone else changed this ticket while you were working on it. The latest version is loaded: check it and try again.",
   TICKET_ALREADY_TALIM: "This ticket is already with Talim support.",
-  TICKET_NOT_RESOLVED: "Only a resolved ticket can be reopened.",
-  TICKET_REOPEN_WINDOW_PASSED:
+  REOPEN_WINDOW_PASSED:
     "A resolved ticket can only be reopened within 7 days. Raise a new ticket instead.",
 };
 

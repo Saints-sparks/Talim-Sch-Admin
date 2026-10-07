@@ -22,6 +22,8 @@ import { HelpScreen } from "@/components/support/HelpScreen";
 import { MyTicketScreen, requesterReplyBlocked } from "@/components/support/MyTicketScreen";
 import { legacyComplaintTarget } from "@/components/support/LegacyComplaintsRedirect";
 import { assigneeOptions } from "@/hooks/support/useDeskAssignees";
+import { NotificationDetail } from "@/components/notifications/NotificationDetail";
+import type { AdminNotification } from "@/app/services/notification.service";
 import { deskQueryString } from "@/app/services/ticket.service";
 import {
   acceptAttachments,
@@ -35,6 +37,7 @@ import {
 import {
   DESK_SUB_ADMIN,
   deskCounts,
+  deskStaff,
   deskTicket,
   escalatedTicket,
   myTicket,
@@ -95,33 +98,12 @@ const mockPatch = api.patch as jest.Mock;
 const admin = { ...mockAdmin, firstName: "Sade", lastName: "Admin" };
 const deskSub = {
   ...mockSubAdmin,
-  userId: "sub-2",
+  userId: DESK_SUB_ADMIN.id,
   firstName: "Dayo",
   lastName: "Desk",
   permissions: [Permission.MANAGE_SUPPORT],
 };
 const plainSub = { ...mockSubAdmin, permissions: [Permission.MANAGE_STUDENTS] };
-
-/** The sub-admins the primary admin reads for the assignee list. */
-const SUB_ADMINS = {
-  data: [
-    {
-      userId: DESK_SUB_ADMIN.id,
-      firstName: "Dayo",
-      lastName: "Desk",
-      permissions: [Permission.MANAGE_SUPPORT],
-      isActive: true,
-    },
-    {
-      userId: "sub-3",
-      firstName: "Fola",
-      lastName: "Fees",
-      permissions: [Permission.MANAGE_FEES],
-      isActive: true,
-    },
-  ],
-  meta: { total: 2, page: 1, lastPage: 1, limit: 100 },
-};
 
 /**
  * Answers the GETs the screens make.
@@ -141,7 +123,7 @@ function answerGets(
     if (url.pathname === "/tickets/desk/school/counts") return deskCounts();
     if (url.pathname === "/tickets/desk/school") return ticketPage(lists.desk ?? []);
     if (url.pathname === "/tickets/mine") return ticketPage(lists.mine ?? []);
-    if (url.pathname.startsWith("/sub-admins")) return SUB_ADMINS;
+    if (url.pathname === "/tickets/desk/school/staff") return deskStaff();
     const id = url.pathname.match(/^\/tickets\/([^/]+)$/)?.[1];
     if (id && byId[id]) return byId[id];
     throw new Error(`unexpected GET ${path}`);
@@ -260,7 +242,8 @@ describe("the desk queue", () => {
   it("deskTabs adds the working statuses for Active", () => {
     const tabs = deskTabs(deskCounts());
     expect(tabs.find((t) => t.value === "active")?.count).toBe(6);
-    expect(tabs.find((t) => t.value === "closed")?.count).toBeUndefined();
+    expect(tabs.find((t) => t.value === "closed")?.count).toBe(5);
+    expect(tabs.find((t) => t.value === "all")?.count).toBe(15);
     expect(statusesForTab("all")).toBeUndefined();
   });
 });
@@ -365,7 +348,7 @@ describe("desk flows", () => {
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  it("sets status, priority and the assignee (desk staff from the sub-admins, and unassigning)", async () => {
+  it("sets status, priority and the assignee (the desk's staff list, and unassigning)", async () => {
     const user = userEvent.setup();
     answerGets({ t1: deskTicket() });
     mockPatch.mockImplementation(async (_path: string, body: object) =>
@@ -389,8 +372,8 @@ describe("desk flows", () => {
     await waitFor(() =>
       expect(within(assignee).getByRole("option", { name: "Dayo Desk" })).toBeTruthy()
     );
-    // Only desk staff: the fees-only sub-admin is not offered.
-    expect(within(assignee).queryByRole("option", { name: "Fola Fees" })).toBeNull();
+    // Only the desk's staff are offered (with Unassigned).
+    expect(within(assignee).getAllByRole("option")).toHaveLength(3);
     expect(within(assignee).getByRole("option", { name: "Sade Admin (you)" })).toBeTruthy();
     await user.selectOptions(assignee, DESK_SUB_ADMIN.id);
     await waitFor(() =>
@@ -400,9 +383,9 @@ describe("desk flows", () => {
     await waitFor(() =>
       expect(mockPatch).toHaveBeenLastCalledWith("/tickets/t1", { assigneeId: null })
     );
-    // One read of the sub-admins, not one per option.
+    // One read of the staff list, not one per option.
     expect(
-      mockGet.mock.calls.filter(([path]) => String(path).startsWith("/sub-admins"))
+      mockGet.mock.calls.filter(([path]) => path === "/tickets/desk/school/staff")
     ).toHaveLength(1);
   });
 
@@ -435,6 +418,16 @@ describe("desk flows", () => {
     expect(screen.queryByRole("button", { name: "Escalate to Talim" })).toBeNull();
   });
 
+  it("offers only the transitions the backend allows: a resolved ticket goes back, or closes", async () => {
+    answerGets({ t1: deskTicket({ status: "resolved", resolvedAt: "2026-10-06T00:00:00.000Z" }) });
+    render(<DeskTicketScreen ticketId="t1" />, { user: admin });
+    const status = await screen.findByLabelText("Status");
+    const offered = within(status)
+      .getAllByRole("option")
+      .map((o) => (o as HTMLOptionElement).value);
+    expect(offered).toEqual(["open", "in_progress", "resolved", "closed"]);
+  });
+
   it("a sub-admin on the desk can act too, assigning among the people already on tickets", async () => {
     answerGets({ t1: deskTicket({ assignee: { id: "sub-7", name: "Kemi Kind" } }) });
     render(<DeskTicketScreen ticketId="t1" />, { user: deskSub });
@@ -442,7 +435,8 @@ describe("desk flows", () => {
     const assignee = screen.getByLabelText("Assignee");
     expect(assignee).toHaveValue("sub-7");
     expect(within(assignee).getByRole("option", { name: "Dayo Desk (you)" })).toBeTruthy();
-    expect(mockGet.mock.calls.some(([path]) => String(path).startsWith("/sub-admins"))).toBe(false);
+    expect(within(assignee).getByRole("option", { name: "Sade Admin" })).toBeTruthy();
+    expect(within(assignee).getByRole("option", { name: "Kemi Kind" })).toBeTruthy();
   });
 });
 
@@ -502,7 +496,7 @@ describe("409 handling", () => {
   it("a reopen after the 7 days says to raise a new ticket", async () => {
     const user = userEvent.setup();
     answerGets({ t9: myTicket() });
-    mockPost.mockRejectedValueOnce(ticketConflict("TICKET_REOPEN_WINDOW_PASSED"));
+    mockPost.mockRejectedValueOnce(ticketConflict("REOPEN_WINDOW_PASSED"));
     render(<MyTicketScreen ticketId="t9" />, { user: admin });
     await user.click(await screen.findByRole("button", { name: "Reopen ticket" }));
     await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/tickets/t9/reopen", {}));
@@ -510,7 +504,7 @@ describe("409 handling", () => {
   });
 
   it("ticketErrorMessage and ticketConflictCode read the sub-code", () => {
-    expect(ticketConflictCode(ticketConflict("TICKET_MESSAGE_CAP"))).toBe("TICKET_MESSAGE_CAP");
+    expect(ticketConflictCode(ticketConflict("MESSAGE_CAP"))).toBe("MESSAGE_CAP");
     expect(ticketConflictCode(new Error("x"))).toBeNull();
     expect(ticketErrorMessage(ticketConflict("TICKET_ESCALATED"))).toMatch(
       /escalated to Talim support/
@@ -613,6 +607,51 @@ describe("Contact Talim support (Help)", () => {
         Date.parse("2026-10-06T00:00:00Z")
       )
     ).toBe(true);
+  });
+});
+
+// ─── Deep links ─────────────────────────────────────────────────────────────
+
+describe("deep links", () => {
+  it("a support notification opens the ticket on the desk for desk staff and in Help for others", () => {
+    const notification = {
+      id: "n1",
+      title: "New reply on CMP-10042",
+      message: "Paul replied.",
+      source: "school",
+      sourceLabel: "School",
+      category: "other",
+      priority: "medium",
+      status: "sent",
+      sentBy: "Talim",
+      isRead: true,
+      createdAt: "2026-10-06T09:00:00.000Z",
+      attachments: [],
+      supportTicketId: "t1",
+    } as unknown as AdminNotification;
+    const props = { onMarkRead: jest.fn(), isMarkingRead: false };
+    const { unmount } = render(<NotificationDetail notification={notification} {...props} />, {
+      user: admin,
+    });
+    expect(screen.getByRole("link", { name: /Open ticket/ })).toHaveAttribute(
+      "href",
+      "/support/t1"
+    );
+    unmount();
+    render(<NotificationDetail notification={notification} {...props} />, { user: plainSub });
+    expect(screen.getByRole("link", { name: /Open ticket/ })).toHaveAttribute(
+      "href",
+      "/help/tickets/t1"
+    );
+  });
+
+  it("the desk sends the admin's own ticket on to Help & support, and Help sends a desk ticket to the desk", async () => {
+    answerGets({ t9: myTicket(), t1: deskTicket() });
+    const { unmount } = render(<DeskTicketScreen ticketId="t9" />, { user: admin });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/help/tickets/t9"));
+    unmount();
+    render(<MyTicketScreen ticketId="t1" />, { user: admin });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/support/t1"));
   });
 });
 

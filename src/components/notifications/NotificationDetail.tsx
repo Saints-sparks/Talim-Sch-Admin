@@ -6,7 +6,12 @@
  */
 import React from "react";
 import { format } from "date-fns";
-import { CheckCircle, Clock, CreditCard, ExternalLink, Paperclip } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, Clock, CreditCard, ExternalLink, LifeBuoy, Paperclip } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/lib/permissions";
+import { primaryButton } from "@/components/tl/styles";
+import { ticketHref } from "@/components/support/ticket.presentation";
 import { cn } from "@/lib/utils";
 import type { AdminNotification } from "@/app/services/notification.service";
 import {
@@ -27,9 +32,15 @@ interface NotificationDetailProps {
 }
 
 /**
- * Renders the notification reading panel.
+ * Renders the notification reading panel; a support notification (v1.5 §1)
+ * gets "Open ticket".
  *
  * @param props - The selected notification and its actions.
+ * @param props.notification - The notification.
+ * @param props.onMarkRead - Marks it read.
+ * @param props.onOpenReceipt - Opens the payment receipt, when there is one.
+ * @param props.isMarkingRead - Whether marking it read is in flight.
+ * @returns The panel.
  */
 export function NotificationDetail({
   notification,
@@ -40,6 +51,10 @@ export function NotificationDetail({
   const badge = CATEGORY_BADGES[notification.category];
   const source = SOURCE_BADGES[notification.source];
   const showReceipt = Boolean(onOpenReceipt) && isPaymentNotification(notification);
+  const { hasPermission } = usePermissions();
+  // A support notification opens on the desk for desk staff; the screens send
+  // an admin's own ticket on to Help & support (and the reverse) themselves.
+  const canStaffDesk = hasPermission(Permission.MANAGE_SUPPORT);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-tl-line bg-tl-surface">
@@ -104,6 +119,16 @@ export function NotificationDetail({
         <p className="whitespace-pre-line text-sm leading-relaxed text-tl-body">
           {notification.message}
         </p>
+
+        {notification.supportTicketId ? (
+          <Link
+            href={ticketHref(notification.supportTicketId, canStaffDesk ? "desk" : "requester")}
+            className={primaryButton}
+          >
+            <LifeBuoy className="h-4 w-4" aria-hidden />
+            Open ticket
+          </Link>
+        ) : null}
 
         {showReceipt && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-tl-success/30 bg-tl-success-bg p-4">
