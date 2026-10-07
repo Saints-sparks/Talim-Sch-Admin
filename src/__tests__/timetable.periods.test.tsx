@@ -210,9 +210,9 @@ describe("grid rows", () => {
       />
     );
     expect(screen.getByText("Lab 2")).toBeInTheDocument();
-    const breakCell = screen.getAllByText("Break").find((el) => el.tagName === "DIV" && el.className.includes("amber"));
+    const breakCell = screen.getAllByText("Break").find((el) => el.closest("td[data-break]"));
     expect(breakCell).toBeDefined();
-    fireEvent.drop(breakCell!.parentElement!);
+    fireEvent.drop(breakCell!.closest("td")!);
     expect(onDropCourse).not.toHaveBeenCalled();
   });
 });

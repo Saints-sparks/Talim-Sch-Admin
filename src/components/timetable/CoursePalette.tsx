@@ -1,26 +1,46 @@
 "use client";
 
 /**
- * The sidebar of courses that can be dragged onto the grid.
+ * The card of courses that can be dragged onto the grid, each in its tone.
  *
  * Cards are only draggable for a viewer who holds `manage:timetable`; without
- * it the sidebar stays as a reference list of what the class is taught.
+ * it the card stays as a reference list of what the class is taught. On a
+ * narrow screen the courses run in a row above the grid; on a wide one they
+ * stand in a column beside it.
  */
 
 import React from "react";
-import { BookOpen } from "@/components/Icons";
+import { BookOpen, GripVertical } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { EmptyNote, cardFrame, sectionTitle, skeletonBlock } from "@/components/tl";
 import type { TimetableCourse } from "@/app/services/timetable.service";
-import { courseTeacherName } from "./timetable.model";
+import { colorForCourse, courseTeacherName } from "./timetable.model";
 
+/** Props for {@link CoursePalette}. */
 interface CoursePaletteProps {
+  /** The class's courses. */
   courses: TimetableCourse[];
+  /** True while they load. */
   isLoading: boolean;
+  /** Teacher names by id, for courses whose teacher is not populated. */
   teacherNames: Map<string, string>;
+  /** True when the cards can be dragged. */
   canManage: boolean;
+  /** Called with the course being dragged. */
   onDragStart: (course: TimetableCourse) => void;
 }
 
+/**
+ * Renders the palette.
+ *
+ * @param props - See {@link CoursePaletteProps}.
+ * @param props.courses - The courses.
+ * @param props.isLoading - Whether they load.
+ * @param props.teacherNames - Teacher names by id.
+ * @param props.canManage - Whether cards drag.
+ * @param props.onDragStart - Drag handler.
+ * @returns The card.
+ */
 export function CoursePalette({
   courses,
   isLoading,
@@ -29,67 +49,77 @@ export function CoursePalette({
   onDragStart,
 }: CoursePaletteProps) {
   return (
-    <div
-      className="w-[182px] bg-white dark:bg-slate-800 border border-[#F0F0F0] dark:border-slate-700 flex flex-col rounded-2xl"
+    <section
+      className={`${cardFrame} flex min-w-0 flex-col lg:sticky lg:top-4 lg:max-h-[calc(100dvh-120px)]`}
       data-guide="timetable-subjects"
+      aria-labelledby="timetable-palette-title"
     >
-      <div className="p-4">
-        <h2 className="font-semibold text-[15px] text-[#1A1A1A] dark:text-slate-100">Subject</h2>
+      <div className="px-4 pb-2 pt-4">
+        <h2 id="timetable-palette-title" className={sectionTitle}>
+          Subject
+        </h2>
+        {canManage && (
+          <p className="mt-0.5 text-xs text-tl-muted">Drag a course onto a free period.</p>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-x-auto px-4 pb-4 lg:overflow-y-auto lg:overflow-x-hidden">
         {isLoading ? (
-          <div className="space-y-3">
+          <div aria-busy="true" aria-label="Loading courses" className="flex gap-2 lg:flex-col">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded mb-2" />
-                <div className="h-8 bg-gray-100 dark:bg-slate-700 rounded" />
-              </div>
+              <div
+                key={i}
+                aria-hidden
+                className={`${skeletonBlock} h-[76px] w-[150px] shrink-0 rounded-[14px] lg:w-full`}
+              />
             ))}
           </div>
         ) : courses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="w-12 h-12 border-2 border-[#E0E0E0] dark:border-slate-600 rounded-lg flex items-center justify-center mb-4 bg-[#F8F8F8] dark:bg-slate-900/40">
-              <BookOpen />
-            </div>
-            <p className="text-[13px] text-[#4D4D4D] dark:text-slate-400 text-center leading-relaxed">
-              No courses found for this class.
-            </p>
-          </div>
+          <EmptyNote compact icon={<BookOpen />} title="No courses yet">
+            <span className="text-[13px]">No courses found for this class.</span>
+          </EmptyNote>
         ) : (
-          <div className="space-y-2">
-            {courses.map((course) => (
-              <Tooltip
-                key={course._id}
-                content={
-                  canManage
-                    ? "Drag this course into an empty timetable slot. Its assigned teacher follows it automatically."
-                    : "You need the Timetable permission to schedule this course."
-                }
-                side="right"
-              >
-                <div
-                  draggable={canManage}
-                  onDragStart={() => onDragStart(course)}
-                  className={`w-[142px] h-[100px] bg-[#F2F2F2] dark:bg-slate-900/40 border border-[#E0E0E0] dark:border-slate-700 rounded-xl flex px-2 justify-center flex-col transition-colors hover:shadow-sm ${
-                    canManage
-                      ? "cursor-move hover:bg-gray-100 dark:hover:bg-slate-700"
-                      : "cursor-default"
-                  }`}
-                >
-                  <BookOpen />
-                  <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1A1A1A] dark:text-slate-100">
-                    {course.title}
-                  </div>
-                  <div className="text-[15px] font-medium mt-1 text-[#4D4D4D] dark:text-slate-400">
-                    {courseTeacherName(course, teacherNames)}
-                  </div>
-                </div>
-              </Tooltip>
-            ))}
-          </div>
+          <ul className="flex gap-2 lg:flex-col">
+            {courses.map((course) => {
+              const colors = colorForCourse(course._id);
+              return (
+                <li key={course._id} className="shrink-0 lg:shrink">
+                  <Tooltip
+                    content={
+                      canManage
+                        ? "Drag this course into an empty timetable slot. Its assigned teacher follows it automatically."
+                        : "You need the Timetable permission to schedule this course."
+                    }
+                    side="right"
+                  >
+                    <div
+                      draggable={canManage}
+                      onDragStart={() => onDragStart(course)}
+                      className={`${colors.bg} border ${colors.border} flex w-[160px] items-start gap-2 rounded-[14px] px-3 py-2.5 transition-shadow lg:w-full ${
+                        canManage
+                          ? "cursor-grab hover:shadow-[0_6px_16px_-10px_rgba(15,27,46,0.4)] active:cursor-grabbing"
+                          : "cursor-default"
+                      }`}
+                    >
+                      {canManage && (
+                        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-tone-fg" aria-hidden />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block break-words text-sm font-extrabold text-tone-fg">
+                          {course.title}
+                        </span>
+                        <span className="mt-0.5 block break-words text-xs font-semibold text-tl-body">
+                          {courseTeacherName(course, teacherNames)}
+                        </span>
+                      </span>
+                    </div>
+                  </Tooltip>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
-    </div>
+    </section>
   );
 }

@@ -76,21 +76,27 @@ export interface TimetableEntry {
 /** The grid, keyed by day name. */
 export type TimetableGridData = Record<string, TimetableEntry[]>;
 
-/** The dashed pastel a placed lesson is drawn in. */
+/**
+ * The tone a placed lesson (and its course in the palette) is drawn in: one
+ * of the design system's stable tones (`.tl-tone-N` sets `--tone-*`, which
+ * `bg-tone-bg`, `border-tone-bd` and `text-tone-fg` read), so it switches
+ * with the dark theme by itself.
+ */
 export interface EntryColorScheme {
+  /** The tone class and its background, e.g. `tl-tone-2 bg-tone-bg`. */
   bg: string;
+  /** The border colour. */
   border: string;
+  /** The border style. */
   dash: string;
 }
 
-/** The palette a lesson card is coloured from, in order. */
-export const ENTRY_COLORS: EntryColorScheme[] = [
-  { bg: "bg-[#FAEBEB] dark:bg-[#CC3333]/15", border: "border-[#CC3333]", dash: "border-dashed" },
-  { bg: "bg-[#FF9933]/15", border: "border-[#FF9933]", dash: "border-dashed" },
-  { bg: "bg-[#D6EDE1] dark:bg-[#2E8B57]/15", border: "border-[#2E8B57]", dash: "border-dashed" },
-  { bg: "bg-[#6A5ACD]/15", border: "border-[#6A5ACD]", dash: "border-dashed" },
-  { bg: "bg-[#FFF7E5] dark:bg-[#FFB400]/15", border: "border-[#FFB400]", dash: "border-dashed" },
-];
+/** The palette a lesson card is coloured from, in order: the six tl tones. */
+export const ENTRY_COLORS: EntryColorScheme[] = [0, 1, 2, 3, 4, 5].map((tone) => ({
+  bg: `tl-tone-${tone} bg-tone-bg`,
+  border: "border-tone-bd",
+  dash: "border-solid",
+}));
 
 /**
  * The colour for a lesson card.
