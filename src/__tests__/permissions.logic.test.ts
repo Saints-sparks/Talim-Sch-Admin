@@ -51,8 +51,9 @@ describe("ALL_PERMISSIONS", () => {
     expect(ALL_PERMISSIONS).toEqual(expected);
   });
 
-  it("contains 15 permissions (4 academics + 3 finance + 3 people + 5 administration)", () => {
-    expect(ALL_PERMISSIONS.length).toBe(15);
+  it("contains 16 permissions (4 academics + 3 finance + 3 people + 6 administration, with the support desk)", () => {
+    expect(ALL_PERMISSIONS.length).toBe(16);
+    expect(ALL_PERMISSIONS).toContain(Permission.MANAGE_SUPPORT);
   });
 
   it("uses manage:resource format matching the backend enum", () => {

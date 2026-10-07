@@ -42,12 +42,13 @@ export const PERMISSION_GROUPS = [
   {
     id: "administration",
     label: "Administration",
-    description: "Announcements, leave requests, transit, messages and settings",
+    description: "Announcements, leave requests, transit, messages, the support desk and settings",
     permissions: [
       { value: Permission.MANAGE_ANNOUNCEMENTS,  label: "Manage Announcements" },
       { value: Permission.MANAGE_LEAVE_REQUESTS, label: "Manage Leave Requests" },
       { value: Permission.MANAGE_TRANSIT,        label: "Manage Transit" },
       { value: Permission.MANAGE_MESSAGES,       label: "Manage Messages" },
+      { value: Permission.MANAGE_SUPPORT,        label: "Manage Support Desk" },
       { value: Permission.MANAGE_SETTINGS,       label: "Manage Settings" },
     ],
   },

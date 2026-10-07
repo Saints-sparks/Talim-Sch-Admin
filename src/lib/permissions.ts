@@ -27,6 +27,10 @@ export const Permission = {
   MANAGE_TRANSIT:       'manage:transit',
   MANAGE_MESSAGES:      'manage:messages',
   MANAGE_SETTINGS:      'manage:settings',
+  // The school's support desk (v1.5 §1): tickets, replies, internal notes,
+  // assignment and escalation to Talim. The backend added it; there was no
+  // complaints permission to reuse.
+  MANAGE_SUPPORT:       'manage:support',
 
   // Sub-admin management (primary school_admin only)
   MANAGE_SUB_ADMINS:    'manage:sub_admins',
