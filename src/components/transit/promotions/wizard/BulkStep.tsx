@@ -46,8 +46,8 @@ export function BulkStep({
           ))}
         </SelectField>
       </div>
-      <div className="rounded-xl border border-gray-100 dark:border-slate-800">
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 px-4 py-3">
+      <div className="rounded-xl border border-tl-line-soft">
+        <div className="flex items-center justify-between border-b border-tl-line-soft px-4 py-3">
           <p className={cn("text-sm font-semibold", text.strong)}>Preview decisions</p>
           <p className={cn("text-xs", text.muted)}>
             {isLoading ? "Loading students…" : `${decisions.length} students loaded`}

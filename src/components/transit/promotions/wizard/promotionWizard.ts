@@ -56,7 +56,7 @@ export function canContinueSetup(fromAcademicYearId: string, toAcademicYearId: s
 export function toggleDecision(
   current: DecisionDraft[],
   enrollment: StudentEnrollment,
-  checked: boolean,
+  checked: boolean
 ): DecisionDraft[] {
   const studentId = refId(enrollment.studentId);
   if (!checked) return current.filter((decision) => decision.studentId !== studentId);
@@ -84,9 +84,11 @@ export function toggleDecision(
 export function patchDecision(
   current: DecisionDraft[],
   studentId: string,
-  patch: Partial<DecisionDraft>,
+  patch: Partial<DecisionDraft>
 ): DecisionDraft[] {
-  return current.map((decision) => (decision.studentId === studentId ? { ...decision, ...patch } : decision));
+  return current.map((decision) =>
+    decision.studentId === studentId ? { ...decision, ...patch } : decision
+  );
 }
 
 /**
@@ -101,10 +103,11 @@ export function patchDecision(
 export function bulkDecisionDrafts(
   enrollments: StudentEnrollment[],
   sourceClassId: string,
-  targetClassId: string,
+  targetClassId: string
 ): DecisionDraft[] {
   return buildBulkDecisions(enrollments, sourceClassId, targetClassId).map((decision) => {
-    const enrollment = enrollments.find((item) => refId(item.studentId) === decision.studentId) ?? enrollments[0];
+    const enrollment =
+      enrollments.find((item) => refId(item.studentId) === decision.studentId) ?? enrollments[0];
     return { ...decision, studentName: enrollmentName(enrollment) || decision.studentId };
   });
 }
@@ -117,7 +120,9 @@ export function bulkDecisionDrafts(
  * @returns Those with all three ids.
  */
 export function readyDecisions(decisions: DecisionDraft[]): DecisionDraft[] {
-  return decisions.filter((decision) => decision.studentId && decision.fromClassId && decision.toClassId);
+  return decisions.filter(
+    (decision) => decision.studentId && decision.fromClassId && decision.toClassId
+  );
 }
 
 /**

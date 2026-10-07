@@ -16,18 +16,12 @@ export const TRANSFER_STATUS_LABELS: Record<TransferStatus, string> = {
 
 /** Badge colours per status, in both themes. */
 export const TRANSFER_STATUS_COLORS: Record<TransferStatus, string> = {
-  requested:
-    "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
-  source_approved:
-    "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30",
-  target_approved:
-    "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30",
-  accepted:
-    "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30",
-  rejected:
-    "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30",
-  cancelled:
-    "bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+  requested: "bg-tl-warning-bg text-tl-warning border-tl-warning/30",
+  source_approved: "bg-tl-select text-tl-link border-tl-control",
+  target_approved: "bg-tl-select text-tl-accent border-tl-control",
+  accepted: "bg-tl-success-bg text-tl-success border-tl-success/30",
+  rejected: "bg-tl-danger-bg text-tl-danger border-tl-danger/30",
+  cancelled: "bg-tl-track text-tl-muted border-tl-line",
 };
 
 /** The happy path, in order, for the progress stepper. */

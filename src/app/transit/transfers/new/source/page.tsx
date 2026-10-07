@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
-import {
-  type SearchSchoolResult,
-} from "@/app/services/transit.service";
+import { type SearchSchoolResult } from "@/app/services/transit.service";
 import { useCreateTransfer } from "@/hooks/transit/useTransfers";
 import { useSchoolStudents, type StudentOption } from "@/hooks/transit/useTransitReference";
 import { useStudentSnapshot } from "@/hooks/transit/useStudentSnapshot";
@@ -99,7 +97,10 @@ export default function SourceTransferWizard() {
             onSelect={setSchool}
           />
           <div>
-            <label htmlFor="push-reason" className={cn("block text-xs font-medium mb-2", text.muted)}>
+            <label
+              htmlFor="push-reason"
+              className={cn("block text-xs font-medium mb-2", text.muted)}
+            >
               Reason for Transfer <span className="font-normal">(optional)</span>
             </label>
             <textarea
@@ -108,7 +109,7 @@ export default function SourceTransferWizard() {
               onChange={(event) => setReason(event.target.value)}
               rows={3}
               placeholder="Enter the reason for transferring this student..."
-              className="w-full px-3 py-2.5 text-sm rounded-lg resize-none border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#030E18] dark:text-slate-100 focus:outline-none focus:border-[#003366] dark:focus:border-sky-500 transition-colors"
+              className="w-full px-3 py-2.5 text-sm rounded-lg resize-none border border-tl-line bg-tl-surface text-tl-ink focus:outline-none focus:border-tl-link transition-colors"
             />
           </div>
         </div>
@@ -116,7 +117,7 @@ export default function SourceTransferWizard() {
 
       {step === 2 && student && school && (
         <div className="space-y-4">
-          <div className="rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-slate-800/50">
+          <div className="rounded-lg p-4 space-y-3 bg-tl-subtle">
             <ReviewRow label="Student" value={`${student.firstName} ${student.lastName}`.trim()} />
             <ReviewRow label="Target School" value={school.name} />
             {reason && <ReviewRow label="Reason" value={reason} />}
@@ -131,8 +132,8 @@ export default function SourceTransferWizard() {
 
       {step === 3 && (
         <div className="text-center py-4 space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center bg-green-100 dark:bg-green-500/15">
-            <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center bg-tl-success-bg">
+            <Check className="w-8 h-8 text-tl-success" />
           </div>
           <div>
             <h3 className={cn("text-lg font-semibold", text.strong)}>Ready to Submit</h3>

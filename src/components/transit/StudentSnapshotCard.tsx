@@ -20,9 +20,7 @@ export function StudentSnapshotCard({
   isLoading: boolean;
 }) {
   if (isLoading) {
-    return (
-      <div className="h-20 rounded-lg animate-pulse bg-gray-50 dark:bg-slate-800" aria-hidden />
-    );
+    return <div className="h-20 rounded-lg animate-pulse bg-tl-subtle" aria-hidden />;
   }
   if (!snapshot) return null;
 
@@ -32,7 +30,7 @@ export function StudentSnapshotCard({
       .join(", ") || "—";
 
   return (
-    <div className="rounded-lg border border-blue-100 dark:border-sky-500/30 bg-blue-50 dark:bg-sky-500/10 p-4">
+    <div className="rounded-lg border border-tl-control bg-tl-select p-4">
       <p className={cn("text-xs font-semibold mb-2", text.brand)}>Academic Snapshot</p>
       <dl className={cn("grid grid-cols-2 gap-2 text-xs", text.body)}>
         <div>

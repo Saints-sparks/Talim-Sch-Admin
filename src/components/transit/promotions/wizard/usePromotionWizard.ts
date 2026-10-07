@@ -49,7 +49,7 @@ export function usePromotionWizard(onCreated: () => void) {
       status: "active",
       classId: mode === "bulk" ? sourceClassId : undefined,
     },
-    Boolean(fromAcademicYearId) && (mode === "individual" || Boolean(sourceClassId)),
+    Boolean(fromAcademicYearId) && (mode === "individual" || Boolean(sourceClassId))
   );
   const enrollments = useMemo(() => roster.data ?? [], [roster.data]);
 

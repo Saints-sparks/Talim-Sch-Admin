@@ -16,6 +16,7 @@ import { TransferStatusBadge } from "@/components/transit/TransferStatusBadge";
 import { TransferProgress } from "@/components/transit/TransferProgress";
 import { TransferSummary } from "@/components/transit/TransferSummary";
 import { TransferActions } from "@/components/transit/TransferActions";
+import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 /** What to say in the toast after each transition succeeds. */
 const DONE_MESSAGES: Record<TransferAction["type"], string> = {
@@ -67,7 +68,7 @@ export default function TransferDetailPage() {
   const abilities = transferAbilities(transfer, schoolId);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className={`${pagePad} ${pageStack}`}>
       <button
         type="button"
         onClick={() => router.push("/transit/transfers")}
@@ -94,7 +95,7 @@ export default function TransferDetailPage() {
         <>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className={cn("text-2xl font-bold", text.strong)}>Transfer Request</h1>
+              <h1 className={pageTitle}>Transfer Request</h1>
               <p className={cn("text-sm mt-0.5", text.muted)}>ID: {transfer._id}</p>
             </div>
             <TransferStatusBadge status={transfer.status} size="md" />
@@ -109,9 +110,9 @@ export default function TransferDetailPage() {
           {abilities.isTerminal && (
             <div
               className={cn(
-                "rounded-xl p-4 flex items-center gap-3 border",
+                "rounded-[22px] p-4 flex items-center gap-3 border",
                 transfer.status === "accepted"
-                  ? "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-300"
+                  ? "bg-tl-success-bg border-tl-success/30 text-tl-success"
                   : cn(surface.inset, text.body)
               )}
             >

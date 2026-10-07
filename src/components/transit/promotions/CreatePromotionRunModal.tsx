@@ -69,8 +69,8 @@ export function CreatePromotionRunModal({
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium",
               step === index + 1
-                ? "border-[#003366] bg-[#003366] text-white dark:border-sky-600 dark:bg-sky-600"
-                : cn("border-gray-200 dark:border-slate-700", text.muted),
+                ? "border-tl-brand bg-tl-brand-fill text-white"
+                : cn("border-tl-line", text.muted)
             )}
           >
             {index + 1}. {label}
@@ -120,7 +120,9 @@ export function CreatePromotionRunModal({
         />
       )}
 
-      {step === 3 && <ReviewStep decisions={decisions} classes={classes} onChange={wizard.updateDecision} />}
+      {step === 3 && (
+        <ReviewStep decisions={decisions} classes={classes} onChange={wizard.updateDecision} />
+      )}
 
       {step === 4 && (
         <SubmitStep

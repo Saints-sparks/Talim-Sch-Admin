@@ -48,7 +48,7 @@ function OptionGrid<T extends { _id: string }>({
   return (
     <div>
       <span className={cn("mb-2 block text-xs font-medium", text.muted)}>
-        {label} <span className="text-red-500">*</span>
+        {label} <span className="text-tl-danger">*</span>
       </span>
       {loading ? (
         <SkeletonRows count={2} height="h-11" />
@@ -64,11 +64,8 @@ function OptionGrid<T extends { _id: string }>({
               className={cn(
                 "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
                 selectedId === option._id
-                  ? "border-[#003366] dark:border-sky-500 bg-[#003366]/5 dark:bg-sky-500/10 font-medium text-[#003366] dark:text-sky-300"
-                  : cn(
-                      "border-gray-200 dark:border-slate-700 hover:border-[#003366]/30 dark:hover:border-sky-500/40",
-                      text.body
-                    )
+                  ? "border-tl-brand bg-tl-select font-medium text-tl-brand"
+                  : cn("border-tl-line hover:border-tl-control", text.body)
               )}
             >
               {renderOption(option)}
@@ -103,10 +100,7 @@ export default function TargetTransferWizard() {
   const years = useAcademicYears();
   const createTransfer = useCreateTransfer();
 
-  const academicYears = useMemo(
-    () => dedupeAcademicYearsByName(years.data ?? []),
-    [years.data]
-  );
+  const academicYears = useMemo(() => dedupeAcademicYearsByName(years.data ?? []), [years.data]);
 
   const trimmedId = studentId.trim();
   const idLooksValid = TALIM_ID.test(trimmedId);
@@ -156,7 +150,13 @@ export default function TargetTransferWizard() {
 
       {step === 1 && (
         <div className="space-y-4">
-          <p className={cn("flex items-start gap-2 rounded-lg p-3 text-sm", surface.inset, text.body)}>
+          <p
+            className={cn(
+              "flex items-start gap-2 rounded-lg p-3 text-sm",
+              surface.inset,
+              text.body
+            )}
+          >
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               A student&apos;s record stays private to {sourceSchool?.name ?? "their school"} until
@@ -165,8 +165,11 @@ export default function TargetTransferWizard() {
             </span>
           </p>
           <div>
-            <label htmlFor="pull-student-id" className={cn("block text-xs font-medium mb-2", text.muted)}>
-              Student&apos;s Talim ID <span className="text-red-500">*</span>
+            <label
+              htmlFor="pull-student-id"
+              className={cn("block text-xs font-medium mb-2", text.muted)}
+            >
+              Student&apos;s Talim ID <span className="text-tl-danger">*</span>
             </label>
             <input
               id="pull-student-id"
@@ -178,11 +181,11 @@ export default function TargetTransferWizard() {
               className={cn(
                 "w-full px-3 py-2.5 text-sm rounded-lg font-mono",
                 surface.input,
-                idError && "border-red-400 dark:border-red-500"
+                idError && "border-tl-danger"
               )}
             />
             {idError && (
-              <p id="pull-student-id-error" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+              <p id="pull-student-id-error" className="mt-1.5 text-xs text-tl-danger">
                 {idError}
               </p>
             )}
@@ -218,7 +221,10 @@ export default function TargetTransferWizard() {
             renderOption={(option) => getAcademicYearLabel(option)}
           />
           <div>
-            <label htmlFor="pull-reason" className={cn("block text-xs font-medium mb-2", text.muted)}>
+            <label
+              htmlFor="pull-reason"
+              className={cn("block text-xs font-medium mb-2", text.muted)}
+            >
               Reason for Transfer <span className="font-normal">(optional)</span>
             </label>
             <textarea
@@ -235,8 +241,11 @@ export default function TargetTransferWizard() {
 
       {step === 3 && sourceSchool && selectedClass && selectedYear && (
         <div className="space-y-4">
-          <div className="rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-slate-800/50">
-            <ReviewRow label="Student's Talim ID" value={<span className="font-mono">{trimmedId}</span>} />
+          <div className="rounded-lg p-4 space-y-3 bg-tl-subtle">
+            <ReviewRow
+              label="Student's Talim ID"
+              value={<span className="font-mono">{trimmedId}</span>}
+            />
             <ReviewRow label="Current School" value={sourceSchool.name} />
             <ReviewRow
               label="Enrol Into"
@@ -259,8 +268,8 @@ export default function TargetTransferWizard() {
 
       {step === 4 && (
         <div className="text-center py-4 space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-500/15">
-            <Check className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center bg-tl-select">
+            <Check className="w-8 h-8 text-tl-accent" />
           </div>
           <div>
             <h3 className={cn("text-lg font-semibold", text.strong)}>Ready to Submit</h3>

@@ -3,11 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Search } from "lucide-react";
-import {
-  studentLabel,
-  refLabel,
-  type TransferRequest,
-} from "@/app/services/transit.service";
+import { studentLabel, refLabel, type TransferRequest } from "@/app/services/transit.service";
 import { useSchoolId } from "@/hooks/useSchoolId";
 import { useTransfers } from "@/hooks/transit/useTransfers";
 import { useDebouncedValue } from "@/hooks/transit/useTransitUi";
@@ -16,6 +12,7 @@ import { SkeletonRows, surface, text } from "@/components/transit/ui";
 import { TransitEmptyState, TransitErrorState } from "@/components/transit/TransitStates";
 import { TransfersTable } from "@/components/transit/TransfersTable";
 import { NewTransferButtons } from "@/components/transit/NewTransferButtons";
+import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 /** The status tabs, in the order a transfer moves through them. */
 const STATUS_TABS: { label: string; value: string }[] = [
@@ -68,10 +65,10 @@ export default function TransfersPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className={`${pagePad} ${pageStack}`}>
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={cn("text-2xl font-bold", text.strong)}>Transfers</h1>
+          <h1 className={pageTitle}>Transfers</h1>
           <p className={cn("text-sm mt-1", text.muted)}>
             All incoming and outgoing student transfer requests
           </p>
@@ -82,7 +79,7 @@ export default function TransfersPage() {
       <div
         role="tablist"
         aria-label="Transfer status"
-        className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-100 dark:border-slate-800"
+        className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-tl-line-soft"
       >
         {STATUS_TABS.map((tab) => (
           <button
@@ -93,8 +90,8 @@ export default function TransfersPage() {
             className={cn(
               "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
               activeStatus === tab.value
-                ? "border-[#003366] dark:border-sky-500 text-[#003366] dark:text-sky-400"
-                : cn("border-transparent hover:text-[#030E18] dark:hover:text-slate-100", text.muted)
+                ? "border-tl-brand text-tl-brand"
+                : cn("border-transparent hover:text-tl-ink", text.muted)
             )}
           >
             {tab.label}

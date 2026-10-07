@@ -15,6 +15,7 @@ import { TransitEmptyState, TransitErrorState } from "@/components/transit/Trans
 import { EnrollmentsTable } from "@/components/transit/EnrollmentsTable";
 import { EnrollStudentModal } from "@/components/transit/EnrollStudentModal";
 import { BulkEnrollModal } from "@/components/transit/BulkEnrollModal";
+import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 /** The status tabs; the API filters on the value. */
 const STATUS_TABS = [
@@ -59,10 +60,10 @@ export default function EnrollmentsPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className={`${pagePad} ${pageStack}`}>
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={cn("text-2xl font-bold", text.strong)}>Enrollments</h1>
+          <h1 className={pageTitle}>Enrollments</h1>
           <p className={cn("text-sm mt-1", text.muted)}>
             Manage student enrollments across classes and academic years.
           </p>
@@ -72,7 +73,7 @@ export default function EnrollmentsPage() {
             <button
               type="button"
               onClick={() => setModal("bulk")}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#003366] dark:border-sky-500 text-[#003366] dark:text-sky-400 text-sm font-medium transition-colors hover:bg-[#003366]/5 dark:hover:bg-sky-500/10"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-tl-brand text-tl-brand text-sm font-medium transition-colors hover:bg-tl-brand-fill-hover"
             >
               <Users className="w-4 h-4" />
               Bulk Enrol
@@ -80,7 +81,7 @@ export default function EnrollmentsPage() {
             <button
               type="button"
               onClick={() => setModal("single")}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#003366] hover:bg-[#003366]/90 text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Enrol Student
@@ -91,7 +92,12 @@ export default function EnrollmentsPage() {
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-48">
-          <SelectField label="Class" value={classId} onChange={setClassId} disabled={classesLoading}>
+          <SelectField
+            label="Class"
+            value={classId}
+            onChange={setClassId}
+            disabled={classesLoading}
+          >
             <option value="">All Classes</option>
             {classes.map((option) => (
               <option key={option._id} value={option._id}>
@@ -120,7 +126,7 @@ export default function EnrollmentsPage() {
       <div
         role="tablist"
         aria-label="Enrollment status"
-        className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-100 dark:border-slate-800"
+        className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-tl-line-soft"
       >
         {STATUS_TABS.map((tab) => (
           <button
@@ -131,8 +137,8 @@ export default function EnrollmentsPage() {
             className={cn(
               "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
               status === tab.value
-                ? "border-[#003366] dark:border-sky-500 text-[#003366] dark:text-sky-400"
-                : cn("border-transparent hover:text-[#030E18] dark:hover:text-slate-100", text.muted)
+                ? "border-tl-brand text-tl-brand"
+                : cn("border-transparent hover:text-tl-ink", text.muted)
             )}
           >
             {tab.label}

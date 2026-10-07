@@ -38,6 +38,7 @@ import {
   ValidationResultModal,
 } from "@/components/transit/promotions/PromotionDialogs";
 import { RunDetailsDrawer } from "@/components/transit/promotions/RunDetailsDrawer";
+import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 /** The status filter's options. */
 const STATUSES: { label: string; value: "" | PromotionRunStatus }[] = [
@@ -141,15 +142,15 @@ export default function PromotionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB] dark:bg-slate-950 p-6">
+    <div className={`${pagePad} ${pageStack}`}>
       <div className="mx-auto max-w-7xl space-y-6">
         <header
           className={cn(
-            "flex flex-col gap-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+            "flex flex-col gap-4 rounded-xl border border-tl-line-soft bg-tl-surface p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
           )}
         >
           <div>
-            <h1 className={cn("text-2xl font-bold", text.strong)}>Promotions</h1>
+            <h1 className={pageTitle}>Promotions</h1>
             <p className={cn("mt-1 text-sm", text.muted)}>
               Manage student and class promotion runs across academic years
             </p>
@@ -158,7 +159,7 @@ export default function PromotionsPage() {
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#003366] hover:bg-[#003366]/90 px-4 text-sm font-semibold text-white transition-colors"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-tl-brand-fill hover:bg-tl-brand-fill-hover px-4 text-sm font-semibold text-white transition-colors"
             >
               <Plus className="h-4 w-4" />
               Create Promotion Run
@@ -184,7 +185,7 @@ export default function PromotionsPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 rounded-xl border border-tl-line-soft bg-tl-surface p-4 shadow-sm md:flex-row md:items-end">
           <div className="md:w-56">
             <SelectField
               label="Status"

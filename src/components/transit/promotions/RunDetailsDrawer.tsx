@@ -36,7 +36,7 @@ export function RunDetailsDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex justify-end bg-[#030E18]/50"
+      className="fixed inset-0 z-40 flex justify-end bg-[rgba(15,27,46,0.45)]"
       role="dialog"
       aria-modal="true"
       aria-label="Promotion run details"
@@ -44,7 +44,7 @@ export function RunDetailsDrawer({
       <aside className={cn("h-full w-full max-w-2xl overflow-y-auto shadow-2xl", surface.card)}>
         <div
           className={cn(
-            "sticky top-0 z-10 flex items-start justify-between border-b border-gray-100 dark:border-slate-800 px-6 py-5",
+            "sticky top-0 z-10 flex items-start justify-between border-b border-tl-line-soft px-6 py-5",
             surface.card
           )}
         >
@@ -56,7 +56,7 @@ export function RunDetailsDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
+            className="rounded-lg p-2 transition-colors hover:bg-tl-bg"
           >
             <X className={cn("h-5 w-5", text.muted)} />
           </button>
@@ -88,7 +88,7 @@ export function RunDetailsDrawer({
             </div>
 
             {run.status === "committed" && (
-              <p className="rounded-xl border border-green-100 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10 p-4 text-sm text-green-700 dark:text-green-300">
+              <p className="rounded-xl border border-tl-success/30 bg-tl-success-bg p-4 text-sm text-tl-success">
                 This run is committed and read-only. The enrollments it replaced are kept as
                 history.
               </p>
@@ -107,10 +107,12 @@ export function RunDetailsDrawer({
               empty="No validation warnings."
             />
 
-            <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800">
+            <div className="overflow-hidden rounded-xl border border-tl-line-soft">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
-                  <thead className={cn("text-left text-xs uppercase", surface.tableHead, text.muted)}>
+                  <thead
+                    className={cn("text-left text-xs uppercase", surface.tableHead, text.muted)}
+                  >
                     <tr>
                       <th className="px-4 py-3">Student</th>
                       <th className="px-4 py-3">From Class</th>

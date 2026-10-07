@@ -33,11 +33,11 @@ export function IndividualStep({
 }: IndividualStepProps) {
   return (
     <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-      <div className="rounded-xl border border-gray-100 dark:border-slate-800">
+      <div className="rounded-xl border border-tl-line-soft">
         <div
           className={cn(
-            "border-b border-gray-100 dark:border-slate-800 px-4 py-3 text-sm font-semibold",
-            text.strong,
+            "border-b border-tl-line-soft px-4 py-3 text-sm font-semibold",
+            text.strong
           )}
         >
           Active enrollments
@@ -48,18 +48,20 @@ export function IndividualStep({
               <SkeletonRows count={3} height="h-10" />
             </div>
           ) : isError ? (
-            <p className="p-4 text-sm text-rose-600 dark:text-rose-400">
+            <p className="p-4 text-sm text-tl-danger">
               {getErrorMessage(error, "Couldn't load enrollments.")}
             </p>
           ) : enrollments.length === 0 ? (
-            <p className={cn("p-4 text-sm", text.muted)}>No active enrollments in the source academic year.</p>
+            <p className={cn("p-4 text-sm", text.muted)}>
+              No active enrollments in the source academic year.
+            </p>
           ) : (
             enrollments.map((enrollment) => {
               const studentId = refId(enrollment.studentId);
               return (
                 <label
                   key={enrollment._id}
-                  className="flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                  className="flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-tl-bg"
                 >
                   <input
                     type="checkbox"

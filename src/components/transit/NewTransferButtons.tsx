@@ -18,14 +18,14 @@ export function NewTransferButtons() {
       <div className="flex gap-3">
         <Link
           href="/transit/transfers/new/target"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#003366] dark:border-sky-500 text-[#003366] dark:text-sky-400 text-sm font-medium transition-colors hover:bg-[#003366]/5 dark:hover:bg-sky-500/10"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-tl-brand text-tl-brand text-sm font-medium transition-colors hover:bg-tl-brand-fill-hover"
         >
           <Plus className="w-4 h-4" />
           Pull Transfer
         </Link>
         <Link
           href="/transit/transfers/new/source"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium transition-colors hover:bg-[#003366]/90"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-tl-brand-fill text-white text-sm font-medium transition-colors hover:bg-tl-brand-fill-hover"
         >
           <Plus className="w-4 h-4" />
           Push Transfer

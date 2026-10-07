@@ -1,5 +1,9 @@
 import { cn } from "@/lib/utils";
-import { getAcademicYearLabel, type AcademicYearResponse, type TermResponse } from "@/app/services/academic.service";
+import {
+  getAcademicYearLabel,
+  type AcademicYearResponse,
+  type TermResponse,
+} from "@/app/services/academic.service";
 import { SelectField, text } from "@/components/transit/ui";
 import type { Mode } from "./promotionWizard";
 
@@ -36,7 +40,12 @@ export function SetupStep({
 }: SetupStepProps) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
-      <SelectField label="From Academic Year" required value={fromAcademicYearId} onChange={onFromChange}>
+      <SelectField
+        label="From Academic Year"
+        required
+        value={fromAcademicYearId}
+        onChange={onFromChange}
+      >
         <option value="">Select source year</option>
         {academicYears.map((year) => (
           <option key={year._id} value={year._id}>
@@ -60,7 +69,9 @@ export function SetupStep({
         onChange={onTermChange}
         disabled={!toAcademicYearId}
       >
-        <option value="">{toAcademicYearId ? "No specific term" : "Pick a target year first"}</option>
+        <option value="">
+          {toAcademicYearId ? "No specific term" : "Pick a target year first"}
+        </option>
         {terms
           .filter((term) => term.academicYearId === toAcademicYearId)
           .map((term) => (
@@ -80,11 +91,8 @@ export function SetupStep({
               className={cn(
                 "rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors",
                 mode === item.value
-                  ? "border-[#003366] dark:border-sky-500 bg-[#003366]/5 dark:bg-sky-500/10 text-[#003366] dark:text-sky-300"
-                  : cn(
-                      "border-gray-200 dark:border-slate-700 hover:border-[#003366]/40 dark:hover:border-sky-500/40",
-                      text.strong,
-                    ),
+                  ? "border-tl-brand bg-tl-select text-tl-brand"
+                  : cn("border-tl-line hover:border-tl-control", text.strong)
               )}
             >
               {item.label}

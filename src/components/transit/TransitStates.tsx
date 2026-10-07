@@ -62,14 +62,13 @@ export function TransitErrorState({
   const known = MESSAGES[code];
   const title = known?.title ?? fallbackTitle;
   const message =
-    known?.message ??
-    (error instanceof ApiError ? error.message : "Please try again in a moment.");
+    known?.message ?? (error instanceof ApiError ? error.message : "Please try again in a moment.");
   const canRetry = (known?.retry ?? true) && Boolean(onRetry);
 
   return (
     <div className={cn("rounded-xl p-8 text-center shadow-sm", surface.card)}>
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-500/15">
-        <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-tl-danger-bg">
+        <AlertTriangle className="h-6 w-6 text-tl-danger" />
       </div>
       <p className={cn("text-lg font-semibold", text.strong)}>{title}</p>
       <p className={cn("mt-1 text-sm", text.muted)}>{message}</p>
@@ -77,7 +76,7 @@ export function TransitErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#003366] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#003366]/90"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-tl-brand-fill px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tl-brand-fill-hover"
         >
           <RefreshCw className="h-4 w-4" />
           Try again

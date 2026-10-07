@@ -66,11 +66,11 @@ export function StudentPicker({
               type="button"
               onClick={() => onSelect(student)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60",
-                selectedId === student._id && "bg-[#003366]/5 dark:bg-sky-500/10"
+                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-tl-bg",
+                selectedId === student._id && "bg-tl-select"
               )}
             >
-              <span className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center bg-[#003366]/10 dark:bg-sky-500/15">
+              <span className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center bg-tl-select">
                 <User className={cn("w-4 h-4", text.brand)} />
               </span>
               <span className="min-w-0">

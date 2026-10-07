@@ -3,6 +3,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fieldControl, fieldLabel, ghostButton, iconButton } from "@/components/tl/styles";
 import { useBodyScrollLock } from "@/hooks/transit/useTransitUi";
 
 /**
@@ -11,34 +12,33 @@ import { useBodyScrollLock } from "@/hooks/transit/useTransitUi";
  */
 export const surface = {
   /** A raised panel: cards, tables, modals. */
-  card: "bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800",
+  card: "bg-tl-surface border border-tl-line shadow-[0_1px_2px_rgba(15,27,46,0.04),0_14px_30px_-22px_rgba(15,27,46,0.18)] dark:shadow-none",
   /** The row of headings above a table. */
-  tableHead: "bg-gray-50 dark:bg-slate-800/60",
+  tableHead: "bg-tl-subtle",
   /** A divider between rows. */
-  divide: "divide-gray-50 dark:divide-slate-800",
+  divide: "divide-tl-line-soft",
   /** A quiet inset block. */
-  inset: "bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800",
+  inset: "bg-tl-subtle border border-tl-line-soft",
   /** A form control. */
-  input:
-    "border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#030E18] dark:text-slate-100 placeholder:text-[#929292] dark:placeholder:text-slate-500 focus:outline-none focus:border-[#003366] dark:focus:border-sky-500 transition-colors",
+  input: fieldControl,
 } as const;
 
 /** Shared text colours, so headings and captions stay legible in the dark theme. */
 export const text = {
   /** A heading or a value the eye should land on. */
-  strong: "text-[#030E18] dark:text-slate-100",
+  strong: "text-tl-ink",
   /** Body copy. */
-  body: "text-[#4A5568] dark:text-slate-300",
+  body: "text-tl-body",
   /** A label or caption. */
-  muted: "text-[#666666] dark:text-slate-400",
+  muted: "text-tl-muted",
   /** The brand colour, lightened for the dark theme. */
-  brand: "text-[#003366] dark:text-sky-400",
+  brand: "text-tl-brand",
 } as const;
 
 /** One label / value line inside a detail card. */
 export function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-3 py-2.5 border-b border-gray-50 dark:border-slate-800 last:border-0">
+    <div className="flex justify-between gap-3 py-2.5 border-b border-tl-line-soft last:border-0">
       <span className={cn("text-sm", text.muted)}>{label}</span>
       <span className={cn("text-sm font-medium text-right max-w-[60%]", text.strong)}>{value}</span>
     </div>
@@ -56,10 +56,10 @@ export function DetailCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("rounded-xl p-5 shadow-sm", surface.card)}>
+    <section className={cn("rounded-[22px] p-[clamp(18px,2.4vw,24px)]", surface.card)}>
       <div className="flex items-center gap-2 mb-4">
         <Icon className={cn("w-4 h-4", text.brand)} />
-        <h2 className={cn("text-sm font-semibold", text.strong)}>{title}</h2>
+        <h2 className={cn("text-[15px] font-extrabold", text.strong)}>{title}</h2>
       </div>
       {children}
     </section>
@@ -71,10 +71,7 @@ export function SkeletonRows({ count = 5, height = "h-16" }: { count?: number; h
   return (
     <div className="space-y-3" aria-hidden>
       {Array.from({ length: count }).map((_, index) => (
-        <div
-          key={index}
-          className={cn("rounded-xl animate-pulse bg-gray-50 dark:bg-slate-800", height)}
-        />
+        <div key={index} className={cn("rounded-[18px] animate-pulse bg-tl-line/70", height)} />
       ))}
     </div>
   );
@@ -101,32 +98,29 @@ export function TransitModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#030E18]/50 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(15,27,46,0.45)] sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
       <div
         className={cn(
-          "w-full flex max-h-[90vh] flex-col rounded-2xl shadow-xl",
+          "flex max-h-[90vh] w-full flex-col rounded-t-[24px] shadow-[0_30px_70px_-30px_rgba(15,27,46,0.45)] sm:rounded-[24px]",
           surface.card,
           width
         )}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-          <h2 className={cn("text-lg font-semibold", text.strong)}>{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className={cn("w-4 h-4", text.muted)} />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-tl-line-soft">
+          <h2 className={cn("text-[21px] font-extrabold tracking-[-0.4px]", text.strong)}>
+            {title}
+          </h2>
+          <button type="button" onClick={onClose} aria-label="Close" className={iconButton}>
+            <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-slate-800">
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-tl-line-soft">
             {footer}
           </div>
         )}
@@ -153,18 +147,15 @@ export function SelectField({
 }) {
   return (
     <label className="block">
-      <span className={cn("mb-1.5 block text-xs font-semibold uppercase", text.muted)}>
+      <span className={cn("mb-1.5 block", fieldLabel)}>
         {label}
-        {required && <span className="ml-1 text-red-500">*</span>}
+        {required && <span className="ml-1 text-tl-danger">*</span>}
       </span>
       <select
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          "h-10 w-full rounded-lg px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60",
-          surface.input
-        )}
+        className={cn("cursor-pointer", surface.input)}
       >
         {children}
       </select>
@@ -189,9 +180,9 @@ export function PrimaryButton({
   className?: string;
 }) {
   const tones = {
-    brand: "bg-[#003366] hover:bg-[#003366]/90",
-    green: "bg-green-600 hover:bg-green-700",
-    rose: "bg-rose-600 hover:bg-rose-700",
+    brand: "bg-tl-brand-fill hover:bg-tl-brand-fill-hover",
+    green: "bg-tl-success hover:opacity-90",
+    rose: "bg-tl-danger hover:opacity-90",
   } as const;
   return (
     <button
@@ -199,7 +190,7 @@ export function PrimaryButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[14px] px-[18px] py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tl-link focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40",
         tones[tone],
         className
       )}
@@ -226,11 +217,7 @@ export function SecondaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={cn(
-        "rounded-lg border border-gray-200 dark:border-slate-700 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50",
-        text.body,
-        className
-      )}
+      className={cn(ghostButton, className)}
     >
       {children}
     </button>

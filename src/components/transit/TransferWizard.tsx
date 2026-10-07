@@ -3,6 +3,14 @@
 import React from "react";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  card,
+  cardTitle,
+  pagePad,
+  pageSubtitle,
+  pageTitle,
+  textLink,
+} from "@/components/tl/styles";
 import { surface, text } from "@/components/transit/ui";
 
 /** The numbered dots and rules across the top of a wizard. */
@@ -17,10 +25,10 @@ export function WizardSteps({ step, steps }: { step: number; steps: string[] }) 
             className={cn(
               "w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
               index < step
-                ? "bg-[#003366] dark:bg-sky-600 text-white"
+                ? "bg-tl-brand-fill text-white"
                 : index === step
-                  ? "bg-[#003366] dark:bg-sky-600 text-white ring-2 ring-[#003366]/30 dark:ring-sky-500/40"
-                  : "bg-gray-100 dark:bg-slate-800 text-[#929292] dark:text-slate-400"
+                  ? "bg-tl-brand-fill text-white ring-2 ring-tl-link/30"
+                  : "bg-tl-track text-tl-muted"
             )}
           >
             {index < step ? <Check className="w-3.5 h-3.5" /> : index + 1}
@@ -29,7 +37,7 @@ export function WizardSteps({ step, steps }: { step: number; steps: string[] }) 
             <span
               className={cn(
                 "h-0.5 flex-1 transition-colors",
-                index < step ? "bg-[#003366] dark:bg-sky-600" : "bg-gray-100 dark:bg-slate-800"
+                index < step ? "bg-tl-brand-fill" : "bg-tl-track"
               )}
             />
           )}
@@ -71,27 +79,24 @@ export function TransferWizardShell({
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="p-6">
+    <div className={pagePad}>
       <button
         type="button"
         onClick={() => (step === 0 ? onExit() : onStepChange(step - 1))}
-        className={cn(
-          "flex items-center gap-2 text-sm mb-6 transition-colors hover:underline",
-          text.muted
-        )}
+        className={cn(textLink, "mb-4")}
       >
         <ArrowLeft className="w-4 h-4" />
         {step === 0 ? "Back" : "Previous Step"}
       </button>
 
       <div className="max-w-2xl mx-auto">
-        <h1 className={cn("text-2xl font-bold mb-1", text.strong)}>{title}</h1>
-        <p className={cn("text-sm mb-6", text.muted)}>{description}</p>
+        <h1 className={pageTitle}>{title}</h1>
+        <p className={cn(pageSubtitle, "mb-6")}>{description}</p>
 
         <WizardSteps step={step} steps={steps} />
 
-        <div className={cn("rounded-xl p-6 shadow-sm", surface.card)}>
-          <h2 className={cn("text-base font-semibold mb-4", text.strong)}>{steps[step]}</h2>
+        <div className={card}>
+          <h2 className={cn(cardTitle, "mb-4")}>{steps[step]}</h2>
           {children}
         </div>
 
@@ -114,7 +119,7 @@ export function TransferWizardShell({
               type="button"
               onClick={onSubmit}
               disabled={submitting || !canContinue}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-tl-success hover:opacity-90 text-white text-sm font-medium transition-colors disabled:opacity-40"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {submitting ? "Submitting..." : submitLabel}
@@ -124,7 +129,7 @@ export function TransferWizardShell({
               type="button"
               onClick={() => onStepChange(step + 1)}
               disabled={!canContinue}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#003366] hover:bg-[#003366]/90 text-white text-sm font-medium transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-medium transition-colors disabled:opacity-40"
             >
               Next
               <ArrowRight className="w-4 h-4" />

@@ -11,7 +11,13 @@ import {
   refLabel,
   type PromotionRun,
 } from "@/app/services/transit.service";
-import { PrimaryButton, SecondaryButton, surface, text, TransitModal } from "@/components/transit/ui";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  surface,
+  text,
+  TransitModal,
+} from "@/components/transit/ui";
 import { IssueList, SummaryTile } from "@/components/transit/promotions/promotionUi";
 
 /** What the API found when it validated a run, and the way on to the commit. */
@@ -35,7 +41,11 @@ export function ValidationResultModal({
       footer={
         <>
           <SecondaryButton onClick={onClose}>Close</SecondaryButton>
-          <PrimaryButton tone="green" onClick={() => onCommit(run)} disabled={pending || !canCommit(run)}>
+          <PrimaryButton
+            tone="green"
+            onClick={() => onCommit(run)}
+            disabled={pending || !canCommit(run)}
+          >
             {pending && <Loader2 className="h-4 w-4 animate-spin" />}
             Continue to Commit
           </PrimaryButton>
@@ -93,7 +103,7 @@ export function CommitConfirmModal({
         </>
       }
     >
-      <div className={cn("space-y-3 rounded-xl p-4 text-sm", surface.inset)}>
+      <div className={cn("space-y-3 rounded-[22px] p-4 text-sm", surface.inset)}>
         <p className={text.body}>
           <span className={cn("font-semibold", text.strong)}>{run.decisions.length}</span> students
         </p>

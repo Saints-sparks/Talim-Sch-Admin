@@ -44,7 +44,7 @@ export function SubmitStep({
 }) {
   return (
     <div className="space-y-4">
-      <div className={cn("rounded-xl p-5", surface.inset)}>
+      <div className={cn("rounded-[22px] p-5", surface.inset)}>
         <p className={cn("text-lg font-semibold", text.strong)}>Submit promotion run</p>
         <p className={cn("mt-1 text-sm", text.muted)}>
           {decisionCount} decisions, from {yearLabel(academicYears, fromAcademicYearId)} to{" "}

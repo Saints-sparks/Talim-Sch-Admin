@@ -3,7 +3,12 @@
 import React from "react";
 import { Eye, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { canCommit, isRunEditable, refLabel, type PromotionRun } from "@/app/services/transit.service";
+import {
+  canCommit,
+  isRunEditable,
+  refLabel,
+  type PromotionRun,
+} from "@/app/services/transit.service";
 import { Permission } from "@/lib/permissions";
 import { usePermissions } from "@/hooks/usePermissions";
 import { surface, text } from "@/components/transit/ui";
@@ -67,10 +72,7 @@ export function PromotionRunsTable({
             {runs.map((run) => {
               const editable = isRunEditable(run);
               return (
-                <tr
-                  key={run._id}
-                  className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
-                >
+                <tr key={run._id} className="transition-colors hover:bg-tl-bg">
                   <td className={cn("px-4 py-4 font-mono text-xs", text.strong)}>
                     {run._id.slice(-10)}
                   </td>
@@ -80,7 +82,9 @@ export function PromotionRunsTable({
                   <td className="px-4 py-4">
                     <RunStatusBadge status={run.status} />
                   </td>
-                  <td className={cn("px-4 py-4", text.muted)}>{formatTransitDate(run.createdAt)}</td>
+                  <td className={cn("px-4 py-4", text.muted)}>
+                    {formatTransitDate(run.createdAt)}
+                  </td>
                   <td className="px-4 py-4">
                     <div className="flex justify-end gap-2">
                       <IconButton label="View" onClick={() => onView(run)} disabled={busy}>

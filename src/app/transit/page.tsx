@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { surface, text } from "@/components/transit/ui";
 import { TransitErrorState } from "@/components/transit/TransitStates";
 import { NewTransferButtons } from "@/components/transit/NewTransferButtons";
+import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 /** One counter on the overview, optionally linking to the list behind it. */
 function StatCard({
@@ -33,7 +34,7 @@ function StatCard({
   const content = (
     <div
       className={cn(
-        "rounded-xl p-5 flex items-start gap-4 shadow-sm transition-shadow h-full",
+        "rounded-[22px] p-5 flex items-start gap-4 shadow-sm transition-shadow h-full",
         surface.card,
         href && "hover:shadow-md"
       )}
@@ -73,7 +74,7 @@ function QuickAction({
     <Link
       href={href}
       className={cn(
-        "rounded-xl p-5 transition-all hover:shadow-md hover:border-[#003366]/30 dark:hover:border-sky-500/40",
+        "rounded-[22px] p-5 transition-all hover:shadow-md hover:border-tl-control",
         surface.card
       )}
     >
@@ -93,53 +94,54 @@ type CounterKey =
   | "studentsWithoutEnrollment";
 
 /** The counters, in the order they appear on the overview. */
-const CARDS: { key: CounterKey; label: string; icon: LucideIcon; color: string; href?: string }[] = [
-  {
-    key: "pendingIncoming",
-    label: "Pending Incoming Transfers",
-    icon: ArrowLeftRight,
-    color: "bg-amber-500",
-    href: "/transit/transfers?status=requested",
-  },
-  {
-    key: "pendingOutgoing",
-    label: "Pending Outgoing Transfers",
-    icon: ArrowLeftRight,
-    color: "bg-blue-500",
-    href: "/transit/transfers?status=source_approved",
-  },
-  {
-    key: "openPromotionRuns",
-    label: "Open Promotion Runs",
-    icon: TrendingUp,
-    color: "bg-purple-500",
-    href: "/transit/promotions",
-  },
-  {
-    key: "totalActiveEnrollments",
-    label: "Active Enrollments",
-    icon: CheckCircle,
-    color: "bg-green-500",
-    href: "/transit/enrollments?status=active",
-  },
-  {
-    key: "studentsWithoutEnrollment",
-    label: "Students Without Enrollment",
-    icon: AlertCircle,
-    color: "bg-rose-500",
-    href: "/transit/enrollments",
-  },
-];
+const CARDS: { key: CounterKey; label: string; icon: LucideIcon; color: string; href?: string }[] =
+  [
+    {
+      key: "pendingIncoming",
+      label: "Pending Incoming Transfers",
+      icon: ArrowLeftRight,
+      color: "bg-tl-warning",
+      href: "/transit/transfers?status=requested",
+    },
+    {
+      key: "pendingOutgoing",
+      label: "Pending Outgoing Transfers",
+      icon: ArrowLeftRight,
+      color: "bg-tl-brand-fill",
+      href: "/transit/transfers?status=source_approved",
+    },
+    {
+      key: "openPromotionRuns",
+      label: "Open Promotion Runs",
+      icon: TrendingUp,
+      color: "bg-tl-accent",
+      href: "/transit/promotions",
+    },
+    {
+      key: "totalActiveEnrollments",
+      label: "Active Enrollments",
+      icon: CheckCircle,
+      color: "bg-tl-success",
+      href: "/transit/enrollments?status=active",
+    },
+    {
+      key: "studentsWithoutEnrollment",
+      label: "Students Without Enrollment",
+      icon: AlertCircle,
+      color: "bg-tl-danger",
+      href: "/transit/enrollments",
+    },
+  ];
 
 /** The transit overview: what is waiting, and where to go next. */
 export default function TransitDashboardPage() {
   const { data, isLoading, isError, error, refetch } = useTransitDashboard();
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className={`${pagePad} ${pageStack}`}>
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={cn("text-2xl font-bold", text.strong)}>Transit</h1>
+          <h1 className={pageTitle}>Transit</h1>
           <p className={cn("text-sm mt-1", text.muted)}>
             Manage student transfers, class promotions, and academic year closures
             {data?.currentAcademicYear?.year ? ` · ${data.currentAcademicYear.year}` : ""}
@@ -153,7 +155,7 @@ export default function TransitDashboardPage() {
           {CARDS.map((card) => (
             <div
               key={card.key}
-              className={cn("rounded-xl p-5 h-24 animate-pulse", surface.card)}
+              className={cn("rounded-[22px] p-5 h-24 animate-pulse", surface.card)}
             />
           ))}
         </div>

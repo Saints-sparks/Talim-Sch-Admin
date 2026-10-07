@@ -42,14 +42,12 @@ function ReasonAction({
 
   const tones = {
     rose: {
-      trigger:
-        "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 hover:bg-rose-100 dark:hover:bg-rose-500/20",
-      confirm: "bg-rose-600 hover:bg-rose-700",
+      trigger: "bg-tl-danger-bg text-tl-danger border border-tl-danger/30 hover:bg-tl-danger-bg",
+      confirm: "bg-tl-danger hover:opacity-90",
     },
     slate: {
-      trigger:
-        "bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700",
-      confirm: "bg-gray-600 hover:bg-gray-700 dark:bg-slate-600 dark:hover:bg-slate-500",
+      trigger: "bg-tl-subtle text-tl-muted border border-tl-line hover:bg-tl-bg",
+      confirm: "bg-tl-brand-fill hover:bg-tl-brand-fill-hover",
     },
   } as const;
 
@@ -130,13 +128,12 @@ export function TransferActions({ abilities, pending, onAction }: TransferAction
   // What the state machine allows this school, before permissions are applied —
   // so an admin who lacks `manage:transit` is told why the panel is empty
   // rather than being shown nothing at all.
-  const sideHasAction =
-    canSourceApprove || canTargetApprove || canAccept || canReject || canCancel;
+  const sideHasAction = canSourceApprove || canTargetApprove || canAccept || canReject || canCancel;
 
   if (!sideHasAction && !waitingOnOtherSchool) return null;
 
   return (
-    <section className={cn("rounded-xl p-5 shadow-sm", surface.card)}>
+    <section className={cn("rounded-[22px] p-5", surface.card)}>
       <h2 className={cn("text-sm font-semibold mb-4", text.strong)}>Actions</h2>
 
       <div className="flex flex-wrap gap-3">
@@ -159,7 +156,7 @@ export function TransferActions({ abilities, pending, onAction }: TransferAction
             type="button"
             disabled={busy}
             onClick={() => onAction({ type: "source-approve" })}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {pending === "source-approve" && <Loader2 className="w-4 h-4 animate-spin" />}
             Approve (Source School)
@@ -171,7 +168,7 @@ export function TransferActions({ abilities, pending, onAction }: TransferAction
             type="button"
             disabled={busy}
             onClick={() => onAction({ type: "target-approve" })}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-tl-accent hover:opacity-90 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {pending === "target-approve" && <Loader2 className="w-4 h-4 animate-spin" />}
             Approve (Target School)
@@ -183,7 +180,7 @@ export function TransferActions({ abilities, pending, onAction }: TransferAction
             type="button"
             disabled={busy}
             onClick={() => onAction({ type: "accept" })}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-tl-success hover:opacity-90 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {pending === "accept" && <Loader2 className="w-4 h-4 animate-spin" />}
             Accept Transfer

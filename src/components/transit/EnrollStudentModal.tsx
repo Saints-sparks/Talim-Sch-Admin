@@ -99,7 +99,7 @@ export function EnrollStudentModal({
             Enrolling <span className={cn("font-medium", text.strong)}>{student.name}</span>
           </p>
         ) : selected ? (
-          <div className="flex items-center justify-between rounded-lg border border-[#003366] dark:border-sky-500 bg-[#003366]/5 dark:bg-sky-500/10 p-3">
+          <div className="flex items-center justify-between rounded-lg border border-tl-brand bg-tl-select p-3">
             <span className={cn("text-sm font-medium", text.strong)}>{studentName}</span>
             <button
               type="button"

@@ -61,8 +61,8 @@ export function SchoolPicker({
               type="button"
               onClick={() => onSelect(school)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60",
-                selected?._id === school._id && "bg-[#003366]/5 dark:bg-sky-500/10"
+                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-tl-bg",
+                selected?._id === school._id && "bg-tl-select"
               )}
             >
               <span className="min-w-0">
@@ -82,7 +82,7 @@ export function SchoolPicker({
       )}
 
       {selected && (
-        <p className="rounded-lg border border-green-100 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-300">
+        <p className="rounded-lg border border-tl-success/30 bg-tl-success-bg p-3 text-sm text-tl-success">
           Selected: <span className="font-semibold">{selected.name}</span>
         </p>
       )}

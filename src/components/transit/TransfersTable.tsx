@@ -36,7 +36,7 @@ export function TransfersTable({
     <div className={cn("rounded-xl shadow-sm overflow-hidden", surface.card)}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] text-sm">
-          <thead className={cn("border-b border-gray-100 dark:border-slate-800", surface.tableHead)}>
+          <thead className={cn("border-b border-tl-line-soft", surface.tableHead)}>
             <tr>
               {COLUMNS.map((column) => (
                 <th key={column} className={cn("px-4 py-3 text-left font-medium", text.muted)}>
@@ -61,7 +61,7 @@ export function TransfersTable({
                   onKeyDown={(event) => {
                     if (event.key === "Enter") router.push(`/transit/transfers/${transfer._id}`);
                   }}
-                  className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                  className="cursor-pointer transition-colors hover:bg-tl-bg"
                 >
                   <td className={cn("px-4 py-3 font-medium", text.strong)}>
                     {studentLabel(transfer.studentId)}

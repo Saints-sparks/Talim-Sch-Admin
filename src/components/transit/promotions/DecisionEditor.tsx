@@ -32,7 +32,7 @@ export function DecisionEditor({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800",
+        "overflow-hidden rounded-xl border border-tl-line-soft",
         compact && "rounded-none border-0"
       )}
     >
@@ -40,10 +40,7 @@ export function DecisionEditor({
         <table className="w-full min-w-[760px] text-sm">
           <thead className={cn("sticky top-0 z-10", surface.tableHead)}>
             <tr
-              className={cn(
-                "border-b border-gray-100 dark:border-slate-800 text-left text-xs uppercase",
-                text.muted
-              )}
+              className={cn("border-b border-tl-line-soft text-left text-xs uppercase", text.muted)}
             >
               <th className="px-4 py-3 font-semibold">Student</th>
               <th className="px-4 py-3 font-semibold">From Class</th>
@@ -52,9 +49,7 @@ export function DecisionEditor({
               <th className="px-4 py-3 text-center font-semibold">Repeat</th>
             </tr>
           </thead>
-          <tbody
-            className={cn("divide-y bg-white dark:bg-slate-900", surface.divide)}
-          >
+          <tbody className={cn("divide-y bg-tl-surface", surface.divide)}>
             {decisions.map((decision) => (
               <tr key={decision.studentId}>
                 <td className={cn("px-4 py-3 font-medium", text.strong)}>{decision.studentName}</td>

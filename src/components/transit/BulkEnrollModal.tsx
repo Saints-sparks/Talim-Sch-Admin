@@ -4,8 +4,16 @@ import React, { useMemo, useState } from "react";
 import { AlertCircle, Check, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
-import { getAcademicYearLabel, type AcademicYearResponse, type TermResponse } from "@/app/services/academic.service";
-import { filterStudents, type ClassOption, type StudentOption } from "@/hooks/transit/useTransitReference";
+import {
+  getAcademicYearLabel,
+  type AcademicYearResponse,
+  type TermResponse,
+} from "@/app/services/academic.service";
+import {
+  filterStudents,
+  type ClassOption,
+  type StudentOption,
+} from "@/hooks/transit/useTransitReference";
 import { useBulkEnroll, type BulkEnrollResult } from "@/hooks/transit/useEnrollments";
 import { toast } from "@/components/CustomToast";
 import { getErrorMessage } from "@/lib/apiError";
@@ -80,7 +88,9 @@ export function BulkEnrollModal({
   function nameOf(studentId: string): string {
     const student = students.find((item) => item._id === studentId);
     if (!student) return studentId;
-    return `${student.firstName} ${student.lastName}`.trim() || student.admissionNumber || studentId;
+    return (
+      `${student.firstName} ${student.lastName}`.trim() || student.admissionNumber || studentId
+    );
   }
 
   async function submit() {
@@ -179,13 +189,13 @@ export function BulkEnrollModal({
                 {filtered.map((student) => (
                   <label
                     key={student._id}
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-tl-bg"
                   >
                     <input
                       type="checkbox"
                       checked={selectedIds.has(student._id)}
                       onChange={() => toggle(student._id)}
-                      className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#003366] focus:ring-[#003366]"
+                      className="w-4 h-4 rounded border-tl-control text-tl-brand focus:ring-tl-link"
                     />
                     <span className={cn("text-sm", text.strong)}>
                       {`${student.firstName} ${student.lastName}`.trim() ||
@@ -246,21 +256,21 @@ export function BulkEnrollModal({
 
       {step === "result" && result && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-xl border border-green-100 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10 p-4">
-            <Check className="w-5 h-5 shrink-0 text-green-600 dark:text-green-400" />
-            <p className="text-sm font-medium text-green-800 dark:text-green-300">
+          <div className="flex items-center gap-3 rounded-xl border border-tl-success/30 bg-tl-success-bg p-4">
+            <Check className="w-5 h-5 shrink-0 text-tl-success" />
+            <p className="text-sm font-medium text-tl-success">
               {result.enrolled} enrolled, {result.skipped} skipped (already enrolled)
               {result.errors.length > 0 ? `, ${result.errors.length} failed` : ""}
             </p>
           </div>
           {result.errors.length > 0 && (
-            <div className="space-y-1.5 rounded-xl border border-red-100 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4">
-              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-red-700 dark:text-red-300">
+            <div className="space-y-1.5 rounded-xl border border-tl-danger/30 bg-tl-danger-bg p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-tl-danger">
                 <AlertCircle className="w-4 h-4" />
                 Failed enrolments
               </p>
               {result.errors.map((message) => (
-                <p key={message} className="text-xs text-red-600 dark:text-red-400">
+                <p key={message} className="text-xs text-tl-danger">
                   {message}
                 </p>
               ))}

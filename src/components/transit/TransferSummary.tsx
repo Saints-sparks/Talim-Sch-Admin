@@ -45,7 +45,13 @@ export function TransferSummary({
             <InfoRow label="Grade Level" value={student.gradeLevel} />
           )}
           {withheld && (
-            <p className={cn("mt-3 flex items-start gap-2 rounded-lg p-3 text-xs", surface.inset, text.muted)}>
+            <p
+              className={cn(
+                "mt-3 flex items-start gap-2 rounded-lg p-3 text-xs",
+                surface.inset,
+                text.muted
+              )}
+            >
               <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               The student&apos;s academic record stays with their current school until it releases
               them.
@@ -66,7 +72,9 @@ export function TransferSummary({
             label="Initiated By"
             value={
               <span className="capitalize">
-                {transfer.initiatedBy === "source" ? "Source school (push)" : "Target school (pull)"}
+                {transfer.initiatedBy === "source"
+                  ? "Source school (push)"
+                  : "Target school (pull)"}
               </span>
             }
           />

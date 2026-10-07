@@ -18,7 +18,7 @@ export function TransferProgress({ status }: { status: TransferStatus }) {
   if (current < 0) return null;
 
   return (
-    <section className={cn("rounded-xl p-5 shadow-sm", surface.card)}>
+    <section className={cn("rounded-[22px] p-5", surface.card)}>
       <h2 className={cn("text-sm font-semibold mb-4", text.strong)}>Progress</h2>
       <ol className="flex items-center gap-2">
         {TRANSFER_STEPS.map((step, index) => {
@@ -31,9 +31,7 @@ export function TransferProgress({ status }: { status: TransferStatus }) {
                   aria-current={active ? "step" : undefined}
                   className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                    done
-                      ? "bg-[#003366] dark:bg-sky-600 text-white"
-                      : "bg-gray-100 dark:bg-slate-800 text-[#929292] dark:text-slate-400"
+                    done ? "bg-tl-brand-fill text-white" : "bg-tl-track text-tl-muted"
                   )}
                 >
                   {done && !active ? <CheckCircle className="w-4 h-4" /> : index + 1}
@@ -51,7 +49,7 @@ export function TransferProgress({ status }: { status: TransferStatus }) {
                 <span
                   className={cn(
                     "h-0.5 flex-1 mb-4 transition-colors",
-                    index < current ? "bg-[#003366] dark:bg-sky-600" : "bg-gray-100 dark:bg-slate-800"
+                    index < current ? "bg-tl-brand-fill" : "bg-tl-track"
                   )}
                 />
               )}
