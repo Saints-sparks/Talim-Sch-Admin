@@ -9,6 +9,7 @@ import {
   Bell,
   BookOpen,
   CalendarOff,
+  LifeBuoy,
   MessageCircle,
   Receipt,
   Settings,
@@ -73,6 +74,11 @@ export const CATEGORY_BADGES: Record<NotificationCategory, CategoryBadge> = {
     bg: "bg-tl-warning-bg",
     text: "text-tl-warning",
   },
+  support: {
+    icon: <LifeBuoy className="h-4 w-4" />,
+    bg: "bg-tl-select",
+    text: "text-tl-brand",
+  },
   other: {
     icon: <Bell className="h-4 w-4" />,
     bg: "bg-tl-track",
@@ -91,6 +97,7 @@ export const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   account: "Account",
   payments: "Payments",
   leave: "Leave",
+  support: "Support",
   other: "Other",
 };
 

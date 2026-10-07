@@ -32,7 +32,7 @@ import {
   type TicketDeskCounts,
   type TicketPriority,
 } from "@/types/tickets";
-import { TicketPriorityPill, TicketStatusPill } from "./TicketPills";
+import { TicketPriorityPill, TicketStatusPill, TicketUnreadPill } from "./TicketPills";
 import {
   TICKET_AREAS,
   TICKET_PRIORITIES,
@@ -352,6 +352,11 @@ export function DeskQueue() {
                             {ticket.reference}
                           </span>
                         </Link>
+                        {ticket.unread > 0 ? (
+                          <span className="mt-1 block">
+                            <TicketUnreadPill unread={ticket.unread} />
+                          </span>
+                        ) : null}
                         {ticket.access === "observer" ? (
                           <span className="mt-1 inline-block text-xs font-bold text-tl-accent">
                             With Talim support · read only

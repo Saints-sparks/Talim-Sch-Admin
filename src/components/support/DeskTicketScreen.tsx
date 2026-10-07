@@ -248,6 +248,9 @@ export function DeskTicketScreen({ ticketId }: DeskTicketScreenProps) {
                 {t.requester.name}{" "}
                 <span className="font-semibold text-tl-muted">· {roleLabel(t.requester.role)}</span>
               </dd>
+              {t.requester.email ? (
+                <dd className="truncate text-xs text-tl-muted">{t.requester.email}</dd>
+              ) : null}
             </div>
           </div>
           <div className="rounded-2xl border border-tl-line-soft bg-tl-subtle p-3">
@@ -404,13 +407,35 @@ export function DeskTicketScreen({ ticketId }: DeskTicketScreenProps) {
               <HistoryRow label="Resolved" at={t.resolvedAt} />
               <HistoryRow label="Closed" at={t.closedAt} />
             </ul>
-            {t.context?.path ? (
-              <p className="mt-4 break-words text-xs text-tl-muted">
-                Raised from <span className="font-mono">{t.context.path}</span>
-                {t.context.appVersion ? ` · app ${t.context.appVersion}` : ""}
-              </p>
-            ) : null}
           </section>
+
+          {t.context && (t.context.path || t.context.appVersion || t.context.userAgent) ? (
+            <section className={card} aria-labelledby="ticket-context-title">
+              <h2 id="ticket-context-title" className={cardTitle}>
+                Where it was raised
+              </h2>
+              <dl className="mt-4 flex flex-col gap-3 text-sm">
+                {t.context.path ? (
+                  <div>
+                    <dt className="text-xs font-bold text-tl-muted">Page</dt>
+                    <dd className="break-words font-mono text-tl-ink">{t.context.path}</dd>
+                  </div>
+                ) : null}
+                {t.context.appVersion ? (
+                  <div>
+                    <dt className="text-xs font-bold text-tl-muted">App version</dt>
+                    <dd className="text-tl-ink">{t.context.appVersion}</dd>
+                  </div>
+                ) : null}
+                {t.context.userAgent ? (
+                  <div>
+                    <dt className="text-xs font-bold text-tl-muted">Browser or device</dt>
+                    <dd className="break-words text-xs text-tl-ink">{t.context.userAgent}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </section>
+          ) : null}
         </aside>
       </div>
 

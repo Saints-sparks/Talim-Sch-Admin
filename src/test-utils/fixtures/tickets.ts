@@ -1,8 +1,8 @@
 /**
- * Support-ticket fixtures (v1.5 §1) for the desk and Help tests, in the
- * shapes of `src/types/tickets.ts` (hand-written from the contract while the
- * backend is built). Each builder returns a fresh object, so a test can
- * change it freely.
+ * Support-ticket fixtures (v1.5 §1) for the desk and Help tests, typed with
+ * the generated shapes (`src/types/tickets.ts` aliases `TicketDto` and the
+ * rest), so a contract change fails the type-check here too. Each builder
+ * returns a fresh object, so a test can change it freely.
  */
 import { ApiError } from "@/lib/apiError";
 import type {
@@ -50,7 +50,7 @@ export function message(overrides: Partial<TicketMessage> = {}): TicketMessage {
 export function deskTicket(overrides: Partial<Ticket> = {}): Ticket {
   return {
     id: "t1",
-    reference: "CMP-10042",
+    reference: "TCKT-20261042",
     desk: "school",
     area: "results",
     subject: "Wrong maths score on Ada's result",
@@ -58,9 +58,11 @@ export function deskTicket(overrides: Partial<Ticket> = {}): Ticket {
     priority: "normal",
     requester: PARENT,
     school: { id: "school-1", name: "Greenfield Academy" },
+    childId: "stu-1",
     child: { id: "stu-1", name: "Ada Student" },
     assignee: null,
     messageCount: 3,
+    unread: 0,
     escalatedFrom: null,
     access: "desk",
     lastActivityAt: "2026-10-05T11:00:00.000Z",
@@ -139,9 +141,11 @@ export function myTicket(overrides: Partial<Ticket> = {}): Ticket {
     priority: "normal",
     requester: ADMIN,
     school: { id: "school-1", name: "Greenfield Academy" },
+    childId: null,
     child: null,
     assignee: { id: "talim-1", name: "Tobi (Talim)" },
     messageCount: 2,
+    unread: 1,
     escalatedFrom: null,
     access: "requester",
     lastActivityAt: "2026-10-04T15:00:00.000Z",
@@ -158,14 +162,14 @@ export function myTicket(overrides: Partial<Ticket> = {}): Ticket {
       }),
       message({
         id: "a2",
-        author: { id: "talim-1", name: "Tobi (Talim)", role: "platform_admin" },
+        author: { id: "talim-1", name: "Tobi (Talim)", role: "admin" },
         body: "Provider delay; it cleared overnight.",
         internal: true,
         createdAt: "2026-10-04T11:00:00.000Z",
       }),
       message({
         id: "a3",
-        author: { id: "talim-1", name: "Tobi (Talim)", role: "platform_admin" },
+        author: { id: "talim-1", name: "Tobi (Talim)", role: "admin" },
         body: "It's confirmed now. Reopen this if it happens again.",
         createdAt: "2026-10-04T15:00:00.000Z",
       }),
@@ -246,7 +250,8 @@ export function deskStaff(): TicketStaffMember[] {
 }
 
 /**
- * The 409 a ticket write answers, with its sub-code in `meta.code`.
+ * The 409 a ticket write answers, with its reason at the top-level `code`
+ * (`meta.code`).
  *
  * @param code - The sub-code.
  * @param message - The server's words.

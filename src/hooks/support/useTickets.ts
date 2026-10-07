@@ -96,15 +96,43 @@ export function useMyTickets(query: MyTicketQuery): UseQueryResult<TicketListRes
 }
 
 /**
- * One ticket with its messages.
+ * A cached list with one ticket's `unread` set to 0.
+ *
+ * @param data - The cached page, if any.
+ * @param ticketId - The ticket just opened.
+ * @returns A new page when that ticket had unread messages, else the same data.
+ */
+export function clearUnreadInList(
+  data: TicketListResponse | undefined,
+  ticketId: string
+): TicketListResponse | undefined {
+  if (!data?.data?.some((row) => row.id === ticketId && row.unread > 0)) return data;
+  return { ...data, data: data.data.map((row) => (row.id === ticketId ? { ...row, unread: 0 } : row)) };
+}
+
+/**
+ * One ticket with its messages. Opening it marks it read on the server for
+ * the caller's side (the desk, or the requester), so its row in every cached
+ * queue and "My tickets" list loses its "new" badge at once.
  *
  * @param id - The ticket id ("" holds the request).
  * @returns The query.
  */
 export function useTicket(id: string): UseQueryResult<Ticket> {
+  const client = useQueryClient();
   return useQuery({
     queryKey: queryKeys.tickets.detail(id),
-    queryFn: () => ticketService.get(id),
+    queryFn: async () => {
+      const ticket = await ticketService.get(id);
+      client.setQueriesData<TicketListResponse>(
+        {
+          queryKey: queryKeys.tickets.all,
+          predicate: (query) => query.queryKey[2] === "desk" || query.queryKey[2] === "mine",
+        },
+        (data) => clearUnreadInList(data, ticket.id)
+      );
+      return ticket;
+    },
     enabled: Boolean(id),
     staleTime: staleTimes.live,
   });

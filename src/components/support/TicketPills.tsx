@@ -3,7 +3,7 @@
 import React from "react";
 import { Pill } from "@/components/tl/bits";
 import type { TicketPriority, TicketStatus } from "@/types/tickets";
-import { priorityMeta, statusLabel, statusTone, type TicketViewer } from "./ticket.presentation";
+import { priorityMeta, statusLabel, statusTone, unreadLabel, type TicketViewer } from "./ticket.presentation";
 
 /**
  * A ticket's status as a pill, in the reader's words ("Waiting on you" for
@@ -38,4 +38,16 @@ export function TicketStatusPill({
 export function TicketPriorityPill({ priority }: { priority: TicketPriority }) {
   const { label, tone } = priorityMeta(priority);
   return <Pill tone={tone}>{label} priority</Pill>;
+}
+
+/**
+ * A ticket's "N new" badge, or nothing when it has no unread messages.
+ *
+ * @param props - The ticket's unread count.
+ * @param props.unread - Messages the viewer's side has not read.
+ * @returns The pill, or null.
+ */
+export function TicketUnreadPill({ unread }: { unread: number }) {
+  const label = unreadLabel({ unread });
+  return label ? <Pill tone="accent">{label}</Pill> : null;
 }

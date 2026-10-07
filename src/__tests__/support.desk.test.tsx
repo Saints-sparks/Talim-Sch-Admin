@@ -28,12 +28,16 @@ import { deskQueryString } from "@/app/services/ticket.service";
 import {
   acceptAttachments,
   canReopen,
+  roleLabel,
   statusLabel,
   statusesForTab,
   ticketConflictCode,
+  ticketContext,
   ticketErrorMessage,
+  unreadLabel,
   visibleMessages,
 } from "@/components/support/ticket.presentation";
+import { clearUnreadInList } from "@/hooks/support/useTickets";
 import {
   DESK_SUB_ADMIN,
   deskCounts,
@@ -193,7 +197,7 @@ describe("the desk queue", () => {
     answerGets({}, { desk: [deskTicket(), escalatedTicket()] });
     render(<DeskQueue />, { user: admin });
     expect(screen.getByRole("status")).toHaveTextContent("Loading tickets");
-    const row = (await screen.findByText("CMP-10042")).closest("tr")!;
+    const row = (await screen.findByText("TCKT-20261042")).closest("tr")!;
     expect(row).toHaveTextContent("Wrong maths score on Ada's result");
     expect(row).toHaveTextContent("Paul Parent");
     expect(row).toHaveTextContent("for Ada Student");
@@ -214,7 +218,7 @@ describe("the desk queue", () => {
     const user = userEvent.setup();
     answerGets({}, { desk: [deskTicket()] });
     render(<DeskQueue />, { user: admin });
-    await screen.findByText("CMP-10042");
+    await screen.findByText("TCKT-20261042");
     const lastDeskGet = () =>
       [...mockGet.mock.calls]
         .reverse()
@@ -229,8 +233,17 @@ describe("the desk queue", () => {
     await waitFor(() => expect(lastDeskGet()).toContain("area=fees"));
     await user.click(screen.getByRole("button", { name: /Unassigned \(2\)/ }));
     await waitFor(() => expect(lastDeskGet()).toContain("assigneeId=none"));
-    await user.type(screen.getByRole("searchbox", { name: "Search tickets" }), "CMP-10042");
-    await waitFor(() => expect(lastDeskGet()).toContain("q=CMP-10042"), { timeout: 2000 });
+    await user.type(screen.getByRole("searchbox", { name: "Search tickets" }), "TCKT-20261042");
+    await waitFor(() => expect(lastDeskGet()).toContain("q=TCKT-20261042"), { timeout: 2000 });
+  });
+
+  it("badges the requester's unread messages, never an observer's", async () => {
+    answerGets({}, { desk: [deskTicket({ unread: 2 }), escalatedTicket()] });
+    render(<DeskQueue />, { user: admin });
+    const row = (await screen.findByText("TCKT-20261042")).closest("tr")!;
+    expect(row).toHaveTextContent("2 new");
+    const observed = screen.getByText("TS-7KQ2M").closest("tr")!;
+    expect(observed).not.toHaveTextContent(/\d new/);
   });
 
   it("says when nothing waits for the desk", async () => {
@@ -249,6 +262,23 @@ describe("the desk queue", () => {
 });
 
 // ─── Internal notes ─────────────────────────────────────────────────────────
+
+describe("the requester's side of a desk ticket", () => {
+  it("shows the child, the requester's email and where the ticket was raised", async () => {
+    answerGets({
+      t1: deskTicket({
+        requester: { id: "parent-1", name: "Paul Parent", role: "parent", email: "paul@family.test" },
+      }),
+    });
+    render(<DeskTicketScreen ticketId="t1" />, { user: admin });
+    expect(await screen.findByText("paul@family.test")).toBeTruthy();
+    expect(screen.getByText("Ada Student")).toBeTruthy();
+    const where = screen.getByRole("region", { name: "Where it was raised" });
+    expect(where).toHaveTextContent("Page/results");
+    expect(where).toHaveTextContent("App version1.5.0");
+    expect(where).toHaveTextContent("Browser or deviceParents web");
+  });
+});
 
 describe("internal notes", () => {
   it("are marked at the desk, distinct from replies", async () => {
@@ -549,6 +579,7 @@ describe("Contact Talim support (Help)", () => {
         area: "payments",
         subject: "Receipts missing",
         body: "Receipts for last week's payments are missing.",
+        context: { path: "/", appVersion: "1.5.0", userAgent: navigator.userAgent },
       })
     );
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/help/tickets/t10"));
@@ -616,7 +647,7 @@ describe("deep links", () => {
   it("a support notification opens the ticket on the desk for desk staff and in Help for others", () => {
     const notification = {
       id: "n1",
-      title: "New reply on CMP-10042",
+      title: "New reply on TCKT-20261042",
       message: "Paul replied.",
       source: "school",
       sourceLabel: "School",
@@ -694,6 +725,29 @@ describe("rules", () => {
       accepted: [],
       problem: "Files over 25 MB can't be attached.",
     });
+  });
+
+  it("unread: an 'N new' badge, cleared in a cached list once the ticket is opened", () => {
+    expect(unreadLabel({ unread: 0 })).toBeNull();
+    expect(unreadLabel({ unread: 3 })).toBe("3 new");
+    const list = ticketPage([deskTicket({ unread: 2 }), escalatedTicket()]);
+    const read = clearUnreadInList(list, "t1");
+    expect(read?.data.map((row) => row.unread)).toEqual([0, 0]);
+    expect(clearUnreadInList(read, "t1")).toBe(read);
+  });
+
+  it("names Talim's staff by the API's admin role", () => {
+    expect(roleLabel("admin")).toBe("Talim support");
+    expect(roleLabel("school_sub_admin")).toBe("Sub-admin");
+  });
+
+  it("context: the page, the app's version and the browser, cut to the API's lengths", () => {
+    expect(ticketContext("1.5.0", { path: "/help", userAgent: "u".repeat(600) })).toEqual({
+      path: "/help",
+      appVersion: "1.5.0",
+      userAgent: "u".repeat(500),
+    });
+    expect(ticketContext("1.5.0", { path: null, userAgent: null })).toEqual({ appVersion: "1.5.0" });
   });
 
   it("assignee options put the viewer first and list each person once", () => {

@@ -20,13 +20,14 @@ import { useCreateTicket, useMyTickets } from "@/hooks/support/useTickets";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { getErrorMessage } from "@/lib/apiError";
-import { versionLabel } from "@/lib/appVersion";
+import { APP_VERSION, versionLabel } from "@/lib/appVersion";
 import { NewTicketSheet, type NewTicketValues } from "./NewTicketSheet";
-import { TicketStatusPill } from "./TicketPills";
+import { TicketStatusPill, TicketUnreadPill } from "./TicketPills";
 import {
   SUPPORT_DESK_HREF,
   areaLabel,
   statusesForMineTab,
+  ticketContext,
   ticketErrorMessage,
   ticketHref,
   timeAgo,
@@ -80,6 +81,7 @@ export function HelpScreen() {
         desk: "talim",
         ...values,
         attachments: values.attachments.length ? values.attachments : undefined,
+        context: ticketContext(APP_VERSION),
       });
       toast.success(`Ticket ${ticket.reference} sent to Talim support`);
       setComposing(false);
@@ -167,6 +169,7 @@ export function HelpScreen() {
                         {ticket.messageCount === 1 ? "message" : "messages"}
                       </div>
                     </div>
+                    <TicketUnreadPill unread={ticket.unread} />
                     <TicketStatusPill status={ticket.status} viewer="requester" />
                     <time
                       dateTime={ticket.lastActivityAt}

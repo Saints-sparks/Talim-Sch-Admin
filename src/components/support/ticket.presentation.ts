@@ -5,10 +5,12 @@
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import type { Tone } from "@/components/tl/styles";
 import {
+  TICKET_CONTEXT_LIMITS,
   TICKET_LIMITS,
   type TicketArea,
   type TicketAttachment,
   type TicketConflictCode,
+  type TicketContextInput,
   type TicketMessage,
   type TicketPriority,
   type TicketStatus,
@@ -131,8 +133,7 @@ export function roleLabel(role: string): string {
     teacher: "Teacher",
     school_admin: "School admin",
     school_sub_admin: "Sub-admin",
-    platform_admin: "Talim support",
-    super_admin: "Talim support",
+    admin: "Talim support",
   };
   return (
     labels[role] ?? (role ? role.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "")
@@ -419,6 +420,47 @@ export function canReopen(
 ): boolean {
   if (ticket.status !== "resolved" || !ticket.reopenableUntil) return false;
   return new Date(ticket.reopenableUntil).getTime() > now;
+}
+
+/**
+ * The "N new" badge of a ticket row: messages from the other side since the
+ * viewer's side last opened or acted on it (`unread`; for the desk, the
+ * requester's messages; always 0 for observers). Opening the ticket marks it
+ * read on the server.
+ *
+ * @param ticket - The ticket's `unread`.
+ * @returns e.g. "2 new", or null when there is nothing new.
+ */
+export function unreadLabel(ticket: { unread: number }): string | null {
+  const count = Number(ticket.unread) || 0;
+  return count > 0 ? `${count.toLocaleString("en-GB")} new` : null;
+}
+
+/**
+ * Where the admin is, for Talim's desk (`context` on `POST /tickets`): the
+ * page, this app's version and the browser, each cut to the length the API takes.
+ *
+ * @param appVersion - This app's version.
+ * @param where - The page and user agent; read from `window` when left out.
+ * @param where.path - The page, e.g. `/help`.
+ * @param where.userAgent - The browser's user agent.
+ * @returns The context, with only the values that are known.
+ */
+export function ticketContext(
+  appVersion: string,
+  where?: { path?: string | null; userAgent?: string | null }
+): TicketContextInput {
+  const path = where
+    ? where.path
+    : typeof window === "undefined"
+      ? null
+      : `${window.location.pathname}${window.location.search}`;
+  const userAgent = where ? where.userAgent : typeof navigator === "undefined" ? null : navigator.userAgent;
+  const context: TicketContextInput = {};
+  if (path) context.path = path.slice(0, TICKET_CONTEXT_LIMITS.path);
+  if (appVersion) context.appVersion = appVersion.slice(0, TICKET_CONTEXT_LIMITS.appVersion);
+  if (userAgent) context.userAgent = userAgent.slice(0, TICKET_CONTEXT_LIMITS.userAgent);
+  return context;
 }
 
 /** Where a ticket lives in this app: the desk for desk staff, Help for the requester. */
