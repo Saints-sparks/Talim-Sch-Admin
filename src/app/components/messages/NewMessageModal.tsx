@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { Sheet, Tabs, focusRing, type TabOption } from "@/components/tl";
 import { teacherService } from "@/app/services/teacher.service";
 import { parentService } from "@/app/services/parent.service";
 import { useChatsContext } from "@/context/ChatsContext";
 import { ChatRoomType, type ChatRoom } from "@/types/chat.types";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { logger } from "@/lib/logger";
+import { PersonAvatar, TextSearch } from "./parts";
 
 /** One person the admin can message. */
 interface Person {
@@ -21,6 +21,13 @@ interface Person {
 
 type Tab = "teachers" | "parents";
 
+/** The two lists, as tabs. */
+const TAB_OPTIONS: readonly TabOption<Tab>[] = [
+  { value: "teachers", label: "Teachers" },
+  { value: "parents", label: "Parents" },
+];
+
+/** Props for {@link NewMessageModal}. */
 interface NewMessageModalProps {
   open: boolean;
   onClose: () => void;
@@ -28,7 +35,16 @@ interface NewMessageModalProps {
   onStarted: (room: ChatRoom) => void;
 }
 
-/** Picks a teacher or parent and opens a direct message with them. */
+/**
+ * Picks a teacher or parent and opens a direct message with them, in the
+ * design system's sheet (Escape, the backdrop and Close dismiss it).
+ *
+ * @param props - See {@link NewMessageModalProps}.
+ * @param props.open - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.onStarted - Opens the chat once it exists.
+ * @returns The sheet.
+ */
 export default function NewMessageModal({ open, onClose, onStarted }: NewMessageModalProps) {
   const { createChatRoom, currentUserId } = useChatsContext();
   const [tab, setTab] = useState<Tab>("teachers");
@@ -37,6 +53,7 @@ export default function NewMessageModal({ open, onClose, onStarted }: NewMessage
   const [term, setTerm] = useState("");
   const [startingId, setStartingId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const tabsId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -78,13 +95,6 @@ export default function NewMessageModal({ open, onClose, onStarted }: NewMessage
     };
   }, [open, people]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
   const visible = useMemo(() => {
     const list = people?.[tab] ?? [];
     const needle = term.trim().toLowerCase();
@@ -110,91 +120,64 @@ export default function NewMessageModal({ open, onClose, onStarted }: NewMessage
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()} title="New message" subtitle="Chat with a teacher or parent.">
+      <Tabs
+        options={TAB_OPTIONS}
+        value={tab}
+        onChange={setTab}
+        label="People to message"
+        variant="segmented"
+        idPrefix={tabsId}
+      />
+
+      <TextSearch
+        inputRef={searchRef}
+        value={term}
+        onChange={setTerm}
+        label={`Search ${tab}`}
+        placeholder={`Search ${tab}`}
+        autoFocusInSheet
+      />
+
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="New message"
-        className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        role="tabpanel"
+        id={`${tabsId}-panel`}
+        aria-labelledby={`${tabsId}-tab-${tab}`}
+        className="-mx-2 max-h-[45vh] min-h-[12rem] overflow-y-auto"
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <h2 className="text-base font-semibold text-gray-900">New message</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1 hover:bg-gray-100">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex gap-1 px-4 pt-3" role="tablist">
-          {(["teachers", "parents"] as const).map((key) => (
+        {loadError ? (
+          <p className="px-3 py-6 text-center text-sm font-bold text-tl-danger" role="alert">
+            {loadError}
+          </p>
+        ) : !people ? (
+          <div className="flex justify-center py-10" role="status" aria-label={`Loading ${tab}`}>
+            <Loader2 className="h-6 w-6 animate-spin text-tl-brand" aria-hidden />
+          </div>
+        ) : visible.length === 0 ? (
+          <p className="px-3 py-6 text-center text-sm text-tl-muted">
+            {term ? `No ${tab} match "${term}".` : `No ${tab} yet.`}
+          </p>
+        ) : (
+          visible.map((person) => (
             <button
-              key={key}
+              key={person.userId}
               type="button"
-              role="tab"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={`rounded-full px-3 py-1 text-sm font-medium capitalize ${
-                tab === key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              disabled={Boolean(startingId)}
+              onClick={() => void start(person)}
+              className={`flex min-h-[56px] w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors hover:bg-tl-subtle disabled:opacity-60 ${focusRing}`}
             >
-              {key}
+              <PersonAvatar id={person.userId} name={person.name} src={person.avatar ?? null} size={36} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-tl-ink">{person.name}</span>
+                <span className="block truncate text-xs text-tl-muted">{person.detail}</span>
+              </span>
+              {startingId === person.userId && (
+                <Loader2 className="h-4 w-4 animate-spin text-tl-brand" aria-hidden />
+              )}
             </button>
-          ))}
-        </div>
-
-        <div className="relative px-4 py-3">
-          <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            ref={searchRef}
-            value={term}
-            onChange={(event) => setTerm(event.target.value)}
-            placeholder={`Search ${tab}`}
-            aria-label={`Search ${tab}`}
-            className="w-full rounded-full border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:bg-white"
-          />
-        </div>
-
-        <div className="min-h-[12rem] flex-1 overflow-y-auto px-2 pb-3">
-          {loadError ? (
-            <p className="px-3 py-6 text-center text-sm text-red-600">{loadError}</p>
-          ) : !people ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-            </div>
-          ) : visible.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-gray-500">
-              {term ? `No ${tab} match "${term}".` : `No ${tab} yet.`}
-            </p>
-          ) : (
-            visible.map((person) => (
-              <button
-                key={person.userId}
-                type="button"
-                disabled={Boolean(startingId)}
-                onClick={() => void start(person)}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none disabled:opacity-60"
-              >
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={person.avatar} />
-                  <AvatarFallback
-                    className="text-xs font-medium text-white"
-                    style={{ backgroundColor: generateColorFromString(person.name) }}
-                  >
-                    {getUserInitials(person.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-gray-900">{person.name}</span>
-                  <span className="block truncate text-xs text-gray-500">{person.detail}</span>
-                </span>
-                {startingId === person.userId && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
-              </button>
-            ))
-          )}
-        </div>
+          ))
+        )}
       </div>
-    </div>
+    </Sheet>
   );
 }

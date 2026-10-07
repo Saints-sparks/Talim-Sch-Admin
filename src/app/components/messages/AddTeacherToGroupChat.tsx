@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { X, Search, Loader2, Check, UserPlus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { teacherService } from "@/app/services/teacher.service";
-import { generateColorFromString } from "@/lib/colorUtils";
 import { logger } from "@/lib/logger";
 import { useChatsContext } from "@/context/ChatsContext";
+import { MemberPickerDialog } from "./MemberPickerDialog";
 
 // Define the interface to match the API response (flat structure)
 interface TeacherWithUser {
@@ -26,6 +23,7 @@ interface TeacherWithUser {
   isActive: boolean;
 }
 
+/** Props for {@link AddTeacherToGroupChatModal}. */
 interface AddTeacherToGroupChatModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,6 +31,17 @@ interface AddTeacherToGroupChatModalProps {
   onSuccess?: () => void;
 }
 
+/**
+ * Adds teachers to a group: the school's teachers not yet in it, searchable,
+ * picked one by one or all at once.
+ *
+ * @param props - See {@link AddTeacherToGroupChatModalProps}.
+ * @param props.isOpen - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.chatRoomId - The group.
+ * @param props.onSuccess - Called after the teachers are added.
+ * @returns The dialog, or null while closed.
+ */
 export default function AddTeacherToGroupChatModal({
   isOpen,
   onClose,
@@ -195,149 +204,46 @@ export default function AddTeacherToGroupChatModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-full mx-4 max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <UserPlus size={20} />
-            Add Teachers to Group
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <Input
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
-              placeholder="Search teachers by name, email, or role..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Select All / Clear */}
-        {filteredTeachers.length > 0 && (
-          <div className="px-4 py-2 bg-gray-50 flex justify-between items-center">
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-purple-600 hover:text-purple-800 font-medium"
-            >
-              {selectedTeachers.size === filteredTeachers.length ? "Clear All" : "Select All"}
-            </button>
-            <span className="text-sm text-gray-500">{selectedTeachers.size} selected</span>
-          </div>
-        )}
-
-        {/* Teachers List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-              <Loader2 className="w-8 h-8 animate-spin mb-2" />
-              <p className="text-sm">Loading teachers...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-500 text-sm mb-3">{error}</p>
-              <Button variant="outline" size="sm" onClick={fetchTeachers} className="text-xs">
-                Try Again
-              </Button>
-            </div>
-          ) : filteredTeachers.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 text-sm">
-                {searchTerm
-                  ? "No teachers found matching your search"
-                  : alreadyInGroup > 0
-                    ? "Everyone is already in this group"
-                    : "No teachers available"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredTeachers.map((teacher) => {
-                const isSelected = selectedTeachers.has(teacher._id);
-                const fullName = getTeacherName(teacher);
-                const email = getTeacherEmail(teacher);
-                const role = getTeacherRole(teacher);
-                const initials = getTeacherInitials(teacher);
-                const bgColor = generateColorFromString(teacher._id);
-                const classesCount = teacher.assignedClasses?.length || 0;
-                const coursesCount = teacher.assignedCourses?.length || 0;
-
-                return (
-                  <div
-                    key={teacher._id}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
-                      isSelected
-                        ? "bg-purple-50 border border-purple-200"
-                        : "hover:bg-gray-50 border border-transparent"
-                    }`}
-                    onClick={() => toggleTeacherSelection(teacher._id)}
-                  >
-                    <div className="relative">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                        style={{ backgroundColor: bgColor }}
-                      >
-                        {initials}
-                      </div>
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm">{fullName}</p>
-                      <p className="text-xs text-purple-600 font-medium">{role}</p>
-                      <p className="text-xs text-gray-500 truncate">{email}</p>
-                      {(classesCount > 0 || coursesCount > 0) && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          {classesCount > 0 &&
-                            `${classesCount} class${classesCount !== 1 ? "es" : ""}`}
-                          {classesCount > 0 && coursesCount > 0 && " • "}
-                          {coursesCount > 0 &&
-                            `${coursesCount} course${coursesCount !== 1 ? "s" : ""}`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} className="text-gray-600" disabled={isAdding}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAddTeachers}
-            disabled={selectedTeachers.size === 0 || isAdding}
-            className="bg-purple-600 hover:bg-purple-700 text-white min-w-[120px]"
-          >
-            {isAdding ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Adding...
-              </>
-            ) : (
-              `Add ${selectedTeachers.size} Teacher${selectedTeachers.size !== 1 ? "s" : ""}`
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <MemberPickerDialog
+      title="Add Teachers to Group"
+      searchLabel="Search teachers"
+      searchPlaceholder="Search teachers by name, email, or role..."
+      searchTerm={searchTerm}
+      onSearchChange={setSearchTerm}
+      people={filteredTeachers.map((teacher) => {
+        const classesCount = teacher.assignedClasses?.length || 0;
+        const coursesCount = teacher.assignedCourses?.length || 0;
+        const load = [
+          classesCount > 0 ? `${classesCount} class${classesCount !== 1 ? "es" : ""}` : "",
+          coursesCount > 0 ? `${coursesCount} course${coursesCount !== 1 ? "s" : ""}` : "",
+        ]
+          .filter(Boolean)
+          .join(" • ");
+        return {
+          id: teacher._id,
+          name: getTeacherName(teacher),
+          initials: getTeacherInitials(teacher),
+          details: [getTeacherRole(teacher), getTeacherEmail(teacher), ...(load ? [load] : [])],
+        };
+      })}
+      selected={selectedTeachers}
+      onToggle={toggleTeacherSelection}
+      onSelectAll={handleSelectAll}
+      isLoading={isLoading}
+      loadingLabel="Loading teachers..."
+      error={error}
+      onRetry={fetchTeachers}
+      emptyText={
+        searchTerm
+          ? "No teachers found matching your search"
+          : alreadyInGroup > 0
+            ? "Everyone is already in this group"
+            : "No teachers available"
+      }
+      isAdding={isAdding}
+      addLabel={`Add ${selectedTeachers.size} Teacher${selectedTeachers.size !== 1 ? "s" : ""}`}
+      onAdd={handleAddTeachers}
+      onClose={onClose}
+    />
   );
 }

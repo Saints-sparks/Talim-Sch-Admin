@@ -1,19 +1,10 @@
 "use client";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  ArrowLeft,
-  MoreVertical,
-  Info,
-  UserPlus,
-  Users,
-  Building2,
-} from "lucide-react";
+import { ArrowLeft, MoreVertical, Info, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import GroupInfoModal from "./GroupInfoModal";
 import GroupMembersModal from "./GroupMembersModal";
 import AddParentToGroupChatModal from "./AddParentToGroupChat";
 import AddTeacherToGroupChatModal from "./AddTeacherToGroupChat";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
 import { useAuth } from "@/context/AuthContext";
 import { useChatsContext } from "@/context/ChatsContext";
 import { canManageRoom, isOfficeRoom } from "@/lib/chat/rooms";
@@ -25,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { focusRing, iconButton, rowButton } from "@/components/tl";
+import { OfficeAvatar, PersonAvatar } from "./parts";
 
 // Define participant type
 // Utility function to process participants data (handle Mongoose documents)
@@ -46,7 +39,13 @@ interface RawParticipantFields {
 }
 type RawParticipant = RawParticipantFields & { _doc?: RawParticipantFields };
 
-function processParticipants(participants: RawParticipant[], currentUserId?: string): ChatParticipant[] {
+/**
+ * Clean member records for the members dialog, whatever shape they arrived in.
+ *
+ * @param participants - The room's members as sent.
+ * @returns One record per member that has an id.
+ */
+function processParticipants(participants: RawParticipant[]): ChatParticipant[] {
   return participants
     .map((p: RawParticipant) => {
       // Handle Mongoose documents - data might be in _doc property
@@ -75,16 +74,18 @@ function processParticipants(participants: RawParticipant[], currentUserId?: str
     .filter((p: ChatParticipant) => p.id);
 }
 
+/** Props for {@link ChatHeader}. */
 interface ChatHeaderProps {
+  /** The room's or the other person's photo URL; "" for none. */
   avatar: string;
   name: string;
   status?: string;
   subtext?: string | string[]; // Allow both string and array for group members
   participants?: RawParticipant[]; // Real participants data
-  currentUserId?: string; // Current user ID to filter out
+  currentUserId?: string; // The viewer, for the members dialog and the group controls
   onBack?: () => void; // Navigation back to chat list
-  showBackButton?: boolean; // Whether to show back button (mobile)
-  initials?: string; // Add initials prop
+  showBackButton?: boolean; // Whether to show back button (below 980px)
+  initials?: string; // The avatar's initials, when not the name's own
   isGroup?: boolean; // Whether this is a group chat
   roomType?: string; // ChatRoomType of the open room
   chatRoomId?: string; // Chat room ID for adding participants
@@ -92,11 +93,25 @@ interface ChatHeaderProps {
 }
 
 /**
- * A thread's header: back button (mobile), avatar, name, status and subtext,
- * and the group menu. Office threads (Round 4 §28) get the building icon and
- * no Add control, since the server keeps their members.
+ * A thread's header row: Back (below 980px), the avatar, the name button
+ * that opens the conversation info (with the status and subtext), and the
+ * group actions as round icon buttons. Office threads (Round 4 §28) get the
+ * building avatar and no Add control, since the server keeps their members.
  *
  * @param props - The room's display details; see {@link ChatHeaderProps}.
+ * @param props.avatar - Photo URL.
+ * @param props.name - The room's or the person's name.
+ * @param props.status - The line under the name.
+ * @param props.subtext - The second line (wider screens).
+ * @param props.participants - The members.
+ * @param props.currentUserId - The viewer.
+ * @param props.onBack - Back to the list.
+ * @param props.showBackButton - Whether Back is offered.
+ * @param props.initials - The avatar's initials.
+ * @param props.isGroup - Whether it is a group.
+ * @param props.roomType - The room type.
+ * @param props.chatRoomId - The room id.
+ * @param props.onAddParticipants - Called after members are added.
  * @returns The header, with its info, members and add-member dialogs.
  */
 export default function ChatHeader({
@@ -132,13 +147,10 @@ export default function ChatHeader({
     });
 
   // Process participants to get clean data
-  const processedParticipants = processParticipants(participants, currentUserId);
+  const processedParticipants = processParticipants(participants);
 
   // Format subtext to ensure it's a string
   const displaySubtext = Array.isArray(subtext) ? subtext.join(', ') : subtext;
-
-  // Get display initials
-  const displayInitials = initials || getUserInitials(name);
 
   // Handle successful participant addition
   const handleAddParticipantsSuccess = () => {
@@ -146,191 +158,154 @@ export default function ChatHeader({
   };
 
   return (
-    <div className="flex w-full items-center bg-white border-b border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
-      <div className="flex w-full items-center gap-2 sm:gap-3">
-        {/* Back Button - Mobile Only */}
-        {showBackButton && onBack && (
-          <button
-            onClick={onBack}
-            className="flex lg:hidden items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Back to chats"
-          >
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
-        )}
-
-        {/* Avatar */}
-        <div className="relative">
-          {isOffice ? (
-            <div
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-              aria-hidden
-            >
-              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-          ) : (
-            <Avatar className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0">
-              <AvatarImage src={avatar} />
-              <AvatarFallback
-                className="text-white font-medium text-sm"
-                style={{ backgroundColor: generateColorFromString(name) }}
-              >
-                {displayInitials}
-              </AvatarFallback>
-            </Avatar>
-          )}
-          {/* Online Indicator */}
-          {(status === "Online" || status === "Active Now") && (
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full"></span>
-          )}
-        </div>
-
-        {/* Chat info: a button, so the keyboard and screen readers can open it too. */}
+    <div className="flex w-full items-center gap-2.5 border-b border-tl-line-soft bg-tl-surface px-3 py-3 sm:gap-3 sm:px-[18px]">
+      {/* Back Button - one pane at a time below 980px */}
+      {showBackButton && onBack && (
         <button
           type="button"
-          className="flex-1 min-w-0 cursor-pointer rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          onClick={() => setIsModalOpen(true)}
-          aria-haspopup="dialog"
-          aria-label={`${name}: conversation info`}
+          onClick={onBack}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-tl-line text-tl-brand transition-colors hover:bg-tl-bg min-[980px]:hidden ${focusRing}`}
+          aria-label="Back to chats"
         >
-          <span className="flex items-center gap-1">
-            <span className="block font-medium text-sm sm:text-base text-gray-900 truncate">
-              {name}
-            </span>
-            <Info size={14} className="text-gray-400 flex-shrink-0 hidden sm:block" aria-hidden />
-          </span>
-          {status && (
-            <span className="block text-xs text-gray-500 truncate">{status}</span>
-          )}
-          {displaySubtext && (
-            <span className="text-xs text-[#666666] dark:text-slate-400 truncate hidden sm:block">{displaySubtext}</span>
-          )}
+          <ArrowLeft className="h-5 w-5" aria-hidden />
         </button>
+      )}
 
-        {/* Action Icons */}
-        <div className="flex items-center gap-1 sm:gap-3">
-          <>
-              {/* Add Participants Button - Show directly for group chats on desktop */}
-              {canManage && chatRoomId && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white rounded-full transition-colors text-sm font-medium"
-                      title="Add Participants to Group"
-                    >
-                      <UserPlus size={16} />
-                      <span>Add</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      onClick={() => setIsAddParentModalOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      <span>Add Parents</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setIsAddTeacherModalOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      <span>Add Teachers</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {/* More options: group members and adding people (groups only). */}
-              {isGroup && chatRoomId && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="More options"
-                    className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <MoreVertical size={18} className="text-gray-600" aria-hidden />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {isGroup && chatRoomId && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => setIsMembersModalOpen(true)}
-                        className="cursor-pointer"
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>View Members</span>
-                      </DropdownMenuItem>
-                      {canManage && (
-                        <>
-                          <DropdownMenuItem
-                            onClick={() => setIsAddParentModalOpen(true)}
-                            className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
-                          >
-                            <Users className="mr-2 h-4 w-4" />
-                            <span>Add Parents</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setIsAddTeacherModalOpen(true)}
-                            className="cursor-pointer sm:hidden" // Hide on desktop since we have the button
-                          >
-                            <Users className="mr-2 h-4 w-4" />
-                            <span>Add Teachers</span>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              )}
-          </>
-        </div>
-
-        {/* Group Info Modal */}
-        <GroupInfoModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          avatar={avatar}
+      {/* Avatar */}
+      {isOffice ? (
+        <OfficeAvatar size={42} />
+      ) : (
+        <PersonAvatar
+          id={chatRoomId || name}
           name={name}
-          chatRoomId={chatRoomId}
-          roomType={roomType}
+          initials={initials}
+          src={avatar || null}
+          size={42}
+          online={status === "Online" || status === "Active Now" ? true : undefined}
         />
+      )}
 
-        {isGroup && (
-          <GroupMembersModal
-            isOpen={isMembersModalOpen}
-            onClose={() => setIsMembersModalOpen(false)}
-            groupName={name}
-            participants={processedParticipants}
-            currentUserId={currentUserId}
-            chatRoomId={chatRoomId}
-            canManage={canManage}
-          />
+      {/* Chat info: a button, so the keyboard and screen readers can open it too. */}
+      <button
+        type="button"
+        className={`min-h-[44px] min-w-0 flex-1 cursor-pointer rounded-xl px-1 text-left ${focusRing}`}
+        onClick={() => setIsModalOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={`${name}: conversation info`}
+      >
+        <span className="flex items-center gap-1.5">
+          <span className="block truncate text-base font-extrabold text-tl-ink">{name}</span>
+          <Info className="hidden h-3.5 w-3.5 shrink-0 text-tl-faint sm:block" aria-hidden />
+        </span>
+        {status && <span className="block truncate text-[13px] text-tl-muted">{status}</span>}
+        {displaySubtext && (
+          <span className="hidden truncate text-xs text-tl-faint sm:block">{displaySubtext}</span>
+        )}
+      </button>
+
+      {/* Action Icons */}
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        {/* Add Participants - shown directly for group managers on wider screens */}
+        {canManage && chatRoomId && (
+          <span className="hidden sm:inline-flex">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className={rowButton} title="Add Participants to Group">
+                  <UserPlus className="h-4 w-4" aria-hidden />
+                  <span>Add</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsAddParentModalOpen(true)} className="cursor-pointer">
+                  <Users className="h-4 w-4" aria-hidden />
+                  <span>Add Parents</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsAddTeacherModalOpen(true)} className="cursor-pointer">
+                  <Users className="h-4 w-4" aria-hidden />
+                  <span>Add Teachers</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </span>
         )}
 
-        {/* Add Parent Modal */}
-        {canManage && chatRoomId && (
-          <AddParentToGroupChatModal
-            isOpen={isAddParentModalOpen}
-            onClose={() => setIsAddParentModalOpen(false)}
-            chatRoomId={chatRoomId}
-            onSuccess={handleAddParticipantsSuccess}
-          />
-        )}
-
-        {/* Add Teacher Modal */}
-        {canManage && chatRoomId && (
-          <AddTeacherToGroupChatModal
-            isOpen={isAddTeacherModalOpen}
-            onClose={() => setIsAddTeacherModalOpen(false)}
-            chatRoomId={chatRoomId}
-            onSuccess={handleAddParticipantsSuccess}
-          />
+        {/* More options: group members and adding people (groups only). */}
+        {isGroup && chatRoomId && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="More options" className={iconButton}>
+                <MoreVertical className="h-[18px] w-[18px]" aria-hidden />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setIsMembersModalOpen(true)} className="cursor-pointer">
+                <Users className="h-4 w-4" aria-hidden />
+                <span>View Members</span>
+              </DropdownMenuItem>
+              {canManage && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setIsAddParentModalOpen(true)}
+                    className="cursor-pointer sm:hidden" // Hidden on wider screens, which have the Add button
+                  >
+                    <Users className="h-4 w-4" aria-hidden />
+                    <span>Add Parents</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setIsAddTeacherModalOpen(true)}
+                    className="cursor-pointer sm:hidden" // Hidden on wider screens, which have the Add button
+                  >
+                    <Users className="h-4 w-4" aria-hidden />
+                    <span>Add Teachers</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
+
+      {/* Group Info Modal */}
+      <GroupInfoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        avatar={avatar}
+        name={name}
+        chatRoomId={chatRoomId}
+        roomType={roomType}
+      />
+
+      {isGroup && (
+        <GroupMembersModal
+          isOpen={isMembersModalOpen}
+          onClose={() => setIsMembersModalOpen(false)}
+          groupName={name}
+          participants={processedParticipants}
+          currentUserId={currentUserId}
+          chatRoomId={chatRoomId}
+          canManage={canManage}
+        />
+      )}
+
+      {/* Add Parent Modal */}
+      {canManage && chatRoomId && (
+        <AddParentToGroupChatModal
+          isOpen={isAddParentModalOpen}
+          onClose={() => setIsAddParentModalOpen(false)}
+          chatRoomId={chatRoomId}
+          onSuccess={handleAddParticipantsSuccess}
+        />
+      )}
+
+      {/* Add Teacher Modal */}
+      {canManage && chatRoomId && (
+        <AddTeacherToGroupChatModal
+          isOpen={isAddTeacherModalOpen}
+          onClose={() => setIsAddTeacherModalOpen(false)}
+          chatRoomId={chatRoomId}
+          onSuccess={handleAddParticipantsSuccess}
+        />
+      )}
     </div>
   );
 }

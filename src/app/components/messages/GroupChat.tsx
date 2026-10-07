@@ -16,7 +16,8 @@ import { useThreadScroll } from "./useThreadScroll";
 import { formatDateSeparator } from "@/lib/chat/dates";
 import { OFFICE_THREAD_NOTE } from "./group-info/groupInfo";
 import { Loader2, MessageCircle } from "lucide-react";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { getUserInitials } from "@/lib/colorUtils";
+import { EmptyNote } from "@/components/tl";
 import {
   deliveryState,
   latestOwnStoredMessageId,
@@ -37,7 +38,6 @@ interface Message {
   type: string;
   senderType: "self" | "other";
   avatar: string;
-  color: string;
   initials: string;
   duration?: number;
   attachments?: MsgAttachment[];
@@ -134,7 +134,6 @@ export default function GroupChat({
           createdAt: new Date(msg.createdAt).toISOString(),
           type: msg.type || "text",
           senderType: isMine ? "self" : "other",
-          color: generateColorFromString(senderName || msg.senderId),
           avatar: msg.senderAvatar || participant?.userAvatar || "",
           initials: getUserInitials(senderName),
           duration: msg.duration,
@@ -187,9 +186,9 @@ export default function GroupChat({
   const showBlockingLoader = threadStatus === "loading" && messages.length === 0;
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div className="flex h-full min-h-0 w-full flex-col bg-tl-surface">
       <ChatHeader
-        avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : "/icons/chat.svg"}
+        avatar={room.avatarInfo?.type === "image" ? room.avatarInfo.value : ""}
         name={roomInfo.name}
         status={room.subtitle || "Group chat"}
         subtext={room.isOffice ? OFFICE_THREAD_NOTE : room.description || roomInfo.participantList}
@@ -214,26 +213,24 @@ export default function GroupChat({
       <div
         ref={messagesContainerRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50 space-y-3"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-tl-subtle p-3 sm:p-[18px]"
       >
         {/* Loading indicator for more messages */}
         {isLoadingMore && (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <div className="flex justify-center py-3" role="status" aria-label="Loading older messages">
+            <Loader2 className="h-5 w-5 animate-spin text-tl-brand" aria-hidden />
           </div>
         )}
 
         {showBlockingLoader ? (
-          <div className="flex flex-col items-center justify-center min-h-[40vh]">
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-3" />
-            <p className="text-gray-600">Loading messages...</p>
+          <div className="flex min-h-[40vh] flex-col items-center justify-center gap-2" role="status">
+            <Loader2 className="h-8 w-8 animate-spin text-tl-brand" aria-hidden />
+            <p className="text-sm text-tl-muted">Loading messages...</p>
           </div>
         ) : threadStatus === "error" && messages.length === 0 ? null : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center text-gray-500">
-            <MessageCircle className="w-20 h-20 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-800">No messages yet</h3>
-            <p className="text-sm">Send a message to start the conversation</p>
-          </div>
+          <EmptyNote title="No messages yet" icon={<MessageCircle />}>
+            Send a message to start the conversation
+          </EmptyNote>
         ) : (
           messages.map((msg, idx) => {
             const currentDayKey = getMessageDayKey(msg.createdAt);
@@ -241,10 +238,10 @@ export default function GroupChat({
             const showDateSeparator = idx === 0 || currentDayKey !== prevDayKey;
 
             return (
-              <div key={msg.clientMessageId || msg._id} id={`msg-${msg._id}`} className="transition-colors duration-500">
+              <div key={msg.clientMessageId || msg._id} id={`msg-${msg._id}`} className="rounded-2xl transition-colors duration-500">
                 {showDateSeparator && (
-                  <div className="flex items-center justify-center my-3">
-                    <span className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
+                  <div className="my-3 flex items-center justify-center">
+                    <span className="rounded-full bg-tl-track px-3 py-1 text-xs font-bold text-tl-muted">
                       {formatDateSeparator(msg.createdAt)}
                     </span>
                   </div>
@@ -264,7 +261,7 @@ export default function GroupChat({
       </div>
 
       {replyingMessage && (
-        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-2 sm:mx-4" />
+        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-3 mt-3 rounded-xl sm:mx-[18px]" />
       )}
 
       <MessageInput

@@ -1,12 +1,13 @@
 "use client";
 
-import { X, Circle } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { useId } from "react";
+import { EmptyNote, Pill } from "@/components/tl";
 import { useChatsContext } from "@/context/ChatsContext";
 import type { ChatParticipant } from "@/types/chat.types";
 import GroupMemberList from "./GroupMemberList";
+import { DialogTitleBar, PersonAvatar, dialogOverlay, dialogPanel } from "./parts";
 
+/** Props for {@link GroupMembersModal}. */
 interface GroupMembersModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,6 +19,12 @@ interface GroupMembersModalProps {
   canManage?: boolean;
 }
 
+/**
+ * A member's name for the list.
+ *
+ * @param participant - The member.
+ * @returns The name, else first and last name, else the email.
+ */
 function getDisplayName(participant: ChatParticipant): string {
   if (participant.name && participant.name.trim()) return participant.name.trim();
   const composed = `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
@@ -25,6 +32,21 @@ function getDisplayName(participant: ChatParticipant): string {
   return participant.email || "Unknown User";
 }
 
+/**
+ * The group's members from the header menu ("View Members"): the live list
+ * from the room (with Remove and Leave where allowed), or the members the
+ * header was given while the room is not in the list yet.
+ *
+ * @param props - See {@link GroupMembersModalProps}.
+ * @param props.isOpen - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.groupName - The group's name.
+ * @param props.participants - The members the header knows.
+ * @param props.currentUserId - The viewer.
+ * @param props.chatRoomId - The room.
+ * @param props.canManage - Whether the viewer may remove members.
+ * @returns The dialog, or null while closed.
+ */
 export default function GroupMembersModal({
   isOpen,
   onClose,
@@ -35,6 +57,7 @@ export default function GroupMembersModal({
   canManage = false,
 }: GroupMembersModalProps) {
   const { chatRooms } = useChatsContext();
+  const titleId = useId();
   if (!isOpen) return null;
   const room = chatRoomId ? chatRooms.find((r) => r._id === chatRoomId) : undefined;
 
@@ -43,80 +66,59 @@ export default function GroupMembersModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl border border-gray-200 max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">{groupName} Members</h3>
-            <p className="text-xs text-gray-500">
-              {room ? room.participants.length : sortedParticipants.length} total member(s)
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
-            aria-label="Close members list"
-          >
-            <X size={18} className="text-gray-600" />
-          </button>
-        </div>
+    <div className={`${dialogOverlay} z-[60]`}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`${dialogPanel} max-h-[85vh] sm:max-w-2xl`}
+      >
+        <DialogTitleBar
+          title={`${groupName} Members`}
+          titleId={titleId}
+          subtitle={`${room ? room.participants.length : sortedParticipants.length} total member(s)`}
+          onClose={onClose}
+          closeLabel="Close members list"
+        />
 
-        <div className="overflow-y-auto p-3 sm:p-4 space-y-2 max-h-[calc(80vh-72px)]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {room ? (
             <GroupMemberList room={room} currentUserId={currentUserId ?? ""} canManage={canManage} />
           ) : sortedParticipants.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-              No members found for this group.
-            </div>
+            <EmptyNote compact title="No members found for this group." />
           ) : (
-            sortedParticipants.map((participant) => {
-              const displayName = getDisplayName(participant);
-              const isCurrentUser = !!currentUserId && participant.id === currentUserId;
+            <ul className="flex flex-col gap-1.5">
+              {sortedParticipants.map((participant) => {
+                const displayName = getDisplayName(participant);
+                const isCurrentUser = !!currentUserId && participant.id === currentUserId;
 
-              return (
-                <div
-                  key={participant.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={participant.avatar ?? undefined} />
-                      <AvatarFallback
-                        className="text-white text-xs"
-                        style={{ backgroundColor: generateColorFromString(displayName) }}
-                      >
-                        {getUserInitials(displayName)}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {displayName} {isCurrentUser ? "(You)" : ""}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {participant.email || "No email"}
-                      </p>
+                return (
+                  <li
+                    key={participant.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-tl-line-soft px-3 py-2.5"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <PersonAvatar
+                        id={participant.id}
+                        name={displayName}
+                        src={participant.avatar ?? null}
+                        size={36}
+                        online={Boolean(participant.isOnline)}
+                        announceOnline
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-tl-ink">
+                          {displayName} {isCurrentUser ? "(You)" : ""}
+                        </p>
+                        <p className="truncate text-xs text-tl-muted">{participant.email || "No email"}</p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 pl-2">
-                    {participant.role && (
-                      <span className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-gray-600">
-                        {participant.role}
-                      </span>
-                    )}
-                    <Circle
-                      size={10}
-                      className={
-                        participant.isOnline
-                          ? "fill-green-500 text-green-500"
-                          : "fill-gray-300 text-gray-300"
-                      }
-                    />
-                  </div>
-                </div>
-              );
-            })
+                    {participant.role && <Pill tone="muted">{participant.role}</Pill>}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </div>

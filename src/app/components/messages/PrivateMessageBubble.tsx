@@ -1,12 +1,10 @@
-import { Card } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import BubbleMenu from "./BubbleMenu";
 import MessageBody from "./MessageBody";
 import type { ChatReplyTo, ReplyDraft } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { PersonAvatar, bubbleFrame } from "./parts";
 
 interface Attachment {
   url: string;
@@ -20,13 +18,13 @@ interface Attachment {
   playbackUrl?: string;
 }
 
+/** Props for {@link MessageBubble}. */
 interface MessageBubbleProps {
   msg: {
     _id: string;
     senderType: string;
     avatar: string;
     sender: string;
-    color: string;
     type: string;
     text?: string;
     duration?: string | number;
@@ -52,6 +50,20 @@ interface MessageBubbleProps {
   onJump?: (messageId: string) => void;
 }
 
+/**
+ * One direct message: the sender's avatar beside other people's messages, the
+ * bubble (navy for mine, white for theirs) with its menu and content, and the
+ * time with the delivery state under it.
+ *
+ * @param props - See {@link MessageBubbleProps}.
+ * @param props.msg - The message as the thread shows it.
+ * @param props.onReply - Starts a reply.
+ * @param props.onDeleteMessage - Deletes it, when allowed.
+ * @param props.onJump - Scrolls to a quoted message.
+ * @param props.onRetry - Resends a failed message.
+ * @param props.onDelete - Drops a failed message.
+ * @returns The bubble row.
+ */
 export default function MessageBubble({
   msg,
   onReply,
@@ -61,57 +73,38 @@ export default function MessageBubble({
   onDelete,
 }: MessageBubbleProps) {
   const isCurrentUser = msg.senderType === "self" || msg.senderType === "me";
-  const initials = msg.initials || getUserInitials(msg.sender);
-  const bgColor = msg.color || generateColorFromString(msg.sender);
 
   return (
-    <div
-      className={`relative flex items-end ${
-        isCurrentUser ? "justify-end" : "justify-start"
-      } gap-2 px-2 sm:px-0 mb-3`}
-    >
-      <div
-        className={`flex gap-2 max-w-[85%] sm:max-w-md ${
-          isCurrentUser ? "flex-row-reverse" : "flex-row"
-        }`}
-      >
+    <div className={`relative mb-3 flex items-end gap-2 ${isCurrentUser ? "justify-end" : "justify-start"}`}>
+      <div className={`flex max-w-[85%] gap-2 sm:max-w-md ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}>
         {!isCurrentUser && (
-          <div className="relative w-8 h-8 flex-shrink-0 self-end mb-1">
-            <Avatar className="w-8 h-8 rounded-full">
-              <AvatarImage src={msg.avatar} />
-              <AvatarFallback
-                className="text-white font-medium text-xs"
-                style={{ backgroundColor: bgColor }}
-              >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+          <div className="mb-6 self-end">
+            <PersonAvatar id={msg.sender} name={msg.sender} initials={msg.initials} src={msg.avatar || null} size={32} />
           </div>
         )}
 
-        <div className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
-          <Card
-            className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative group ${
-              isCurrentUser
-                ? "bg-blue-600 text-white rounded-2xl rounded-br-md"
-                : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-bl-md"
-            }`}
-          >
+        <div className={`flex min-w-0 flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
+          <div className={bubbleFrame(isCurrentUser)}>
             <BubbleMenu
               msg={msg}
               isMe={isCurrentUser}
               onReply={
                 onReply
-                  ? () => onReply({ messageId: msg._id, senderName: msg.sender, preview: msg.text || (msg.attachments?.length ? "Attachment" : "") })
+                  ? () =>
+                      onReply({
+                        messageId: msg._id,
+                        senderName: msg.sender,
+                        preview: msg.text || (msg.attachments?.length ? "Attachment" : ""),
+                      })
                   : undefined
               }
               onDeleteMessage={onDeleteMessage}
             />
             <MessageBody msg={msg} isMe={isCurrentUser} onJump={onJump} />
-          </Card>
+          </div>
 
           <div
-            className={`flex items-center gap-1 text-xs text-gray-400 mt-1 px-1 ${
+            className={`mt-1 flex items-center gap-1 px-1 text-[11px] text-tl-faint ${
               isCurrentUser ? "flex-row-reverse" : "flex-row"
             }`}
           >

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
+import { EmptyNote, cardFrame, textLink } from "@/components/tl";
 import ChatSidebar from "./ChatSidebar";
 import GroupChat from "./GroupChat";
 import PrivateChat from "./PrivateChat";
@@ -12,11 +13,25 @@ import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
 import type { ReplyDraft } from "@/components/chat-kit";
 import { chatRoomUrl } from "@/lib/chat/openRoom";
 
+/** Props for {@link MessagesLayout}. */
 interface MessagesLayoutProps {
+  /** The message being replied to, if any. */
   replyingMessage: ReplyDraft | null;
+  /** Starts or cancels a reply. */
   setReplyingMessage: (msg: ReplyDraft | null) => void;
 }
 
+/**
+ * The two-pane inbox: the conversation list card and the open conversation
+ * card side by side from 980px, one at a time below. Owns the open room and
+ * keeps it in `?room=` (deep links, Back), and leaves it when the user is
+ * removed from it.
+ *
+ * @param props - See {@link MessagesLayoutProps}.
+ * @param props.replyingMessage - The reply in progress.
+ * @param props.setReplyingMessage - Starts or cancels a reply.
+ * @returns The inbox.
+ */
 export default function MessagesLayout({
   replyingMessage,
   setReplyingMessage,
@@ -33,10 +48,10 @@ export default function MessagesLayout({
   const snapshotRef = useRef<DisplayChatRoom | null>(null);
   const selectedRoomIdRef = useRef<string | null>(null);
 
-  // Detect mobile screen size
+  // One pane at a time below 980px, where the app's sidebar becomes a drawer too.
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+      setIsMobile(window.innerWidth < 980);
     };
 
     checkMobile();
@@ -118,12 +133,12 @@ export default function MessagesLayout({
 
   return (
     <ChatsProvider value={chats}>
-      <div className="flex h-full w-full bg-gray-50 relative">
-        {/* Sidebar - Mobile: Take full container, Desktop: Fixed width panel */}
+      <div className="flex h-full min-h-0 w-full gap-[18px]">
+        {/* The conversations: the whole width below 980px (hidden while a chat is open), a fixed column beside the chat above it. */}
         <div
-          className={`${
-            isMobile ? (selectedRoomId ? "hidden" : "block w-full") : "relative w-96 xl:w-80"
-          } bg-white ${!isMobile ? "border-r border-gray-200" : ""} flex flex-col h-full`}
+          className={`${cardFrame} min-h-0 flex-col ${
+            isMobile ? (selectedRoomId ? "hidden" : "flex w-full") : "flex w-[300px] shrink-0 xl:w-[340px]"
+          }`}
         >
           <ChatSidebar
             onSelectChat={(room) => openRoom(room.roomId, room)}
@@ -132,18 +147,12 @@ export default function MessagesLayout({
           />
         </div>
 
-        {/* Chat Area - Mobile: Take full container when shown, Desktop: Flexible width */}
+        {/* The open conversation: the whole width below 980px while open, the rest of the row above it. */}
         <div
           data-guide="messages-chat-area"
-          className={`${
-            isMobile
-              ? selectedRoomId
-                ? "block w-full"
-                : "hidden"
-              : selectedRoomId
-                ? "flex flex-1"
-                : "hidden lg:flex lg:flex-1"
-          } flex-col bg-white h-full`}
+          className={`${cardFrame} min-h-0 min-w-0 flex-col ${
+            isMobile ? (selectedRoomId ? "flex w-full" : "hidden") : "flex flex-1"
+          }`}
         >
           {selectedRoomId && selectedRoom ? (
             selectedRoom.type === "group" ? (
@@ -153,7 +162,7 @@ export default function MessagesLayout({
             )
           ) : selectedRoomId ? (
             // Deep-linked room whose details haven't loaded yet.
-            <div className="flex flex-1 flex-col h-full">
+            <div className="flex h-full flex-1 flex-col">
               <ThreadNotices
                 isConnected={chats.isConnected}
                 threadStatus={chats.threadStatus}
@@ -162,35 +171,23 @@ export default function MessagesLayout({
                 onRetry={chats.retryCurrentRoom}
               />
               {chats.threadStatus !== "error" && (
-                <div className="flex flex-1 items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <div className="flex flex-1 items-center justify-center bg-tl-subtle" role="status">
+                  <Loader2 className="h-8 w-8 animate-spin text-tl-brand" aria-hidden />
+                  <span className="sr-only">Loading the conversation</span>
                 </div>
               )}
-              <div className="p-3 lg:hidden">
-                <button type="button" onClick={handleBackToChats} className="text-sm text-blue-600 hover:underline">
+              <div className="border-t border-tl-line-soft p-2 min-[980px]:hidden">
+                <button type="button" onClick={handleBackToChats} className={textLink}>
                   Back to chats
                 </button>
               </div>
             </div>
           ) : (
             // Empty state for desktop when no chat is selected
-            <div className="hidden lg:flex flex-1 items-center justify-center bg-gray-50">
-              <div className="text-center text-gray-500">
-                <div className="w-24 h-24 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No chat selected</h3>
-                <p className="text-sm text-gray-500 max-w-sm">
-                  Select a conversation from the sidebar to start messaging, or create a new group chat.
-                </p>
-              </div>
+            <div className="flex flex-1 items-center justify-center bg-tl-subtle">
+              <EmptyNote title="No chat selected" icon={<MessageCircle />}>
+                Select a conversation from the sidebar to start messaging, or create a new group chat.
+              </EmptyNote>
             </div>
           )}
         </div>

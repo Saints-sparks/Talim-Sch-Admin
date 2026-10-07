@@ -1,8 +1,8 @@
 import { Loader2, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { fieldControl, fieldHint, ghostButton, iconButton, primaryButton } from "@/components/tl";
 import { NAME_MAX } from "./groupInfo";
 
+/** Props for {@link GroupNameField}. */
 interface GroupNameFieldProps {
   editing: boolean;
   /** The name being typed. */
@@ -17,7 +17,22 @@ interface GroupNameFieldProps {
   onSave: () => void;
 }
 
-/** The group's name: a heading with a pencil, or an inline editor. */
+/**
+ * The group's name: a heading with a pencil for those who may rename it, or
+ * an inline editor (Enter saves, Escape cancels).
+ *
+ * @param props - See {@link GroupNameFieldProps}.
+ * @param props.editing - Whether the editor is open.
+ * @param props.draft - The name being typed.
+ * @param props.name - The name shown.
+ * @param props.saving - True while the save runs.
+ * @param props.canManage - Whether the viewer may rename it.
+ * @param props.onDraftChange - Typing handler.
+ * @param props.onStartEdit - Opens the editor.
+ * @param props.onCancel - Closes the editor.
+ * @param props.onSave - Saves the draft.
+ * @returns The heading or the editor.
+ */
 export function GroupNameField({
   editing,
   draft,
@@ -31,8 +46,8 @@ export function GroupNameField({
 }: GroupNameFieldProps) {
   if (editing) {
     return (
-      <div className="mt-3 mx-auto max-w-sm text-left">
-        <Input
+      <div className="mx-auto mt-4 max-w-sm text-left">
+        <input
           value={draft}
           maxLength={NAME_MAX}
           onChange={(e) => onDraftChange(e.target.value)}
@@ -42,19 +57,20 @@ export function GroupNameField({
           }}
           autoFocus
           aria-label="Group name"
+          className={fieldControl}
         />
-        <div className="mt-1 flex items-center justify-between text-xs text-gray-400">
-          <span>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <span className={fieldHint}>
             {draft.trim().length}/{NAME_MAX}
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>
+            <button type="button" className={ghostButton} onClick={onCancel} disabled={saving}>
               Cancel
-            </Button>
-            <Button size="sm" onClick={onSave} disabled={saving || !draft.trim()}>
-              {saving && <Loader2 size={14} className="mr-1 animate-spin" />}
+            </button>
+            <button type="button" className={primaryButton} onClick={onSave} disabled={saving || !draft.trim()}>
+              {saving && <Loader2 size={14} className="animate-spin" aria-hidden />}
               Save
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -62,16 +78,11 @@ export function GroupNameField({
   }
 
   return (
-    <div className="mt-3 flex items-center justify-center gap-1.5">
-      <h2 className="text-lg text-[#030E18] font-medium break-words">{name}</h2>
+    <div className="mt-3 flex items-center justify-center gap-1">
+      <h2 className="break-words text-[21px] font-extrabold leading-tight tracking-[-0.4px] text-tl-ink">{name}</h2>
       {canManage && (
-        <button
-          type="button"
-          onClick={onStartEdit}
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-          aria-label="Edit group name"
-        >
-          <Pencil size={14} />
+        <button type="button" onClick={onStartEdit} className={iconButton} aria-label="Edit group name">
+          <Pencil size={15} aria-hidden />
         </button>
       )}
     </div>

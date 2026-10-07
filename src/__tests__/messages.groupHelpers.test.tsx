@@ -23,7 +23,7 @@ import {
   isGroupFormValid,
   namePlaceholder,
   nextSteps,
-  submitButtonClass,
+  COLOR_TONE,
 } from "@/app/components/messages/create-group/createGroup";
 import { GroupTypePicker } from "@/app/components/messages/create-group/GroupTypePicker";
 
@@ -184,15 +184,15 @@ describe("create group helpers", () => {
     expect(createdMessage("course", true)).toBe("Opened the existing group");
   });
 
-  it("gives each kind its own placeholder, next steps and button colour", () => {
+  it("gives each kind its own placeholder, next steps and tone", () => {
     expect(namePlaceholder("class")).toBe("e.g., Grade 5A Chat");
     expect(namePlaceholder(null)).toBe("e.g., Staff Planning Team");
     expect(nextSteps("parent", "Sunrise")[0]).toBe("All parents in Sunrise are auto-added");
     expect(nextSteps("parent")[0]).toBe("All parents in your school are auto-added");
     expect(nextSteps("custom")).toHaveLength(3);
-    expect(submitButtonClass("orange")).toBe("bg-orange-700 hover:bg-orange-800");
-    expect(submitButtonClass("green")).toBe("bg-green-700 hover:bg-green-800");
-    expect(GROUP_TYPES.map((g) => submitButtonClass(g.color))).toHaveLength(4);
+    expect(COLOR_TONE.orange).toBe("warning");
+    expect(COLOR_TONE.green).toBe("success");
+    expect(new Set(GROUP_TYPES.map((g) => COLOR_TONE[g.color])).size).toBe(4);
   });
 
   it("labels class and subject options", () => {

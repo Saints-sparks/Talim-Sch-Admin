@@ -5,9 +5,11 @@ import { Download, FileText, Link2 } from "lucide-react";
 import type { ChatAttachment, ChatMessage } from "@/types/chat.types";
 import { isLocalMessage } from "@/lib/chat/messages";
 import { Lightbox, attachmentKind, extractLinks, formatBytes } from "@/components/chat-kit";
+import { EmptyNote, focusRing, iconButton } from "@/components/tl";
 
 export type SharedMediaSection = "Images" | "Videos" | "Links" | "Documents";
 
+/** Props for {@link SharedMedia}. */
 interface SharedMediaProps {
   section: SharedMediaSection;
   /** The conversation's loaded messages (oldest first). */
@@ -19,6 +21,12 @@ interface Shared {
   message: ChatMessage;
 }
 
+/**
+ * When a message was sent, for the media lists.
+ *
+ * @param message - The message.
+ * @returns e.g. "3 Sep 2026".
+ */
 function when(message: ChatMessage): string {
   return new Date(message.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
@@ -26,6 +34,11 @@ function when(message: ChatMessage): string {
 /**
  * Images / videos / links / documents shared in the conversation, from the
  * messages already loaded (no extra request) — newest first.
+ *
+ * @param props - See {@link SharedMediaProps}.
+ * @param props.section - Which kind to list.
+ * @param props.messages - The loaded messages.
+ * @returns The list, or the empty note.
  */
 export default function SharedMedia({ section, messages }: SharedMediaProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -49,14 +62,13 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
   const count =
     section === "Images" ? images.length : section === "Videos" ? videos.length : section === "Links" ? links.length : documents.length;
 
-  const note = <p className="mb-3 text-xs text-gray-400">From loaded messages</p>;
+  const note = <p className="mb-3 text-xs text-tl-muted">From loaded messages</p>;
 
   if (count === 0) {
     return (
-      <div className="py-10 text-center">
-        <p className="text-sm text-gray-500">No {section.toLowerCase()} yet</p>
-        <p className="mt-1 text-xs text-gray-400">From loaded messages — scroll up in the chat to load older ones.</p>
-      </div>
+      <EmptyNote compact title={`No ${section.toLowerCase()} yet`}>
+        From loaded messages — scroll up in the chat to load older ones.
+      </EmptyNote>
     );
   }
 
@@ -70,7 +82,7 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
               key={`${attachment.url}-${i}`}
               type="button"
               onClick={() => setLightboxIndex(i)}
-              className="aspect-square overflow-hidden rounded-md bg-gray-100"
+              className={`aspect-square overflow-hidden rounded-xl bg-tl-track ${focusRing}`}
               aria-label={`Open image ${i + 1} of ${images.length}`}
             >
               <img src={attachment.url} alt={attachment.name || "Image"} loading="lazy" className="h-full w-full object-cover" />
@@ -93,9 +105,9 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
         {note}
         <div className="grid grid-cols-2 gap-2">
           {videos.map(({ attachment, message }, i) => (
-            <div key={`${attachment.url}-${i}`} className="overflow-hidden rounded-md bg-black">
-              <video src={attachment.url} controls preload="metadata" playsInline className="aspect-video w-full" />
-              <p className="truncate bg-white px-1 pt-1 text-xs text-gray-500">
+            <div key={`${attachment.url}-${i}`} className="overflow-hidden rounded-xl border border-tl-line bg-tl-surface">
+              <video src={attachment.url} controls preload="metadata" playsInline className="aspect-video w-full bg-tl-track" />
+              <p className="truncate px-2 py-1.5 text-xs text-tl-muted">
                 {message.senderName || "Someone"} · {when(message)}
               </p>
             </div>
@@ -111,18 +123,21 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
         {note}
         <ul className="space-y-2">
           {links.map(({ url, message }, i) => (
-            <li key={`${url}-${message._id}-${i}`} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2">
-              <Link2 size={16} className="mt-0.5 flex-shrink-0 text-gray-400" aria-hidden />
+            <li
+              key={`${url}-${message._id}-${i}`}
+              className="flex items-start gap-2.5 rounded-2xl border border-tl-line-soft px-3 py-2.5"
+            >
+              <Link2 size={16} className="mt-0.5 shrink-0 text-tl-faint" aria-hidden />
               <div className="min-w-0">
                 <a
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block truncate text-sm text-blue-600 hover:underline"
+                  className={`block truncate rounded text-sm font-semibold text-tl-link hover:underline ${focusRing}`}
                 >
                   {url}
                 </a>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-tl-muted">
                   {message.senderName || "Someone"} · {when(message)}
                 </p>
               </div>
@@ -138,13 +153,16 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
       {note}
       <ul className="space-y-2">
         {documents.map(({ attachment, message }, i) => (
-          <li key={`${attachment.url}-${i}`} className="flex items-center gap-2 rounded-lg border border-gray-100 p-2">
-            <FileText size={18} className="flex-shrink-0 text-gray-500" aria-hidden />
+          <li
+            key={`${attachment.url}-${i}`}
+            className="flex items-center gap-2.5 rounded-2xl border border-tl-line-soft py-1.5 pl-3 pr-1.5"
+          >
+            <FileText size={18} className="shrink-0 text-tl-muted" aria-hidden />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-gray-800" title={attachment.name}>
+              <p className="truncate text-sm font-semibold text-tl-ink" title={attachment.name}>
                 {attachment.name || "File"}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-tl-muted">
                 {[formatBytes(attachment.size), message.senderName, when(message)].filter(Boolean).join(" · ")}
               </p>
             </div>
@@ -153,10 +171,10 @@ export default function SharedMedia({ section, messages }: SharedMediaProps) {
               target="_blank"
               rel="noopener noreferrer"
               download={attachment.name || true}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full hover:bg-gray-100"
+              className={iconButton}
               aria-label={`Download ${attachment.name || "file"}`}
             >
-              <Download size={16} className="text-gray-600" aria-hidden />
+              <Download size={16} aria-hidden />
             </a>
           </li>
         ))}

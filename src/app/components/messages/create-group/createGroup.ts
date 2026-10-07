@@ -1,4 +1,5 @@
 import { ChatRoomType, type CreateGroupChatDto } from "@/types/chat.types";
+import type { Tone } from "@/components/tl";
 
 /** The four kinds of group an admin can start. */
 export type GroupKind = "parent" | "class" | "course" | "custom";
@@ -47,41 +48,13 @@ export const GROUP_TYPES: GroupTypeOption[] = [
   },
 ];
 
-/** Tailwind classes for each accent colour. */
-export const COLOR_MAP: Record<GroupColor, { bg: string; text: string; border: string; badge: string }> = {
-  blue: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-500", badge: "bg-blue-100 text-blue-700" },
-  green: { bg: "bg-green-50", text: "text-green-600", border: "border-green-500", badge: "bg-green-100 text-green-700" },
-  purple: {
-    bg: "bg-purple-50",
-    text: "text-purple-600",
-    border: "border-purple-500",
-    badge: "bg-purple-100 text-purple-700",
-  },
-  orange: {
-    bg: "bg-orange-50",
-    text: "text-orange-600",
-    border: "border-orange-500",
-    badge: "bg-orange-100 text-orange-700",
-  },
+/** The design-system tone of each accent colour (the kind's icon and badge). */
+export const COLOR_TONE: Record<GroupColor, Tone> = {
+  blue: "info",
+  green: "success",
+  purple: "accent",
+  orange: "warning",
 };
-
-/** Classes of the submit button for each accent colour: each at least 4.5:1 with its white label. */
-const SUBMIT_CLASS: Record<GroupColor, string> = {
-  blue: "bg-blue-600 hover:bg-blue-700",
-  green: "bg-green-700 hover:bg-green-800",
-  purple: "bg-purple-600 hover:bg-purple-700",
-  orange: "bg-orange-700 hover:bg-orange-800",
-};
-
-/**
- * The submit button's colour classes.
- *
- * @param color - The chosen kind's accent colour.
- * @returns Background and hover classes.
- */
-export function submitButtonClass(color: GroupColor): string {
-  return SUBMIT_CLASS[color];
-}
 
 /** The success toast noun of each kind. */
 const CREATED_LABELS: Record<GroupKind, string> = {

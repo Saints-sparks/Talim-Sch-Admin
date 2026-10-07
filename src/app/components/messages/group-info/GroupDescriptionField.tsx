@@ -1,8 +1,8 @@
 import { Loader2, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { fieldHint, focusRing, ghostButton, primaryButton, sectionTitle, textareaControl } from "@/components/tl";
 import { DESCRIPTION_MAX } from "./groupInfo";
 
+/** Props for {@link GroupDescriptionField}. */
 interface GroupDescriptionFieldProps {
   editing: boolean;
   /** The description being typed. */
@@ -23,6 +23,15 @@ interface GroupDescriptionFieldProps {
  * for direct messages or office threads.
  *
  * @param props - The field's state and handlers; `canManage` offers the editor.
+ * @param props.editing - Whether the editor is open.
+ * @param props.draft - The text being typed.
+ * @param props.description - The saved description.
+ * @param props.saving - True while the save runs.
+ * @param props.canManage - Whether the viewer may edit it.
+ * @param props.onDraftChange - Typing handler.
+ * @param props.onStartEdit - Opens the editor.
+ * @param props.onCancel - Closes the editor.
+ * @param props.onSave - Saves the draft.
  * @returns The block.
  */
 export function GroupDescriptionField({
@@ -37,24 +46,24 @@ export function GroupDescriptionField({
   onSave,
 }: GroupDescriptionFieldProps) {
   return (
-    <div className="mt-5 text-left">
+    <div className="mt-6 text-left">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-700 dark:text-slate-300">About</p>
+        <p className={sectionTitle}>About</p>
         {canManage && !editing && (
           <button
             type="button"
             onClick={onStartEdit}
             aria-label="Edit group description"
-            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-[13px] font-bold text-tl-link hover:underline ${focusRing}`}
           >
-            <Pencil size={12} aria-hidden />
+            <Pencil size={13} aria-hidden />
             Edit
           </button>
         )}
       </div>
       {editing ? (
         <div>
-          <Textarea
+          <textarea
             value={draft}
             maxLength={DESCRIPTION_MAX}
             onChange={(e) => onDraftChange(e.target.value)}
@@ -63,28 +72,31 @@ export function GroupDescriptionField({
             aria-label="Group description"
             aria-describedby="group-description-count"
             placeholder="What is this group for?"
+            className={textareaControl}
           />
-          <div className="mt-1 flex items-center justify-between text-xs text-gray-500">
-            <span id="group-description-count">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span id="group-description-count" className={fieldHint}>
               {draft.length}/{DESCRIPTION_MAX}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>
+              <button type="button" className={ghostButton} onClick={onCancel} disabled={saving}>
                 Cancel
-              </Button>
-              <Button size="sm" onClick={onSave} disabled={saving}>
-                {saving && <Loader2 size={14} className="mr-1 animate-spin" />}
+              </button>
+              <button type="button" className={primaryButton} onClick={onSave} disabled={saving}>
+                {saving && <Loader2 size={14} className="animate-spin" aria-hidden />}
                 Save
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       ) : description ? (
-        <p className="text-sm p-3 border border-[#F0F0F0] rounded-lg text-[#545454] dark:text-slate-300 whitespace-pre-line break-words">
+        <p className="whitespace-pre-line break-words rounded-2xl border border-tl-line-soft bg-tl-subtle p-3.5 text-sm leading-relaxed text-tl-body">
           {description}
         </p>
       ) : (
-        <p className="text-sm p-3 border border-[#F0F0F0] rounded-lg text-gray-400 italic">No description</p>
+        <p className="rounded-2xl border border-tl-line-soft bg-tl-subtle p-3.5 text-sm italic text-tl-muted">
+          No description
+        </p>
       )}
     </div>
   );

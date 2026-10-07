@@ -1,6 +1,7 @@
 import { Ban } from "lucide-react";
 import { AttachmentGrid, Linkified, QuotedMessage, type ChatKitAttachment, type ChatReplyTo } from "@/components/chat-kit";
 
+/** Props for {@link MessageBody}. */
 interface MessageBodyProps {
   msg: {
     text?: string;
@@ -15,13 +16,23 @@ interface MessageBodyProps {
   onJump?: (messageId: string) => void;
 }
 
-/** What is inside a bubble: the quote, the media, the text, or the "deleted" placeholder. */
+/**
+ * What is inside a bubble: the quote, the media, the text, or the "deleted"
+ * placeholder. The chat kit draws the quote, media and links; the text sits
+ * in spans inside one paragraph.
+ *
+ * @param props - The message, whose bubble it is, and the jump handler.
+ * @param props.msg - The message.
+ * @param props.isMe - Whether it is the viewer's (the navy bubble).
+ * @param props.onJump - Scrolls to a quoted message.
+ * @returns The content.
+ */
 export default function MessageBody({ msg, isMe, onJump }: MessageBodyProps) {
   const tone = isMe ? "inverted" : "default";
 
   if (msg.isDeleted) {
     return (
-      <p className="flex items-center gap-1.5 text-sm italic opacity-80">
+      <p className={`flex items-center gap-1.5 text-sm italic ${isMe ? "" : "text-tl-muted"}`}>
         <Ban size={14} aria-hidden /> This message was deleted
       </p>
     );
@@ -40,7 +51,7 @@ export default function MessageBody({ msg, isMe, onJump }: MessageBodyProps) {
         />
       )}
       {msg.text && (
-        <p className="text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">
+        <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
           <Linkified text={msg.text} tone={tone} />
         </p>
       )}

@@ -26,9 +26,14 @@ import { canEditRoomDetails, canManageRoom, isOfficeRoom } from "@/lib/chat/room
 import { chatService } from "@/app/services/chat.service";
 import { toast } from "@/components/CustomToast";
 import { getErrorMessage } from "@/lib/apiError";
+import { cardTitle, iconButton, sectionTitle } from "@/components/tl";
+import { dialogOverlay } from "./parts";
 
+/** Props for {@link GroupInfoModal}. */
 interface GroupInfoModalProps {
+  /** Whether the dialog is shown. */
   isOpen: boolean;
+  /** Closes it. */
   onClose: () => void;
   /** Shown until the room is in the list. */
   avatar: string;
@@ -146,26 +151,26 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
   return (
     <>
       <div
-        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50 p-4"
+        className={`${dialogOverlay} z-50`}
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`${groupName} info`}
-          className="bg-white rounded-lg shadow-lg w-full max-w-[720px] h-[80vh] max-h-[600px] flex overflow-hidden"
+          className="flex h-[85vh] max-h-[640px] w-full max-w-[760px] overflow-hidden rounded-t-[24px] border border-tl-line bg-tl-surface text-tl-ink shadow-[0_30px_70px_-30px_rgba(15,27,46,0.45)] sm:h-[80vh] sm:rounded-[24px]"
         >
           <GroupInfoSidebar selected={selectedMenu} onSelect={setSelectedMenu} />
 
           {/* Main Content */}
-          <div className="flex-1 pt-6 p-5 relative overflow-y-auto">
+          <div className="relative min-w-0 flex-1 overflow-y-auto px-5 pb-6 pt-14 sm:px-6 sm:pt-7">
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 right-3 text-[#434343] hover:text-gray-800"
+              className={`${iconButton} absolute right-2 top-2`}
               aria-label="Close"
             >
-              <X size={20} />
+              <X className="h-5 w-5" aria-hidden />
             </button>
 
             <GroupInfoMobilePicker selected={selectedMenu} onSelect={setSelectedMenu} />
@@ -196,13 +201,13 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
                   onCancel={() => setEditingName(false)}
                   onSave={() => void saveName()}
                 />
-                <p className="text-sm text-[#666666] dark:text-slate-400">
+                <p className="mt-1 text-sm text-tl-muted">
                   {isOffice && room?.subtitle ? room.subtitle : roomSubtitle(type, isGroup, memberCount)}
                 </p>
 
                 {isOffice && (
-                  <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-left text-xs text-amber-900 dark:text-amber-200">
-                    <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                  <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-tl-warning/25 bg-tl-warning-bg px-3.5 py-3 text-left text-[13px] leading-relaxed text-tl-body">
+                    <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-tl-warning" aria-hidden />
                     <span>{OFFICE_THREAD_NOTE} Members are kept up to date automatically.</span>
                   </p>
                 )}
@@ -235,17 +240,15 @@ export default function GroupInfoModal({ isOpen, onClose, avatar, name, chatRoom
 
                 {/* Members */}
                 {room && (
-                  <div className="mt-5 text-left">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      {membersHeading(isGroup, memberCount)}
-                    </p>
+                  <div className="mt-6 text-left">
+                    <p className={`${sectionTitle} mb-2.5`}>{membersHeading(isGroup, memberCount)}</p>
                     <GroupMemberList room={room} currentUserId={currentUserId} canManage={canManage} />
                   </div>
                 )}
               </div>
             )}
 
-            {selectedMenu !== "" && <h2 className="text-lg text-left mb-4 font-medium">{selectedMenu}</h2>}
+            {selectedMenu !== "" && <h2 className={`${cardTitle} mb-4 text-left`}>{selectedMenu}</h2>}
 
             {(selectedMenu === "Images" ||
               selectedMenu === "Videos" ||

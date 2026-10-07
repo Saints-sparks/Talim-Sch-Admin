@@ -14,6 +14,7 @@ import { useChatThread } from "./useChatThread";
 import { useThreadScroll } from "./useThreadScroll";
 import { formatDateSeparator } from "@/lib/chat/dates";
 import { Loader2, MessageCircle } from "lucide-react";
+import { EmptyNote } from "@/components/tl";
 import { deliveryState, type DeliveryState } from "@/lib/chat/readReceipts";
 
 type MsgAttachment = ChatAttachment;
@@ -30,7 +31,6 @@ interface Message {
   type: string;
   senderType: "self" | "other";
   avatar: string;
-  color: string;
   duration?: number;
   attachments?: MsgAttachment[];
   replyTo?: ChatReplyTo;
@@ -118,7 +118,6 @@ export default function PrivateChat({
           createdAt: msg.createdAt,
           type: msg.type || "text",
           senderType: isMine ? "self" : "other",
-          color: isMine ? "bg-blue-500" : "bg-gray-500",
           avatar: msg.senderAvatar || participant?.userAvatar || "",
           duration: msg.duration,
           attachments: msg.attachments,
@@ -148,13 +147,13 @@ export default function PrivateChat({
     if (other) {
       return {
         name: other.name || room.displayName || "Unknown User",
-        avatar: other.userAvatar || "/icons/direct-message.svg",
+        avatar: other.userAvatar || "",
         status: other.isOnline ? "Online" : "Offline",
       };
     }
     return {
       name: room.displayName || "Private Chat",
-      avatar: "/icons/direct-message.svg",
+      avatar: "",
       status: "",
     };
   }, [room, currentUserId]);
@@ -175,7 +174,7 @@ export default function PrivateChat({
   const showBlockingLoader = threadStatus === "loading" && messages.length === 0;
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-white">
+    <div className="relative flex h-full min-h-0 w-full flex-col bg-tl-surface">
       <ChatHeader
         avatar={otherParticipant.avatar}
         name={otherParticipant.name}
@@ -199,34 +198,32 @@ export default function PrivateChat({
       />
 
       <div
-        className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-tl-subtle p-3 sm:p-[18px]"
         ref={messagesContainerRef}
         onScroll={onScroll}
       >
         {/* Loading indicator for more messages */}
         {isLoadingMore && (
-          <div className="flex justify-center py-2">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <div className="flex justify-center py-2" role="status" aria-label="Loading older messages">
+            <Loader2 className="h-5 w-5 animate-spin text-tl-brand" aria-hidden />
           </div>
         )}
 
         {showBlockingLoader ? (
-          <div className="flex flex-col items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
-            <p className="text-sm text-gray-500">Loading messages...</p>
+          <div className="flex h-48 flex-col items-center justify-center gap-2" role="status">
+            <Loader2 className="h-8 w-8 animate-spin text-tl-brand" aria-hidden />
+            <p className="text-sm text-tl-muted">Loading messages...</p>
           </div>
         ) : threadStatus === "error" && messages.length === 0 ? null : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48">
-            <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 mb-2">No messages yet</p>
-            <p className="text-xs text-gray-400">Send a message to start the conversation</p>
-          </div>
+          <EmptyNote title="No messages yet" icon={<MessageCircle />}>
+            Send a message to start the conversation
+          </EmptyNote>
         ) : (
           groupedMessages.map((group) => (
             <div key={group.key}>
               {/* Date divider */}
-              <div className="flex items-center justify-center my-3">
-                <div className="px-3 py-1 text-[11px] font-medium text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm">
+              <div className="my-3 flex items-center justify-center">
+                <div className="rounded-full bg-tl-track px-3 py-1 text-xs font-bold text-tl-muted">
                   {formatDateSeparator(group.key)}
                 </div>
               </div>
@@ -236,7 +233,7 @@ export default function PrivateChat({
                 <div
                   key={msg.clientMessageId || msg._id}
                   id={`msg-${msg._id}`}
-                  className="transition-colors duration-500"
+                  className="rounded-2xl transition-colors duration-500"
                 >
                   <MessageBubble
                     msg={msg}
@@ -254,7 +251,7 @@ export default function PrivateChat({
       </div>
 
       {replyingMessage && (
-        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-2 sm:mx-4" />
+        <ReplyBar reply={replyingMessage} onCancel={clearReply} className="mx-3 mt-3 rounded-xl sm:mx-[18px]" />
       )}
 
       <MessageInput

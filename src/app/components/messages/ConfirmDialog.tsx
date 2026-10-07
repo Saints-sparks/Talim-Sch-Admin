@@ -1,19 +1,40 @@
 "use client";
 
-import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { ConfirmSheet } from "@/components/tl";
 
+/** Props for {@link ConfirmDialog}. */
 interface ConfirmDialogProps {
+  /** Whether it is shown. */
   open: boolean;
+  /** The question ("Leave group?"); also the dialog's name. */
   title: string;
+  /** What happens. */
   message: string;
+  /** The red confirm button's words. */
   confirmLabel: string;
+  /** True while the action runs: both buttons are disabled and it cannot be dismissed. */
   busy?: boolean;
+  /** Runs the action. */
   onConfirm: () => void;
+  /** Closes without acting (Cancel, Escape, the close button, the backdrop). */
   onCancel: () => void;
 }
 
-/** A small destructive-action confirmation shown above chat modals. */
+/**
+ * A destructive-action confirmation shown above the chat dialogs (leave a
+ * group, remove a member): the design system's confirm sheet with a red
+ * confirm.
+ *
+ * @param props - See {@link ConfirmDialogProps}.
+ * @param props.open - Whether it is shown.
+ * @param props.title - The question.
+ * @param props.message - What happens.
+ * @param props.confirmLabel - The confirm button's words.
+ * @param props.busy - Whether the action runs.
+ * @param props.onConfirm - Confirm handler.
+ * @param props.onCancel - Cancel handler.
+ * @returns The sheet, or null while closed.
+ */
 export default function ConfirmDialog({
   open,
   title,
@@ -23,48 +44,16 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !busy) onCancel();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, busy, onCancel]);
-
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && !busy && onCancel()}
-    >
-      <div role="alertdialog" aria-modal="true" aria-labelledby="chat-confirm-title" className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-        <h3 id="chat-confirm-title" className="text-base font-semibold text-gray-900">
-          {title}
-        </h3>
-        <p className="mt-2 text-sm text-gray-600">{message}</p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            autoFocus
-            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
-          >
-            {busy && <Loader2 size={14} className="animate-spin" />}
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmSheet
+      open={open}
+      title={title}
+      body={message}
+      confirmLabel={confirmLabel}
+      busy={busy}
+      danger
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
   );
 }

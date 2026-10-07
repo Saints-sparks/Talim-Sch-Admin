@@ -1,7 +1,15 @@
 import { UserPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ghostButton } from "@/components/tl";
 
-/** "Add Parents" and "Add Teachers": managers only, never in direct messages. */
+/**
+ * "Add Parents" and "Add Teachers": managers only, never in direct messages
+ * or office threads.
+ *
+ * @param props - The two handlers.
+ * @param props.onAddParents - Opens the add-parents dialog.
+ * @param props.onAddTeachers - Opens the add-teachers dialog.
+ * @returns The two buttons.
+ */
 export function AddMembersButtons({
   onAddParents,
   onAddTeachers,
@@ -10,21 +18,15 @@ export function AddMembersButtons({
   onAddTeachers: () => void;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-      <Button
-        onClick={onAddParents}
-        className="bg-green-700 hover:bg-green-800 text-white flex items-center justify-center gap-2"
-      >
-        <UserPlus size={18} />
+    <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <button type="button" onClick={onAddParents} className={ghostButton}>
+        <UserPlus className="h-4 w-4" aria-hidden />
         Add Parents
-      </Button>
-      <Button
-        onClick={onAddTeachers}
-        className="bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
-      >
-        <UserPlus size={18} />
+      </button>
+      <button type="button" onClick={onAddTeachers} className={ghostButton}>
+        <UserPlus className="h-4 w-4" aria-hidden />
         Add Teachers
-      </Button>
+      </button>
     </div>
   );
 }

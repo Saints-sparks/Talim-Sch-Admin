@@ -1,20 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Search,
-  ChevronDown,
-  Loader2,
-  Users,
-  MessageCircle,
-  MessageSquarePlus,
-  WifiOff,
-  Plus,
-  Filter,
-  Building2,
-} from "lucide-react";
+import { Building2, ChevronDown, Filter, MessageCircle, MessageSquarePlus, Plus, RefreshCw, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,26 +9,55 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState, useMemo } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { Banner, CountBadge, EmptyNote, focusRing, iconButton, rowButton, skeletonBlock } from "@/components/tl";
 import CreateGroupModal from "./CreateGroupModal";
 import NewMessageModal from "./NewMessageModal";
 import type { UseChatsReturn } from "@/hooks/useChats";
 import { toDisplayRoom, type DisplayChatRoom } from "@/lib/chat/rooms";
-import { getUserInitials } from "@/lib/colorUtils";
 import { ROOM_FILTERS, filterRooms, unreadOfficeThreads, type RoomFilter } from "./roomFilter";
+import { OfficeAvatar, PersonAvatar, TextSearch } from "./parts";
 
+/** Props for {@link ChatSidebar}. */
 interface ChatSidebarProps {
+  /** Opens a room. */
   onSelectChat: (room: DisplayChatRoom) => void;
+  /** The room open now, highlighted. */
   selectedRoomId: string | null;
+  /** The chat state from `useChats`. */
   chats: UseChatsReturn;
+  /** Extra classes for the panel. */
   className?: string;
 }
 
 /**
- * The Messages room list: search, the filter (All chats, Teachers,
- * School office, Groups), new message and new group, and one row per room
- * with its subtitle, last message and unread count. Office threads show a
- * building icon; rows open with a click, Enter or Space.
+ * When a room's last message was sent, as the list shows it: the time today,
+ * the weekday within a week, else the date.
  *
+ * @param timestamp - The last message's time.
+ * @returns "14:05", "Tue" or "3 Sep".
+ */
+function formatTime(timestamp: Date | string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+  if (diffInHours < 24) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } else if (diffInHours < 24 * 7) {
+    return date.toLocaleDateString([], { weekday: "short" });
+  } else {
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+}
+
+/**
+ * The Messages room list card: the heading with the unread count, search,
+ * the filter (All chats, Teachers, School office, Groups), refresh, New
+ * message and Create Group, and one row per room with its avatar, subtitle,
+ * last message and unread count. Office threads show the building; rows open
+ * with a click, Enter or Space.
+ *
+ * @param props - See {@link ChatSidebarProps}.
  * @param props.onSelectChat - Opens a room.
  * @param props.selectedRoomId - The room open now, highlighted.
  * @param props.chats - The chat state from `useChats`.
@@ -63,10 +78,7 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
     [originalRooms, currentUserId]
   );
 
-  const totalVisibleUnreadCount = transformedRooms.reduce(
-    (sum, room) => sum + (room.unreadCount || 0),
-    0
-  );
+  const totalVisibleUnreadCount = transformedRooms.reduce((sum, room) => sum + (room.unreadCount || 0), 0);
 
   // Filter and search; the list keeps its latest-message order.
   const displayRooms = useMemo(
@@ -75,87 +87,59 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
   );
   const officeUnread = unreadOfficeThreads(transformedRooms);
   const filterLabel = ROOM_FILTERS.find((f) => f.id === filterType)?.label ?? "All chats";
-
-  const handleSelectChat = (room: DisplayChatRoom) => {
-    onSelectChat(room);
-  };
-
-  const formatTime = (timestamp: Date | string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: "short" });
-    } else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
-  };
+  // The first load: grey rows instead of "No chats yet".
+  const showSkeleton = isLoading && originalRooms.length === 0;
 
   return (
-    <div className={`w-full h-full border-r bg-white flex flex-col ${className}`}>
+    <div className={`flex h-full min-h-0 w-full flex-col bg-tl-surface ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100 bg-white">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
-          Messages
-          {totalVisibleUnreadCount > 0 && (
-            <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-              {totalVisibleUnreadCount > 99 ? "99+" : totalVisibleUnreadCount}
-            </span>
-          )}
-        </h2>
-        {isLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
-      </div>
-
-      {/* Search Section */}
-      <div
-        className="p-3 sm:p-4 space-y-3 bg-white border-b border-gray-50"
-        data-guide="messages-search"
-      >
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-            size={16}
-          />
-          <Input
-            className="pl-9 pr-4 py-3 sm:py-2.5 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-gray-500 touch-manipulation"
-            placeholder="Search conversations..."
-            aria-label="Search conversations"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="flex flex-col gap-3 border-b border-tl-line-soft p-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="flex min-w-0 items-center gap-2 pl-1 text-[19px] font-extrabold tracking-[-0.3px] text-tl-ink">
+            Messages
+            <CountBadge count={totalVisibleUnreadCount} label={`${totalVisibleUnreadCount} unread`} />
+          </h1>
+          <button
+            type="button"
+            onClick={() => fetchChatRooms()}
+            aria-label="Refresh conversations"
+            title="Refresh"
+            className={iconButton}
+          >
+            <RefreshCw className={`h-[18px] w-[18px] ${isLoading ? "animate-spin" : ""}`} aria-hidden />
+          </button>
         </div>
 
-        <div className="flex gap-2">
+        {/* Search and filter */}
+        <div className="flex flex-col gap-2" data-guide="messages-search">
+          <TextSearch
+            value={searchTerm}
+            onChange={setSearchTerm}
+            label="Search conversations"
+            placeholder="Search conversations..."
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 aria-label={`Filter: ${filterLabel}`}
-                className="flex items-center gap-2 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
+                className={`inline-flex min-h-[44px] w-full items-center gap-2 rounded-[13px] border border-tl-control bg-tl-surface px-3.5 text-sm font-bold text-tl-ink transition-colors hover:bg-tl-bg ${focusRing}`}
               >
-                <Filter size={12} aria-hidden />
-                {filterLabel}
+                <Filter className="h-4 w-4 text-tl-muted" aria-hidden />
+                <span className="flex-1 truncate text-left">{filterLabel}</span>
                 {filterType !== "office" && officeUnread > 0 && (
-                  <span
-                    className="inline-block h-2 w-2 rounded-full bg-amber-500"
-                    title="Unread office threads"
-                    aria-hidden
-                  />
+                  <span className="tl-dot-warning inline-block h-2 w-2 rounded-full" title="Unread office threads" aria-hidden />
                 )}
-                <ChevronDown size={12} aria-hidden />
-              </Button>
+                <ChevronDown className="h-4 w-4 text-tl-muted" aria-hidden />
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuContent align="start" className="w-56">
               {ROOM_FILTERS.map((f) => (
                 <DropdownMenuItem key={f.id} onClick={() => setFilterType(f.id)} className="flex items-center gap-2">
-                  {f.id === "office" && <Building2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />}
+                  {f.id === "office" && <Building2 className="h-4 w-4 text-tl-warning" aria-hidden />}
                   <span className="flex-1">{f.label}</span>
                   {f.id === "office" && officeUnread > 0 && (
-                    <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 text-[10px] font-semibold text-amber-800 dark:text-amber-200">
+                    <span className="rounded-full bg-tl-warning-bg px-1.5 text-[11px] font-extrabold text-tl-warning">
                       {officeUnread}
                       <span className="sr-only"> unread</span>
                     </span>
@@ -164,173 +148,114 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchChatRooms()}
-            className="flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 active:bg-gray-100 rounded-lg px-3 py-2.5 sm:py-2 text-xs touch-manipulation"
+        {/* Start a direct chat with a teacher or parent, or a group. */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            data-guide="messages-new-message"
+            className={`${rowButton} w-full`}
+            title="Chat with a teacher or parent"
+            onClick={() => setIsNewMessageOpen(true)}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={isLoading ? "animate-spin" : ""}
-            >
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            Refresh
-          </Button>
+            <MessageSquarePlus className="h-4 w-4" aria-hidden />
+            New message
+          </button>
+          <button
+            type="button"
+            data-guide="messages-create-group"
+            className={`${rowButton} w-full`}
+            title="Add teachers and students"
+            onClick={() => setIsCreateGroupModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Create Group
+          </button>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="mx-3 sm:mx-4 mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
-          <button
-            onClick={() => fetchChatRooms()}
-            className="text-xs text-red-700 underline mt-1 hover:text-red-800"
+        <div className="px-3.5 pt-3">
+          <Banner
+            tone="danger"
+            role="alert"
+            action={
+              <button type="button" onClick={() => fetchChatRooms()} className={rowButton}>
+                Retry
+              </button>
+            }
           >
-            Retry
-          </button>
+            {error}
+          </Banner>
         </div>
       )}
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        {/* New message: start a direct chat with a teacher or parent */}
-        <div className="px-3 sm:px-4 mb-1">
-          <button
-            data-guide="messages-new-message"
-            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 active:bg-gray-100 rounded-xl transition-colors text-left group touch-manipulation"
-            onClick={() => setIsNewMessageOpen(true)}
-          >
-            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
-              <MessageSquarePlus className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 text-sm">New message</p>
-              <p className="text-xs text-gray-500 truncate">Chat with a teacher or parent</p>
-            </div>
-          </button>
-        </div>
-
-        {/* Create Group Button */}
-        <div className="px-3 sm:px-4 mb-2">
-          <button
-            data-guide="messages-create-group"
-            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 active:bg-gray-100 rounded-xl transition-colors text-left group touch-manipulation"
-            onClick={() => setIsCreateGroupModalOpen(true)}
-          >
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 group-active:bg-blue-300 transition-colors">
-              <Plus className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 text-sm">Create Group</p>
-              <p className="text-xs text-gray-500 truncate">Add teachers and students</p>
-            </div>
-          </button>
-        </div>
-
-        {/* Connection Status - You can determine this from your WebSocket implementation */}
-        {false && (
-          <div className="flex items-center justify-center p-6 text-gray-500">
-            <div className="text-center">
-              <WifiOff className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">Connecting to chat...</p>
-            </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        {showSkeleton ? (
+          <div role="status" aria-label="Loading conversations" className="flex flex-col gap-1 p-1">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} aria-hidden className={`${skeletonBlock} h-16 rounded-2xl`} />
+            ))}
           </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && displayRooms.length === 0 && (
-          <div className="flex items-center justify-center p-6 text-gray-500">
-            <div className="text-center">
-              <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">
-                {searchTerm ? "No chats found" : filterType === "office" ? "No office threads yet" : "No chats yet"}
-              </p>
-              {!searchTerm && (
-                <p className="text-xs text-gray-400 mt-1">
-                  {filterType === "office"
-                    ? "When a teacher or a parent messages the school office, the thread appears here."
-                    : "Start by creating a group chat"}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        ) : !isLoading && displayRooms.length === 0 ? (
+          <EmptyNote
+            compact
+            icon={<MessageCircle />}
+            title={searchTerm ? "No chats found" : filterType === "office" ? "No office threads yet" : "No chats yet"}
+          >
+            {searchTerm
+              ? null
+              : filterType === "office"
+                ? "When a teacher or a parent messages the school office, the thread appears here."
+                : "Start by creating a group chat"}
+          </EmptyNote>
+        ) : null}
 
         {/* Chat Items */}
-        <div className="px-2 sm:px-3">
+        <div className="flex flex-col gap-0.5">
           {displayRooms.map((room) => {
+            const selected = selectedRoomId === room.roomId;
             return (
               <div
                 key={room.roomId}
                 role="button"
                 tabIndex={0}
-                aria-current={selectedRoomId === room.roomId ? "true" : undefined}
+                aria-current={selected ? "true" : undefined}
                 data-category={room.category}
                 data-office-owner={room.officeOwnerRole}
-                className={`flex items-center gap-3 p-3 mx-1 hover:bg-gray-50 dark:hover:bg-slate-800 active:bg-gray-100 rounded-xl cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                  selectedRoomId === room.roomId
-                    ? "bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 shadow-sm"
-                    : ""
+                className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-2xl p-3 transition-colors ${focusRing} ${
+                  selected ? "bg-tl-select" : "hover:bg-tl-subtle"
                 } touch-manipulation`}
-                onClick={() => handleSelectChat(room)}
+                onClick={() => onSelectChat(room)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleSelectChat(room);
+                    onSelectChat(room);
                   }
                 }}
               >
                 {/* Avatar */}
-                <div className="relative flex-shrink-0">
+                <div className="relative shrink-0">
                   {room.isOffice ? (
-                    <div
-                      className="w-11 h-11 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                      aria-hidden
-                    >
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                  ) : room.avatarInfo.type === "image" ? (
-                    <Avatar className="w-11 h-11">
-                      <AvatarImage src={room.avatarInfo.value} />
-                      <AvatarFallback
-                        className="text-white font-medium text-sm"
-                        style={{ backgroundColor: room.avatarInfo.bgColor }}
-                      >
-                        {getUserInitials(room.displayName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <OfficeAvatar size={44} />
                   ) : (
-                    <div
-                      className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      style={{ backgroundColor: room.avatarInfo.bgColor }}
-                    >
-                      {room.avatarInfo.value}
-                    </div>
+                    <PersonAvatar
+                      id={room.roomId}
+                      name={room.displayName}
+                      src={room.avatarInfo.type === "image" ? room.avatarInfo.value : null}
+                      size={44}
+                    />
                   )}
 
                   {/* Online indicator for private chats */}
                   {room.type === "private" && (
-                    <Tooltip
-                      content="One-to-one conversation with a teacher or parent."
-                      side="right"
-                    >
+                    <Tooltip content="One-to-one conversation with a teacher or parent." side="right">
                       <span
-                        className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full ${
-                          room.isOnline ? "bg-green-500" : "bg-gray-400"
+                        className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-tl-surface ${
+                          room.isOnline ? "tl-dot-success" : "bg-tl-control"
                         }`}
                       />
                     </Tooltip>
@@ -342,21 +267,19 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
                       content="Broadcast conversations with all members. Any member can send a message."
                       side="right"
                     >
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center">
-                        <Users className="w-2 h-2 text-white" />
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-tl-surface bg-tl-brand-fill text-tl-on-brand">
+                        <Users className="h-2 w-2" aria-hidden />
                       </span>
                     </Tooltip>
                   )}
                 </div>
 
                 {/* Chat Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <h3 className="font-medium text-gray-900 truncate text-sm">
-                      {room.displayName}
-                    </h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-[15px] font-extrabold text-tl-ink">{room.displayName}</p>
                     {room.lastMessage?.timestamp && (
-                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                      <span className="shrink-0 whitespace-nowrap text-xs text-tl-faint">
                         {formatTime(room.lastMessage.timestamp)}
                       </span>
                     )}
@@ -364,28 +287,25 @@ export default function ChatSidebar({ onSelectChat, selectedRoomId, chats, class
 
                   {room.subtitle && (
                     <p
-                      className={`text-xs truncate mb-0.5 flex items-center gap-1 ${
-                        room.isOffice ? "text-amber-800 dark:text-amber-300" : "text-gray-500"
+                      className={`mt-0.5 flex items-center gap-1 truncate text-xs font-semibold ${
+                        room.isOffice ? "text-tl-warning" : "text-tl-muted"
                       }`}
                     >
-                      {room.isOffice && <Building2 className="w-3 h-3 flex-shrink-0" aria-hidden />}
+                      {room.isOffice && <Building2 className="h-3 w-3 shrink-0" aria-hidden />}
                       {room.subtitle}
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 truncate pr-2">
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <p
+                      className={`truncate text-[13px] ${room.unreadCount > 0 ? "font-bold text-tl-ink" : "text-tl-muted"}`}
+                    >
                       {room.lastMessage?.content || "No messages yet"}
                     </p>
                     {room.unreadCount > 0 && (
-                      <Tooltip
-                        content="Number of messages you haven't read yet in this conversation."
-                        side="top"
-                      >
-                        <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium text-white bg-blue-600 rounded-full">
-                          {room.unreadCount > 99 ? "99+" : room.unreadCount}
-                        </span>
-                      </Tooltip>
+                      <span title="Number of messages you haven't read yet in this conversation." className="shrink-0">
+                        <CountBadge count={room.unreadCount} label={`${room.unreadCount} unread`} />
+                      </span>
                     )}
                   </div>
                 </div>

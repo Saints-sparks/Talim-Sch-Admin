@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChatsContext } from "@/context/ChatsContext";
 import { type ChatRoom } from "@/types/chat.types";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "@/components/CustomToast";
 import { getClasses, getCoursesBySchool } from "@/app/services/subjects.service";
 import { getErrorMessage } from "@/lib/apiError";
@@ -17,11 +18,12 @@ import {
   createdMessage,
   isGroupFormValid,
   namePlaceholder,
-  submitButtonClass,
-  COLOR_MAP,
   type GroupKind,
 } from "./create-group/createGroup";
+import { fieldControl, fieldLabel, ghostButton, primaryButton } from "@/components/tl";
+import { dialogOverlay, dialogPanel } from "./parts";
 
+/** Props for {@link CreateGroupModal}. */
 interface CreateGroupModalProps {
   open: boolean;
   onClose: () => void;
@@ -30,6 +32,17 @@ interface CreateGroupModalProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * Starts a group: step 1 picks the kind (parent, class, subject or custom),
+ * step 2 names it (and picks the class or subject) and creates it. A class or
+ * subject group that already exists is opened instead.
+ *
+ * @param props - See {@link CreateGroupModalProps}.
+ * @param props.open - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.onSuccess - Called with the room created or reused.
+ * @returns The dialog, or null while closed.
+ */
 const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSuccess }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedKind, setSelectedKind] = useState<GroupKind | null>(null);
@@ -44,6 +57,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
 
   const { user } = useAuth();
   const { createGroupChat } = useChatsContext();
+  const titleId = useId();
 
   // Load school info when modal opens
   useEffect(() => {
@@ -129,112 +143,123 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ open, onClose, onSu
   if (!open) return null;
 
   const selected = GROUP_TYPES.find((g) => g.kind === selectedKind);
-  const colors = selected ? COLOR_MAP[selected.color] : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in duration-200 relative overflow-hidden">
+    <div className={`${dialogOverlay} z-50`}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={`${dialogPanel} sm:max-w-md`}>
         <CreateGroupHeader
           step={step}
           title={selected?.label}
           subtitle={selected?.description}
+          titleId={titleId}
           submitting={submitting}
           onBack={() => setStep(1)}
           onClose={onClose}
         />
 
-        {/* Step 1 — Type picker */}
-        {step === 1 && <GroupTypePicker onSelect={handleSelectKind} />}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Step 1 — Type picker */}
+          {step === 1 && <GroupTypePicker onSelect={handleSelectKind} />}
 
-        {/* Step 2 — Form */}
-        {step === 2 && selected && colors && (
-          <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {/* Group name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Group Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder={namePlaceholder(selectedKind)}
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                required
-                disabled={submitting}
-                autoFocus
-              />
-            </div>
+          {/* Step 2 — Form */}
+          {step === 2 && selected && (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5">
+              {/* Group name */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${titleId}-name`} className={fieldLabel}>
+                  Group Name{" "}
+                  <span aria-hidden className="text-tl-danger">
+                    *
+                  </span>
+                </label>
+                <input
+                  id={`${titleId}-name`}
+                  type="text"
+                  className={fieldControl}
+                  placeholder={namePlaceholder(selectedKind)}
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  required
+                  disabled={submitting}
+                  autoFocus
+                />
+              </div>
 
-            {selectedKind === "class" && (
-              <OptionSelect
-                label="Select Class"
-                loadingLabel="Loading classes..."
-                placeholder="-- Choose a class --"
-                loading={loadingOptions}
-                disabled={submitting}
-                value={classId}
-                onChange={setClassId}
-              >
-                {classes.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {classOptionLabel(c)}
-                  </option>
-                ))}
-              </OptionSelect>
-            )}
+              {selectedKind === "class" && (
+                <OptionSelect
+                  id={`${titleId}-class`}
+                  label="Select Class"
+                  loadingLabel="Loading classes..."
+                  placeholder="-- Choose a class --"
+                  loading={loadingOptions}
+                  disabled={submitting}
+                  value={classId}
+                  onChange={setClassId}
+                >
+                  {classes.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {classOptionLabel(c)}
+                    </option>
+                  ))}
+                </OptionSelect>
+              )}
 
-            {selectedKind === "course" && (
-              <OptionSelect
-                label="Select Subject / Course"
-                loadingLabel="Loading subjects..."
-                placeholder="-- Choose a subject --"
-                loading={loadingOptions}
-                disabled={submitting}
-                value={courseId}
-                onChange={setCourseId}
-              >
-                {courses.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {courseOptionLabel(c)}
-                  </option>
-                ))}
-              </OptionSelect>
-            )}
+              {selectedKind === "course" && (
+                <OptionSelect
+                  id={`${titleId}-course`}
+                  label="Select Subject / Course"
+                  loadingLabel="Loading subjects..."
+                  placeholder="-- Choose a subject --"
+                  loading={loadingOptions}
+                  disabled={submitting}
+                  value={courseId}
+                  onChange={setCourseId}
+                >
+                  {courses.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {courseOptionLabel(c)}
+                    </option>
+                  ))}
+                </OptionSelect>
+              )}
 
-            {/* School display */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">School</label>
-              <input
-                className="w-full border border-gray-100 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-                value={schoolDetails?.name || "Loading…"}
-                disabled
-              />
-            </div>
+              {/* School display */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${titleId}-school`} className={fieldLabel}>
+                  School
+                </label>
+                <input
+                  id={`${titleId}-school`}
+                  className={cn(fieldControl, "bg-tl-subtle")}
+                  value={schoolDetails?.name || "Loading…"}
+                  disabled
+                />
+              </div>
 
-            <NextStepsCard kind={selected.kind} color={selected.color} schoolName={schoolDetails?.name} />
+              <NextStepsCard kind={selected.kind} color={selected.color} schoolName={schoolDetails?.name} />
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
-                disabled={submitting}
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${submitButtonClass(selected.color)}`}
-                disabled={submitting || !isFormValid() || !schoolDetails?.id}
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {submitting ? "Creating…" : `Create ${selected.label}`}
-              </button>
-            </div>
-          </form>
-        )}
+              {/* Actions */}
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className={`${ghostButton} flex-1`}
+                  disabled={submitting}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className={`${primaryButton} flex-1`}
+                  disabled={submitting || !isFormValid() || !schoolDetails?.id}
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                  {submitting ? "Creating…" : `Create ${selected.label}`}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

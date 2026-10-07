@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { LogOut, ShieldCheck, UserMinus } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { generateColorFromString, getUserInitials } from "@/lib/colorUtils";
+import { Pill, dangerGhostButton } from "@/components/tl";
 import type { ChatRoom, Participant } from "@/types/chat.types";
 import { useChatsContext } from "@/context/ChatsContext";
 import { canLeaveRoom, isGroupAdmin, isOfficeRoom } from "@/lib/chat/rooms";
 import ConfirmDialog from "./ConfirmDialog";
+import { PersonAvatar } from "./parts";
 
+/** Props for {@link GroupMemberList}. */
 interface GroupMemberListProps {
   room: ChatRoom;
   currentUserId: string;
@@ -45,6 +46,7 @@ type PendingAction = { kind: "remove"; member: Participant } | { kind: "leave" }
  * the room's `admins`); me first, then the admins, then by name. Remove for
  * managers and Leave for me where allowed; neither in an office thread.
  *
+ * @param props - See {@link GroupMemberListProps}.
  * @param props.room - The room, live from the room list.
  * @param props.currentUserId - The viewer.
  * @param props.canManage - Whether the viewer may remove members.
@@ -82,41 +84,37 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
 
   return (
     <div>
-      <ul className="space-y-1.5">
+      <ul className="flex flex-col gap-1.5">
         {members.map((member) => {
           const name = displayName(member);
           const isMe = member.userId === currentUserId;
           const isAdmin = isGroupAdmin(room, member.userId);
           return (
-            <li key={member.userId} className="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-2">
-              <div className="relative flex-shrink-0">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={member.userAvatar || undefined} />
-                  <AvatarFallback className="text-xs text-white" style={{ backgroundColor: generateColorFromString(name) }}>
-                    {getUserInitials(name)}
-                  </AvatarFallback>
-                </Avatar>
-                <span
-                  className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${
-                    member.isOnline ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                  role="img"
-                  aria-label={member.isOnline ? "Online" : "Offline"}
-                />
-              </div>
+            <li
+              key={member.userId}
+              className="flex items-center gap-3 rounded-2xl border border-tl-line-soft px-3 py-2.5"
+            >
+              <PersonAvatar
+                id={member.userId}
+                name={name}
+                src={member.userAvatar || null}
+                size={36}
+                online={Boolean(member.isOnline)}
+                announceOnline
+              />
               <div className="min-w-0 flex-1 text-left">
-                <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-slate-100">
+                <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-bold text-tl-ink">
                   <span className="truncate">
-                    {name} {isMe && <span className="font-normal text-gray-500">(You)</span>}
+                    {name} {isMe && <span className="font-medium text-tl-muted">(You)</span>}
                   </span>
                   {isAdmin && (
-                    <span className="inline-flex flex-shrink-0 items-center gap-0.5 rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                    <Pill tone="info">
                       <ShieldCheck className="h-3 w-3" aria-hidden />
                       Group admin
-                    </span>
+                    </Pill>
                   )}
                 </p>
-                <p className="truncate text-xs text-gray-500">
+                <p className="truncate text-xs text-tl-muted">
                   {[roleLabel(member.role), member.isOnline ? "Online" : "Offline"].filter(Boolean).join(" · ")}
                 </p>
               </div>
@@ -124,10 +122,10 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
                 <button
                   type="button"
                   onClick={() => setPending({ kind: "remove", member })}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  className={dangerGhostButton}
                   aria-label={`Remove ${name}`}
                 >
-                  <UserMinus size={14} />
+                  <UserMinus size={14} aria-hidden />
                   <span className="hidden sm:inline">Remove</span>
                 </button>
               )}
@@ -140,9 +138,9 @@ export default function GroupMemberList({ room, currentUserId, canManage }: Grou
         <button
           type="button"
           onClick={() => setPending({ kind: "leave" })}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          className={`${dangerGhostButton} mt-4 w-full`}
         >
-          <LogOut size={16} />
+          <LogOut size={16} aria-hidden />
           Leave group
         </button>
       )}

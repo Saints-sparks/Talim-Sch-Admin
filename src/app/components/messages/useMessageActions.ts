@@ -45,8 +45,8 @@ export function useMessageActions(
     const el = document.getElementById(`msg-${messageId}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.classList.add("bg-blue-50");
-    window.setTimeout(() => el.classList.remove("bg-blue-50"), 1200);
+    el.classList.add("bg-tl-select");
+    window.setTimeout(() => el.classList.remove("bg-tl-select"), 1200);
   }, []);
 
   /** `jump` only for a quote whose original is loaded. */

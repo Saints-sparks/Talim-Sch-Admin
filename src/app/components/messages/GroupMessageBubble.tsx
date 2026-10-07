@@ -1,13 +1,11 @@
-import type { CSSProperties } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import BubbleMenu from "./BubbleMenu";
 import MessageBody from "./MessageBody";
 import type { ChatReplyTo, ReplyDraft } from "@/components/chat-kit";
 import MessageDeliveryStatus from "./MessageDeliveryStatus";
 import MessageTicks from "./MessageTicks";
 import type { DeliveryState } from "@/lib/chat/readReceipts";
-import { generateColorFromString, getUserInitials, onDarkShade } from "@/lib/colorUtils";
+import { toneClass } from "@/components/tl";
+import { PersonAvatar, bubbleFrame } from "./parts";
 
 interface Attachment {
   url: string;
@@ -21,13 +19,13 @@ interface Attachment {
   playbackUrl?: string;
 }
 
+/** Props for {@link GroupMessageBubble}. */
 interface MessageBubbleProps {
   msg: {
     _id: string;
     senderType: string;
     avatar: string;
     sender: string;
-    color: string;
     type: string;
     text?: string;
     duration?: string | number;
@@ -55,6 +53,21 @@ interface MessageBubbleProps {
   onJump?: (messageId: string) => void;
 }
 
+/**
+ * One group message: the sender's avatar and name (in their own tone) over
+ * other people's messages, the bubble (navy for mine, white for theirs) with
+ * its menu and content, and the time with the delivery state and "Read by N"
+ * under it.
+ *
+ * @param props - See {@link MessageBubbleProps}.
+ * @param props.msg - The message as the thread shows it.
+ * @param props.onReply - Starts a reply.
+ * @param props.onDeleteMessage - Deletes it, when allowed.
+ * @param props.onJump - Scrolls to a quoted message.
+ * @param props.onRetry - Resends a failed message.
+ * @param props.onDelete - Drops a failed message.
+ * @returns The bubble row.
+ */
 export default function GroupMessageBubble({
   msg,
   onReply,
@@ -64,68 +77,42 @@ export default function GroupMessageBubble({
   onDelete,
 }: MessageBubbleProps) {
   const isMe = msg.senderType === "self";
-  const initials = msg.initials || getUserInitials(msg.sender);
-  const bgColor = msg.color || generateColorFromString(msg.sender);
 
   return (
-    <div
-      className={`relative flex items-end ${
-        isMe ? "justify-end" : "justify-start"
-      } gap-2 px-2 sm:px-0 mb-3`}
-    >
-      <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${
-        isMe ? "flex-row-reverse" : "flex-row"
-      }`}>
+    <div className={`relative mb-3 flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}>
+      <div className={`flex max-w-[85%] gap-2 sm:max-w-md ${isMe ? "flex-row-reverse" : "flex-row"}`}>
         {!isMe && (
-          <div className="relative w-8 h-8 flex-shrink-0 self-end mb-1">
-            <Avatar className="w-8 h-8 rounded-full">
-              <AvatarImage src={msg.avatar} />
-              <AvatarFallback
-                className="text-white font-medium text-xs"
-                style={{ backgroundColor: bgColor }}
-              >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+          <div className="mb-6 self-end">
+            <PersonAvatar id={msg.sender} name={msg.sender} initials={msg.initials} src={msg.avatar || null} size={32} />
           </div>
         )}
 
-        <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+        <div className={`flex min-w-0 flex-col ${isMe ? "items-end" : "items-start"}`}>
           {msg.sender !== "me" && !isMe && (
-            <div className="mb-1 px-1">
-              {/* The sender colours are dark shades, readable on white; the dark theme uses a lighter mix of each. */}
-              <p
-                className="text-xs font-semibold text-[color:var(--sender)] dark:text-[color:var(--sender-dark)]"
-                style={{ "--sender": bgColor, "--sender-dark": onDarkShade(bgColor) } as CSSProperties}
-              >
-                {msg.sender}
-              </p>
-            </div>
+            // Each sender keeps a stable tone; its text shade is readable on the thread in both themes.
+            <p className={`${toneClass(msg.sender)} mb-1 px-1 text-xs font-extrabold text-tone-fg`}>{msg.sender}</p>
           )}
 
-          <Card
-            className={`px-3 py-2 sm:px-4 sm:py-3 border-none shadow-sm relative group ${
-              isMe
-                ? "bg-blue-600 text-white rounded-2xl rounded-br-md"
-                : "bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-bl-md"
-            }`}
-          >
+          <div className={bubbleFrame(isMe)}>
             <BubbleMenu
               msg={msg}
               isMe={isMe}
               onReply={
                 onReply
-                  ? () => onReply({ messageId: msg._id, senderName: msg.sender, preview: msg.text || (msg.attachments?.length ? "Attachment" : "") })
+                  ? () =>
+                      onReply({
+                        messageId: msg._id,
+                        senderName: msg.sender,
+                        preview: msg.text || (msg.attachments?.length ? "Attachment" : ""),
+                      })
                   : undefined
               }
               onDeleteMessage={onDeleteMessage}
             />
             <MessageBody msg={msg} isMe={isMe} onJump={onJump} />
-          </Card>
+          </div>
 
-          <div className={`flex items-center gap-1 text-xs text-gray-400 mt-1 px-1 ${
-            isMe ? "flex-row-reverse" : "flex-row"
-          }`}>
+          <div className={`mt-1 flex items-center gap-1 px-1 text-[11px] text-tl-faint ${isMe ? "flex-row-reverse" : "flex-row"}`}>
             <span>{msg.time}</span>
             {msg.status ? (
               <MessageDeliveryStatus status={msg.status} error={msg.error} onRetry={onRetry} onDelete={onDelete} />
@@ -134,7 +121,7 @@ export default function GroupMessageBubble({
                 <>
                   <MessageTicks state={msg.deliveryState} />
                   {typeof msg.readByCount === "number" && msg.readByCount > 0 && (
-                    <span className="text-gray-400">Read by {msg.readByCount}</span>
+                    <span>Read by {msg.readByCount}</span>
                   )}
                 </>
               )
