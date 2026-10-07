@@ -9,9 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QUALIFICATIONS, type TeacherDraft } from "@/hooks/users/useTeacherEditor";
-import { Labelled, SectionShell, inputClass, type TabProps } from "./editShared";
+import { Labelled, SectionShell, type TabProps } from "./editShared";
 
-/** Highest qualification, years of experience and specialization. */
+/**
+ * Highest qualification, years of experience and specialization.
+ *
+ * @param props - The tab props.
+ * @param props.draft - The editable profile.
+ * @param props.setField - Field setter.
+ * @param props.onSubmit - Saves the section.
+ * @param props.isSaving - Whether it is saving.
+ * @param props.onDeactivate - Deactivates the teacher.
+ * @param props.isDeactivated - Whether the teacher is deactivated.
+ * @returns The tab.
+ */
 export function TeacherEditQualificationsTab({
   draft,
   setField,
@@ -35,7 +46,7 @@ export function TeacherEditQualificationsTab({
             setField("highestAcademicQualification", value as TeacherDraft["highestAcademicQualification"])
           }
         >
-          <SelectTrigger id="qualification" className={inputClass}>
+          <SelectTrigger id="qualification">
             <SelectValue placeholder="Select qualification" />
           </SelectTrigger>
           <SelectContent>
@@ -56,7 +67,6 @@ export function TeacherEditQualificationsTab({
           value={draft.yearsOfExperience}
           onChange={(e) => setField("yearsOfExperience", e.target.value)}
           placeholder="Enter years"
-          className={inputClass}
         />
       </Labelled>
       <div className="md:col-span-2">
@@ -66,7 +76,6 @@ export function TeacherEditQualificationsTab({
             value={draft.specialization}
             onChange={(e) => setField("specialization", e.target.value)}
             placeholder="e.g. Mathematics"
-            className={inputClass}
           />
         </Labelled>
       </div>

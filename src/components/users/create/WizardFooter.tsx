@@ -1,8 +1,11 @@
 "use client";
 
 import React from "react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { ghostButton, primaryButton } from "@/components/tl";
 
+/** Props for {@link WizardFooter}. */
 interface WizardFooterProps {
   /** Zero-based current step. */
   step: number;
@@ -10,7 +13,9 @@ interface WizardFooterProps {
   lastStep: number;
   /** True while the create request is in flight. */
   pending: boolean;
+  /** Goes back a step. */
   onBack: () => void;
+  /** Validates and continues, or creates on the last step. */
   onNext: () => void;
   /** Label on the last step, e.g. "Create Teacher". */
   submitLabel: string;
@@ -22,25 +27,21 @@ interface WizardFooterProps {
   size: "lg" | "md";
 }
 
-/** Spinner shown on the primary button while a request is in flight. */
-function Spinner() {
-  return (
-    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
-  );
-}
-
 /**
- * Back / Continue / Create bar for a wizard dialog. The primary button is
- * disabled while a request is in flight, which is what blocks a double submit.
+ * Back / Continue / Create bar for a wizard dialog, on the sheet's pale
+ * footer. The primary button is disabled while a request is in flight, which
+ * is what blocks a double submit.
  *
  * @param props - Step position, pending flag, handlers and labels.
+ * @param props.step - The current step.
+ * @param props.lastStep - The last step.
+ * @param props.pending - Whether a request is in flight.
+ * @param props.onBack - Back handler.
+ * @param props.onNext - Continue / create handler.
+ * @param props.submitLabel - The last step's button words.
+ * @param props.continueHint - The middle steps' tooltip.
+ * @param props.submitHint - The last step's tooltip.
+ * @param props.size - Kept for the callers; both densities share the tl buttons.
  * @returns The footer bar.
  */
 export function WizardFooter({
@@ -52,55 +53,33 @@ export function WizardFooter({
   submitLabel,
   continueHint,
   submitHint,
-  size,
 }: WizardFooterProps) {
   const isLast = step === lastStep;
-  const lg = size === "lg";
-  const backBase = lg ? "px-6 py-3 rounded-xl" : "px-5 py-2.5 rounded-lg";
-  const backTone =
-    step === 0 || pending
-      ? "bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
-      : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-700";
 
   return (
-    <div
-      className={`${
-        lg ? "p-6 bg-gray-50" : "px-6 py-4 bg-white"
-      } dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex-shrink-0`}
-    >
-      <div className="flex justify-between items-center gap-4">
+    <div className="flex-shrink-0 border-t border-tl-line-soft bg-tl-subtle px-[clamp(20px,3vw,30px)] py-4">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
           disabled={step === 0 || pending}
-          className={`${backBase} font-medium transition-all flex items-center gap-2 ${backTone}`}
+          className={ghostButton}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="h-4 w-4" aria-hidden />
           Back
         </button>
 
         <Tooltip content={isLast ? submitHint : continueHint} side="top">
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={pending}
-            className={`${
-              lg ? "px-8 py-3 rounded-xl" : "px-6 py-2.5 rounded-lg shadow-sm hover:shadow"
-            } bg-[#003366] text-white font-medium hover:bg-[#002244] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
+          <button type="button" onClick={onNext} disabled={pending} className={primaryButton}>
             {pending ? (
               <>
-                <Spinner />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                 Processing...
               </>
             ) : (
               <>
                 {isLast ? submitLabel : "Continue"}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRight className="h-4 w-4" aria-hidden />
               </>
             )}
           </button>

@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { GraduationCap, Plus } from "lucide-react";
 import AddStudentModal from "@/components/AddStudentModal";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
-import { EmptyState } from "@/components/StateComponents";
 import { PermissionGate, RequirePermission } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -15,6 +15,8 @@ import RosterFilters from "@/components/users/RosterFilters";
 import RosterPagination from "@/components/users/RosterPagination";
 import RosterErrorState from "@/components/users/RosterErrorState";
 import StudentRosterCard from "@/components/users/StudentRosterCard";
+import { rosterGrid } from "@/components/users/parts";
+import { EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
 import type { Student } from "@/app/services/student.service";
 
 /**
@@ -25,7 +27,13 @@ import type { Student } from "@/app/services/student.service";
  */
 const FILTER_SCAN_LIMIT = 500;
 
-/** True when `student` matches the search text across their name, contact and ID. */
+/**
+ * True when `student` matches the search text across their name, contact and ID.
+ *
+ * @param student - The roster row.
+ * @param search - The lower-cased search text.
+ * @returns Whether it matches.
+ */
 function matchesSearch(student: Student, search: string): boolean {
   if (!search) return true;
   return [
@@ -40,6 +48,12 @@ function matchesSearch(student: Student, search: string): boolean {
     .includes(search);
 }
 
+/**
+ * The student roster: heading with the count and Add Student, the search and
+ * filter toolbar, the grid of student cards and the pagination.
+ *
+ * @returns The roster.
+ */
 function StudentsRoster() {
   const router = useRouter();
   const controls = useRosterControls(12);
@@ -81,55 +95,54 @@ function StudentsRoster() {
   const viewProfile = (studentId: string) => router.push(`/users/students/${studentId}/view`);
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 flex flex-col">
-      <div
-        className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 mt-2"
-        data-guide="students-header"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <h1 className="text-[19px] font-semibold leading-[120%] flex items-center gap-3 text-gray-900 dark:text-white">
+    <Page>
+      <PageHeader
+        guide="students-header"
+        title={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             My Students
-            <span className="bg-white dark:bg-slate-800 border border-[#E4E4E4] dark:border-slate-700 leading-[120%] text-[15px] font-semibold px-3 py-1 rounded-xl">
+            <Pill tone="muted" className="text-[13px]">
               {(rosterQuery.data?.meta?.total ?? 0).toLocaleString()} Students
-            </span>
-          </h1>
-        </div>
-        <PermissionGate permission={Permission.MANAGE_STUDENTS}>
-          <Tooltip
-            content="Enrol a new student and assign them to a class. An account will be created for them."
-            side="top"
-          >
-            <button
-              data-guide="students-add"
-              onClick={toggleModal}
-              className="mt-4 sm:mt-0 bg-[#003366] leading-[120%] hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold text-[15px] flex items-center gap-2"
+            </Pill>
+          </span>
+        }
+        actions={
+          <PermissionGate permission={Permission.MANAGE_STUDENTS}>
+            <Tooltip
+              content="Enrol a new student and assign them to a class. An account will be created for them."
+              side="top"
             >
-              <span className="text-lg font-bold">+</span> Add Student
-            </button>
-          </Tooltip>
-        </PermissionGate>
-      </div>
+              <button
+                type="button"
+                data-guide="students-add"
+                onClick={toggleModal}
+                className={primaryButton}
+              >
+                <Plus className="h-4 w-4" aria-hidden /> Add Student
+              </button>
+            </Tooltip>
+          </PermissionGate>
+        }
+      />
 
-      <div className="mb-6">
-        <RosterFilters
-          dataGuide="students-filters"
-          search={controls.search}
-          onSearchChange={controls.setSearch}
-          classes={classesQuery.data ?? []}
-          selectedClass={controls.classId}
-          onClassChange={controls.setClassId}
-          classTooltip="Show only students in this class."
-          status={controls.status}
-          onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
-          statusTooltip="Active students are currently enrolled. Inactive students have been deactivated."
-        />
-      </div>
+      <RosterFilters
+        dataGuide="students-filters"
+        search={controls.search}
+        onSearchChange={controls.setSearch}
+        classes={classesQuery.data ?? []}
+        selectedClass={controls.classId}
+        onClassChange={controls.setClassId}
+        classTooltip="Show only students in this class."
+        status={controls.status}
+        onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
+        statusTooltip="Active students are currently enrolled. Inactive students have been deactivated."
+      />
 
       {isModalOpen && (
         <AddStudentModal onClose={toggleModal} onSuccess={() => rosterQuery.refetch()} />
       )}
 
-      <div className="flex-1" data-guide="students-list">
+      <div data-guide="students-list">
         {rosterQuery.isPending ? (
           <StudentsSkeleton />
         ) : rosterQuery.isError ? (
@@ -139,19 +152,27 @@ function StudentsRoster() {
             onRetry={() => rosterQuery.refetch()}
           />
         ) : visible.length === 0 ? (
-          <EmptyState
-            icon="👩‍🎓"
-            title={controls.hasAnyFilter ? "No Students Match" : "No Students Yet"}
-            message={
-              controls.hasAnyFilter
+          <div className={card}>
+            <EmptyNote
+              icon={<GraduationCap />}
+              title={controls.hasAnyFilter ? "No Students Match" : "No Students Yet"}
+              action={
+                <button
+                  type="button"
+                  className={primaryButton}
+                  onClick={controls.hasAnyFilter ? controls.reset : toggleModal}
+                >
+                  {controls.hasAnyFilter ? "Clear Filters" : "Add Student"}
+                </button>
+              }
+            >
+              {controls.hasAnyFilter
                 ? "No students match your current search or filters."
-                : "There are no students yet."
-            }
-            actionText={controls.hasAnyFilter ? "Clear Filters" : "Add Student"}
-            onAction={controls.hasAnyFilter ? controls.reset : toggleModal}
-          />
+                : "There are no students yet."}
+            </EmptyNote>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={rosterGrid}>
             {visible.map((student, index) => (
               <StudentRosterCard
                 key={student._id}
@@ -175,7 +196,7 @@ function StudentsRoster() {
           onPageSizeChange={controls.setPageSize}
         />
       )}
-    </div>
+    </Page>
   );
 }
 

@@ -3,13 +3,17 @@
 import React from "react";
 import { FormField } from "../../create/FormField";
 import { TextInput } from "../../create/Controls";
+import { InfoNotice } from "../../create/InfoNotice";
 import type { StudentField, StudentFormErrors, StudentFormState } from "./studentForm";
 import { StudentSectionHeading } from "./StudentSectionHeading";
 
 /** Props every student wizard step takes. */
 export interface StudentStepProps {
+  /** The form's values. */
   form: StudentFormState;
+  /** Inline errors by field. */
   errors: StudentFormErrors;
+  /** Sets one field. */
   setField: <K extends StudentField>(field: K, value: StudentFormState[K]) => void;
 }
 
@@ -18,6 +22,9 @@ export interface StudentStepProps {
  * phone. The password is never collected — the API generates one.
  *
  * @param props - Form values, errors and the field setter.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
  * @returns The step.
  */
 export function StudentAccountStep({ form, errors, setField }: StudentStepProps) {
@@ -90,28 +97,10 @@ export function StudentAccountStep({ form, errors, setField }: StudentStepProps)
         </FormField>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-lg p-4">
-        <div className="flex gap-3">
-          <svg
-            className="w-5 h-5 text-[#003366] dark:text-blue-300 mt-0.5 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
-            A secure password will be automatically generated for the student&apos;s account. The
-            login credentials will be sent to the provided email address.
-          </p>
-        </div>
-      </div>
+      <InfoNotice>
+        A secure password will be automatically generated for the student&apos;s account. The
+        login credentials will be sent to the provided email address.
+      </InfoNotice>
     </div>
   );
 }

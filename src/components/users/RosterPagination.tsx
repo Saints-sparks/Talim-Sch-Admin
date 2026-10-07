@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { card, focusRing, selectControl } from "@/components/tl";
 
+/** Props for {@link RosterPagination}. */
 interface RosterPaginationProps {
   /** 1-based current page. */
   page: number;
@@ -20,7 +22,13 @@ interface RosterPaginationProps {
   onPageSizeChange: (pageSize: number) => void;
 }
 
-/** The window of numbered buttons around the current page (max five). */
+/**
+ * The window of numbered buttons around the current page (max five).
+ *
+ * @param page - The current page.
+ * @param totalPages - How many pages there are.
+ * @returns The page numbers to show.
+ */
 function pageWindow(page: number, totalPages: number): number[] {
   const count = Math.min(totalPages, 5);
   let first = 1;
@@ -32,14 +40,25 @@ function pageWindow(page: number, totalPages: number): number[] {
   return Array.from({ length: count }, (_, i) => first + i);
 }
 
-const arrowClass =
-  "w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 hover:text-gray-700 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center";
+/** The previous and next arrows. */
+const arrowClass = `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-tl-control bg-tl-surface text-tl-brand transition-colors hover:bg-tl-bg disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
 
 /**
- * Server-side pagination controls shared by the people rosters.
+ * Server-side pagination controls shared by the people rosters: the "Showing
+ * x to y of z" line, the page-size select and the page buttons, in one card.
  *
  * The counts come from the API's `meta`, so "showing x to y of z" is the real
  * total rather than the length of the page in memory.
+ *
+ * @param props - See {@link RosterPaginationProps}.
+ * @param props.page - Current page.
+ * @param props.pageSize - Rows per page.
+ * @param props.total - Total rows.
+ * @param props.pageSizeOptions - Page sizes offered.
+ * @param props.itemLabel - Plural noun for the counter.
+ * @param props.onPageChange - Page handler.
+ * @param props.onPageSizeChange - Page-size handler.
+ * @returns The pagination bar.
  */
 export function RosterPagination({
   page,
@@ -56,82 +75,72 @@ export function RosterPagination({
   const end = Math.min(safePage * pageSize, total);
 
   return (
-    <div className="mt-8">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
-        <div className="flex flex-col lg:flex-row justify-between items-center px-8 py-6 gap-6">
-          <div className="text-sm text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-700/50 px-4 py-2 rounded-xl">
-            Showing <span className="font-semibold text-blue-600 dark:text-blue-400">{start}</span> to{" "}
-            <span className="font-semibold text-blue-600 dark:text-blue-400">{end}</span> of{" "}
-            <span className="font-semibold text-blue-600 dark:text-blue-400">{total}</span> {itemLabel}
-          </div>
+    <nav
+      aria-label={`${itemLabel} pages`}
+      className={`${card} flex flex-wrap items-center justify-between gap-4 !py-3.5`}
+    >
+      <p className="text-sm text-tl-muted">
+        Showing <span className="font-bold text-tl-ink">{start}</span> to{" "}
+        <span className="font-bold text-tl-ink">{end}</span> of{" "}
+        <span className="font-bold text-tl-ink">{total}</span> {itemLabel}
+      </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <label className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
-              <span className="font-medium">Show:</span>
-              <select
-                className="bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 border-2 border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                value={pageSize}
-                onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              >
-                {pageSizeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm font-bold text-tl-muted">
+          <span>Show:</span>
+          <select
+            className={selectControl}
+            value={pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+          >
+            {pageSizeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
 
-            <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={arrowClass}
-                disabled={safePage === 1}
-                onClick={() => onPageChange(Math.max(safePage - 1, 1))}
-                aria-label="Previous page"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </motion.button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            className={arrowClass}
+            disabled={safePage === 1}
+            onClick={() => onPageChange(Math.max(safePage - 1, 1))}
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
 
-              <div className="flex items-center gap-1">
-                {pageWindow(safePage, totalPages).map((pageNum) => (
-                  <motion.button
-                    key={pageNum}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => onPageChange(pageNum)}
-                    aria-label={`Go to page ${pageNum}`}
-                    aria-current={safePage === pageNum ? "page" : undefined}
-                    className={`w-10 h-10 text-sm rounded-xl font-medium transition-all flex items-center justify-center ${
-                      safePage === pageNum
-                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                        : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-600"
-                    }`}
-                  >
-                    {pageNum}
-                  </motion.button>
-                ))}
-              </div>
+          {pageWindow(safePage, totalPages).map((pageNum) => (
+            <button
+              key={pageNum}
+              type="button"
+              onClick={() => onPageChange(pageNum)}
+              aria-label={`Go to page ${pageNum}`}
+              aria-current={safePage === pageNum ? "page" : undefined}
+              className={`flex h-11 min-w-[44px] items-center justify-center rounded-xl px-2 text-sm font-bold transition-colors ${focusRing} ${
+                safePage === pageNum
+                  ? "bg-tl-brand-fill text-tl-on-brand"
+                  : "text-tl-muted hover:bg-tl-bg hover:text-tl-ink"
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={arrowClass}
-                disabled={safePage >= totalPages}
-                onClick={() => onPageChange(Math.min(safePage + 1, totalPages))}
-                aria-label="Next page"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
-            </div>
-          </div>
+          <button
+            type="button"
+            className={arrowClass}
+            disabled={safePage >= totalPages}
+            onClick={() => onPageChange(Math.min(safePage + 1, totalPages))}
+            aria-label="Next page"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }
 

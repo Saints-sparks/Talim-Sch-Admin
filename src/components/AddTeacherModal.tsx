@@ -14,6 +14,7 @@ import { TeacherQualificationsStep } from "@/components/users/teachers/create/Te
 
 const TITLE_ID = "add-teacher-title";
 
+/** Props for {@link AddTeacherModal}. */
 interface AddTeacherModalProps {
   /** Closes the dialog. */
   onClose: () => void;
@@ -27,6 +28,8 @@ interface AddTeacherModalProps {
  * The server generates the temporary password; the form never asks for one.
  *
  * @param props - Close and success callbacks.
+ * @param props.onClose - Closes the dialog.
+ * @param props.onSuccess - Refreshes the caller after a create.
  * @returns The dialog, or nothing when the admin may not add teachers.
  */
 const AddTeacherModal: React.FC<AddTeacherModalProps> = ({ onClose, onSuccess }) => {
@@ -41,13 +44,16 @@ const AddTeacherModal: React.FC<AddTeacherModalProps> = ({ onClose, onSuccess })
       busy={pending}
       labelledBy={TITLE_ID}
       dataGuide="teacher-create-modal"
-      panelClassName="bg-white dark:bg-gray-900 h-[90vh] w-full max-w-4xl mx-4 rounded-2xl"
+      panelClassName="sm:h-[90vh] sm:max-w-4xl"
     >
       <TeacherModalHeader step={step} titleId={TITLE_ID} onClose={onClose} busy={pending} />
 
-      <div className="flex-1 overflow-y-auto p-6" data-guide="teacher-create-fields">
+      <div
+        className="flex-1 overflow-y-auto px-[clamp(20px,3vw,30px)] py-6"
+        data-guide="teacher-create-fields"
+      >
         <div className={guideCardClass}>
-          <p className={`text-sm font-semibold ${navyTextClass}`}>Teacher setup guide</p>
+          <p className={`text-sm font-extrabold ${navyTextClass}`}>Teacher setup guide</p>
           <p className={`mt-1 text-sm leading-6 ${bodyTextClass}`}>
             Create the account first, then complete profile details so this teacher can be assigned
             to classes, courses, and messages.

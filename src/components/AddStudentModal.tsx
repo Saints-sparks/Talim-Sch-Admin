@@ -13,6 +13,7 @@ import { StudentProfileStep } from "@/components/users/students/create/StudentPr
 
 const TITLE_ID = "add-student-title";
 
+/** Props for {@link AddStudentModal}. */
 interface AddStudentModalProps {
   /** Closes the dialog. */
   onClose: () => void;
@@ -27,6 +28,8 @@ interface AddStudentModalProps {
  * password; the form never asks for one.
  *
  * @param props - Close and success callbacks.
+ * @param props.onClose - Closes the dialog.
+ * @param props.onSuccess - Refreshes the caller after a create.
  * @returns The dialog, or nothing when the admin may not add students.
  */
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose, onSuccess }) => {
@@ -41,15 +44,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose, onSuccess })
       busy={pending}
       labelledBy={TITLE_ID}
       dataGuide="student-create-modal"
-      overlayClassName="p-4"
-      panelClassName="bg-[#003366] h-[90vh] w-full max-w-3xl rounded-2xl"
+      panelClassName="sm:h-[90vh] sm:max-w-3xl"
     >
       <StudentModalHeader step={step} titleId={TITLE_ID} onClose={onClose} busy={pending} />
 
-      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
-        <div className="p-6" data-guide="student-create-fields">
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-[clamp(20px,3vw,30px)] py-6" data-guide="student-create-fields">
           <div className={guideCardClass}>
-            <p className={`text-sm font-semibold ${navyTextClass}`}>Student setup guide</p>
+            <p className={`text-sm font-extrabold ${navyTextClass}`}>Student setup guide</p>
             <p className={`mt-1 text-sm leading-6 ${bodyTextClass}`}>
               Talim creates the learner account first, then links academic details and guardian
               information for communication and records.

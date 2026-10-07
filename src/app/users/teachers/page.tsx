@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, UsersRound } from "lucide-react";
 import AddTeacherModal from "@/components/AddTeacherModal";
 import TeachersSkeleton from "@/components/TeachersSkeleton";
-import { EmptyState } from "@/components/StateComponents";
 import { toast } from "@/components/CustomToast";
 import { PermissionGate, RequirePermission } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
@@ -19,6 +19,8 @@ import RosterPagination from "@/components/users/RosterPagination";
 import RosterErrorState from "@/components/users/RosterErrorState";
 import TeacherRosterCard, { teacherFields } from "@/components/users/TeacherRosterCard";
 import { teacherUserId, type Teacher } from "@/app/services/teacher.service";
+import { rosterGrid } from "@/components/users/parts";
+import { EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
 
 /**
  * How many teachers to pull in one request while a filter is active. The list
@@ -28,7 +30,13 @@ import { teacherUserId, type Teacher } from "@/app/services/teacher.service";
  */
 const FILTER_SCAN_LIMIT = 500;
 
-/** True when `teacher` matches the search text across their name, contact and staff number. */
+/**
+ * True when `teacher` matches the search text across their name, contact and staff number.
+ *
+ * @param teacher - The roster row.
+ * @param search - The lower-cased search text.
+ * @returns Whether it matches.
+ */
 function matchesSearch(teacher: Teacher, search: string): boolean {
   if (!search) return true;
   const user = typeof teacher.userId === "object" ? teacher.userId : null;
@@ -44,6 +52,12 @@ function matchesSearch(teacher: Teacher, search: string): boolean {
     .includes(search);
 }
 
+/**
+ * The teacher roster: heading with the count and Add Teacher, the search and
+ * filter toolbar, the grid of teacher cards and the pagination.
+ *
+ * @returns The roster.
+ */
 function TeachersRoster() {
   const router = useRouter();
   const controls = useRosterControls(9);
@@ -113,52 +127,59 @@ function TeachersRoster() {
   };
 
   return (
-    <div className="min-h-screen p-4 leading-[120%] flex flex-col">
-      <div className="bg-[#F8F8F8] dark:bg-transparent pt-4 px-2 sm:px-6" data-guide="teachers-header">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[19px] font-semibold text-gray-900 dark:text-white">My Teachers</h1>
-            <span className="bg-white dark:bg-slate-800 border border-[#E4E4E4] dark:border-slate-700 text-[15px] font-medium px-3 py-1 rounded-full">
+    <Page>
+      <PageHeader
+        guide="teachers-header"
+        title={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            My Teachers
+            <Pill tone="muted" className="text-[13px]">
               {rosterQuery.data?.meta?.total ?? 0} teachers
-            </span>
-          </div>
+            </Pill>
+          </span>
+        }
+        actions={
           <PermissionGate permission={Permission.MANAGE_TEACHERS}>
             <Tooltip
               content="Register a teacher account. They will receive an email to set their own password."
               side="top"
             >
               <button
+                type="button"
                 data-guide="teachers-add"
                 onClick={toggleModal}
-                className="bg-[#154473] text-white font-medium rounded-lg px-5 py-2 flex items-center gap-2 hover:bg-[#123a5e] transition"
+                className={primaryButton}
               >
-                <span className="text-lg font-bold">+</span> Add Teacher
+                <Plus className="h-4 w-4" aria-hidden /> Add Teacher
               </button>
             </Tooltip>
           </PermissionGate>
-        </div>
+        }
+      />
 
-        <div className="mt-4">
-          <RosterFilters
-            dataGuide="teachers-filters"
-            search={controls.search}
-            onSearchChange={controls.setSearch}
-            classes={classes}
-            selectedClass={controls.classId}
-            onClassChange={controls.setClassId}
-            classTooltip="Show only teachers assigned to this class."
-            status={controls.status}
-            onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
-            statusTooltip="Inactive teachers keep their records but cannot sign in."
-          />
-        </div>
-      </div>
+      <RosterFilters
+        dataGuide="teachers-filters"
+        search={controls.search}
+        onSearchChange={controls.setSearch}
+        classes={classes}
+        selectedClass={controls.classId}
+        onClassChange={controls.setClassId}
+        classTooltip="Show only teachers assigned to this class."
+        status={controls.status}
+        onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
+        statusTooltip="Inactive teachers keep their records but cannot sign in."
+      />
 
       {isModalOpen && (
-        <AddTeacherModal onClose={toggleModal} onSuccess={async () => { await rosterQuery.refetch(); }} />
+        <AddTeacherModal
+          onClose={toggleModal}
+          onSuccess={async () => {
+            await rosterQuery.refetch();
+          }}
+        />
       )}
 
-      <div className="flex flex-col flex-1" data-guide="teachers-list">
+      <div className="flex flex-col gap-[18px]" data-guide="teachers-list">
         {rosterQuery.isPending ? (
           <TeachersSkeleton />
         ) : rosterQuery.isError ? (
@@ -168,20 +189,28 @@ function TeachersRoster() {
             onRetry={() => rosterQuery.refetch()}
           />
         ) : visible.length === 0 ? (
-          <EmptyState
-            icon="👨‍🏫"
-            title="No Teachers Found"
-            message={
-              controls.hasAnyFilter
+          <div className={card}>
+            <EmptyNote
+              icon={<UsersRound />}
+              title="No Teachers Found"
+              action={
+                <button
+                  type="button"
+                  className={primaryButton}
+                  onClick={controls.hasAnyFilter ? controls.reset : toggleModal}
+                >
+                  {controls.hasAnyFilter ? "Clear Filters" : "Add First Teacher"}
+                </button>
+              }
+            >
+              {controls.hasAnyFilter
                 ? "No teachers match your current search or filter criteria."
-                : "Get started by adding your first teacher to the system."
-            }
-            actionText={controls.hasAnyFilter ? "Clear Filters" : "Add First Teacher"}
-            onAction={controls.hasAnyFilter ? controls.reset : toggleModal}
-          />
+                : "Get started by adding your first teacher to the system."}
+            </EmptyNote>
+          </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+            <div className={rosterGrid}>
               {visible.map((teacher) => (
                 <TeacherRosterCard
                   key={teacher._id}
@@ -206,7 +235,7 @@ function TeachersRoster() {
           </>
         )}
       </div>
-    </div>
+    </Page>
   );
 }
 

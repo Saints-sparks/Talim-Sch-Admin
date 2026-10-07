@@ -12,9 +12,13 @@ import { StudentClassSection } from "./StudentClassSection";
 import { StudentParentSection } from "./StudentParentSection";
 import type { StudentStepProps } from "./StudentAccountStep";
 
+/** Props for {@link StudentProfileStep}. */
 interface StudentProfileStepProps extends StudentStepProps {
+  /** The school's classes and their load state. */
   classes: RosterClassesResult;
+  /** The class currently chosen, if any. */
   selectedClass: RosterClass | undefined;
+  /** Picks a class. */
   onSelectClass: (classId: string) => void;
 }
 
@@ -23,6 +27,12 @@ interface StudentProfileStepProps extends StudentStepProps {
  * parent contact, with a live note of what is still missing.
  *
  * @param props - Form values, errors, the classes query and the class handler.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
+ * @param props.classes - The classes query.
+ * @param props.selectedClass - The chosen class.
+ * @param props.onSelectClass - Class handler.
  * @returns The step.
  */
 export function StudentProfileStep({

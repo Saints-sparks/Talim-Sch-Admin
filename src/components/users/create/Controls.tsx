@@ -10,16 +10,22 @@ type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size" | 
 interface TextInputProps extends InputProps {
   /** Ties the control to its `FormField` label and error. */
   id: string;
+  /** Control density. */
   size: ControlSize;
   /** The field's error, which paints the border and is announced. */
   error?: string;
+  /** Called with the new value. */
   onValueChange: (value: string) => void;
 }
 
 /**
- * A themed text input wired to its inline error.
+ * A tl text input wired to its inline error.
  *
  * @param props - Native input props plus the id, density, error and a value callback.
+ * @param props.id - The input's id.
+ * @param props.size - Density.
+ * @param props.error - The error.
+ * @param props.onValueChange - Change handler.
  * @returns The input.
  */
 export function TextInput({ id, size, error, onValueChange, ...rest }: TextInputProps) {
@@ -37,16 +43,25 @@ export function TextInput({ id, size, error, onValueChange, ...rest }: TextInput
 
 /** Props of {@link SelectInput}. */
 interface SelectInputProps extends SelectProps {
+  /** Ties the control to its `FormField` label and error. */
   id: string;
+  /** Control density. */
   size: ControlSize;
+  /** The field's error, which paints the border and is announced. */
   error?: string;
+  /** Called with the new value. */
   onValueChange: (value: string) => void;
 }
 
 /**
- * A themed select wired to its inline error.
+ * A tl select wired to its inline error.
  *
  * @param props - Native select props plus the id, density, error and a value callback.
+ * @param props.id - The select's id.
+ * @param props.size - Density.
+ * @param props.error - The error.
+ * @param props.onValueChange - Change handler.
+ * @param props.children - The options.
  * @returns The select.
  */
 export function SelectInput({ id, size, error, onValueChange, children, ...rest }: SelectInputProps) {

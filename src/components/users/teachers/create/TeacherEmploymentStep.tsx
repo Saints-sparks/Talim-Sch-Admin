@@ -11,9 +11,13 @@ import { TeacherSchedulePanel } from "./TeacherSchedulePanel";
 import { TeacherSectionHeading } from "./TeacherSectionHeading";
 import type { TeacherStepProps } from "./TeacherAccountStep";
 
+/** Props for {@link TeacherEmploymentStep}. */
 interface TeacherEmploymentStepProps extends TeacherStepProps {
+  /** The school's classes and their load state. */
   classes: RosterClassesResult;
+  /** Adds or removes a class. */
   onToggleClass: (classId: string) => void;
+  /** Adds or removes a working day. */
   onToggleDay: (day: string) => void;
 }
 
@@ -22,6 +26,12 @@ interface TeacherEmploymentStepProps extends TeacherStepProps {
  * availability.
  *
  * @param props - Form values, errors, the classes query and the handlers.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
+ * @param props.classes - The classes query.
+ * @param props.onToggleClass - Class toggle.
+ * @param props.onToggleDay - Day toggle.
  * @returns The step.
  */
 export function TeacherEmploymentStep({
@@ -38,7 +48,7 @@ export function TeacherEmploymentStep({
         <TeacherSectionHeading iconPath="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6">
           Employment Information
         </TeacherSectionHeading>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <FormField label="Employment Type" htmlFor="teacher-employment-type" required error={errors.employmentType}>
             <SelectInput
               id="teacher-employment-type"

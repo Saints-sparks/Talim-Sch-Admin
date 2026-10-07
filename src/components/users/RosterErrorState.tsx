@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { ErrorState } from "@/components/StateComponents";
+import { ScreenError } from "@/components/tl";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 
+/** Props for {@link RosterErrorState}. */
 interface RosterErrorStateProps {
   /** Whatever the query threw. */
   error: unknown;
@@ -13,7 +14,13 @@ interface RosterErrorStateProps {
   onRetry?: () => void;
 }
 
-/** Title and body for one failure, chosen by `ApiError.code`. */
+/**
+ * Title and body for one failure, chosen by `ApiError.code`.
+ *
+ * @param error - Whatever the query threw.
+ * @param resource - What was being loaded ("students").
+ * @returns The words, and whether retrying can help.
+ */
 function describe(error: unknown, resource: string): { title: string; message: string; retryable: boolean } {
   if (error instanceof ApiError) {
     switch (error.code) {
@@ -72,12 +79,25 @@ function describe(error: unknown, resource: string): { title: string; message: s
 }
 
 /**
- * Error panel for a roster query, worded by `error.code` rather than showing
+ * Error card for a roster query, worded by `error.code` rather than showing
  * whatever string the server happened to send.
+ *
+ * @param props - See {@link RosterErrorStateProps}.
+ * @param props.error - Whatever the query threw.
+ * @param props.resource - What was being loaded.
+ * @param props.onRetry - Retries the request.
+ * @returns The error card.
  */
 export function RosterErrorState({ error, resource, onRetry }: RosterErrorStateProps) {
   const { title, message, retryable } = describe(error, resource);
-  return <ErrorState title={title} message={message} onRetry={retryable ? onRetry : undefined} />;
+  return (
+    <ScreenError
+      title={title}
+      message={message}
+      onRetry={retryable ? onRetry : undefined}
+      retryLabel="Try Again"
+    />
+  );
 }
 
 export default RosterErrorState;

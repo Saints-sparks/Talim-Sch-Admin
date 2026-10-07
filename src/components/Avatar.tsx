@@ -1,74 +1,46 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+import { toneClass } from "@/components/tl";
 
+/** Props for {@link Avatar}. */
 interface AvatarProps {
+  /** Photo URL, if any; the initials show when it is missing or fails to load. */
   src?: string | null;
+  /** First name, for the first initial and the photo's alt text. */
   firstName: string;
+  /** Last name, for the second initial and the photo's alt text. */
   lastName: string;
-  size?: 'sm' | 'md' | 'lg';
+  /** `sm` 32px, `md` 64px (default), `lg` 128px. */
+  size?: "sm" | "md" | "lg";
+  /** Extra classes; they win over the size classes. */
   className?: string;
 }
 
-const Avatar: React.FC<AvatarProps> = ({ 
-  src, 
-  firstName, 
-  lastName, 
-  size = 'md', 
-  className = '' 
-}) => {
+/** Diameter and initials size per preset. */
+const SIZE_CLASSES = {
+  sm: "h-8 w-8 text-xs",
+  md: "h-16 w-16 text-lg",
+  lg: "h-32 w-32 text-3xl",
+} as const;
+
+/**
+ * A person's round avatar in the tl look: their photo, or their initials on a
+ * stable tone (the same person keeps the same colour everywhere).
+ *
+ * @param props - See {@link AvatarProps}.
+ * @param props.src - Photo URL.
+ * @param props.firstName - First name.
+ * @param props.lastName - Last name.
+ * @param props.size - Size preset.
+ * @param props.className - Extra classes.
+ * @returns The avatar.
+ */
+const Avatar: React.FC<AvatarProps> = ({ src, firstName, lastName, size = "md", className = "" }) => {
   const [imageError, setImageError] = useState(false);
-  
-  // Rainbow colors array
-  const colors = [
-    'bg-red-700',
-    'bg-orange-700', 
-    'bg-amber-700',
-    'bg-yellow-700',
-    'bg-lime-700',
-    'bg-green-700',
-    'bg-emerald-700',
-    'bg-teal-700',
-    'bg-cyan-700',
-    'bg-sky-700',
-    'bg-blue-700',
-    'bg-indigo-700',
-    'bg-violet-700',
-    'bg-purple-700',
-    'bg-fuchsia-700',
-    'bg-pink-700',
-    'bg-rose-700'
-  ];
 
-  // Generate initials
-  const getInitials = (first: string, last: string): string => {
-    const firstInitial = first?.charAt(0)?.toUpperCase() || '';
-    const lastInitial = last?.charAt(0)?.toUpperCase() || '';
-    return `${firstInitial}${lastInitial}`;
-  };
-
-  // Generate consistent color based on name
-  const getColorForName = (first: string, last: string): string => {
-    const fullName = `${first}${last}`.toLowerCase();
-    let hash = 0;
-    for (let i = 0; i < fullName.length; i++) {
-      const char = fullName.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-  };
-
-  // Size classes
-  const sizeClasses = {
-    sm: 'w-8 h-8 text-sm',
-    md: 'w-16 h-16 text-lg',
-    lg: 'w-32 h-32 text-3xl'
-  };
-
-  const initials = getInitials(firstName, lastName);
-  const backgroundColor = getColorForName(firstName, lastName);
+  const initials = `${firstName?.charAt(0)?.toUpperCase() || ""}${lastName?.charAt(0)?.toUpperCase() || ""}`;
   const shouldShowImage = src && !imageError;
 
   if (shouldShowImage) {
@@ -76,15 +48,20 @@ const Avatar: React.FC<AvatarProps> = ({
       <img
         src={src}
         alt={`${firstName} ${lastName}`}
-        className={`${sizeClasses[size]} rounded-full object-cover ${className}`}
+        className={cn(SIZE_CLASSES[size], "shrink-0 rounded-full object-cover", className)}
         onError={() => setImageError(true)}
       />
     );
   }
 
   return (
-    <div 
-      className={`${sizeClasses[size]} ${backgroundColor} rounded-full flex items-center justify-center text-white font-bold shadow-sm ${className}`}
+    <div
+      className={cn(
+        SIZE_CLASSES[size],
+        toneClass(`${firstName ?? ""}${lastName ?? ""}`.toLowerCase()),
+        "flex shrink-0 items-center justify-center rounded-full bg-tone-bg font-extrabold text-tone-fg",
+        className
+      )}
     >
       {initials}
     </div>

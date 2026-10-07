@@ -2,8 +2,10 @@
 
 import React from "react";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { overlayClass } from "./ui";
+import { cn } from "@/lib/utils";
+import { overlayClass, panelClass } from "./ui";
 
+/** Props for {@link CreateModalFrame}. */
 interface CreateModalFrameProps {
   /** Closes the dialog. Ignored while `busy`, so a create in flight is never orphaned. */
   onClose: () => void;
@@ -11,21 +13,30 @@ interface CreateModalFrameProps {
   busy: boolean;
   /** Id of the element that names the dialog. */
   labelledBy: string;
-  /** Classes for the panel: width, radius, surface. */
+  /** Extra classes for the panel (its width and height); the sheet surface is built in. */
   panelClassName: string;
   /** Extra classes on the overlay, e.g. padding. */
   overlayClassName?: string;
   /** The `data-guide` hook the product tour anchors to. */
   dataGuide: string;
+  /** The header, body and footer. */
   children: React.ReactNode;
 }
 
 /**
- * The overlay and panel shared by the add-teacher and add-student dialogs.
- * Locks page scroll while mounted and closes on a backdrop click unless a
- * create is in flight.
+ * The overlay and panel shared by the add-teacher and add-student dialogs, in
+ * the portals' sheet look: a bottom sheet on phones and a centred card from
+ * `sm` up. Locks page scroll while mounted and closes on a backdrop click
+ * unless a create is in flight.
  *
  * @param props - Close handler, busy flag, accessibility label and panel styling.
+ * @param props.onClose - Closes the dialog.
+ * @param props.busy - Whether a create is in flight.
+ * @param props.labelledBy - The title's id.
+ * @param props.panelClassName - The panel's size classes.
+ * @param props.overlayClassName - Extra overlay classes.
+ * @param props.dataGuide - Tour target.
+ * @param props.children - The dialog's content.
  * @returns The dialog frame around `children`.
  */
 export function CreateModalFrame({
@@ -50,7 +61,7 @@ export function CreateModalFrame({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`${panelClassName} shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300`}
+        className={cn(panelClass, panelClassName)}
         data-guide={dataGuide}
       >
         {children}

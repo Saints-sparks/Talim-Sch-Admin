@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { MoreVertical } from "lucide-react";
 import Avatar from "@/components/Avatar";
+import { Pill, card, focusRing, iconButton, rowButton } from "@/components/tl";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
@@ -15,7 +17,12 @@ export interface TeacherCardFields {
   avatar: string;
 }
 
-/** Reads a teacher's display fields from either the account or the profile. */
+/**
+ * Reads a teacher's display fields from either the account or the profile.
+ *
+ * @param teacher - The roster row.
+ * @returns Name, staff number and photo.
+ */
 export function teacherFields(teacher: Teacher): TeacherCardFields {
   const user = typeof teacher.userId === "object" ? teacher.userId : null;
   return {
@@ -26,6 +33,7 @@ export function teacherFields(teacher: Teacher): TeacherCardFields {
   };
 }
 
+/** Props for {@link TeacherRosterCard}. */
 interface TeacherRosterCardProps {
   /** The teacher to show. */
   teacher: Teacher;
@@ -41,7 +49,23 @@ interface TeacherRosterCardProps {
   onDeactivate: (teacher: Teacher) => void;
 }
 
-/** One card in the teachers grid. */
+/** One item of the card's action menu. */
+const menuItem = `flex min-h-[44px] w-full items-center rounded-xl px-3 text-left text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
+
+/**
+ * One card in the teachers grid: avatar, name, staff number, a class and the
+ * status pill, View Profile, and (for admins who manage teachers) the ⋮ menu
+ * with Edit and Deactivate.
+ *
+ * @param props - See {@link TeacherRosterCardProps}.
+ * @param props.teacher - The teacher.
+ * @param props.menuOpen - Whether the menu is open.
+ * @param props.onToggleMenu - Opens or closes the menu.
+ * @param props.onViewProfile - Opens the profile.
+ * @param props.onEdit - Opens the editor.
+ * @param props.onDeactivate - Deactivates the teacher.
+ * @returns The card.
+ */
 export function TeacherRosterCard({
   teacher,
   menuOpen,
@@ -52,22 +76,28 @@ export function TeacherRosterCard({
 }: TeacherRosterCardProps) {
   const { firstName, lastName, staffNumber, avatar } = teacherFields(teacher);
   const assignedClasses = teacher.assignedClasses ?? [];
+  const name = `${firstName} ${lastName}`.trim();
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center relative group transition-shadow hover:shadow-lg">
+    <article
+      aria-label={name || undefined}
+      className={`${card} relative flex flex-col items-center text-center`}
+    >
       <PermissionGate permission={Permission.MANAGE_TEACHERS}>
         <button
-          className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1"
+          type="button"
+          className={`${iconButton} absolute right-2.5 top-2.5`}
           onClick={() => onToggleMenu(teacher._id)}
           aria-label={`Actions for ${firstName} ${lastName}`.trim()}
           aria-expanded={menuOpen}
         >
-          <span className="text-xl font-bold">⋮</span>
+          <MoreVertical className="h-5 w-5" aria-hidden />
         </button>
         {menuOpen && (
-          <div className="absolute right-4 top-12 w-32 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg z-10">
+          <div className="absolute right-2.5 top-14 z-10 w-40 rounded-2xl border border-tl-line bg-tl-surface p-1.5 text-left shadow-[0_14px_30px_-12px_rgba(15,27,46,0.25)]">
             <button
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-t-lg"
+              type="button"
+              className={`${menuItem} text-tl-ink hover:bg-tl-bg`}
               onClick={() => onEdit(teacher)}
             >
               Edit
@@ -77,7 +107,8 @@ export function TeacherRosterCard({
               side="top"
             >
               <button
-                className="block w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-b-lg disabled:opacity-50"
+                type="button"
+                className={`${menuItem} text-tl-danger hover:bg-tl-danger-bg`}
                 onClick={() => onDeactivate(teacher)}
                 disabled={!teacher.isActive}
               >
@@ -88,48 +119,50 @@ export function TeacherRosterCard({
         )}
       </PermissionGate>
 
-      <Avatar src={avatar} firstName={firstName} lastName={lastName} className="w-16 h-16 mb-3" />
+      <Avatar
+        src={avatar}
+        firstName={firstName}
+        lastName={lastName}
+        className="h-[72px] w-[72px] text-xl"
+      />
 
-      <div className="text-center flex flex-col items-center flex-1 w-full">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1">
+      <div className="mt-3 flex w-full flex-1 flex-col items-center">
+        <h2 className="break-words text-base font-extrabold text-tl-ink">
           {firstName} {lastName}
-        </h3>
-        <p className="text-xs font-medium text-[#154473] dark:text-blue-400 mb-2">
+        </h2>
+        <p className="mt-1 text-[13px] font-bold text-tl-muted">
           Staff No. {staffNumber || "Not assigned"}
         </p>
-        <div className="flex gap-2 mb-3">
+        <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
           {assignedClasses.slice(0, 1).map((cls) => (
             <Tooltip
               key={cls._id ?? cls.name}
               content="Classes this teacher is currently assigned to. Manage assignments in the teacher's profile."
               side="top"
             >
-              <span className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xs font-medium px-2 py-1 rounded">
-                {cls.name}
+              <span className="inline-flex">
+                <Pill tone="info">{cls.name}</Pill>
               </span>
             </Tooltip>
           ))}
-          <span
-            className={`text-xs font-medium px-2 py-1 rounded ${
-              teacher.isActive
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                : "bg-gray-200 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
-            }`}
-          >
+          <Pill tone={teacher.isActive ? "success" : "muted"} dot>
             {teacher.isActive ? "Active" : "Inactive"}
-          </span>
+          </Pill>
         </div>
         {!teacher.hasTeacherProfile && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">Profile setup pending</p>
+          <p className="mt-2.5 text-[13px] font-bold text-tl-warning">Profile setup pending</p>
         )}
-        <button
-          onClick={() => onViewProfile(teacher)}
-          className="w-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-800 dark:text-slate-100 font-medium rounded-lg py-2 mt-auto transition"
-        >
-          View Profile
-        </button>
+        <div className="mt-auto w-full pt-4">
+          <button
+            type="button"
+            onClick={() => onViewProfile(teacher)}
+            className={`${rowButton} w-full`}
+          >
+            View Profile
+          </button>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
 

@@ -9,9 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TEACHER_GENDERS, type TeacherDraft } from "@/hooks/users/useTeacherEditor";
-import { Labelled, SectionShell, inputClass, type TabProps } from "./editShared";
+import { Labelled, SectionShell, type TabProps } from "./editShared";
 
-/** Name, contact, date of birth and gender. */
+/**
+ * Name, contact, date of birth and gender.
+ *
+ * @param props - The tab props.
+ * @param props.draft - The editable profile.
+ * @param props.setField - Field setter.
+ * @param props.onSubmit - Saves the section.
+ * @param props.isSaving - Whether it is saving.
+ * @param props.onDeactivate - Deactivates the teacher.
+ * @param props.isDeactivated - Whether the teacher is deactivated.
+ * @returns The tab.
+ */
 export function TeacherEditPersonalTab({
   draft,
   setField,
@@ -34,7 +45,6 @@ export function TeacherEditPersonalTab({
           value={draft.firstName}
           onChange={(e) => setField("firstName", e.target.value)}
           placeholder="Enter first name"
-          className={inputClass}
         />
       </Labelled>
       <Labelled htmlFor="lastName" label="Last Name">
@@ -43,7 +53,6 @@ export function TeacherEditPersonalTab({
           value={draft.lastName}
           onChange={(e) => setField("lastName", e.target.value)}
           placeholder="Enter last name"
-          className={inputClass}
         />
       </Labelled>
       <Labelled htmlFor="phoneNumber" label="Phone Number">
@@ -52,7 +61,6 @@ export function TeacherEditPersonalTab({
           value={draft.phoneNumber}
           onChange={(e) => setField("phoneNumber", e.target.value)}
           placeholder="e.g. +2348012345678"
-          className={inputClass}
         />
       </Labelled>
       <Labelled htmlFor="email" label="Email Address">
@@ -62,7 +70,6 @@ export function TeacherEditPersonalTab({
           value={draft.email}
           onChange={(e) => setField("email", e.target.value)}
           placeholder="e.g. teacher@school.edu"
-          className={inputClass}
         />
       </Labelled>
       <Labelled htmlFor="dateOfBirth" label="Date of Birth">
@@ -71,7 +78,6 @@ export function TeacherEditPersonalTab({
           type="date"
           value={draft.dateOfBirth}
           onChange={(e) => setField("dateOfBirth", e.target.value)}
-          className={inputClass}
         />
       </Labelled>
       <Labelled htmlFor="gender" label="Gender">
@@ -79,7 +85,7 @@ export function TeacherEditPersonalTab({
           value={draft.gender}
           onValueChange={(value) => setField("gender", value as TeacherDraft["gender"])}
         >
-          <SelectTrigger id="gender" className={inputClass}>
+          <SelectTrigger id="gender">
             <SelectValue placeholder="Select gender" />
           </SelectTrigger>
           <SelectContent>

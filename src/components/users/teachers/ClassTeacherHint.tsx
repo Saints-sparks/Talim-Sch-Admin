@@ -19,6 +19,9 @@ export interface ClassTeacherHintProps {
  * nothing when every assigned class is one they are the class teacher of.
  *
  * @param props - See {@link ClassTeacherHintProps}.
+ * @param props.assigned - The assigned classes.
+ * @param props.classTeacherOf - The classes they are class teacher of.
+ * @param props.action - Extra wording.
  * @returns The note, or null.
  */
 export function ClassTeacherHint({ assigned, classTeacherOf, action }: ClassTeacherHintProps) {
@@ -28,9 +31,9 @@ export function ClassTeacherHint({ assigned, classTeacherOf, action }: ClassTeac
     <div
       role="note"
       aria-label="Class teacher"
-      className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2.5 text-sm text-amber-900 dark:text-amber-200"
+      className="flex items-start gap-2.5 rounded-2xl border border-tl-warning/25 bg-tl-warning-bg px-3.5 py-3 text-sm leading-relaxed text-tl-body"
     >
-      <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden />
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-tl-warning" aria-hidden />
       <p>
         {hint.text}
         {action ? ` ${action}` : ""}

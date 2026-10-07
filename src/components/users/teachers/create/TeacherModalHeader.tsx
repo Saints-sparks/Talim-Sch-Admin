@@ -1,51 +1,58 @@
 "use client";
 
 import React from "react";
+import { GraduationCap, X } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { eyebrow, iconButton } from "@/components/tl";
 import type { TeacherStep } from "./teacherForm";
 
 const STEP_LABELS = ["Basic Information", "Qualifications", "Employment Details"] as const;
 const STEP_COUNT = STEP_LABELS.length;
 
+/** Props for {@link TeacherModalHeader}. */
 interface TeacherModalHeaderProps {
+  /** The current step. */
   step: TeacherStep;
   /** Id that names the dialog for assistive tech. */
   titleId: string;
+  /** Closes the dialog. */
   onClose: () => void;
   /** Disables the close button while a create is in flight. */
   busy: boolean;
 }
 
 /**
- * Navy header of the add-teacher dialog: title, close button and the
+ * The add-teacher dialog's sheet heading: icon, title, close button and the
  * three-stage progress bar.
  *
  * @param props - Current step, title id, close handler and busy flag.
+ * @param props.step - The current step.
+ * @param props.titleId - The title's id.
+ * @param props.onClose - Close handler.
+ * @param props.busy - Whether a create is in flight.
  * @returns The header.
  */
 export function TeacherModalHeader({ step, titleId, onClose, busy }: TeacherModalHeaderProps) {
   const percent = Math.round(((step + 1) / STEP_COUNT) * 100);
 
   return (
-    <div className="bg-[#003366] p-6 text-white flex-shrink-0">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div className="bg-white/20 p-3 rounded-xl">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 id={titleId} className="text-2xl font-bold">
+    <div className="flex-shrink-0 border-b border-tl-line-soft px-[clamp(20px,3vw,30px)] pb-5 pt-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-tl-select text-tl-brand"
+          >
+            <GraduationCap className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h2
+              id={titleId}
+              className="text-[21px] font-extrabold leading-tight tracking-[-0.4px] text-tl-ink"
+            >
               Add New Teacher
             </h2>
-            <p className="text-blue-100 text-sm">Create a teacher account and profile</p>
+            <p className="mt-1 text-[13px] text-tl-muted">Create a teacher account and profile</p>
           </div>
         </div>
         <button
@@ -53,29 +60,34 @@ export function TeacherModalHeader({ step, titleId, onClose, busy }: TeacherModa
           onClick={onClose}
           disabled={busy}
           aria-label="Close"
-          className="text-blue-100 hover:text-white p-2 rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50"
+          className={`${iconButton} -mr-2`}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-5 w-5" aria-hidden />
         </button>
       </div>
 
-      <div className="mt-6" data-guide="teacher-create-progress">
+      <div className="mt-4" data-guide="teacher-create-progress">
         <Tooltip
           content="Teacher setup has three stages: login account, personal qualifications, then employment and class availability."
           side="bottom"
         >
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-blue-100">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[13px] font-bold text-tl-body">
               Step {step + 1} of {STEP_COUNT}: {STEP_LABELS[step]}
             </span>
-            <span className="text-sm text-blue-200">{percent}% Complete</span>
+            <span className={eyebrow}>{percent}% Complete</span>
           </div>
         </Tooltip>
-        <div className="bg-blue-500/30 rounded-full h-2">
+        <div
+          role="progressbar"
+          aria-label="Teacher setup progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          className="mt-2 h-2 overflow-hidden rounded bg-tl-line-soft"
+        >
           <div
-            className="bg-white rounded-full h-2 transition-all duration-300 ease-out"
+            className="h-full rounded bg-tl-brand-fill transition-all duration-300 ease-out"
             style={{ width: `${percent}%` }}
           />
         </div>

@@ -9,8 +9,11 @@ import { TeacherSectionHeading } from "./TeacherSectionHeading";
 
 /** Props every teacher wizard step takes. */
 export interface TeacherStepProps {
+  /** The form's values. */
   form: TeacherFormState;
+  /** Inline errors by field. */
   errors: TeacherFormErrors;
+  /** Sets one field. */
   setField: <K extends TeacherField>(field: K, value: TeacherFormState[K]) => void;
 }
 
@@ -19,6 +22,9 @@ export interface TeacherStepProps {
  * password is never collected — the API emails the teacher a set-password link.
  *
  * @param props - Form values, errors and the field setter.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
  * @returns The step.
  */
 export function TeacherAccountStep({ form, errors, setField }: TeacherStepProps) {
@@ -28,7 +34,7 @@ export function TeacherAccountStep({ form, errors, setField }: TeacherStepProps)
         <TeacherSectionHeading iconPath="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           Login Credentials
         </TeacherSectionHeading>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <FormField label="Email Address" htmlFor="teacher-email" required error={errors.email}>
             <TextInput
               id="teacher-email"
@@ -43,9 +49,9 @@ export function TeacherAccountStep({ form, errors, setField }: TeacherStepProps)
               required
             />
           </FormField>
-          <div className="rounded-xl border-2 border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 px-4 py-3 text-sm text-blue-900 dark:text-blue-100">
-            <p className="font-medium">Password</p>
-            <p className="mt-1 text-xs text-blue-800 dark:text-blue-200">
+          <div className="rounded-2xl border border-tl-control bg-tl-select px-4 py-3 text-sm">
+            <p className="font-extrabold text-tl-brand">Password</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-tl-body">
               A temporary password is generated automatically and the teacher receives an email to
               set their own before first login.
             </p>
@@ -57,7 +63,7 @@ export function TeacherAccountStep({ form, errors, setField }: TeacherStepProps)
         <TeacherSectionHeading iconPath="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
           Personal Information
         </TeacherSectionHeading>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <FormField label="First Name" htmlFor="teacher-first-name" required error={errors.firstName}>
             <TextInput
               id="teacher-first-name"

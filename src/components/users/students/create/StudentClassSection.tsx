@@ -8,11 +8,13 @@ import { fieldErrorClass } from "../../create/ui";
 import { StudentSectionHeading } from "./StudentSectionHeading";
 import type { StudentStepProps } from "./StudentAccountStep";
 
+/** Props for {@link StudentClassSection}. */
 interface StudentClassSectionProps extends StudentStepProps {
   /** The school's classes and their load state. */
   classes: RosterClassesResult;
   /** The class currently chosen, if any. */
   selectedClass: RosterClass | undefined;
+  /** Picks a class. */
   onSelectClass: (classId: string) => void;
 }
 
@@ -23,6 +25,12 @@ interface StudentClassSectionProps extends StudentStepProps {
  * chosen class has no grade level of its own, the admin can type one.
  *
  * @param props - Form values, errors, the classes query and the class handler.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
+ * @param props.classes - The classes query.
+ * @param props.selectedClass - The chosen class.
+ * @param props.onSelectClass - Class handler.
  * @returns The block.
  */
 export function StudentClassSection({
@@ -73,7 +81,7 @@ export function StudentClassSection({
             </p>
           )}
           {emptyClasses && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1.5 text-[13px] text-tl-muted">
               No classes yet. Create a class first, then enrol the student in it.
             </p>
           )}
@@ -94,16 +102,14 @@ export function StudentClassSection({
           ) : (
             <div
               id="student-grade"
-              className={`w-full px-4 py-2.5 rounded-lg border text-sm bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 ${
-                form.gradeLevel
-                  ? "text-gray-700 dark:text-gray-200"
-                  : "text-gray-400 dark:text-gray-500"
+              className={`flex min-h-[46px] w-full items-center rounded-[13px] border border-tl-line bg-tl-subtle px-3.5 text-[15px] ${
+                form.gradeLevel ? "font-semibold text-tl-ink" : "text-tl-faint"
               }`}
             >
               {form.gradeLevel || "Auto-filled when a class is selected"}
             </div>
           )}
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="mt-1.5 text-[13px] text-tl-muted">
             {needsManualGrade
               ? "This class has no grade level set, so enter one."
               : "Inherited from the selected class"}

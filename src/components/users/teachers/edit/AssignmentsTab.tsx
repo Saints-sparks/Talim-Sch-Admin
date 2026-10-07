@@ -1,6 +1,7 @@
 "use client";
 
 import type { RosterClass } from "@/hooks/users/useRosterClasses";
+import { fieldHint, focusRing } from "@/components/tl";
 import { CheckboxList, SectionShell, type TabProps, type ToggleList } from "./editShared";
 import { classItems, courseItems, type AssignableCourse } from "./assignmentItems";
 import { ClassTeacherAssigner } from "./ClassTeacherAssigner";
@@ -18,6 +19,12 @@ const SET_CLASS_TEACHER = "Make them its class teacher below, or on the class's 
  * below), so ticked classes they are not the class teacher of get a hint.
  *
  * @param props - The tab props, the list toggler, the classes and courses, and who the teacher is.
+ * @param props.draft - The editable profile.
+ * @param props.setField - Field setter.
+ * @param props.onSubmit - Saves the section.
+ * @param props.isSaving - Whether it is saving.
+ * @param props.onDeactivate - Deactivates the teacher.
+ * @param props.isDeactivated - Whether the teacher is deactivated.
  * @param props.toggleInList - Ticks or unticks a class or course.
  * @param props.classes - The school's classes (with their class teachers).
  * @param props.courses - The school's courses.
@@ -95,18 +102,18 @@ export function TeacherEditAssignmentsTab({
         />
       )}
 
-      <div className="md:col-span-2 space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300">
+      <div className="flex flex-col gap-1.5 md:col-span-2">
+        <label className="flex min-h-[44px] cursor-pointer items-center gap-3 text-sm font-bold text-tl-ink">
           <input
             type="checkbox"
-            className="rounded border-gray-300"
+            className={`h-[18px] w-[18px] shrink-0 cursor-pointer accent-tl-brand-fill ${focusRing}`}
             checked={draft.isFormTeacher}
             onChange={(e) => setField("isFormTeacher", e.target.checked)}
             aria-describedby="form-teacher-label-hint"
           />
           Show as a Form Teacher (label only)
         </label>
-        <p id="form-teacher-label-hint" className="text-xs text-gray-600 dark:text-slate-400">
+        <p id="form-teacher-label-hint" className={fieldHint}>
           A label on the profile. It does not let the teacher take a register: make them a
           class&apos;s class teacher for that. Saving replaces the teacher&apos;s classes and
           courses with exactly what is ticked here.

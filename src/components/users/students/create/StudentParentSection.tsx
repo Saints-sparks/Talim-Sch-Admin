@@ -12,6 +12,9 @@ import type { StudentStepProps } from "./StudentAccountStep";
  * creates the parent account when there is none.
  *
  * @param props - Form values, errors and the field setter.
+ * @param props.form - The values.
+ * @param props.errors - The errors.
+ * @param props.setField - Field setter.
  * @returns The block.
  */
 export function StudentParentSection({ form, errors, setField }: StudentStepProps) {

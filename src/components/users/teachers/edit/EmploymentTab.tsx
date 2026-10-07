@@ -8,9 +8,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EMPLOYMENT_ROLES, EMPLOYMENT_TYPES, type TeacherDraft } from "@/hooks/users/useTeacherEditor";
-import { Labelled, SectionShell, inputClass, type TabProps } from "./editShared";
+import { Labelled, SectionShell, type TabProps } from "./editShared";
 
-/** Employment type and role. */
+/**
+ * Employment type and role.
+ *
+ * @param props - The tab props.
+ * @param props.draft - The editable profile.
+ * @param props.setField - Field setter.
+ * @param props.onSubmit - Saves the section.
+ * @param props.isSaving - Whether it is saving.
+ * @param props.onDeactivate - Deactivates the teacher.
+ * @param props.isDeactivated - Whether the teacher is deactivated.
+ * @returns The tab.
+ */
 export function TeacherEditEmploymentTab({
   draft,
   setField,
@@ -32,7 +43,7 @@ export function TeacherEditEmploymentTab({
           value={draft.employmentType}
           onValueChange={(value) => setField("employmentType", value as TeacherDraft["employmentType"])}
         >
-          <SelectTrigger id="employmentType" className={inputClass}>
+          <SelectTrigger id="employmentType">
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +60,7 @@ export function TeacherEditEmploymentTab({
           value={draft.employmentRole}
           onValueChange={(value) => setField("employmentRole", value as TeacherDraft["employmentRole"])}
         >
-          <SelectTrigger id="employmentRole" className={inputClass}>
+          <SelectTrigger id="employmentRole">
             <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>

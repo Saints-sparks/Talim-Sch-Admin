@@ -3,6 +3,7 @@
 import React from "react";
 import { fieldErrorClass, labelClass } from "./ui";
 
+/** Props for {@link FormField}. */
 interface FormFieldProps {
   /** Text shown above the control. */
   label: string;
@@ -21,9 +22,16 @@ interface FormFieldProps {
 }
 
 /**
- * A labelled form control with an inline error slot.
+ * A labelled form control with an inline error slot, in the tl field look.
  *
  * @param props - Label, control id, required flag, error and the control.
+ * @param props.label - The label.
+ * @param props.htmlFor - The control's id.
+ * @param props.required - Whether to show the asterisk.
+ * @param props.error - The inline error.
+ * @param props.compact - Tighter label spacing.
+ * @param props.className - Extra wrapper classes.
+ * @param props.children - The control.
  * @returns The field wrapper.
  */
 export function FormField({
@@ -39,7 +47,7 @@ export function FormField({
     <div className={className}>
       <label htmlFor={htmlFor} className={`${labelClass} ${compact ? "mb-1.5" : "mb-2"}`}>
         {label}
-        {required && <span className="text-red-500"> *</span>}
+        {required && <span className="text-tl-danger"> *</span>}
       </label>
       {children}
       {error && (

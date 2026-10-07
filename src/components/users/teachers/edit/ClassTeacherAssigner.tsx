@@ -8,6 +8,7 @@ import { assignTeacherMessage } from "@/components/classes/AssignTeacherPanel";
 import { useAssignClassTeacher } from "@/hooks/classes/queries";
 import { logger } from "@/lib/logger";
 import { Permission } from "@/lib/permissions";
+import { fieldLabel, primaryButton, selectControl, tile } from "@/components/tl";
 import {
   REGISTER_RULE,
   classTeacherDisplayName,
@@ -44,6 +45,11 @@ export interface ClassTeacherAssignerProps {
  * class teacher being replaced.
  *
  * @param props - See {@link ClassTeacherAssignerProps}.
+ * @param props.teacherUserId - The teacher's user id.
+ * @param props.teacherProfileId - The teacher's profile id.
+ * @param props.teacherName - The teacher's name.
+ * @param props.classes - The school's classes.
+ * @param props.classTeacherOf - The classes they are class teacher of.
  * @returns The block.
  */
 export function ClassTeacherAssigner({
@@ -92,12 +98,12 @@ export function ClassTeacherAssigner({
   };
 
   return (
-    <div className="md:col-span-2 space-y-3 rounded-lg border border-gray-200 dark:border-slate-600 p-4">
+    <div className={`${tile} flex flex-col gap-3 md:col-span-2`}>
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Class teacher</h3>
-        <p className="text-xs text-gray-600 dark:text-slate-400 mt-0.5">{REGISTER_RULE}</p>
+        <h3 className="text-[15px] font-extrabold text-tl-ink">Class teacher</h3>
+        <p className="mt-0.5 text-[13px] text-tl-muted">{REGISTER_RULE}</p>
       </div>
-      <p className="text-sm text-gray-800 dark:text-slate-200">
+      <p className="text-sm font-bold text-tl-body">
         {mine.length > 0
           ? `Class teacher of ${mine.map((cls) => cls.name).join(", ")}.`
           : "Not the class teacher of any class."}
@@ -106,24 +112,21 @@ export function ClassTeacherAssigner({
       <PermissionGate
         permission={Permission.MANAGE_CLASSES}
         fallback={
-          <p className="text-xs text-gray-600 dark:text-slate-400">
+          <p className="text-[13px] text-tl-muted">
             An admin with Manage Classes sets class teachers, here or on the class&apos;s page.
           </p>
         }
       >
         <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label
-              htmlFor={selectId}
-              className="block text-xs font-medium text-gray-700 dark:text-slate-300"
-            >
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={selectId} className={fieldLabel}>
               Make class teacher of
             </label>
             <select
               id={selectId}
               value={classId}
               onChange={(event) => setClassId(event.target.value)}
-              className="min-w-[12rem] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-gray-900 dark:text-slate-100"
+              className={`${selectControl} min-w-[12rem] max-w-full`}
             >
               <option value="">Choose a class</option>
               {others.map((cls) => (
@@ -138,7 +141,7 @@ export function ClassTeacherAssigner({
             type="button"
             disabled={!chosen || assign.isPending}
             onClick={() => setConfirming(true)}
-            className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50"
+            className={primaryButton}
           >
             Make class teacher
           </button>
