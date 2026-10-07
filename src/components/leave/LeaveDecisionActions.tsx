@@ -13,6 +13,7 @@ import { Permission } from "@/lib/permissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
+import { dangerGhostButton, primaryButton } from "@/components/tl/styles";
 
 interface LeaveDecisionActionsProps {
   onApprove: () => void;
@@ -26,9 +27,15 @@ interface LeaveDecisionActionsProps {
 }
 
 /**
- * Renders the approve and reject buttons.
+ * Renders the approve and reject buttons (navy Approve, red outlined Reject).
  *
  * @param props - Decision handlers, the in-flight flag and the layout variant.
+ * @param props.onApprove - Approves.
+ * @param props.onReject - Rejects.
+ * @param props.isPending - Whether a decision is in flight.
+ * @param props.variant - Card or detail layout.
+ * @param props.fallback - Shown without the permission.
+ * @returns The buttons.
  */
 export function LeaveDecisionActions({
   onApprove,
@@ -41,7 +48,12 @@ export function LeaveDecisionActions({
 
   return (
     <PermissionGate permission={Permission.MANAGE_LEAVE_REQUESTS} fallback={fallback}>
-      <div className={cn("flex gap-2", isCard ? "mt-4 border-t border-slate-100 dark:border-slate-700 pt-3" : "justify-end gap-4")}>
+      <div
+        className={cn(
+          "flex gap-2.5",
+          isCard ? "border-t border-tl-line-soft pt-3.5" : "flex-wrap justify-end"
+        )}
+      >
         <Tooltip
           content="Marks the leave as approved. The parent and class teacher are notified automatically."
           side="top"
@@ -50,10 +62,7 @@ export function LeaveDecisionActions({
             type="button"
             disabled={isPending}
             onClick={onApprove}
-            className={cn(
-              "rounded-lg bg-[#003366] font-medium text-white transition-colors hover:bg-[#002244] disabled:cursor-not-allowed disabled:opacity-60",
-              isCard ? "flex-1 px-3 py-2 text-sm" : "px-6 py-2 text-sm"
-            )}
+            className={cn(primaryButton, isCard && "flex-1")}
           >
             {isPending ? "Saving..." : "Approve"}
           </button>
@@ -66,10 +75,7 @@ export function LeaveDecisionActions({
             type="button"
             disabled={isPending}
             onClick={onReject}
-            className={cn(
-              "rounded-lg border border-red-300 bg-white font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-800 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-900/20",
-              isCard ? "flex-1 px-3 py-2 text-sm" : "px-6 py-2 text-sm"
-            )}
+            className={cn(dangerGhostButton, "rounded-[14px] text-sm", isCard && "flex-1")}
           >
             {isPending ? "Saving..." : "Reject"}
           </button>

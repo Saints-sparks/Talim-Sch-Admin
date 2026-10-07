@@ -6,6 +6,7 @@
  * lower-case (`pending`); both spellings live here so no component compares
  * raw strings and silently matches nothing.
  */
+import type { Tone } from "@/components/tl/styles";
 import type { LeaveRequest, LeaveStatus, LeaveType } from "@/app/services/leave.service";
 
 /**
@@ -47,18 +48,18 @@ export type LeaveFilter = (typeof LEAVE_FILTERS)[number];
 /** A status as the filters spell it. */
 export type LeaveStatusKey = "pending" | "approved" | "rejected";
 
-/** Text colour per status, for the badge on a card. */
-export const STATUS_TEXT: Record<LeaveStatusKey, string> = {
-  pending: "text-[#B07800] dark:text-amber-400",
-  approved: "text-[#2E8B57] dark:text-emerald-400",
-  rejected: "text-red-600 dark:text-red-400",
+/** The pill tone per status (cards and the detail header). */
+export const STATUS_TONE: Record<LeaveStatusKey, Tone> = {
+  pending: "warning",
+  approved: "success",
+  rejected: "danger",
 };
 
 /** Filled badge per status, for the detail header. */
 export const STATUS_BADGE: Record<LeaveStatusKey, string> = {
-  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  pending: "bg-tl-warning-bg text-tl-warning",
+  approved: "bg-tl-success-bg text-tl-success",
+  rejected: "bg-tl-danger-bg text-tl-danger",
 };
 
 /**
@@ -142,7 +143,12 @@ export function formatDate(value?: string): string {
  * @returns A count per filter, including `all`.
  */
 export function countByStatus(requests: LeaveRequest[]): Record<LeaveFilter, number> {
-  const counts: Record<LeaveFilter, number> = { all: requests.length, pending: 0, approved: 0, rejected: 0 };
+  const counts: Record<LeaveFilter, number> = {
+    all: requests.length,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  };
   for (const request of requests) counts[statusKey(request.status)] += 1;
   return counts;
 }

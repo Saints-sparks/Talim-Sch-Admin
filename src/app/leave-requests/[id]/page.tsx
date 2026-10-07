@@ -16,7 +16,7 @@ import { LeaveDecisionActions } from "@/components/leave/LeaveDecisionActions";
 import { LeaveRequestDetails } from "@/components/leave/LeaveRequestDetails";
 import {
   FALLBACK_AVATAR,
-  STATUS_BADGE,
+  STATUS_TONE,
   leaveTypeLabel,
   statusKey,
   statusValue,
@@ -26,10 +26,23 @@ import {
 import { useLeaveRequest, useUpdateLeaveStatus } from "@/hooks/leave/useLeaveRequests";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
-import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
+import { Page, PageHeader } from "@/components/tl/Page";
+import { Pill } from "@/components/tl/bits";
+import {
+  cardFrame,
+  cardTitle,
+  fieldLabel,
+  sectionTitle,
+  textLink,
+  textareaControl,
+} from "@/components/tl/styles";
 
 /**
- * The leave-request detail screen.
+ * The leave-request detail screen in the tl layout: Back, the heading, the
+ * request card (who, status, details), and Take Action while pending.
+ *
+ * @returns The page.
  */
 export default function LeaveRequestDetailPage() {
   const router = useRouter();
@@ -42,6 +55,11 @@ export default function LeaveRequestDetailPage() {
 
   const goBack = () => router.push("/leave-requests");
 
+  /**
+   * Approves or rejects the request (a rejection carries the optional reason).
+   *
+   * @param decision - Approve or reject.
+   */
   const handleDecision = async (decision: "approved" | "rejected") => {
     try {
       await decide.mutateAsync({
@@ -56,128 +74,111 @@ export default function LeaveRequestDetailPage() {
       setDeclineReason("");
     } catch (error) {
       logger.error("leave-requests", `Failed to mark request ${decision}`, error);
-      toast.error(getErrorMessage(error, `Failed to ${decision === "approved" ? "approve" : "reject"} request`));
+      toast.error(
+        getErrorMessage(
+          error,
+          `Failed to ${decision === "approved" ? "approve" : "reject"} request`
+        )
+      );
     }
   };
 
   return (
-    <div className="flex h-screen flex-col bg-slate-100 dark:bg-slate-900">
-      <div className="flex-shrink-0 px-6 py-4">
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={goBack}
-            className="mr-4 rounded-md p-2 text-slate-600 transition hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-            Leave Request Details
-          </h1>
-        </div>
-      </div>
+    <Page guide="leave-request">
+      <button type="button" onClick={goBack} className={`${textLink} self-start`}>
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        Back
+      </button>
+      <PageHeader title="Leave Request Details" />
 
-      <div className="flex-1 overflow-hidden px-6">
-        <div className="h-full overflow-y-auto pb-6">
-          {request.isLoading ? (
-            <LoadingState message="Loading leave request..." />
-          ) : request.isError ? (
-            <ErrorState
-              title="Couldn't load this leave request"
-              message={getErrorMessage(request.error, "Failed to fetch leave request")}
-              onRetry={() => void request.refetch()}
-            />
-          ) : !request.data ? (
-            <ErrorState
-              title="Request Not Found"
-              message="The leave request you're looking for doesn't exist."
-              onRetry={goBack}
-              retryText="Back to Leave Requests"
-            />
-          ) : (
-            <div className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-slate-800">
-              <div className="border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-center">
-                    {/* Plain <img>: avatars come from arbitrary upload hosts and next/image has no remotePatterns configured. */}
-                    <img
-                      src={studentAvatar(request.data)}
-                      alt=""
-                      className="mr-4 h-16 w-16 shrink-0 rounded-full object-cover"
-                      onError={(event) => {
-                        event.currentTarget.src = FALLBACK_AVATAR;
-                      }}
-                    />
-                    <div className="min-w-0">
-                      <h2 className="truncate text-xl font-semibold text-slate-800 dark:text-slate-100">
-                        {studentName(request.data)}
-                      </h2>
-                      <p className="text-slate-600 dark:text-slate-400">
-                        {[request.data.studentProfile?.gradeLevel, leaveTypeLabel(request.data.leaveType)]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "rounded-full px-3 py-1 text-sm font-medium capitalize",
-                      STATUS_BADGE[statusKey(request.data.status)]
-                    )}
-                  >
-                    {statusKey(request.data.status)}
-                  </span>
+      {request.isLoading ? (
+        <LoadingState message="Loading leave request..." />
+      ) : request.isError ? (
+        <ErrorState
+          title="Couldn't load this leave request"
+          message={getErrorMessage(request.error, "Failed to fetch leave request")}
+          onRetry={() => void request.refetch()}
+        />
+      ) : !request.data ? (
+        <ErrorState
+          title="Request Not Found"
+          message="The leave request you're looking for doesn't exist."
+          onRetry={goBack}
+          retryText="Back to Leave Requests"
+        />
+      ) : (
+        <div className={cardFrame}>
+          <div className="border-b border-tl-line-soft bg-tl-subtle px-[clamp(18px,2.4vw,24px)] py-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                {/* Plain <img>: avatars come from arbitrary upload hosts and next/image has no remotePatterns configured. */}
+                <img
+                  src={studentAvatar(request.data)}
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.src = FALLBACK_AVATAR;
+                  }}
+                />
+                <div className="min-w-0">
+                  <h2 className={`${cardTitle} truncate`}>{studentName(request.data)}</h2>
+                  <p className="text-sm text-tl-muted">
+                    {[
+                      request.data.studentProfile?.gradeLevel,
+                      leaveTypeLabel(request.data.leaveType),
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
                 </div>
               </div>
-
-              <div className="p-6">
-                <LeaveRequestDetails request={request.data} />
-
-                {statusKey(request.data.status) === "pending" ? (
-                  <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
-                    <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
-                      Take Action
-                    </h3>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="decline-reason"
-                        className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        Reason for rejection (optional — shown to the parent)
-                      </label>
-                      <textarea
-                        id="decline-reason"
-                        value={declineReason}
-                        onChange={(event) => setDeclineReason(event.target.value)}
-                        placeholder="Explain why this leave cannot be approved..."
-                        rows={3}
-                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-                      />
-                    </div>
-                    <LeaveDecisionActions
-                      variant="detail"
-                      isPending={decide.isPending}
-                      onApprove={() => void handleDecision("approved")}
-                      onReject={() => void handleDecision("rejected")}
-                      fallback={
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          You don&apos;t have permission to action leave requests.
-                        </p>
-                      }
-                    />
-                  </div>
-                ) : (
-                  <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
-                    <p className="rounded-md bg-slate-50 p-4 text-center text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
-                      This request has already been {statusKey(request.data.status)}.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <Pill tone={STATUS_TONE[statusKey(request.data.status)]} dot className="capitalize">
+                {statusKey(request.data.status)}
+              </Pill>
             </div>
-          )}
+          </div>
+
+          <div className="p-[clamp(18px,2.4vw,24px)]">
+            <LeaveRequestDetails request={request.data} />
+
+            {statusKey(request.data.status) === "pending" ? (
+              <div className="mt-6 border-t border-tl-line-soft pt-6">
+                <h3 className={`${sectionTitle} mb-4`}>Take Action</h3>
+                <div className="mb-4 flex flex-col gap-1.5">
+                  <label htmlFor="decline-reason" className={fieldLabel}>
+                    Reason for rejection (optional — shown to the parent)
+                  </label>
+                  <textarea
+                    id="decline-reason"
+                    value={declineReason}
+                    onChange={(event) => setDeclineReason(event.target.value)}
+                    placeholder="Explain why this leave cannot be approved..."
+                    rows={3}
+                    className={textareaControl}
+                  />
+                </div>
+                <LeaveDecisionActions
+                  variant="detail"
+                  isPending={decide.isPending}
+                  onApprove={() => void handleDecision("approved")}
+                  onReject={() => void handleDecision("rejected")}
+                  fallback={
+                    <p className="text-sm text-tl-muted">
+                      You don&apos;t have permission to action leave requests.
+                    </p>
+                  }
+                />
+              </div>
+            ) : (
+              <div className="mt-6 border-t border-tl-line-soft pt-6">
+                <p className="rounded-2xl border border-tl-line-soft bg-tl-subtle p-4 text-center text-sm text-tl-muted">
+                  This request has already been {statusKey(request.data.status)}.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </Page>
   );
 }

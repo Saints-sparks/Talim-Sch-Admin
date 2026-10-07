@@ -1,53 +1,44 @@
 import React from "react";
+import { skeletonBlock } from "@/components/tl/styles";
 
 /**
- * First-load placeholder for the leave-request queue: the header, the filter
- * tabs and a grid of cards, in the shape the real queue takes so the list does
- * not jump when the data lands.
+ * First-load placeholder for the leave-request queue: the filter row and a
+ * grid of cards in the tl look, in the shape the real queue takes so the list
+ * does not jump when the data lands. Announced once as busy.
+ *
+ * @returns The skeleton.
  */
 const LeaveRequestSkeleton: React.FC = () => {
-  const bar = "rounded bg-slate-200 dark:bg-slate-700";
-
   return (
-    <div className="animate-pulse" aria-busy="true" aria-live="polite">
+    <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-[18px]">
       <span className="sr-only">Loading leave requests</span>
 
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className={`h-6 w-40 ${bar}`} />
-        <div className="flex flex-wrap gap-2">
-          <div className={`h-10 w-[300px] max-w-full ${bar}`} />
-          {[0, 1, 2, 3].map((tab) => (
-            <div key={tab} className={`h-9 w-24 ${bar}`} />
-          ))}
-        </div>
+      <div aria-hidden className="flex flex-wrap items-center justify-between gap-3">
+        <div className={`${skeletonBlock} h-[52px] w-[420px] max-w-full rounded-[13px]`} />
+        <div className={`${skeletonBlock} h-11 w-[320px] max-w-full rounded-[13px]`} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div
+        aria-hidden
+        className="grid gap-[18px] [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]"
+      >
         {[0, 1, 2, 3, 4, 5].map((card) => (
-          <div
-            key={card}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-          >
-            <div className="mb-4 flex items-center">
-              <div className={`mr-3 h-11 w-11 rounded-full bg-slate-200 dark:bg-slate-700`} />
-              <div className="flex-1 space-y-2">
-                <div className={`h-4 w-32 ${bar}`} />
-                <div className={`h-3 w-20 ${bar}`} />
-              </div>
-              <div className={`h-6 w-20 rounded-full bg-slate-200 dark:bg-slate-700`} />
+          <div key={card} className="rounded-[22px] border border-tl-line bg-tl-surface p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className={`${skeletonBlock} h-11 w-11 rounded-full`} />
+              <div className={`${skeletonBlock} h-4 flex-1 rounded`} />
+              <div className={`${skeletonBlock} h-6 w-20 rounded-full`} />
             </div>
-
-            <div className="space-y-3">
-              <div className={`h-6 w-40 ${bar}`} />
-              <div className={`h-6 w-52 ${bar}`} />
-              <div className={`h-6 w-36 ${bar}`} />
-              <div className={`h-16 w-full ${bar}`} />
+            <div className="space-y-2.5">
+              <div className={`${skeletonBlock} h-5 w-44 rounded`} />
+              <div className={`${skeletonBlock} h-5 w-52 rounded`} />
+              <div className={`${skeletonBlock} h-5 w-32 rounded`} />
+              <div className={`${skeletonBlock} h-16 w-full rounded-2xl`} />
             </div>
-
             {card < 3 && (
-              <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <div className={`h-9 flex-1 ${bar}`} />
-                <div className={`h-9 flex-1 ${bar}`} />
+              <div className="mt-4 flex gap-2.5 border-t border-tl-line-soft pt-3.5">
+                <div className={`${skeletonBlock} h-11 flex-1 rounded-[14px]`} />
+                <div className={`${skeletonBlock} h-11 flex-1 rounded-[14px]`} />
               </div>
             )}
           </div>

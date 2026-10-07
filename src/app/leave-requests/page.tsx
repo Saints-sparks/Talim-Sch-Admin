@@ -24,9 +24,15 @@ import {
 import { useLeaveRequests, useUpdateLeaveStatus } from "@/hooks/leave/useLeaveRequests";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
+import { Page, PageHeader } from "@/components/tl/Page";
+import { EmptyNote } from "@/components/tl/states";
+import { cardFrame, primaryButton } from "@/components/tl/styles";
 
 /**
- * The leave-request review queue.
+ * The leave-request review queue, in the tl page layout: heading, the status
+ * filter and search, then the request cards.
+ *
+ * @returns The page.
  */
 export default function LeaveRequestsPage() {
   const router = useRouter();
@@ -44,6 +50,12 @@ export default function LeaveRequestsPage() {
     [requests, filter, search]
   );
 
+  /**
+   * Approves or rejects one request in place.
+   *
+   * @param leaveId - The request.
+   * @param decision - Approve or reject.
+   */
   const handleDecision = async (leaveId: string, decision: "approved" | "rejected") => {
     setDecidingId(leaveId);
     try {
@@ -57,66 +69,80 @@ export default function LeaveRequestsPage() {
     }
   };
 
+  const header = (
+    <PageHeader
+      eyebrowText="Communication"
+      title="Request Leave"
+      subtitle="Leave requests from students and staff. Approve or reject them here, or open one for the details."
+    />
+  );
+
   if (queue.isLoading) {
     return (
-      <div className="min-h-screen p-4">
-        <div className="pt-4">
-          <LeaveRequestSkeleton />
-        </div>
-      </div>
+      <Page>
+        {header}
+        <LeaveRequestSkeleton />
+      </Page>
     );
   }
 
   if (queue.isError) {
     return (
-      <div className="min-h-screen p-4">
-        <div className="pt-4">
-          <ErrorState
-            title="Error Loading Leave Requests"
-            message={getErrorMessage(queue.error, "Failed to fetch leave requests")}
-            onRetry={() => void queue.refetch()}
-          />
-        </div>
-      </div>
+      <Page>
+        {header}
+        <ErrorState
+          title="Error Loading Leave Requests"
+          message={getErrorMessage(queue.error, "Failed to fetch leave requests")}
+          onRetry={() => void queue.refetch()}
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="pt-4">
-        <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <h1 className="text-[19px] font-semibold text-slate-900 dark:text-white">Request Leave</h1>
-          <LeaveRequestFilters
-            filter={filter}
-            onFilterChange={setFilter}
-            search={search}
-            onSearchChange={setSearch}
-            counts={counts}
-          />
-        </div>
+    <Page guide="leave-requests">
+      {header}
+      <LeaveRequestFilters
+        filter={filter}
+        onFilterChange={setFilter}
+        search={search}
+        onSearchChange={setSearch}
+        counts={counts}
+      />
 
-        {visible.length === 0 ? (
-          <EmptyQueue filter={filter} hasSearch={Boolean(search.trim())} onShowAll={() => setFilter("all")} />
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {visible.map((request) => (
-              <LeaveRequestCard
-                key={request._id}
-                request={request}
-                isDeciding={decidingId === request._id}
-                onOpen={(leaveId) => router.push(`/leave-requests/${leaveId}`)}
-                onApprove={(leaveId) => void handleDecision(leaveId, "approved")}
-                onReject={(leaveId) => void handleDecision(leaveId, "rejected")}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      {visible.length === 0 ? (
+        <EmptyQueue
+          filter={filter}
+          hasSearch={Boolean(search.trim())}
+          onShowAll={() => setFilter("all")}
+        />
+      ) : (
+        <div className="grid gap-[18px] [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+          {visible.map((request) => (
+            <LeaveRequestCard
+              key={request._id}
+              request={request}
+              isDeciding={decidingId === request._id}
+              onOpen={(leaveId) => router.push(`/leave-requests/${leaveId}`)}
+              onApprove={(leaveId) => void handleDecision(leaveId, "approved")}
+              onReject={(leaveId) => void handleDecision(leaveId, "rejected")}
+            />
+          ))}
+        </div>
+      )}
+    </Page>
   );
 }
 
-/** What the queue shows when nothing matches the active tab or search. */
+/**
+ * What the queue shows when nothing matches the active tab or search.
+ *
+ * @param props - The filter, whether a search is typed, and "show all".
+ * @param props.filter - The active tab.
+ * @param props.hasSearch - Whether a search is typed.
+ * @param props.onShowAll - Switches to All.
+ * @returns The empty state.
+ */
 function EmptyQueue({
   filter,
   hasSearch,
@@ -127,48 +153,30 @@ function EmptyQueue({
   onShowAll: () => void;
 }) {
   const label = filter.charAt(0).toUpperCase() + filter.slice(1);
-
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-100 bg-white px-6 py-24 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#003366]/10 dark:bg-blue-900/30">
-        <svg
-          className="h-10 w-10 text-[#003366] dark:text-blue-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-      </div>
-      <h3 className="mb-2 text-lg font-semibold text-slate-800 dark:text-slate-100">
-        {hasSearch
-          ? "No matching requests"
-          : filter === "all"
-            ? "No Leave Requests Yet"
-            : `No ${label} Requests`}
-      </h3>
-      <p className="max-w-sm text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+    <div className={cardFrame}>
+      <EmptyNote
+        title={
+          hasSearch
+            ? "No matching requests"
+            : filter === "all"
+              ? "No Leave Requests Yet"
+              : `No ${label} Requests`
+        }
+        action={
+          filter !== "all" ? (
+            <button type="button" onClick={onShowAll} className={primaryButton}>
+              View All Requests
+            </button>
+          ) : undefined
+        }
+      >
         {hasSearch
           ? "No request matches that search. Try a student's name, the leave type or a word from the reason."
           : filter === "all"
             ? "When students or staff submit leave requests, they'll appear here for you to review and action."
             : `There are currently no ${filter} leave requests. Check other filters or come back later.`}
-      </p>
-      {filter !== "all" && (
-        <button
-          type="button"
-          onClick={onShowAll}
-          className="mt-6 rounded-xl bg-[#003366] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#002244]"
-        >
-          View All Requests
-        </button>
-      )}
+      </EmptyNote>
     </div>
   );
 }
