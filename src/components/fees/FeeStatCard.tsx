@@ -1,7 +1,6 @@
 "use client";
 
-import { SkeletonBox } from "@/components/ui/loading";
-import { brandTextClass, cardClass, mutedTextClass } from "./ui";
+import { StatTile, skeletonBlock } from "@/components/tl";
 
 interface FeeStatCardProps {
   /** What the number means, e.g. "Outstanding Amount". */
@@ -10,28 +9,39 @@ interface FeeStatCardProps {
   value: string | number;
   /** Small caption under the figure. */
   sub?: string;
-  /** Tailwind text colour for the figure; defaults to the brand navy. */
+  /** Text colour class for the figure (a `tl` token); defaults to ink. */
   color?: string;
   /** Show a placeholder instead of the figure while the totals load. */
   loading?: boolean;
 }
 
 /**
- * One figure on the fees dashboard.
+ * One figure on the fees dashboard, as a design-system stat tile.
  *
  * @param props - Label, value and optional caption/colour.
- * @returns The stat card.
+ * @param props.label - What the number means.
+ * @param props.value - The figure.
+ * @param props.sub - The caption under it.
+ * @param props.color - The figure's colour class.
+ * @param props.loading - Whether the totals are still loading.
+ * @returns The stat tile.
  */
 export function FeeStatCard({ label, value, sub, color, loading = false }: FeeStatCardProps) {
   return (
-    <div className={`${cardClass} p-4 flex flex-col gap-1 shadow-sm`}>
-      <p className={`text-xs ${mutedTextClass}`}>{label}</p>
-      {loading ? (
-        <SkeletonBox className="h-8 w-24 my-0.5" />
-      ) : (
-        <p className={`text-2xl font-bold ${color || brandTextClass}`}>{value}</p>
-      )}
-      {sub && <p className="text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
-    </div>
+    <StatTile
+      label={label}
+      value={
+        loading ? (
+          <span className="block py-0.5">
+            <span aria-hidden className={`${skeletonBlock} block h-7 w-24 rounded-lg`} />
+            <span className="sr-only">Loading</span>
+          </span>
+        ) : (
+          value
+        )
+      }
+      valueClass={`text-2xl ${color || "text-tl-ink"}`}
+      hint={sub}
+    />
   );
 }

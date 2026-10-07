@@ -11,30 +11,43 @@ import {
   type FeeFormErrors,
   type FeeFormValues,
 } from "@/hooks/fees/feeForm";
-import { cardClass, headingClass, inputClass, mutedTextClass } from "./ui";
+import { CardHeader, card, fieldControl, fieldError, fieldHint, fieldLabel } from "@/components/tl";
 
-const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+/** The label above each control. */
+const labelClass = `${fieldLabel} mb-1.5 block`;
+
+/** The red asterisk after a required field's label. */
+const required = <span className="text-tl-danger">*</span>;
 
 /**
  * The message under a field that failed validation.
  *
  * @param props - The message, if any.
+ * @param props.message - The message.
  * @returns The message, or null.
  */
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="text-xs text-red-500 mt-1">{message}</p>;
+  return <p className={`${fieldError} mt-1.5`}>{message}</p>;
 }
 
+/** Props for {@link FeeInformationSection}. */
 interface FeeInformationSectionProps {
+  /** The form values. */
   values: FeeFormValues;
+  /** The fields that failed validation. */
   errors: FeeFormErrors;
+  /** Sets one field. */
   setField: <K extends keyof FeeFormValues>(key: K, value: FeeFormValues[K]) => void;
+  /** The school's fee categories. */
   categories: FeeCategory[];
+  /** True while the categories load. */
   categoriesLoading: boolean;
+  /** The school's academic years. */
   academicYears: AcademicYearResponse[];
   /** Already filtered to the chosen academic year. */
   terms: TermResponse[];
+  /** Locks the fields while saving. */
   disabled?: boolean;
 }
 
@@ -43,6 +56,14 @@ interface FeeInformationSectionProps {
  *
  * @param props - The form values, their errors and the reference lists the
  *   selects need.
+ * @param props.values - The form values.
+ * @param props.errors - The validation errors.
+ * @param props.setField - Sets one field.
+ * @param props.categories - The fee categories.
+ * @param props.categoriesLoading - Whether they are loading.
+ * @param props.academicYears - The academic years.
+ * @param props.terms - The terms of the chosen year.
+ * @param props.disabled - Whether the fields are locked.
  * @returns The section.
  */
 export function FeeInformationSection({
@@ -56,16 +77,13 @@ export function FeeInformationSection({
   disabled = false,
 }: FeeInformationSectionProps) {
   return (
-    <div className={`${cardClass} p-6 space-y-5`}>
-      <div>
-        <h2 className={`text-base font-semibold ${headingClass}`}>1. Fee Information</h2>
-        <p className={`text-xs mt-0.5 ${mutedTextClass}`}>Enter the basic details of the fee.</p>
-      </div>
+    <section className={`${card} flex flex-col gap-5`}>
+      <CardHeader title="1. Fee Information" subtitle="Enter the basic details of the fee." />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className={labelClass} htmlFor="fee-name">
-            Fee Name <span className="text-red-500">*</span>
+            Fee Name {required}
           </label>
           <input
             id="fee-name"
@@ -75,7 +93,7 @@ export function FeeInformationSection({
             disabled={disabled}
             onChange={(event) => setField("name", event.target.value)}
             placeholder="e.g. Annual Tuition Fee"
-            className={inputClass}
+            className={fieldControl}
             aria-invalid={Boolean(errors.name)}
           />
           <FieldError message={errors.name} />
@@ -83,14 +101,14 @@ export function FeeInformationSection({
 
         <div>
           <label className={labelClass} htmlFor="fee-category">
-            Category <span className="text-red-500">*</span>
+            Category {required}
           </label>
           <select
             id="fee-category"
             value={values.categoryId}
             disabled={disabled || categoriesLoading}
             onChange={(event) => setField("categoryId", event.target.value)}
-            className={inputClass}
+            className={fieldControl}
             aria-invalid={Boolean(errors.categoryId)}
           >
             <option value="">{categoriesLoading ? "Loading categories..." : "Select category"}</option>
@@ -102,7 +120,7 @@ export function FeeInformationSection({
           </select>
           <FieldError message={errors.categoryId} />
           {!categoriesLoading && categories.length === 0 && (
-            <p className={`text-xs mt-1 ${mutedTextClass}`}>
+            <p className={`${fieldHint} mt-1.5`}>
               No categories yet — create one on the Fee Categories tab first.
             </p>
           )}
@@ -120,7 +138,7 @@ export function FeeInformationSection({
             disabled={disabled}
             onChange={(event) => setField("description", event.target.value)}
             placeholder="Brief description..."
-            className={inputClass}
+            className={fieldControl}
           />
           <FieldError message={errors.description} />
         </div>
@@ -134,7 +152,7 @@ export function FeeInformationSection({
             value={values.status}
             disabled={disabled}
             onChange={(event) => setField("status", event.target.value as FeeItemStatus)}
-            className={inputClass}
+            className={fieldControl}
           >
             {FEE_STATUSES.map((status) => (
               <option key={status.value} value={status.value}>
@@ -142,7 +160,7 @@ export function FeeInformationSection({
               </option>
             ))}
           </select>
-          <p className={`text-xs mt-1 ${mutedTextClass}`}>
+          <p className={`${fieldHint} mt-1.5`}>
             Active fees count on the dashboard and can be used for collection.
           </p>
         </div>
@@ -159,7 +177,7 @@ export function FeeInformationSection({
               setField("academicYearId", event.target.value);
               setField("termId", "");
             }}
-            className={inputClass}
+            className={fieldControl}
           >
             <option value="">All years</option>
             {academicYears.map((year) => (
@@ -179,7 +197,7 @@ export function FeeInformationSection({
             value={values.termId}
             disabled={disabled || terms.length === 0}
             onChange={(event) => setField("termId", event.target.value)}
-            className={inputClass}
+            className={fieldControl}
           >
             <option value="">
               {terms.length === 0 ? "No terms for this year" : "All terms"}
@@ -194,12 +212,15 @@ export function FeeInformationSection({
       </div>
 
       <div>
-        <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Fee Type <span className="text-red-500">*</span>
+        <span className={`${fieldLabel} mb-2 block`}>
+          Fee Type {required}
         </span>
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {FEE_TYPES.map((type) => (
-            <label key={type.value} className="flex items-center gap-1.5 cursor-pointer">
+            <label
+              key={type.value}
+              className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-tl-line px-3.5 has-[:checked]:border-tl-control has-[:checked]:bg-tl-select"
+            >
               <input
                 type="radio"
                 name="feeType"
@@ -207,9 +228,9 @@ export function FeeInformationSection({
                 disabled={disabled}
                 checked={values.feeType === type.value}
                 onChange={() => setField("feeType", type.value as FeeType)}
-                className="accent-[#003366]"
+                className="h-4 w-4 accent-tl-brand"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{type.label}</span>
+              <span className="text-sm font-bold text-tl-body">{type.label}</span>
             </label>
           ))}
         </div>
@@ -218,7 +239,7 @@ export function FeeInformationSection({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className={labelClass} htmlFor="fee-amount">
-            Amount (NGN) <span className="text-red-500">*</span>
+            Amount (NGN) {required}
           </label>
           <input
             id="fee-amount"
@@ -229,7 +250,7 @@ export function FeeInformationSection({
             disabled={disabled}
             onChange={(event) => setField("defaultAmount", event.target.value)}
             placeholder="0"
-            className={inputClass}
+            className={fieldControl}
             aria-invalid={Boolean(errors.defaultAmount)}
           />
           <FieldError message={errors.defaultAmount} />
@@ -245,7 +266,7 @@ export function FeeInformationSection({
             value={values.defaultDueDate}
             disabled={disabled}
             onChange={(event) => setField("defaultDueDate", event.target.value)}
-            className={inputClass}
+            className={fieldControl}
             aria-invalid={Boolean(errors.defaultDueDate)}
           />
           <FieldError message={errors.defaultDueDate} />
@@ -264,13 +285,13 @@ export function FeeInformationSection({
             disabled={disabled}
             onChange={(event) => setField("lateFeeAmount", event.target.value)}
             placeholder="0"
-            className={inputClass}
+            className={fieldControl}
             aria-invalid={Boolean(errors.lateFeeAmount)}
           />
           <FieldError message={errors.lateFeeAmount} />
-          <p className={`text-xs mt-1 ${mutedTextClass}`}>Applied after the due date</p>
+          <p className={`${fieldHint} mt-1.5`}>Applied after the due date</p>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

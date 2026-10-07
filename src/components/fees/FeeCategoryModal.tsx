@@ -1,24 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiX } from "react-icons/fi";
 import type { FeeCategory } from "@/app/services/fees.service";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
-  headingClass,
-  inputClass,
-  modalBackdropClass,
-  modalPanelClass,
-  primaryButtonClass,
-  secondaryButtonClass,
-} from "./ui";
+  Sheet,
+  fieldControl,
+  fieldError,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+  textareaControl,
+} from "@/components/tl";
 
 /** Limits copied from `CreateFeeCategoryDto` so the form fails before the API does. */
 const NAME_MAX = 100;
 const DESCRIPTION_MAX = 500;
 
+/** Props for {@link FeeCategoryModal}. */
 interface FeeCategoryModalProps {
+  /** Whether the dialog is shown. */
   open: boolean;
+  /** Closes it (Cancel, Escape, the close button, the overlay). */
   onClose: () => void;
   /** Resolves when the category is saved; rejects to keep the modal open. */
   onSave: (name: string, description: string) => Promise<unknown>;
@@ -29,11 +31,17 @@ interface FeeCategoryModalProps {
 }
 
 /**
- * Create / edit dialog for a fee category. Validation mirrors the backend DTO:
- * a name of 1–100 characters and a description of at most 500.
+ * Create / edit dialog for a fee category, in the design system's sheet.
+ * Validation mirrors the backend DTO: a name of 1–100 characters and a
+ * description of at most 500.
  *
  * @param props - Open state, the category being edited and the save handler.
- * @returns The modal, or null when closed.
+ * @param props.open - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.onSave - Saves the category.
+ * @param props.editing - The category being edited, or null.
+ * @param props.saving - Whether the save is in flight.
+ * @returns The sheet, or null when closed.
  */
 export function FeeCategoryModal({
   open,
@@ -46,8 +54,6 @@ export function FeeCategoryModal({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [error, setError] = useState<string | null>(null);
 
-  useBodyScrollLock(open);
-
   useEffect(() => {
     setName(editing?.name ?? "");
     setDescription(editing?.description ?? "");
@@ -56,6 +62,11 @@ export function FeeCategoryModal({
 
   if (!open) return null;
 
+  /**
+   * Checks the fields, then saves and closes; a failed save keeps it open.
+   *
+   * @param event - The form's submit event.
+   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const trimmedName = name.trim();
@@ -81,28 +92,31 @@ export function FeeCategoryModal({
   };
 
   return (
-    <div className={modalBackdropClass} role="dialog" aria-modal="true">
-      <form onSubmit={handleSubmit} className={`${modalPanelClass} max-w-md space-y-4`}>
-        <div className="flex items-center justify-between">
-          <h3 className={`text-lg font-semibold ${headingClass}`}>
-            {editing ? "Edit Category" : "Create Category"}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <FiX size={20} />
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      title={editing ? "Edit Category" : "Create Category"}
+      dismissible={!saving}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className={`${ghostButton} flex-1`}>
+            Cancel
           </button>
-        </div>
-
-        <div>
-          <label
-            htmlFor="fee-category-name"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          <button
+            type="submit"
+            form="fee-category-form"
+            disabled={saving || !name.trim()}
+            className={`${primaryButton} flex-1`}
           >
-            Category Name <span className="text-red-500">*</span>
+            {saving ? "Saving..." : editing ? "Update" : "Create"}
+          </button>
+        </>
+      }
+    >
+      <form id="fee-category-form" onSubmit={handleSubmit} className="flex flex-col gap-[18px]">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="fee-category-name" className={fieldLabel}>
+            Category Name <span className="text-tl-danger">*</span>
           </label>
           <input
             id="fee-category-name"
@@ -111,16 +125,14 @@ export function FeeCategoryModal({
             maxLength={NAME_MAX}
             onChange={(event) => setName(event.target.value)}
             placeholder="e.g. Tuition Fees"
-            className={inputClass}
+            className={fieldControl}
             required
+            data-autofocus
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="fee-category-description"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="fee-category-description" className={fieldLabel}>
             Description
           </label>
           <textarea
@@ -130,29 +142,12 @@ export function FeeCategoryModal({
             maxLength={DESCRIPTION_MAX}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Describe this fee category..."
-            className={`${inputClass} resize-none`}
+            className={`${textareaControl} resize-none`}
           />
         </div>
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        <div className="flex gap-3 justify-end pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`px-4 py-2 rounded-lg text-sm ${secondaryButtonClass}`}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving || !name.trim()}
-            className={`px-4 py-2 rounded-lg text-sm ${primaryButtonClass}`}
-          >
-            {saving ? "Saving..." : editing ? "Update" : "Create"}
-          </button>
-        </div>
+        {error && <p className={fieldError}>{error}</p>}
       </form>
-    </div>
+    </Sheet>
   );
 }

@@ -2,13 +2,18 @@
 
 import { CheckCircle } from "lucide-react";
 import type { ConfirmedWithdrawal } from "@/app/services/finance.service";
+import { ghostButton, primaryButton } from "@/components/tl";
 import { ModalShell } from "../ModalShell";
 import { WithdrawalStatusBadge } from "../FinanceBadges";
 import { formatDateTime, formatNaira } from "../formatters";
 
+/** Props for {@link WithdrawalSuccessStep}. */
 interface WithdrawalSuccessStepProps {
+  /** The withdrawal the server created. */
   withdrawal: ConfirmedWithdrawal;
+  /** Closes the flow. */
   onClose: () => void;
+  /** Opens the Withdrawals tab. */
   onViewWithdrawals: () => void;
 }
 
@@ -19,6 +24,9 @@ interface WithdrawalSuccessStepProps {
  * amounts are the server's record rather than the figures typed at step 1.
  *
  * @param props - The created withdrawal and the exit callbacks.
+ * @param props.withdrawal - The withdrawal.
+ * @param props.onClose - Closes the flow.
+ * @param props.onViewWithdrawals - Opens the Withdrawals tab.
  * @returns The success step.
  */
 export function WithdrawalSuccessStep({
@@ -35,49 +43,50 @@ export function WithdrawalSuccessStep({
 
   return (
     <ModalShell onClose={onClose}>
-      <div className="p-6 text-center">
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
-          <CheckCircle size={40} className="text-green-500" />
-        </div>
+      <div className="flex flex-col items-center px-[clamp(20px,3vw,28px)] py-7 text-center">
+        <span
+          aria-hidden
+          className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-tl-success-bg text-tl-success"
+        >
+          <CheckCircle size={38} />
+        </span>
 
-        <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-2">Withdrawal Request Submitted!</h3>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
+        <h3 className="mb-2 text-[21px] font-extrabold tracking-[-0.4px] text-tl-ink">
+          Withdrawal Request Submitted!
+        </h3>
+        <p className="mb-5 text-sm text-tl-muted">
           Your withdrawal request of{" "}
-          <span className="font-bold text-[#003366]">{formatNaira(withdrawal.amount)}</span> has
-          been submitted successfully.
+          <span className="font-extrabold text-tl-brand">{formatNaira(withdrawal.amount)}</span>{" "}
+          has been submitted successfully.
         </p>
 
         <WithdrawalStatusBadge status={withdrawal.status} />
 
-        <p className="text-xs text-gray-400 mt-2 mb-6">
+        <p className="mb-6 mt-2 text-[13px] text-tl-muted">
           We will send you an email once your withdrawal request has been reviewed.
         </p>
 
-        <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 text-left space-y-2 mb-6">
+        <dl className="mb-6 flex w-full flex-col gap-2 rounded-2xl border border-tl-line-soft bg-tl-subtle px-4 py-3 text-left">
           {rows.map(([label, value]) => (
             <div key={label} className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-500 dark:text-slate-400">{label}</span>
-              <span className="font-semibold text-gray-800 dark:text-slate-100 text-right">{value}</span>
+              <dt className="text-tl-muted">{label}</dt>
+              <dd className="text-right font-bold text-tl-ink">{value}</dd>
             </div>
           ))}
-        </div>
+        </dl>
 
-        <div className="flex gap-3">
+        <div className="flex w-full flex-wrap gap-2.5">
           <button
             type="button"
             onClick={() => {
               onViewWithdrawals();
               onClose();
             }}
-            className="flex-1 py-3 bg-[#003366] text-white rounded-xl text-sm font-bold hover:bg-[#003366]/90"
+            className={`${primaryButton} flex-1`}
           >
             View Withdrawals
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
-          >
+          <button type="button" onClick={onClose} className={`${ghostButton} flex-1`}>
             Back to Finance
           </button>
         </div>

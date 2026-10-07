@@ -1,25 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ApiError } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import type { ConfirmedWithdrawal, WithdrawalSummary } from "@/app/services/finance.service";
 import { useSecurityStatus } from "@/hooks/finance/useFinanceQueries";
 import { useConfirmWithdrawal } from "@/hooks/finance/useFinanceMutations";
+import {
+  Banner,
+  fieldControl,
+  fieldHint,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { ModalShell } from "../ModalShell";
+import { WithdrawalSteps, withdrawalStepEyebrow } from "./WithdrawalSteps";
 import { financeActionMessage } from "../financeErrors";
 import { formatNaira } from "../formatters";
 
 /** Authenticator codes are six digits. */
 const CODE_LENGTH = 6;
 
+/** Props for {@link ConfirmWithdrawalStep}. */
 interface ConfirmWithdrawalStepProps {
   /** The figures the server returned when the emailed code verified. */
   summary: WithdrawalSummary;
+  /** Back to the code step. */
   onBack: () => void;
+  /** Closes the flow. */
   onClose: () => void;
+  /** Hands the created withdrawal to the success step. */
   onConfirmed: (withdrawal: ConfirmedWithdrawal) => void;
 }
 
@@ -27,6 +41,9 @@ interface ConfirmWithdrawalStepProps {
  * One line of the confirmation summary.
  *
  * @param props - Label, formatted value and whether to highlight it.
+ * @param props.label - The label.
+ * @param props.value - The value.
+ * @param props.highlight - Whether to show it in navy.
  * @returns The summary row.
  */
 function SummaryRow({
@@ -39,11 +56,13 @@ function SummaryRow({
   highlight?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-gray-100 dark:border-slate-800 last:border-0">
-      <span className="text-sm text-gray-500 dark:text-slate-400">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? "text-[#003366]" : "text-gray-800"}`}>
+    <div className="flex items-center justify-between gap-3 border-b border-tl-line-soft py-2.5 last:border-0">
+      <dt className="text-sm text-tl-muted">{label}</dt>
+      <dd
+        className={`text-right text-sm ${highlight ? "font-extrabold text-tl-brand" : "font-bold text-tl-ink"}`}
+      >
         {value}
-      </span>
+      </dd>
     </div>
   );
 }
@@ -59,6 +78,10 @@ function SummaryRow({
  * the admin hitting a dead end.
  *
  * @param props - The verified summary and the step's callbacks.
+ * @param props.summary - The verified figures.
+ * @param props.onBack - Back to the code step.
+ * @param props.onClose - Closes the flow.
+ * @param props.onConfirmed - Moves on with the withdrawal.
  * @returns The confirmation step.
  */
 export function ConfirmWithdrawalStep({
@@ -77,6 +100,7 @@ export function ConfirmWithdrawalStep({
     if (security.data?.requireTwoFactorForWithdrawals) setRequiresTwoFactor(true);
   }, [security.data]);
 
+  /** Commits the withdrawal (with the authenticator code when required). */
   const handleConfirm = async () => {
     if (!agreed) return;
     if (requiresTwoFactor && twoFactorCode.length !== CODE_LENGTH) return;
@@ -100,11 +124,13 @@ export function ConfirmWithdrawalStep({
   const blocked = !agreed || confirm.isPending || (requiresTwoFactor && twoFactorCode.length !== CODE_LENGTH);
 
   return (
-    <ModalShell title="Confirm Withdrawal" onClose={onClose}>
-      <div className="p-6 space-y-5">
+    <ModalShell title="Confirm Withdrawal" eyebrowText={withdrawalStepEyebrow(2)} onClose={onClose}>
+      <div className="flex flex-col gap-5 px-[clamp(20px,3vw,28px)] py-5">
+        <WithdrawalSteps current={2} />
+
         <div>
-          <p className="text-sm font-bold text-gray-700 dark:text-slate-200 mb-3">Withdrawal Summary</p>
-          <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+          <p className="mb-2 text-[15px] font-extrabold text-tl-ink">Withdrawal Summary</p>
+          <dl className="rounded-2xl border border-tl-line-soft bg-tl-subtle px-4 py-1.5">
             {summary.bankAccount && (
               <>
                 <SummaryRow
@@ -126,32 +152,29 @@ export function ConfirmWithdrawalStep({
               label="After Withdrawal Balance"
               value={formatNaira(summary.balanceAfterWithdrawal)}
             />
-          </div>
+          </dl>
         </div>
 
-        <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-xl p-4">
-          <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700 leading-relaxed">
-            Please confirm that the details above are correct. This action requires email OTP
-            verification and will be subject to review before processing.
-          </p>
-        </div>
+        <Banner tone="warning">
+          Please confirm that the details above are correct. This action requires email OTP
+          verification and will be subject to review before processing.
+        </Banner>
 
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex min-h-[44px] cursor-pointer items-start gap-3">
           <input
             type="checkbox"
             checked={agreed}
             onChange={(event) => setAgreed(event.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
+            className="mt-0.5 h-5 w-5 shrink-0 rounded accent-tl-brand"
           />
-          <span className="text-sm text-gray-600 dark:text-slate-300">
+          <span className="text-sm text-tl-body">
             I confirm that the information above is correct and I want to proceed with this
             withdrawal.
           </span>
         </label>
 
         {requiresTwoFactor && (
-          <label className="block text-sm text-gray-600 dark:text-slate-300">
+          <label className={`${fieldLabel} block`}>
             Authenticator code
             <input
               inputMode="numeric"
@@ -163,32 +186,32 @@ export function ConfirmWithdrawalStep({
               }
               placeholder="6-digit code"
               aria-label="Authenticator code"
-              className="mt-1 w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100"
+              className={cn(fieldControl, "mt-1.5 font-mono tracking-widest")}
             />
-            <span className="mt-1 block text-xs text-gray-400">
+            <span className={`${fieldHint} mt-1.5 block font-normal`}>
               Your school requires two-factor authentication for withdrawals.
             </span>
           </label>
         )}
 
-        <div className="flex gap-3 pt-1">
+        <div className="flex flex-wrap gap-2.5 pt-1">
           <button
             type="button"
             onClick={onBack}
             disabled={confirm.isPending}
-            className="flex-1 py-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 flex items-center justify-center gap-1 disabled:opacity-40"
+            className={`${ghostButton} flex-1`}
           >
-            <ArrowLeft size={15} /> Back
+            <ArrowLeft size={16} aria-hidden /> Back
           </button>
           <button
             type="button"
             onClick={() => void handleConfirm()}
             disabled={blocked}
-            className="flex-1 py-3 bg-[#003366] text-white rounded-xl text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"
+            className={`${primaryButton} flex-1`}
           >
             {confirm.isPending ? (
               <>
-                <RefreshCw size={14} className="animate-spin" /> Submitting…
+                <RefreshCw size={15} className="animate-spin" aria-hidden /> Submitting…
               </>
             ) : (
               "Confirm & Submit"

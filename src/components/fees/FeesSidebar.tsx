@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SectionSkeleton } from "@/components/ui/loading";
+import { card, sectionTitle, skeletonBlock, textLink } from "@/components/tl";
 import {
   useFeeCategoriesSummary,
   useReceiptSettings,
@@ -9,7 +9,6 @@ import {
 } from "@/hooks/fees/queries";
 import { feesErrorMessage } from "./errors";
 import { ReceiptSignatureCard } from "./ReceiptSignatureCard";
-import { brandTextClass, cardClass, mutedTextClass } from "./ui";
 
 /** How many categories fit in the sidebar before "View All". */
 const SIDEBAR_CATEGORIES = 6;
@@ -43,62 +42,64 @@ export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
   const active = (categories.data ?? []).filter((category) => category.status === "active");
 
   return (
-    <div className="w-full lg:w-64 shrink-0 space-y-4">
-      <div className={`${cardClass} p-4`}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Fee Categories</h3>
-          <button
-            type="button"
-            onClick={onViewCategories}
-            className={`text-xs hover:underline ${brandTextClass}`}
-          >
+    <aside aria-label="Fees shortcuts" className="flex w-full shrink-0 flex-col gap-[18px] lg:w-72">
+      <section className={card}>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className={sectionTitle}>Fee Categories</h2>
+          <button type="button" onClick={onViewCategories} className={textLink}>
             View All
           </button>
         </div>
         {categories.isPending ? (
-          <SectionSkeleton rows={3} rowClassName="h-6" />
-        ) : categories.isError ? (
-          <p className="text-xs text-red-500">{feesErrorMessage(categories.error, "categories")}</p>
-        ) : active.length === 0 ? (
-          <p className={`text-xs ${mutedTextClass}`}>No categories yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {active.slice(0, SIDEBAR_CATEGORIES).map((category) => (
-              <div key={category._id} className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  {category.name}
-                </span>
-                <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-                  {category.feeCount ?? 0} Items
-                </span>
-              </div>
+          <div role="status" aria-busy="true" className="flex flex-col gap-2">
+            <span className="sr-only">Loading categories</span>
+            {[0, 1, 2].map((row) => (
+              <div key={row} aria-hidden className={`${skeletonBlock} h-6 rounded-lg`} />
             ))}
           </div>
+        ) : categories.isError ? (
+          <p className="text-[13px] font-semibold text-tl-danger">
+            {feesErrorMessage(categories.error, "categories")}
+          </p>
+        ) : active.length === 0 ? (
+          <p className="text-[13px] text-tl-muted">No categories yet.</p>
+        ) : (
+          <ul className="flex flex-col">
+            {active.slice(0, SIDEBAR_CATEGORIES).map((category) => (
+              <li
+                key={category._id}
+                className="flex items-center justify-between gap-2 border-t border-tl-line-soft py-2.5 first:border-t-0"
+              >
+                <span className="truncate text-sm font-semibold text-tl-body">{category.name}</span>
+                <span className="shrink-0 text-[13px] text-tl-muted">
+                  {category.feeCount ?? 0} Items
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </section>
 
       {canManage && (
-        <div className={`${cardClass} p-4`}>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
-            Quick Actions
-          </h3>
-          <div className="space-y-2">
+        <section className={card}>
+          <h2 className={`${sectionTitle} mb-1`}>Quick Actions</h2>
+          <div className="flex flex-col">
             <button
               type="button"
               onClick={() => router.push("/fees-management/create")}
-              className={`w-full text-left text-xs hover:underline py-1 ${brandTextClass}`}
+              className={textLink}
             >
               Create New Fee
             </button>
             <button
               type="button"
               onClick={() => router.push("/fees-management/assign")}
-              className={`w-full text-left text-xs hover:underline py-1 ${brandTextClass}`}
+              className={textLink}
             >
               Add Existing Fee to Classes
             </button>
           </div>
-        </div>
+        </section>
       )}
 
       {receiptAccess.canRead && (
@@ -109,6 +110,6 @@ export function FeesSidebar({ onViewCategories, canManage }: FeesSidebarProps) {
           canEdit={receiptAccess.canEdit}
         />
       )}
-    </div>
+    </aside>
   );
 }

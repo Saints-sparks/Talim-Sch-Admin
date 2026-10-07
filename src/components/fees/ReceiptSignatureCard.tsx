@@ -3,18 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { FiUpload } from "react-icons/fi";
 import { toast } from "@/components/CustomToast";
-import { SkeletonBox } from "@/components/ui/loading";
+import {
+  card,
+  dangerGhostButton,
+  fieldControl,
+  rowButton,
+  sectionTitle,
+  skeletonBlock,
+} from "@/components/tl";
 import { useReceiptSettingsAction } from "@/hooks/fees/mutations";
 import type { ReceiptSettings } from "@/app/services/fees.service";
 import { feesErrorMessage } from "./errors";
-import { cardClass, inputClass, mutedTextClass, secondaryButtonClass } from "./ui";
 
 /** The upload endpoint rejects anything larger, so stop it here. */
 const MAX_SIGNATURE_BYTES = 5 * 1024 * 1024;
 
+/** Props for {@link ReceiptSignatureCard}. */
 interface ReceiptSignatureCardProps {
+  /** The receipt settings, once loaded. */
   settings?: ReceiptSettings;
+  /** True while they load. */
   loading: boolean;
+  /** What the load threw, if it failed. */
   error: unknown;
   /** False for an admin without `manage:settings` (the receipt route's permission): the card shows, the controls don't. */
   canEdit: boolean;
@@ -26,6 +36,10 @@ interface ReceiptSignatureCardProps {
  *
  * @param props - The current settings, their load state and whether the user
  *   may change them.
+ * @param props.settings - The receipt settings.
+ * @param props.loading - Whether they are loading.
+ * @param props.error - The load error.
+ * @param props.canEdit - Whether the user may change them.
  * @returns The sidebar card.
  */
 export function ReceiptSignatureCard({
@@ -44,6 +58,11 @@ export function ReceiptSignatureCard({
     setTitle(settings?.signatureTitle ?? "");
   }, [settings]);
 
+  /**
+   * Checks the picked image and uploads it with the signatory's name.
+   *
+   * @param file - The picked file, if any.
+   */
   const handleFile = (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -67,42 +86,43 @@ export function ReceiptSignatureCard({
   const busy = save.isPending;
 
   return (
-    <div className={`${cardClass} p-4 space-y-3`}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-        Signature for Receipts
-      </h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500">
-        This signature will appear on all fee receipts.
-      </p>
+    <section className={`${card} flex flex-col gap-3`}>
+      <div>
+        <h2 className={sectionTitle}>Signature for Receipts</h2>
+        <p className="mt-1 text-[13px] text-tl-muted">
+          This signature will appear on all fee receipts.
+        </p>
+      </div>
 
       {loading ? (
-        <SkeletonBox className="h-12" />
+        <div aria-hidden className={`${skeletonBlock} h-14 rounded-xl`} />
       ) : error ? (
-        <p className="text-xs text-red-500">{feesErrorMessage(error, "receipt settings")}</p>
+        <p className="text-[13px] font-semibold text-tl-danger">
+          {feesErrorMessage(error, "receipt settings")}
+        </p>
       ) : settings?.signatureUrl ? (
         /* A plain <img>: signatures live on an unknown remote host, which
-           next/image would need configured in next.config. */
+           next/image would need configured in next.config. The white pad keeps
+           a dark-ink signature readable in the dark theme. */
         <img
           src={settings.signatureUrl}
           alt="Receipt signature"
-          className="h-12 object-contain border border-gray-100 dark:border-gray-800 rounded p-1 bg-white"
+          className="h-14 rounded-xl border border-tl-line-soft bg-white object-contain p-1.5"
         />
       ) : (
-        <div
-          className={`h-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded flex items-center justify-center text-xs ${mutedTextClass}`}
-        >
+        <div className="flex h-14 items-center justify-center rounded-xl border-2 border-dashed border-tl-line text-[13px] text-tl-muted">
           No signature uploaded
         </div>
       )}
 
       {!canEdit && !loading && !error && (
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
           {(settings?.signatureName || settings?.signatureTitle) && (
-            <p className="text-xs text-gray-700 dark:text-gray-200">
+            <p className="text-sm font-semibold text-tl-body">
               {[settings?.signatureName, settings?.signatureTitle].filter(Boolean).join(" · ")}
             </p>
           )}
-          <p className={`text-xs ${mutedTextClass}`}>
+          <p className="text-[13px] text-tl-muted">
             Changing the signature needs the Manage Settings permission.
           </p>
         </div>
@@ -110,14 +130,14 @@ export function ReceiptSignatureCard({
 
       {canEdit && (
         <>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Authorized name"
               aria-label="Authorized name"
-              className={`${inputClass} py-1.5 text-xs`}
+              className={fieldControl}
             />
             <input
               type="text"
@@ -125,12 +145,10 @@ export function ReceiptSignatureCard({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Title / Position"
               aria-label="Signatory title"
-              className={`${inputClass} py-1.5 text-xs`}
+              className={fieldControl}
             />
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500">
-            Recommended size: 300x100px (PNG, JPG)
-          </p>
+          <p className="text-xs text-tl-muted">Recommended size: 300x100px (PNG, JPG)</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -138,20 +156,20 @@ export function ReceiptSignatureCard({
             className="hidden"
             onChange={(event) => handleFile(event.target.files?.[0])}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={busy}
-              className={`flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg ${secondaryButtonClass}`}
+              className={`${rowButton} flex-1`}
             >
-              <FiUpload size={12} /> {busy ? "Working..." : "Change Signature"}
+              <FiUpload size={13} aria-hidden /> {busy ? "Working..." : "Change Signature"}
             </button>
             <button
               type="button"
               onClick={() => save.mutate({ type: "save", signatureName: name, signatureTitle: title })}
               disabled={busy}
-              className={`flex items-center gap-1 text-xs py-1.5 px-3 rounded-lg ${secondaryButtonClass}`}
+              className={rowButton}
             >
               Save
             </button>
@@ -160,7 +178,7 @@ export function ReceiptSignatureCard({
                 type="button"
                 onClick={() => save.mutate({ type: "clear" })}
                 disabled={busy}
-                className="flex items-center gap-1 text-xs py-1.5 px-3 border border-red-200 dark:border-red-900 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-60"
+                className={dangerGhostButton}
               >
                 Remove
               </button>
@@ -168,6 +186,6 @@ export function ReceiptSignatureCard({
           </div>
         </>
       )}
-    </div>
+    </section>
   );
 }

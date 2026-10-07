@@ -3,6 +3,20 @@
 import { useState } from "react";
 import { Eye, RefreshCw } from "lucide-react";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  EmptyNote,
+  cardFrame,
+  eyebrow,
+  iconButton,
+  rowButton,
+  table,
+  tableScroll,
+  td,
+  th,
+  theadRow,
+  tr,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { ModalShell } from "@/components/finance/ModalShell";
 import { TableSkeleton } from "@/components/finance/FinanceSkeletons";
 import { TablePager } from "@/components/finance/TablePager";
@@ -13,6 +27,7 @@ import { PAYMENTS_PAGE_SIZE, usePaymentReceipts } from "@/hooks/finance/usePayme
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { PROVIDER_LABELS } from "./tabs";
 
+/** The table's column headings. */
 const COLUMNS = ["Receipt #", "Total Paid", "Payment Method", "Date", "Status", "Actions"];
 
 /**
@@ -40,81 +55,77 @@ export function ReceiptsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500 dark:text-slate-400">
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-tl-muted">
           {total} receipt{total === 1 ? "" : "s"}
         </p>
         <button
           type="button"
           onClick={() => void query.refetch()}
           aria-label="Refresh receipts"
-          className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
+          className={`${iconButton} border border-tl-control bg-tl-surface`}
         >
           <RefreshCw
-            size={15}
-            className={query.isFetching ? "animate-spin text-[#003366]" : "text-gray-500"}
+            size={16}
+            aria-hidden
+            className={query.isFetching ? "animate-spin text-tl-brand" : undefined}
           />
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[720px]">
-            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
-              <tr>
-                {COLUMNS.map((column) => (
-                  <th
-                    key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
-                  >
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {query.isPending ? (
-                <TableSkeleton columns={COLUMNS.length} />
-              ) : receipts.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-4 py-12 text-center text-gray-400">
-                    No receipts found
-                  </td>
+      <div className={cardFrame}>
+        {!query.isPending && receipts.length === 0 ? (
+          <EmptyNote title="No receipts found" />
+        ) : (
+          <div className={tableScroll}>
+            <table className={cn(table, "min-w-[720px]")}>
+              <thead>
+                <tr className={theadRow}>
+                  {COLUMNS.map((column) => (
+                    <th key={column} className={th}>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                receipts.map((receipt) => (
-                  <tr key={receipt._id} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-[#003366]">
-                      {receipt.receiptNumber}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100">
-                      {formatNaira(receipt.totalPaid)}
-                    </td>
-                    <td className="px-4 py-3 capitalize text-gray-600 dark:text-slate-300">
-                      {receipt.paymentMethod?.replace(/_/g, " ")}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                      {formatDate(receipt.paymentDate)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <PaymentStatusBadge status={receipt.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => setSelected(receipt)}
-                        className="text-xs text-[#003366] hover:underline flex items-center gap-1"
-                      >
-                        <Eye size={13} /> View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody aria-busy={query.isPending || undefined}>
+                {query.isPending ? (
+                  <TableSkeleton columns={COLUMNS.length} />
+                ) : (
+                  receipts.map((receipt) => (
+                    <tr key={receipt._id} className={tr}>
+                      <td className={cn(td, "font-mono text-xs font-bold text-tl-brand")}>
+                        {receipt.receiptNumber}
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap font-extrabold text-tl-ink")}>
+                        {formatNaira(receipt.totalPaid)}
+                      </td>
+                      <td className={cn(td, "capitalize")}>
+                        {receipt.paymentMethod?.replace(/_/g, " ")}
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap")}>
+                        {formatDate(receipt.paymentDate)}
+                      </td>
+                      <td className={td}>
+                        <PaymentStatusBadge status={receipt.status} />
+                      </td>
+                      <td className={cn(td, "py-1.5")}>
+                        <button
+                          type="button"
+                          onClick={() => setSelected(receipt)}
+                          className={rowButton}
+                        >
+                          <Eye size={14} aria-hidden /> View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <TablePager
@@ -135,67 +146,69 @@ export function ReceiptsTab() {
  * parent can quote.
  *
  * @param props - The receipt and the close handler.
+ * @param props.receipt - The receipt.
+ * @param props.onClose - Closes it.
  * @returns The receipt detail modal.
  */
 function ReceiptDetail({ receipt, onClose }: { receipt: Receipt; onClose: () => void }) {
   return (
     <ModalShell title={`Receipt ${receipt.receiptNumber}`} onClose={onClose} maxWidthClass="max-w-lg">
-      <div className="p-6 space-y-4">
-        <p className="text-sm text-gray-400 -mt-2">{formatDate(receipt.paymentDate)}</p>
+      <div className="flex flex-col gap-4 px-[clamp(20px,3vw,28px)] py-5">
+        <p className="text-sm text-tl-muted">{formatDate(receipt.paymentDate)}</p>
 
-        <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 space-y-2">
+        <dl className="flex flex-col gap-2 rounded-2xl border border-tl-line-soft bg-tl-subtle px-4 py-3">
           {receipt.feeItems.map((item, index) => (
             <div key={`${item.feeName}-${index}`} className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-600 dark:text-slate-300">{item.feeName}</span>
-              <span className="font-medium text-gray-800 dark:text-slate-100">{formatNaira(item.amount)}</span>
+              <dt className="text-tl-body">{item.feeName}</dt>
+              <dd className="font-bold text-tl-ink">{formatNaira(item.amount)}</dd>
             </div>
           ))}
           {receipt.lateFee > 0 && (
-            <div className="flex justify-between text-sm text-orange-600">
-              <span>Late Fee</span>
-              <span>{formatNaira(receipt.lateFee)}</span>
+            <div className="flex justify-between text-sm font-semibold text-tl-warning">
+              <dt>Late Fee</dt>
+              <dd>{formatNaira(receipt.lateFee)}</dd>
             </div>
           )}
           {receipt.discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Discount</span>
-              <span>-{formatNaira(receipt.discount)}</span>
+            <div className="flex justify-between text-sm font-semibold text-tl-success">
+              <dt>Discount</dt>
+              <dd>-{formatNaira(receipt.discount)}</dd>
             </div>
           )}
-          <div className="flex justify-between font-bold text-[#003366] border-t border-gray-200 dark:border-slate-700 pt-2 mt-2">
-            <span>Total Paid</span>
-            <span>{formatNaira(receipt.totalPaid)}</span>
+          <div className="mt-1 flex justify-between border-t border-tl-line pt-2 font-extrabold text-tl-brand">
+            <dt>Total Paid</dt>
+            <dd>{formatNaira(receipt.totalPaid)}</dd>
           </div>
-        </div>
+        </dl>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <dl className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-gray-400 text-xs mb-0.5">Payment Method</p>
-            <p className="font-medium capitalize text-gray-800 dark:text-slate-100">
+            <dt className={`${eyebrow} mb-1`}>Payment Method</dt>
+            <dd className="font-bold capitalize text-tl-ink">
               {receipt.paymentMethod?.replace(/_/g, " ")}
-            </p>
+            </dd>
           </div>
           <div>
-            <p className="text-gray-400 text-xs mb-0.5">Provider</p>
-            <p className="font-medium text-gray-800 dark:text-slate-100">
+            <dt className={`${eyebrow} mb-1`}>Provider</dt>
+            <dd className="font-bold text-tl-ink">
               {PROVIDER_LABELS[receipt.paymentProvider] ?? receipt.paymentProvider}
-            </p>
+            </dd>
           </div>
           <div className="min-w-0">
-            <p className="text-gray-400 text-xs mb-0.5">Reference</p>
-            <p className="font-mono text-xs text-gray-700 dark:text-slate-200 break-all">
+            <dt className={`${eyebrow} mb-1`}>Reference</dt>
+            <dd className="break-all font-mono text-xs text-tl-body">
               {receipt.transactionReference}
-            </p>
+            </dd>
           </div>
           <div className="min-w-0">
-            <p className="text-gray-400 text-xs mb-0.5">Verification</p>
-            <p className="font-mono text-xs text-gray-700 dark:text-slate-200 break-all">{receipt.verificationCode}</p>
+            <dt className={`${eyebrow} mb-1`}>Verification</dt>
+            <dd className="break-all font-mono text-xs text-tl-body">{receipt.verificationCode}</dd>
           </div>
-        </div>
+        </dl>
 
-        <div className="flex justify-between items-center pt-2">
+        <div className="flex items-center justify-between gap-3 pt-1">
           <PaymentStatusBadge status={receipt.status} />
-          <p className="text-xs text-gray-400">Issued {formatDate(receipt.issuedAt)}</p>
+          <p className="text-[13px] text-tl-muted">Issued {formatDate(receipt.issuedAt)}</p>
         </div>
       </div>
     </ModalShell>

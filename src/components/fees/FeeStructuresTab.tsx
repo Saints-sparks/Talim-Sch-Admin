@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiArchive, FiCopy, FiDownload, FiEdit2, FiEye, FiSearch, FiUpload } from "react-icons/fi";
+import { FiArchive, FiCopy, FiDownload, FiEdit2, FiEye, FiUpload } from "react-icons/fi";
 import type { FeeItem, FeeItemStatus } from "@/app/services/fees.service";
 import { useFeeItemAction } from "@/hooks/fees/mutations";
 import { useFeeCategories, useFeeItems } from "@/hooks/fees/queries";
@@ -11,11 +11,12 @@ import { FeeItemDetailsModal } from "./FeeItemDetailsModal";
 import { FeeItemCells, FeeItemsTableHead } from "./FeeItemsTableParts";
 import { FeesPanelState } from "./FeesPanelState";
 import { TablePagination } from "./TablePagination";
+import { SearchField, selectControl, table } from "@/components/tl";
+import { cn } from "@/lib/utils";
 import {
-  cardClass,
+  actionsCellClass,
+  frameClass,
   iconButtonClass,
-  inputClass,
-  tableBodyClass,
   tableRowClass,
   tableScrollClass,
 } from "./ui";
@@ -34,6 +35,7 @@ const STATUS_FILTERS: Array<{ value: FeeItemStatus | ""; label: string }> = [
  * with the row actions an admin needs.
  *
  * @param props - Whether the user may change a fee item.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The Fee Structures tab.
  */
 export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
@@ -65,26 +67,20 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
   const total = items.data?.total ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <FiSearch
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={14}
-          />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search fee structures..."
-            aria-label="Search fee structures"
-            className={`${inputClass} pl-8`}
-          />
-        </div>
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <SearchField
+          value={search}
+          onChange={setSearch}
+          label="Search fee structures"
+          placeholder="Search fee structures..."
+          className="max-w-sm flex-1"
+        />
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as FeeItemStatus | "")}
           aria-label="Filter by status"
-          className={`${inputClass} w-auto`}
+          className={selectControl}
         >
           {STATUS_FILTERS.map((option) => (
             <option key={option.value || "all"} value={option.value}>
@@ -96,7 +92,7 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
           value={categoryId}
           onChange={(event) => setCategoryId(event.target.value)}
           aria-label="Filter by category"
-          className={`${inputClass} w-auto`}
+          className={selectControl}
           disabled={categories.isPending || (categories.data ?? []).length === 0}
         >
           <option value="">All categories</option>
@@ -108,7 +104,7 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
         </select>
       </div>
 
-      <div className={`${cardClass} overflow-hidden`}>
+      <div className={frameClass}>
         <FeesPanelState
           loading={items.isPending}
           error={items.error}
@@ -125,14 +121,14 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
         {!items.isPending && !items.isError && rows.length > 0 && (
           <>
             <div className={tableScrollClass}>
-              <table className="w-full text-sm">
+              <table className={table}>
                 <FeeItemsTableHead />
-                <tbody className={tableBodyClass}>
+                <tbody>
                   {rows.map((item) => (
                     <tr key={item._id} className={tableRowClass}>
                       <FeeItemCells item={item} />
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
+                      <td className={actionsCellClass}>
+                        <div className="flex items-center gap-0.5">
                           <button
                             type="button"
                             onClick={() => setViewing(item)}
@@ -140,7 +136,7 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
                             title="View details"
                             aria-label={`View ${item.name}`}
                           >
-                            <FiEye size={14} />
+                            <FiEye size={16} aria-hidden />
                           </button>
                           {canManage && (
                             <>
@@ -153,7 +149,7 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
                                 title="Edit"
                                 aria-label={`Edit ${item.name}`}
                               >
-                                <FiEdit2 size={14} />
+                                <FiEdit2 size={16} aria-hidden />
                               </button>
                               {item.status !== "active" ? (
                                 <button
@@ -162,11 +158,11 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
                                   onClick={() =>
                                     action.mutate({ type: "status", id: item._id, status: "active" })
                                   }
-                                  className={`${iconButtonClass} hover:text-green-600 disabled:opacity-60`}
+                                  className={cn(iconButtonClass, "hover:bg-tl-success-bg hover:text-tl-success")}
                                   title="Publish"
                                   aria-label={`Publish ${item.name}`}
                                 >
-                                  <FiUpload size={14} />
+                                  <FiUpload size={16} aria-hidden />
                                 </button>
                               ) : (
                                 <button
@@ -179,32 +175,32 @@ export function FeeStructuresTab({ canManage }: { canManage: boolean }) {
                                       status: "inactive",
                                     })
                                   }
-                                  className={`${iconButtonClass} hover:text-yellow-600 disabled:opacity-60`}
+                                  className={cn(iconButtonClass, "hover:bg-tl-warning-bg hover:text-tl-warning")}
                                   title="Deactivate"
                                   aria-label={`Deactivate ${item.name}`}
                                 >
-                                  <FiDownload size={14} />
+                                  <FiDownload size={16} aria-hidden />
                                 </button>
                               )}
                               <button
                                 type="button"
                                 disabled={action.isPending}
                                 onClick={() => action.mutate({ type: "duplicate", id: item._id })}
-                                className={`${iconButtonClass} disabled:opacity-60`}
+                                className={iconButtonClass}
                                 title="Duplicate"
                                 aria-label={`Duplicate ${item.name}`}
                               >
-                                <FiCopy size={14} />
+                                <FiCopy size={16} aria-hidden />
                               </button>
                               <button
                                 type="button"
                                 disabled={action.isPending}
                                 onClick={() => action.mutate({ type: "archive", id: item._id })}
-                                className={`${iconButtonClass} hover:text-red-500 disabled:opacity-60`}
+                                className={cn(iconButtonClass, "hover:bg-tl-danger-bg hover:text-tl-danger")}
                                 title="Archive"
                                 aria-label={`Archive ${item.name}`}
                               >
-                                <FiArchive size={14} />
+                                <FiArchive size={16} aria-hidden />
                               </button>
                             </>
                           )}

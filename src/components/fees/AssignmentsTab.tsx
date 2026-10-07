@@ -8,11 +8,14 @@ import { FeeStatusBadge } from "./FeeStatusBadge";
 import { FeesPanelState } from "./FeesPanelState";
 import { TablePagination } from "./TablePagination";
 import { formatDate, refName } from "./formatters";
+import { Segmented, rowButton, table } from "@/components/tl";
+import { cn } from "@/lib/utils";
 import {
-  brandTextClass,
-  cardClass,
+  actionsCellClass,
+  frameClass,
   iconButtonClass,
-  tableBodyClass,
+  strongCellClass,
+  tableCellClass,
   tableHeadCellClass,
   tableHeadClass,
   tableRowClass,
@@ -23,17 +26,19 @@ const PAGE_SIZE = 10;
 
 /** The two views of the assignment list. */
 const SUB_TABS = [
-  { id: "assigned", label: "Assigned" },
-  { id: "archived", label: "Archived" },
+  { value: "assigned", label: "Assigned" },
+  { value: "archived", label: "Archived" },
 ] as const;
 
-type SubTab = (typeof SUB_TABS)[number]["id"];
+/** One of the two views. */
+type SubTab = (typeof SUB_TABS)[number]["value"];
 
 /**
  * The Fee Assignments tab: which fee is attached to which class, with publish,
  * unpublish, archive and restore.
  *
  * @param props - Whether the user may change an assignment.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The Assignments tab.
  */
 export function AssignmentsTab({ canManage }: { canManage: boolean }) {
@@ -55,25 +60,16 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
   const total = assignments.data?.total ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-1 border-b border-gray-100 dark:border-gray-800">
-        {SUB_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setSubTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              subTab === tab.id
-                ? "border-[#003366] text-[#003366] dark:border-blue-400 dark:text-blue-300"
-                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-[18px]">
+      <Segmented
+        options={SUB_TABS}
+        value={subTab}
+        onChange={setSubTab}
+        label="Show assignments"
+        className="self-start"
+      />
 
-      <div className={`${cardClass} overflow-hidden`}>
+      <div className={frameClass}>
         <FeesPanelState
           loading={assignments.isPending}
           error={assignments.error}
@@ -90,9 +86,9 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
         {!assignments.isPending && !assignments.isError && rows.length > 0 && (
           <>
             <div className={tableScrollClass}>
-              <table className="w-full text-sm">
-                <thead className={tableHeadClass}>
-                  <tr>
+              <table className={table}>
+                <thead>
+                  <tr className={tableHeadClass}>
                     <th className={tableHeadCellClass}>Fee Name</th>
                     <th className={tableHeadCellClass}>Assigned Class</th>
                     <th className={tableHeadCellClass}>Due Date</th>
@@ -101,27 +97,23 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
                     <th className={tableHeadCellClass}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className={tableBodyClass}>
+                <tbody>
                   {rows.map((assignment) => (
                     <tr key={assignment._id} className={tableRowClass}>
-                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
-                        {refName(assignment.feeItemId)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {refName(assignment.classId)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className={strongCellClass}>{refName(assignment.feeItemId)}</td>
+                      <td className={tableCellClass}>{refName(assignment.classId)}</td>
+                      <td className={cn(tableCellClass, "whitespace-nowrap")}>
                         {formatDate(assignment.dueDate)}
                       </td>
-                      <td className={`px-4 py-3 font-medium ${brandTextClass}`}>
+                      <td className={cn(strongCellClass, "whitespace-nowrap")}>
                         {assignment.amount.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={tableCellClass}>
                         <FeeStatusBadge status={assignment.status} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={actionsCellClass}>
                         {canManage ? (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {assignment.status === "archived" ? (
                               <button
                                 type="button"
@@ -129,9 +121,9 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
                                 onClick={() =>
                                   action.mutate({ type: "restore", id: assignment._id })
                                 }
-                                className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 disabled:opacity-60"
+                                className={rowButton}
                               >
-                                <FiRefreshCw size={12} /> Restore
+                                <FiRefreshCw size={13} aria-hidden /> Restore
                               </button>
                             ) : (
                               <>
@@ -142,7 +134,7 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
                                     onClick={() =>
                                       action.mutate({ type: "unpublish", id: assignment._id })
                                     }
-                                    className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 disabled:opacity-60"
+                                    className={rowButton}
                                   >
                                     Unpublish
                                   </button>
@@ -153,7 +145,7 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
                                     onClick={() =>
                                       action.mutate({ type: "publish", id: assignment._id })
                                     }
-                                    className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 disabled:opacity-60"
+                                    className={rowButton}
                                   >
                                     Publish
                                   </button>
@@ -164,17 +156,17 @@ export function AssignmentsTab({ canManage }: { canManage: boolean }) {
                                   onClick={() =>
                                     action.mutate({ type: "archive", id: assignment._id })
                                   }
-                                  className={`${iconButtonClass} hover:text-red-500 disabled:opacity-60`}
+                                  className={cn(iconButtonClass, "hover:bg-tl-danger-bg hover:text-tl-danger")}
                                   title="Archive"
                                   aria-label="Archive assignment"
                                 >
-                                  <FiArchive size={14} />
+                                  <FiArchive size={16} aria-hidden />
                                 </button>
                               </>
                             )}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                          <span className="px-1 text-sm text-tl-faint">—</span>
                         )}
                       </td>
                     </tr>

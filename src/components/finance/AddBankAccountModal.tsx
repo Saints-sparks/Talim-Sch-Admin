@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { ApiError } from "@/lib/apiError";
 import { useAddBankAccount } from "@/hooks/finance/useFinanceMutations";
 import { NUBAN_LENGTH, useBanks, useResolvedAccountName } from "@/hooks/finance/useBankLookup";
+import { fieldControl, fieldLabel, ghostButton, primaryButton } from "@/components/tl";
 import { ModalShell } from "./ModalShell";
 import { financeActionMessage } from "./financeErrors";
 
@@ -19,6 +20,7 @@ import { financeActionMessage } from "./financeErrors";
  * manual entry rather than blocking the admin.
  *
  * @param props - Close handler; fires after a successful add too.
+ * @param props.onClose - Closes the modal.
  * @returns The add-account modal.
  */
 export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
@@ -55,6 +57,11 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
     accountName.trim().length > 0 &&
     !addAccount.isPending;
 
+  /**
+   * Adds the account, then closes.
+   *
+   * @param event - The form's submit event.
+   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -78,20 +85,23 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell title="Add Payout Account" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-[18px] px-[clamp(20px,3vw,28px)] py-5"
+      >
         <div>
-          <label htmlFor="bank-select" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label htmlFor="bank-select" className={`${fieldLabel} mb-1.5 block`}>
             Bank
           </label>
           {manualBankEntry ? (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <input
                 id="bank-select"
                 type="text"
                 value={manualBankName}
                 onChange={(event) => setManualBankName(event.target.value)}
                 placeholder="Bank name"
-                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                className={fieldControl}
                 required
               />
               <input
@@ -99,11 +109,12 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
                 value={bankCode}
                 onChange={(event) => setBankCode(event.target.value.replace(/\D/g, ""))}
                 placeholder="Bank code"
-                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                aria-label="Bank code"
+                className={`${fieldControl} font-mono`}
                 required
               />
-              <p className="text-xs text-amber-600 flex items-start gap-1">
-                <AlertCircle size={12} className="mt-0.5 shrink-0" />
+              <p className="flex items-start gap-1.5 rounded-xl bg-tl-warning-bg px-3 py-2 text-[13px] text-tl-warning">
+                <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden />
                 We couldn&apos;t load the bank list. Enter the bank name and code exactly as your
                 bank publishes them.
               </p>
@@ -114,7 +125,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
               value={bankCode}
               onChange={(event) => setBankCode(event.target.value)}
               disabled={banks.isPending}
-              className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 disabled:opacity-60"
+              className={fieldControl}
               required
             >
               <option value="">{banks.isPending ? "Loading banks…" : "Select bank"}</option>
@@ -128,7 +139,7 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="account-number" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label htmlFor="account-number" className={`${fieldLabel} mb-1.5 block`}>
             Account Number
           </label>
           <input
@@ -139,13 +150,13 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
             value={accountNumber}
             onChange={(event) => setAccountNumber(event.target.value.replace(/\D/g, ""))}
             placeholder="0000000000"
-            className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className={`${fieldControl} font-mono tracking-wider`}
             required
           />
         </div>
 
         <div>
-          <label htmlFor="account-name" className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
+          <label htmlFor="account-name" className={`${fieldLabel} mb-1.5 block`}>
             Account Name
           </label>
           <input
@@ -157,41 +168,33 @@ export function AddBankAccountModal({ onClose }: { onClose: () => void }) {
               setAccountName(event.target.value);
             }}
             placeholder="As registered with the bank"
-            className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className={fieldControl}
             required
           />
           {resolved.isFetching && (
-            <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-              <Loader2 size={12} className="animate-spin" /> Checking with the bank…
+            <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-tl-muted">
+              <Loader2 size={14} className="animate-spin" aria-hidden /> Checking with the bank…
             </p>
           )}
           {!resolved.isFetching && resolved.data && !nameTouched && (
-            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-              <CheckCircle size={12} /> Confirmed by the bank
+            <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-tl-success">
+              <CheckCircle size={14} aria-hidden /> Confirmed by the bank
             </p>
           )}
           {!resolved.isFetching && resolveFailure && (
-            <p className="text-xs text-amber-600 mt-1 flex items-start gap-1">
-              <AlertCircle size={12} className="mt-0.5 shrink-0" />
+            <p className="mt-1.5 flex items-start gap-1.5 rounded-xl bg-tl-warning-bg px-3 py-2 text-[13px] text-tl-warning">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden />
               {resolveFailure} Type the name exactly as the bank holds it — verification compares
               the two.
             </p>
           )}
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
-          >
+        <div className="flex flex-wrap gap-2.5 pt-1">
+          <button type="button" onClick={onClose} className={`${ghostButton} flex-1`}>
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="flex-1 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold disabled:opacity-50"
-          >
+          <button type="submit" disabled={!canSubmit} className={`${primaryButton} flex-1`}>
             {addAccount.isPending ? "Adding…" : "Add Account"}
           </button>
         </div>

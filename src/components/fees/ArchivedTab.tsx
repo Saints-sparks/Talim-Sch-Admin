@@ -11,9 +11,13 @@ import { useFeeAssignments, useFeeCategories, useFeeItems } from "@/hooks/fees/q
 import { FeesPanelState } from "./FeesPanelState";
 import { TablePagination } from "./TablePagination";
 import { formatDate, refName } from "./formatters";
+import { Segmented, rowButton, table } from "@/components/tl";
+import { cn } from "@/lib/utils";
 import {
-  cardClass,
-  tableBodyClass,
+  actionsCellClass,
+  frameClass,
+  strongCellClass,
+  tableCellClass,
   tableHeadCellClass,
   tableHeadClass,
   tableRowClass,
@@ -24,18 +28,20 @@ const PAGE_SIZE = 10;
 
 /** Which kind of archived record the tab is showing. */
 const TYPES = [
-  { id: "categories", label: "categories" },
-  { id: "items", label: "items" },
-  { id: "assignments", label: "assignments" },
+  { value: "categories", label: "Categories" },
+  { value: "items", label: "Items" },
+  { value: "assignments", label: "Assignments" },
 ] as const;
 
-type ArchivedType = (typeof TYPES)[number]["id"];
+/** One kind of archived record. */
+type ArchivedType = (typeof TYPES)[number]["value"];
 
 /**
  * The Archived tab: everything that was archived, and the one action that
  * matters — putting it back.
  *
  * @param props - Whether the user may restore records.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The Archived tab.
  */
 export function ArchivedTab({ canManage }: { canManage: boolean }) {
@@ -95,6 +101,11 @@ export function ArchivedTab({ canManage }: { canManage: boolean }) {
   const restoring =
     categoryAction.isPending || itemAction.isPending || assignmentAction.isPending;
 
+  /**
+   * Restores one archived record of the kind on show.
+   *
+   * @param id - The record.
+   */
   const restore = (id: string) => {
     if (type === "categories") categoryAction.mutate({ type: "restore", id });
     else if (type === "items") itemAction.mutate({ type: "restore", id });
@@ -102,25 +113,16 @@ export function ArchivedTab({ canManage }: { canManage: boolean }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        {TYPES.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            onClick={() => setType(entry.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${
-              type === entry.id
-                ? "bg-[#003366] text-white dark:bg-blue-600"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            }`}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-[18px]">
+      <Segmented
+        options={TYPES}
+        value={type}
+        onChange={setType}
+        label="Show archived"
+        className="self-start"
+      />
 
-      <div className={`${cardClass} overflow-hidden`}>
+      <div className={frameClass}>
         <FeesPanelState
           loading={query.isPending}
           error={query.error}
@@ -134,35 +136,33 @@ export function ArchivedTab({ canManage }: { canManage: boolean }) {
         {!query.isPending && !query.isError && rows.length > 0 && (
           <>
             <div className={tableScrollClass}>
-              <table className="w-full text-sm">
-                <thead className={tableHeadClass}>
-                  <tr>
+              <table className={table}>
+                <thead>
+                  <tr className={tableHeadClass}>
                     <th className={tableHeadCellClass}>Name</th>
                     <th className={tableHeadCellClass}>Archived At</th>
                     <th className={tableHeadCellClass}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className={tableBodyClass}>
+                <tbody>
                   {rows.map((row) => (
                     <tr key={row.id} className={tableRowClass}>
-                      <td className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">
-                        {row.name}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 dark:text-gray-500 text-xs">
+                      <td className={strongCellClass}>{row.name}</td>
+                      <td className={cn(tableCellClass, "whitespace-nowrap text-tl-muted")}>
                         {formatDate(row.updatedAt)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={actionsCellClass}>
                         {canManage ? (
                           <button
                             type="button"
                             disabled={restoring}
                             onClick={() => restore(row.id)}
-                            className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900 px-2 py-1 rounded-lg hover:bg-green-50 dark:hover:bg-green-950/40 disabled:opacity-60"
+                            className={rowButton}
                           >
-                            <FiRefreshCw size={12} /> Restore
+                            <FiRefreshCw size={13} aria-hidden /> Restore
                           </button>
                         ) : (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                          <span className="px-1 text-sm text-tl-faint">—</span>
                         )}
                       </td>
                     </tr>

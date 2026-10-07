@@ -1,5 +1,9 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { rowButton } from "@/components/tl";
+
+/** Props for {@link TablePager}. */
 interface TablePagerProps {
   /** Current page, 1-based. */
   page: number;
@@ -9,6 +13,7 @@ interface TablePagerProps {
   total: number;
   /** True while the next page is loading, so the buttons can't be double-clicked. */
   busy?: boolean;
+  /** Called with the page to show. */
   onChange: (page: number) => void;
 }
 
@@ -20,6 +25,11 @@ interface TablePagerProps {
  * 1 with an empty table.
  *
  * @param props - Current page, page size, total rows and the change handler.
+ * @param props.page - Current page.
+ * @param props.pageSize - Rows per page.
+ * @param props.total - Total rows.
+ * @param props.busy - Whether a page is loading.
+ * @param props.onChange - Page change handler.
  * @returns The pager, or null when there is only one page.
  */
 export function TablePager({ page, pageSize, total, busy = false, onChange }: TablePagerProps) {
@@ -28,25 +38,25 @@ export function TablePager({ page, pageSize, total, busy = false, onChange }: Ta
   const current = Math.min(page, pages);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
       <button
         type="button"
         disabled={current <= 1 || busy}
         onClick={() => onChange(current - 1)}
-        className="px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
+        className={rowButton}
       >
-        Previous
+        <ChevronLeft size={15} aria-hidden /> Previous
       </button>
-      <span className="text-sm text-gray-500 dark:text-slate-400">
+      <span className="text-[13px] font-semibold text-tl-muted">
         Page {current} of {pages}
       </span>
       <button
         type="button"
         disabled={current >= pages || busy}
         onClick={() => onChange(current + 1)}
-        className="px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
+        className={rowButton}
       >
-        Next
+        Next <ChevronRight size={15} aria-hidden />
       </button>
     </div>
   );

@@ -10,7 +10,18 @@ import {
   type WalletSummary,
 } from "@/app/services/finance.service";
 import { useInitiateWithdrawal } from "@/hooks/finance/useFinanceMutations";
+import {
+  EmptyNote,
+  Pill,
+  fieldControl,
+  fieldError,
+  fieldLabel,
+  primaryButton,
+  textareaControl,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { ModalShell } from "../ModalShell";
+import { WithdrawalSteps, withdrawalStepEyebrow } from "./WithdrawalSteps";
 import { financeActionMessage } from "../financeErrors";
 import { amountInWords, formatNaira } from "../formatters";
 
@@ -21,9 +32,13 @@ import { amountInWords, formatNaira } from "../formatters";
  */
 const PLATFORM_CHARGE_PREVIEW = 0;
 
+/** Props for {@link WithdrawAmountStep}. */
 interface WithdrawAmountStepProps {
+  /** The school's payout accounts. */
   accounts: BankAccount[];
+  /** Balances, for the available figure. */
   summary: WalletSummary | undefined;
+  /** Closes the flow. */
   onClose: () => void;
   /** Hands the draft to the OTP step. */
   onDraftCreated: (draftId: string, maskedEmail: string) => void;
@@ -38,6 +53,10 @@ interface WithdrawAmountStepProps {
  * out. The server still decides.
  *
  * @param props - Accounts, balances and the step's callbacks.
+ * @param props.accounts - The payout accounts.
+ * @param props.summary - The balances.
+ * @param props.onClose - Closes the flow.
+ * @param props.onDraftCreated - Hands the draft on.
  * @returns The amount step.
  */
 export function WithdrawAmountStep({
@@ -74,6 +93,11 @@ export function WithdrawAmountStep({
   const tooLarge = amountValue > available;
   const overDailyLimit = amountValue > WITHDRAWAL_LIMITS.daily;
 
+  /**
+   * Checks the amount and creates the draft, which emails the code.
+   *
+   * @param event - The form's submit event.
+   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (tooSmall) {
@@ -110,76 +134,85 @@ export function WithdrawAmountStep({
     !overDailyLimit;
 
   return (
-    <ModalShell title="Withdraw Funds" onClose={onClose}>
+    <ModalShell title="Withdraw Funds" eyebrowText={withdrawalStepEyebrow(0)} onClose={onClose}>
       {verifiedAccounts.length === 0 ? (
-        <div className="p-8 text-center">
-          <AlertCircle size={40} className="text-orange-400 mx-auto mb-3" />
-          <p className="font-semibold text-gray-700 dark:text-slate-200">No verified payout accounts</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Add a bank account and verify it before withdrawing
-          </p>
-        </div>
+        <EmptyNote
+          icon={<AlertCircle className="text-tl-warning" />}
+          title="No verified payout accounts"
+        >
+          Add a bank account and verify it before withdrawing
+        </EmptyNote>
       ) : (
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div>
-            <p className="text-xs text-gray-400 mb-1">Available Balance</p>
-            <p className="text-3xl font-bold text-[#003366]">{formatNaira(available)}</p>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5 px-[clamp(20px,3vw,28px)] py-5"
+        >
+          <WithdrawalSteps current={0} />
+
+          <div className="rounded-2xl border border-tl-control bg-tl-select px-4 py-3.5">
+            <p className="text-xs font-extrabold uppercase tracking-[0.05em] text-tl-brand">
+              Available Balance
+            </p>
+            <p className="mt-1 text-[28px] font-extrabold tracking-[-0.5px] text-tl-brand">
+              {formatNaira(available)}
+            </p>
           </div>
 
-          <div>
-            <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block">Withdraw to</span>
-            <div className="space-y-2">
-              {verifiedAccounts.map((account) => (
-                <label
-                  key={account._id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                    accountId === account._id
-                      ? "border-[#003366] bg-[#003366]/5"
-                      : "border-gray-100 hover:border-gray-200"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="withdrawal-account"
-                    value={account._id}
-                    checked={accountId === account._id}
-                    onChange={() => setAccountId(account._id)}
-                    className="sr-only"
-                  />
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                    <Building2 size={15} className="text-gray-600 dark:text-slate-300" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
-                      {account.bankName} · {account.accountNumber}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{account.accountName}</p>
-                  </div>
-                  {account.isDefault && (
-                    <span className="text-xs bg-[#003366] text-white px-2 py-0.5 rounded-full shrink-0">
-                      Default
+          <fieldset>
+            <legend className={`${fieldLabel} mb-1.5`}>Withdraw to</legend>
+            <div className="flex flex-col gap-2">
+              {verifiedAccounts.map((account) => {
+                const chosen = accountId === account._id;
+                return (
+                  <label
+                    key={account._id}
+                    className={`flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-tl-link ${
+                      chosen
+                        ? "border-tl-control bg-tl-select"
+                        : "border-tl-line bg-tl-surface hover:bg-tl-subtle"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="withdrawal-account"
+                      value={account._id}
+                      checked={chosen}
+                      onChange={() => setAccountId(account._id)}
+                      className="sr-only"
+                    />
+                    <span
+                      aria-hidden
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tl-track text-tl-muted"
+                    >
+                      <Building2 size={16} />
                     </span>
-                  )}
-                  <CheckCircle
-                    size={16}
-                    className={
-                      accountId === account._id ? "text-[#003366] shrink-0" : "text-gray-200 shrink-0"
-                    }
-                  />
-                </label>
-              ))}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-tl-ink">
+                        {account.bankName} · {account.accountNumber}
+                      </p>
+                      <p className="truncate text-[13px] text-tl-muted">{account.accountName}</p>
+                    </div>
+                    {account.isDefault && <Pill tone="info">Default</Pill>}
+                    <CheckCircle
+                      size={18}
+                      aria-hidden
+                      className={chosen ? "shrink-0 text-tl-brand" : "shrink-0 text-tl-line"}
+                    />
+                  </label>
+                );
+              })}
             </div>
-          </div>
+          </fieldset>
 
           <div>
-            <label
-              htmlFor="withdrawal-amount"
-              className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block"
-            >
+            <label htmlFor="withdrawal-amount" className={`${fieldLabel} mb-1.5 block`}>
               Amount to Withdraw
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 font-bold text-sm">
+              <span
+                aria-hidden
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-extrabold text-tl-muted"
+              >
                 ₦
               </span>
               <input
@@ -191,66 +224,60 @@ export function WithdrawAmountStep({
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 placeholder="0.00"
-                className="w-full border border-gray-200 dark:border-slate-700 rounded-xl pl-7 pr-3 py-3 text-lg font-semibold bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                aria-invalid={tooSmall || tooLarge || overDailyLimit || undefined}
+                className={cn(fieldControl, "min-h-[52px] pl-8 text-lg font-extrabold")}
                 required
               />
             </div>
             {amountValue > 0 && (
-              <p className="text-xs text-gray-400 mt-1 italic">{amountInWords(amountValue)}</p>
+              <p className="mt-1.5 text-[13px] italic text-tl-muted">{amountInWords(amountValue)}</p>
             )}
             {tooSmall && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <AlertCircle size={12} /> Minimum withdrawal is {formatNaira(WITHDRAWAL_LIMITS.min)}
+              <p className={`${fieldError} mt-1.5 flex items-center gap-1.5`}>
+                <AlertCircle size={14} aria-hidden /> Minimum withdrawal is{" "}
+                {formatNaira(WITHDRAWAL_LIMITS.min)}
               </p>
             )}
             {tooLarge && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <AlertCircle size={12} /> Exceeds available balance
+              <p className={`${fieldError} mt-1.5 flex items-center gap-1.5`}>
+                <AlertCircle size={14} aria-hidden /> Exceeds available balance
               </p>
             )}
             {!tooLarge && overDailyLimit && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <AlertCircle size={12} /> Over the {formatNaira(WITHDRAWAL_LIMITS.daily)} daily limit
+              <p className={`${fieldError} mt-1.5 flex items-center gap-1.5`}>
+                <AlertCircle size={14} aria-hidden /> Over the{" "}
+                {formatNaira(WITHDRAWAL_LIMITS.daily)} daily limit
               </p>
             )}
           </div>
 
-          <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 space-y-1">
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              Minimum withdrawal:{" "}
-              <span className="font-semibold text-gray-700 dark:text-slate-200">
-                {formatNaira(WITHDRAWAL_LIMITS.min)}
-              </span>
-            </p>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              Daily withdrawal limit:{" "}
-              <span className="font-semibold text-gray-700 dark:text-slate-200">
-                {formatNaira(WITHDRAWAL_LIMITS.daily)}
-              </span>
-            </p>
-          </div>
+          <dl className="flex flex-col gap-1 rounded-2xl border border-tl-line-soft bg-tl-subtle px-4 py-3 text-[13px]">
+            <div className="flex justify-between gap-3">
+              <dt className="text-tl-muted">Minimum withdrawal:</dt>
+              <dd className="font-bold text-tl-body">{formatNaira(WITHDRAWAL_LIMITS.min)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-tl-muted">Daily withdrawal limit:</dt>
+              <dd className="font-bold text-tl-body">{formatNaira(WITHDRAWAL_LIMITS.daily)}</dd>
+            </div>
+          </dl>
 
           {amountValue > 0 && (
-            <div className="bg-[#003366]/5 rounded-xl p-4 space-y-2 border border-[#003366]/10">
+            <dl className="flex flex-col gap-2 rounded-2xl border border-tl-control bg-tl-select px-4 py-3.5">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-slate-400">Platform charge</span>
-                <span className="font-medium text-gray-800 dark:text-slate-100">
-                  {formatNaira(PLATFORM_CHARGE_PREVIEW)}
-                </span>
+                <dt className="text-tl-body">Platform charge</dt>
+                <dd className="font-bold text-tl-ink">{formatNaira(PLATFORM_CHARGE_PREVIEW)}</dd>
               </div>
-              <div className="flex justify-between font-bold text-[#003366] border-t border-[#003366]/10 pt-2 mt-1">
-                <span>You will receive</span>
-                <span>{formatNaira(youReceive)}</span>
+              <div className="mt-1 flex justify-between border-t border-tl-control pt-2 font-extrabold text-tl-brand">
+                <dt>You will receive</dt>
+                <dd>{formatNaira(youReceive)}</dd>
               </div>
-            </div>
+            </dl>
           )}
 
           <div>
-            <label
-              htmlFor="withdrawal-note"
-              className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-1.5 block"
-            >
-              Note <span className="text-gray-400 font-normal">(optional)</span>
+            <label htmlFor="withdrawal-note" className={`${fieldLabel} mb-1.5 block`}>
+              Note <span className="font-medium text-tl-faint">(optional)</span>
             </label>
             <textarea
               id="withdrawal-note"
@@ -259,27 +286,23 @@ export function WithdrawAmountStep({
               placeholder="e.g. Monthly operational expenses"
               maxLength={250}
               rows={2}
-              className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 resize-none"
+              className={cn(textareaControl, "min-h-[80px] resize-none text-sm")}
             />
           </div>
 
-          <p className="text-xs text-gray-400 flex items-center gap-1">
-            <Shield size={11} /> A verification code will be sent to your email to confirm this
-            withdrawal.
+          <p className="flex items-start gap-1.5 text-[13px] text-tl-muted">
+            <Shield size={14} aria-hidden className="mt-0.5 shrink-0" /> A verification code will
+            be sent to your email to confirm this withdrawal.
           </p>
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-full py-3 bg-[#003366] text-white rounded-xl text-sm font-bold hover:bg-[#003366]/90 disabled:opacity-40 transition flex items-center justify-center gap-2"
-          >
+          <button type="submit" disabled={!canSubmit} className={`${primaryButton} w-full`}>
             {initiate.isPending ? (
               <>
-                <RefreshCw size={15} className="animate-spin" /> Sending OTP…
+                <RefreshCw size={16} className="animate-spin" aria-hidden /> Sending OTP…
               </>
             ) : (
               <>
-                Continue <ChevronRight size={16} />
+                Continue <ChevronRight size={17} aria-hidden />
               </>
             )}
           </button>

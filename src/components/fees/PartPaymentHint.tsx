@@ -23,6 +23,9 @@ export interface PartPaymentHintProps {
  * the figure, and no request is made).
  *
  * @param props - See {@link PartPaymentHintProps}.
+ * @param props.allowPartialPayment - The form's switch.
+ * @param props.defaultAmount - The fee's amount as typed.
+ * @param props.id - Id for `aria-describedby`.
  * @returns The hint.
  */
 export function PartPaymentHint({ allowPartialPayment, defaultAmount, id }: PartPaymentHintProps) {
@@ -37,13 +40,11 @@ export function PartPaymentHint({ allowPartialPayment, defaultAmount, id }: Part
     <p
       id={id}
       aria-live="polite"
-      className={`flex items-start gap-1.5 text-xs ${
-        hint.tone === "warning"
-          ? "text-amber-800 dark:text-amber-300"
-          : "text-gray-600 dark:text-gray-400"
+      className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-[13px] leading-relaxed ${
+        hint.tone === "warning" ? "bg-tl-warning-bg text-tl-warning" : "bg-tl-subtle text-tl-muted"
       }`}
     >
-      <Icon size={13} className="mt-0.5 shrink-0" aria-hidden />
+      <Icon size={15} className="mt-0.5 shrink-0" aria-hidden />
       <span>{hint.text}</span>
     </p>
   );

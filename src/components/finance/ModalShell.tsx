@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
+import { dangerButton, eyebrow, focusRing, ghostButton, primaryButton } from "@/components/tl";
 
 /**
  * Locks page scroll while a modal is open and gives it back on unmount.
@@ -13,6 +14,11 @@ import { X } from "lucide-react";
 let lockCount = 0;
 let restoreOverflow = "";
 
+/**
+ * Takes one reference on the page-scroll lock.
+ *
+ * @returns Gives the reference back.
+ */
 function lockBodyScroll(): () => void {
   if (typeof document === "undefined") return () => undefined;
   if (lockCount === 0) {
@@ -85,9 +91,12 @@ export function trapTab(event: KeyboardEvent, panel: HTMLElement): void {
   }
 }
 
+/** Props for {@link ModalShell}. */
 interface ModalShellProps {
   /** Heading shown in the modal's header; omit for a headerless panel. */
   title?: string;
+  /** A small uppercase line above the title ("Step 1 of 4"). */
+  eyebrowText?: string;
   /** Called on the close button, the Escape key and a click on the backdrop. */
   onClose: () => void;
   /** Tailwind max-width class for the panel. */
@@ -97,7 +106,9 @@ interface ModalShellProps {
 }
 
 /**
- * The one modal frame the finance and payments areas use.
+ * The one modal frame the finance and payments areas use, in the design
+ * system's sheet look: a bottom sheet on phones and a centred card with a
+ * 24px radius on wider screens.
  *
  * Handles what every modal has to get right and each hand-rolled one got a
  * little differently: body-scroll lock, Escape to close, a backdrop click that
@@ -109,12 +120,19 @@ interface ModalShellProps {
  *
  * @param props - Title, close handler, width and body.
  * @param props.title - Heading; also the dialog's accessible name.
+ * @param props.eyebrowText - The small line above the title.
  * @param props.onClose - Close button, Escape and backdrop click.
  * @param props.maxWidthClass - Tailwind max-width class for the panel.
  * @param props.children - Panel body.
  * @returns The modal overlay and panel.
  */
-export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", children }: ModalShellProps) {
+export function ModalShell({
+  title,
+  eyebrowText,
+  onClose,
+  maxWidthClass = "max-w-md",
+  children,
+}: ModalShellProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -149,7 +167,7 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(15,27,46,0.45)] sm:items-center sm:p-5"
       onMouseDown={(event) => {
         if (!panelRef.current?.contains(event.target as Node)) onClose();
       }}
@@ -160,20 +178,26 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full ${maxWidthClass} max-h-[90vh] overflow-y-auto focus:outline-none`}
+        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] border border-tl-line bg-tl-surface text-tl-ink shadow-[0_30px_70px_-30px_rgba(15,27,46,0.45)] focus:outline-none sm:max-h-[90vh] sm:rounded-[24px] ${maxWidthClass}`}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
-            <h3 id={titleId} className="text-lg font-bold text-gray-900 dark:text-slate-100">
-              {title}
-            </h3>
+          <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-tl-line-soft bg-tl-surface px-[clamp(20px,3vw,28px)] pb-4 pt-[clamp(18px,3vw,24px)]">
+            <div className="min-w-0">
+              {eyebrowText ? <p className={eyebrow}>{eyebrowText}</p> : null}
+              <h3
+                id={titleId}
+                className="mt-1 text-[21px] font-extrabold leading-tight tracking-[-0.4px] text-tl-ink"
+              >
+                {title}
+              </h3>
+            </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
+              className={`-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-tl-faint hover:bg-tl-bg hover:text-tl-ink ${focusRing}`}
             >
-              <X size={18} />
+              <X size={20} aria-hidden />
             </button>
           </div>
         )}
@@ -183,8 +207,11 @@ export function ModalShell({ title, onClose, maxWidthClass = "max-w-md", childre
   );
 }
 
+/** Props for {@link ConfirmDialog}. */
 interface ConfirmDialogProps {
+  /** The question; also the dialog's name. */
   title: string;
+  /** What happens if the admin confirms. */
   message: string;
   /** Label for the confirming button. */
   confirmLabel?: string;
@@ -192,7 +219,9 @@ interface ConfirmDialogProps {
   busy?: boolean;
   /** Styles the confirming button as destructive. */
   destructive?: boolean;
+  /** Runs the action. */
   onConfirm: () => void;
+  /** Closes without acting. */
   onCancel: () => void;
 }
 
@@ -201,6 +230,13 @@ interface ConfirmDialogProps {
  * (which is unstyled, unthemeable and blocks the whole tab).
  *
  * @param props - Copy, busy flag and the two handlers.
+ * @param props.title - The question.
+ * @param props.message - The explanation.
+ * @param props.confirmLabel - The confirm button's words.
+ * @param props.busy - Whether the action runs.
+ * @param props.destructive - Whether it is destructive.
+ * @param props.onConfirm - Runs it.
+ * @param props.onCancel - Closes it.
  * @returns The confirmation modal.
  */
 export function ConfirmDialog({
@@ -213,15 +249,15 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <ModalShell title={title} onClose={busy ? () => undefined : onCancel} maxWidthClass="max-w-sm">
-      <div className="p-6 space-y-5">
-        <p className="text-sm text-gray-600 dark:text-slate-300">{message}</p>
-        <div className="flex gap-3">
+    <ModalShell title={title} onClose={busy ? () => undefined : onCancel} maxWidthClass="max-w-md">
+      <div className="flex flex-col gap-5 px-[clamp(20px,3vw,28px)] py-5">
+        <p className="text-sm leading-[1.7] text-tl-body">{message}</p>
+        <div className="flex flex-wrap gap-2.5">
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 disabled:opacity-40"
+            className={`${ghostButton} flex-1`}
           >
             Cancel
           </button>
@@ -229,9 +265,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 ${
-              destructive ? "bg-red-500 hover:bg-red-600" : "bg-[#003366] hover:bg-[#003366]/90"
-            }`}
+            className={`${destructive ? dangerButton : primaryButton} flex-1`}
           >
             {busy ? "Working…" : confirmLabel}
           </button>

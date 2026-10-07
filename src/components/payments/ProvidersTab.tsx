@@ -2,6 +2,7 @@
 
 import { Shield } from "lucide-react";
 import { ErrorState } from "@/components/StateComponents";
+import { EmptyNote, Pill, card, cardFrame } from "@/components/tl";
 import { CardListSkeleton } from "@/components/finance/FinanceSkeletons";
 import { describeFinanceError } from "@/components/finance/financeErrors";
 import { usePaymentProviders } from "@/hooks/finance/usePaymentsQueries";
@@ -36,53 +37,46 @@ export function ProvidersTab() {
 
   if (providers.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 py-16 text-center">
-        <Shield size={36} className="text-gray-300 mx-auto mb-3" />
-        <p className="font-semibold text-gray-600 dark:text-slate-300">No payment providers enabled</p>
-        <p className="text-sm text-gray-400 mt-1">
+      <div className={cardFrame}>
+        <EmptyNote icon={<Shield />} title="No payment providers enabled">
           Contact your platform administrator to configure payment providers
-        </p>
+        </EmptyNote>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-gray-500 dark:text-slate-400">Payment providers configured for this platform</p>
-      {providers.map((provider) => (
-        <div key={provider.providerName} className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="font-semibold text-gray-800 dark:text-slate-100">
-                  {PROVIDER_LABELS[provider.providerName] ?? provider.providerName}
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-tl-muted">Payment providers configured for this platform</p>
+      <ul className="flex flex-col gap-3">
+        {providers.map((provider) => (
+          <li key={provider.providerName} className={card}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <p className="font-extrabold text-tl-ink">
+                    {PROVIDER_LABELS[provider.providerName] ?? provider.providerName}
+                  </p>
+                  {provider.isDefault && <Pill tone="info">Default</Pill>}
+                </div>
+                <p className="text-sm capitalize text-tl-muted">
+                  Environment: {provider.environment}
                 </p>
-                {provider.isDefault && (
-                  <span className="text-xs bg-[#003366] text-white px-2 py-0.5 rounded-full">
-                    Default
-                  </span>
+                {provider.supportedChannels?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {provider.supportedChannels.map((channel) => (
+                      <Pill key={channel} tone="muted" className="capitalize">
+                        {channel.replace(/_/g, " ")}
+                      </Pill>
+                    ))}
+                  </div>
                 )}
               </div>
-              <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">
-                Environment: {provider.environment}
-              </p>
-              {provider.supportedChannels?.length > 0 && (
-                <div className="flex gap-1 mt-2 flex-wrap">
-                  {provider.supportedChannels.map((channel) => (
-                    <span
-                      key={channel}
-                      className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 px-2 py-0.5 rounded-full capitalize"
-                    >
-                      {channel.replace(/_/g, " ")}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <PaymentStatusBadge status={provider.isEnabled ? "active" : "inactive"} />
             </div>
-            <PaymentStatusBadge status={provider.isEnabled ? "active" : "inactive"} />
-          </div>
-        </div>
-      ))}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

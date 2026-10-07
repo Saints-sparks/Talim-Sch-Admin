@@ -20,19 +20,26 @@ import { FeeItemCells, FeeItemsTableHead } from "./FeeItemsTableParts";
 import { FeeStatCard } from "./FeeStatCard";
 import { FeesPanelState } from "./FeesPanelState";
 import { formatNaira } from "./formatters";
+import { StatGrid, focusRing, rowButton, sectionTitle, table } from "@/components/tl";
 import {
-  cardClass,
-  headingClass,
+  actionsCellClass,
+  frameClass,
+  frameHeaderClass,
   iconButtonClass,
-  primaryButtonClass,
-  tableBodyClass,
   tableRowClass,
   tableScrollClass,
 } from "./ui";
 
+/** A row of the fee item actions menu, before its colour. */
+const menuRowClass = `flex min-h-[44px] w-full items-center gap-2 px-3.5 py-2 text-left text-sm font-semibold disabled:opacity-60 ${focusRing}`;
+
+/** A row of the fee item actions menu. */
+const menuItemClass = `${menuRowClass} text-tl-body hover:bg-tl-subtle`;
+
 /** Fee items shown on the dashboard before the user goes to Fee Structures. */
 const OVERVIEW_PAGE_SIZE = 10;
 
+/** Props for {@link OverviewTab}. */
 interface OverviewTabProps {
   /** False for an admin without MANAGE_FEES: the table is read-only. */
   canManage: boolean;
@@ -42,6 +49,7 @@ interface OverviewTabProps {
  * The dashboard tab: the school's fee totals and the most recent fee items.
  *
  * @param props - Whether the user may act on a fee item.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The Overview tab.
  */
 export function OverviewTab({ canManage }: OverviewTabProps) {
@@ -82,14 +90,14 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
   const menuItem = menuFor ? rows.find((row) => row._id === menuFor.id) : null;
 
   const statusActions: Array<{ status: FeeItemStatus; label: string; icon: ReactNode }> = [
-    { status: "active", label: "Publish", icon: <FiUpload size={12} /> },
-    { status: "draft", label: "Mark Draft", icon: <FiDownload size={12} /> },
-    { status: "inactive", label: "Deactivate", icon: <FiArchive size={12} /> },
+    { status: "active", label: "Publish", icon: <FiUpload size={14} aria-hidden /> },
+    { status: "draft", label: "Mark Draft", icon: <FiDownload size={14} aria-hidden /> },
+    { status: "inactive", label: "Deactivate", icon: <FiArchive size={14} aria-hidden /> },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="flex flex-col gap-[18px]">
+      <StatGrid label="Fee totals">
         <FeeStatCard
           label="Total Fee Items"
           value={totals?.totalFeeItems ?? "—"}
@@ -114,21 +122,21 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
           sub="Custom categories"
           loading={loadingTotals}
         />
-      </div>
+      </StatGrid>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <StatGrid label="Collection">
         <FeeStatCard
           label="Paid Amount"
           value={totals ? formatNaira(totals.paidAmount) : "—"}
           sub="Total collected"
-          color="text-green-600 dark:text-green-400"
+          color="text-tl-success"
           loading={loadingTotals}
         />
         <FeeStatCard
           label="Outstanding Amount"
           value={totals ? formatNaira(totals.outstandingAmount) : "—"}
           sub="Pending collection"
-          color="text-red-500 dark:text-red-400"
+          color="text-tl-danger"
           loading={loadingTotals}
         />
         <FeeStatCard
@@ -137,10 +145,10 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
           sub="Classes assigned"
           loading={loadingTotals}
         />
-      </div>
+      </StatGrid>
 
       {summary.isError && (
-        <div className={`${cardClass} overflow-hidden`}>
+        <div className={frameClass}>
           <FeesPanelState
             loading={false}
             error={summary.error}
@@ -152,16 +160,16 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
         </div>
       )}
 
-      <div className={`${cardClass} overflow-hidden`}>
-        <div className="p-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3">
-          <h3 className={`font-semibold text-sm ${headingClass}`}>Fee Items</h3>
+      <div className={frameClass}>
+        <div className={frameHeaderClass}>
+          <h2 className={sectionTitle}>Fee Items</h2>
           {canManage && (
             <button
               type="button"
               onClick={() => router.push("/fees-management/create")}
-              className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg ${primaryButtonClass}`}
+              className={rowButton}
             >
-              <FiPlus size={12} /> Create New Fee
+              <FiPlus size={14} aria-hidden /> Create New Fee
             </button>
           )}
         </div>
@@ -177,14 +185,14 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
 
         {!items.isPending && !items.isError && rows.length > 0 && (
           <div className={tableScrollClass}>
-            <table className="w-full text-sm">
+            <table className={table}>
               <FeeItemsTableHead />
-              <tbody className={tableBodyClass}>
+              <tbody>
                 {rows.map((item) => (
                   <tr key={item._id} className={tableRowClass}>
                     <FeeItemCells item={item} />
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
+                    <td className={actionsCellClass}>
+                      <div className="flex items-center gap-0.5">
                         <button
                           type="button"
                           onClick={() => setViewing(item)}
@@ -192,7 +200,7 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
                           title="View details"
                           aria-label={`View ${item.name}`}
                         >
-                          <FiEye size={14} />
+                          <FiEye size={16} aria-hidden />
                         </button>
                         {canManage && (
                           <>
@@ -203,7 +211,7 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
                               title="Edit"
                               aria-label={`Edit ${item.name}`}
                             >
-                              <FiEdit2 size={14} />
+                              <FiEdit2 size={16} aria-hidden />
                             </button>
                             <button
                               type="button"
@@ -212,7 +220,7 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
                               title="Actions"
                               aria-label={`Actions for ${item.name}`}
                             >
-                              <FiMoreVertical size={14} />
+                              <FiMoreVertical size={16} aria-hidden />
                             </button>
                           </>
                         )}
@@ -235,7 +243,7 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
             onClick={() => setMenuFor(null)}
           />
           <div
-            className="fixed bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-lg py-1 z-50 w-44"
+            className="fixed z-50 w-44 overflow-hidden rounded-2xl border border-tl-line bg-tl-surface py-1.5 shadow-[0_18px_40px_-20px_rgba(15,27,46,0.35)]"
             style={{ left: Math.max(8, menuFor.x), top: menuFor.y }}
           >
             {statusActions
@@ -246,7 +254,7 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
                   type="button"
                   disabled={action.isPending}
                   onClick={() => run({ type: "status", id: menuItem._id, status: entry.status })}
-                  className="w-full text-left px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 disabled:opacity-60"
+                  className={menuItemClass}
                 >
                   {entry.icon} {entry.label}
                 </button>
@@ -255,9 +263,9 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
               type="button"
               disabled={action.isPending}
               onClick={() => run({ type: "duplicate", id: menuItem._id })}
-              className="w-full text-left px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 disabled:opacity-60"
+              className={menuItemClass}
             >
-              <FiCopy size={12} /> Duplicate
+              <FiCopy size={14} aria-hidden /> Duplicate
             </button>
             <button
               type="button"
@@ -265,18 +273,18 @@ export function OverviewTab({ canManage }: OverviewTabProps) {
                 setMenuFor(null);
                 router.push(`/fees-management/assign?feeId=${menuItem._id}`);
               }}
-              className="w-full text-left px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+              className={menuItemClass}
             >
-              <FiPlus size={12} /> Assign to Classes
+              <FiPlus size={14} aria-hidden /> Assign to Classes
             </button>
-            <hr className="my-1 border-gray-100 dark:border-gray-800" />
+            <hr className="my-1 border-tl-line-soft" />
             <button
               type="button"
               disabled={action.isPending}
               onClick={() => run({ type: "archive", id: menuItem._id })}
-              className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 disabled:opacity-60"
+              className={`${menuRowClass} text-tl-danger hover:bg-tl-danger-bg`}
             >
-              <FiArchive size={12} /> Archive
+              <FiArchive size={14} aria-hidden /> Archive
             </button>
           </div>
         </>

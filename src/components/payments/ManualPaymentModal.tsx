@@ -19,6 +19,14 @@ import {
 import { LedgerStatusBadge } from "@/components/fees/LedgerStatusBadge";
 import { WalletSourceNote } from "@/components/finance/WalletSourceNote";
 import {
+  fieldControl,
+  fieldError,
+  fieldHint,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+} from "@/components/tl";
+import {
   feeBalance,
   feeBalanceSummary,
   ledgerByAssignment,
@@ -129,6 +137,11 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     amountValue > 0 &&
     !record.isPending;
 
+  /**
+   * Ticks or unticks one fee.
+   *
+   * @param assignmentId - The fee assignment.
+   */
   const toggleFee = (assignmentId: string) => {
     setSelectedFeeIds((current) =>
       current.includes(assignmentId)
@@ -137,6 +150,11 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     );
   };
 
+  /**
+   * Records the payment and reports the receipt.
+   *
+   * @param event - The form's submit event.
+   */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -163,16 +181,19 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const fieldClass =
-    "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 disabled:opacity-60";
+  const fieldClass = fieldControl;
+  const labelClass = `${fieldLabel} mb-1.5 block`;
 
   return (
     <ModalShell title="Record Manual Payment" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-[18px] px-[clamp(20px,3vw,28px)] py-5"
+      >
         <div>
           <label
             htmlFor="manual-class"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
             Class
           </label>
@@ -196,7 +217,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-student"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
             Student
           </label>
@@ -225,30 +246,28 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             ))}
           </select>
           {students.isError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className={`${fieldError} mt-1.5`}>
               Couldn&apos;t load this class&apos;s students.
             </p>
           )}
         </div>
 
         <div>
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block">
-            Fees being paid
-          </span>
+          <span className={labelClass}>Fees being paid</span>
           {!classId ? (
-            <p className="text-xs text-gray-400">Pick a class to see its fees.</p>
+            <p className={fieldHint}>Pick a class to see its fees.</p>
           ) : assignments.isPending ? (
-            <p className="text-xs text-gray-400">Loading fees…</p>
+            <p className={fieldHint}>Loading fees…</p>
           ) : assignments.isError ? (
-            <p className="text-xs text-red-500">Couldn&apos;t load this class&apos;s fees.</p>
+            <p className={fieldError}>Couldn&apos;t load this class&apos;s fees.</p>
           ) : (assignments.data ?? []).length === 0 ? (
-            <p className="text-xs text-amber-600 flex items-start gap-1">
-              <AlertCircle size={12} className="mt-0.5 shrink-0" />
+            <p className="flex items-start gap-1.5 rounded-xl bg-tl-warning-bg px-3 py-2 text-[13px] text-tl-warning">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" aria-hidden />
               This class has no active fee assignments, so there is nothing to record a payment
               against.
             </p>
           ) : (
-            <div className="max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-800">
+            <div className="max-h-64 divide-y divide-tl-line-soft overflow-y-auto rounded-2xl border border-tl-control">
               {(assignments.data ?? []).map((assignment) => {
                 const balance = balances.get(assignment._id);
                 const settled = Boolean(studentId && balance?.fromLedger && balance.balance <= 0);
@@ -256,10 +275,8 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
                 return (
                   <label
                     key={assignment._id}
-                    className={`flex items-center gap-3 px-3 py-2.5 ${
-                      settled
-                        ? "cursor-not-allowed opacity-70"
-                        : "cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800"
+                    className={`flex min-h-[56px] items-center gap-3 px-3.5 py-2.5 ${
+                      settled ? "cursor-not-allowed bg-tl-subtle" : "cursor-pointer hover:bg-tl-subtle"
                     }`}
                   >
                     <input
@@ -268,22 +285,20 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
                       onChange={() => toggleFee(assignment._id)}
                       disabled={settled}
                       aria-describedby={`fee-balance-${assignment._id}`}
-                      className="w-4 h-4 rounded border-gray-300 text-[#003366] focus:ring-[#003366]/30"
+                      className="h-[18px] w-[18px] shrink-0 rounded accent-tl-brand"
                     />
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-sm text-gray-800 dark:text-slate-100 truncate">
-                        {name}
-                      </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-tl-ink">{name}</span>
                       <span
                         id={`fee-balance-${assignment._id}`}
-                        className="block text-xs text-gray-500 dark:text-slate-400"
+                        className="block text-[13px] text-tl-muted"
                       >
                         Due {formatDate(assignment.dueDate)}
                         {studentId && balance ? ` · ${feeBalanceSummary(balance)}` : ""}
                       </span>
                     </span>
-                    <span className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-sm font-extrabold text-tl-ink">
                         {formatNaira(studentId && balance ? balance.due : assignment.amount)}
                       </span>
                       {studentId && balance?.fromLedger && (
@@ -296,7 +311,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {studentId && ledger.isError && (
-            <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+            <p className="mt-1.5 text-[13px] font-semibold text-tl-warning">
               Couldn&apos;t load this student&apos;s balances; amounts shown are the full fees.
             </p>
           )}
@@ -305,7 +320,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-amount"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
             Amount (₦)
           </label>
@@ -327,9 +342,9 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
           />
           <div id="manual-amount-help" aria-live="polite">
             {amountProblem ? (
-              <p className="text-xs text-red-700 dark:text-red-300 mt-1">{amountProblem}</p>
+              <p className={`${fieldError} mt-1.5`}>{amountProblem}</p>
             ) : owed > 0 ? (
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+              <p className={`${fieldHint} mt-1.5`}>
                 Still owed on the selected fees: {formatNaira(owed)}
                 {amountValue > 0 && amountValue < owed
                   ? " — this is recorded as a part payment, applied to the earliest due fee first"
@@ -342,7 +357,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-paid-on"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
             Paid on
           </label>
@@ -357,7 +372,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
             aria-describedby={paidOnProblem ? "manual-paid-on-error" : undefined}
           />
           {paidOnProblem && (
-            <p id="manual-paid-on-error" className="text-xs text-red-700 dark:text-red-300 mt-1">
+            <p id="manual-paid-on-error" className={`${fieldError} mt-1.5`}>
               {paidOnProblem}
             </p>
           )}
@@ -366,7 +381,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-method"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
             Payment Method
           </label>
@@ -387,9 +402,9 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-reference"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
-            Reference <span className="text-gray-400 font-normal">(optional)</span>
+            Reference <span className="font-medium text-tl-faint">(optional)</span>
           </label>
           <input
             id="manual-reference"
@@ -404,9 +419,9 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
         <div>
           <label
             htmlFor="manual-notes"
-            className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-1 block"
+            className={labelClass}
           >
-            Notes <span className="text-gray-400 font-normal">(optional)</span>
+            Notes <span className="font-medium text-tl-faint">(optional)</span>
           </label>
           <input
             id="manual-notes"
@@ -420,19 +435,11 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
 
         <WalletSourceNote variant="short" />
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
-          >
+        <div className="flex flex-wrap gap-2.5 pt-1">
+          <button type="button" onClick={onClose} className={`${ghostButton} flex-1`}>
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="flex-1 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold disabled:opacity-50"
-          >
+          <button type="submit" disabled={!canSubmit} className={`${primaryButton} flex-1`}>
             {record.isPending ? "Recording…" : "Record Payment"}
           </button>
         </div>

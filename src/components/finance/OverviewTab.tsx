@@ -4,6 +4,16 @@ import { ArrowDownCircle, ArrowUpCircle, Building2, Clock, Wallet } from "lucide
 import type { UseQueryResult } from "@tanstack/react-query";
 import { ErrorState } from "@/components/StateComponents";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  EmptyNote,
+  card,
+  cardFrame,
+  eyebrow,
+  primaryButton,
+  sectionTitle,
+  skeletonBlock,
+  textLink,
+} from "@/components/tl";
 import { Permission } from "@/lib/permissions";
 import type {
   LedgerEntry,
@@ -22,10 +32,13 @@ import type { FinanceTab } from "./tabs";
 /** How many rows the two "recent" panels show. */
 const RECENT_LIMIT = 5;
 
+/** Props for {@link OverviewTab}. */
 interface OverviewTabProps {
   /** The wallet query, so this tab shows the same object the page header does. */
   wallet: UseQueryResult<WalletSummary>;
+  /** Opens the withdrawal flow. */
   onWithdraw: () => void;
+  /** Switches the page to another tab ("View All"). */
   onGoToTab: (tab: FinanceTab) => void;
 }
 
@@ -38,6 +51,9 @@ interface OverviewTabProps {
  * time so a withdrawal shows up here the moment it is confirmed.
  *
  * @param props - The shared wallet query and the page's navigation callbacks.
+ * @param props.wallet - The wallet query.
+ * @param props.onWithdraw - Opens the withdrawal flow.
+ * @param props.onGoToTab - Switches tab.
  * @returns The overview tab.
  */
 export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps) {
@@ -71,27 +87,37 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
   const unsuccessful = recentWithdrawals.filter((item) =>
     ["failed", "cancelled", "rejected"].includes(item.status)
   );
+  /**
+   * What a list of withdrawals adds up to (what was received, else asked).
+   *
+   * @param items - The withdrawals.
+   * @returns The sum.
+   */
   const sumOf = (items: WithdrawalRequest[]) =>
     items.reduce((total, item) => total + (item.amountToReceive || item.amount), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-[18px]">
       <WalletSourceNote />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="col-span-2 lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <Wallet size={16} className="text-[#003366]" />
-            <p className="text-sm text-gray-500 dark:text-slate-400">Wallet Balance</p>
+      <div
+        role="group"
+        aria-label="Wallet figures"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <div className="flex flex-col rounded-[18px] border border-tl-control bg-tl-select px-4 py-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-extrabold uppercase tracking-[0.05em] text-tl-brand">
+              Wallet Balance
+            </p>
+            <Wallet size={18} className="text-tl-brand" aria-hidden />
           </div>
-          <p className="text-3xl font-bold text-[#003366]">{formatNaira(summary.availableBalance)}</p>
-          <p className="text-xs text-gray-400 mt-1">Available for withdrawal</p>
+          <p className="mt-1.5 text-[28px] font-extrabold tracking-[-0.5px] text-tl-brand">
+            {formatNaira(summary.availableBalance)}
+          </p>
+          <p className="mt-0.5 text-[13px] text-tl-body">Available for withdrawal</p>
           <PermissionGate permission={Permission.MANAGE_FINANCE}>
-            <button
-              type="button"
-              onClick={onWithdraw}
-              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90 transition"
-            >
-              <ArrowUpCircle size={15} /> Withdraw Funds
+            <button type="button" onClick={onWithdraw} className={`${primaryButton} mt-3 w-full`}>
+              <ArrowUpCircle size={16} aria-hidden /> Withdraw Funds
             </button>
           </PermissionGate>
         </div>
@@ -106,18 +132,18 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
           value={formatNaira(summary.withdrawnBalance)}
           sub="This academic year"
           icon={ArrowUpCircle}
-          color="text-orange-600"
+          color="text-tl-accent"
         />
         <StatCard
           label="Pending Withdrawals"
           value={formatNaira(summary.pendingBalance)}
           sub={`${pendingCount} pending request${pendingCount === 1 ? "" : "s"}`}
           icon={Clock}
-          color="text-yellow-600"
+          color="text-tl-warning"
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_0.95fr] gap-4">
+      <div className="grid grid-cols-1 gap-[18px] xl:grid-cols-[1fr_0.95fr]">
         <RecentPanel
           title="Recent Transactions"
           onViewAll={() => onGoToTab("Transactions")}
@@ -128,69 +154,72 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
           subject="recent transactions"
         >
           {entries.map((entry) => (
-            <div key={entry._id} className="px-5 py-3 flex items-center gap-3">
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                  entry.direction === "credit" ? "bg-green-50" : "bg-red-50"
+            <li key={entry._id} className="flex items-center gap-3 px-5 py-3">
+              <span
+                aria-hidden
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  entry.direction === "credit"
+                    ? "bg-tl-success-bg text-tl-success"
+                    : "bg-tl-danger-bg text-tl-danger"
                 }`}
               >
                 {entry.direction === "credit" ? (
-                  <ArrowDownCircle size={17} className="text-green-600" />
+                  <ArrowDownCircle size={18} />
                 ) : (
-                  <ArrowUpCircle size={17} className="text-red-500" />
+                  <ArrowUpCircle size={18} />
                 )}
-              </div>
+              </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">
+                <p className="truncate text-sm font-bold text-tl-ink">
                   {entry.description || entry.reference}
                 </p>
-                <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
+                <p className="text-[13px] text-tl-muted">{formatDate(entry.createdAt)}</p>
               </div>
               <p
-                className={`text-sm font-bold ${
-                  entry.direction === "credit" ? "text-green-600" : "text-red-500"
+                className={`whitespace-nowrap text-sm font-extrabold ${
+                  entry.direction === "credit" ? "text-tl-success" : "text-tl-danger"
                 }`}
               >
                 {entry.direction === "credit" ? "+" : "-"}
                 {formatNaira(entry.amount)}
               </p>
-            </div>
+            </li>
           ))}
         </RecentPanel>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-bold text-gray-800 dark:text-slate-100">Wallet Balance Trend</h3>
-            <span className="text-xs text-gray-400">Latest activity</span>
+        <section className={card}>
+          <div className="mb-5 flex items-center justify-between gap-2">
+            <h3 className={sectionTitle}>Wallet Balance Trend</h3>
+            <span className="text-[13px] text-tl-muted">Latest activity</span>
           </div>
           {trend.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-sm text-gray-400">
+            <div className="flex h-48 items-center justify-center text-sm text-tl-muted">
               No trend data yet
             </div>
           ) : (
-            <div className="h-48 flex items-end gap-2 border-b border-l border-gray-100 dark:border-slate-800 px-2 pt-4">
+            <div className="flex h-48 items-end gap-2 border-b border-l border-tl-line px-2 pt-4">
               {trend.map((point, index) => (
                 <div
                   key={`${point.label}-${index}`}
-                  className="flex-1 flex flex-col items-center gap-2 min-w-0"
+                  className="flex min-w-0 flex-1 flex-col items-center gap-2"
                 >
-                  <div className="w-full bg-blue-50 rounded-t-lg overflow-hidden flex items-end h-36">
+                  <div className="flex h-36 w-full items-end overflow-hidden rounded-t-lg bg-tl-select">
                     <div
-                      className="w-full bg-[#0066FF] rounded-t-lg"
+                      className="w-full rounded-t-lg bg-tl-link"
                       style={{ height: `${Math.max(12, (point.value / maxTrend) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                  <span className="w-full truncate text-center text-[11px] text-tl-muted">
                     {point.label}
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_0.95fr] gap-4">
+      <div className="grid grid-cols-1 gap-[18px] xl:grid-cols-[1fr_0.95fr]">
         <RecentPanel
           title="Recent Withdrawals"
           onViewAll={() => onGoToTab("Withdrawals")}
@@ -203,71 +232,93 @@ export function OverviewTab({ wallet, onWithdraw, onGoToTab }: OverviewTabProps)
           {recentWithdrawals.map((item) => {
             const account = typeof item.bankAccountId === "object" ? item.bankAccountId : null;
             return (
-              <div key={item._id} className="px-5 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#E8EDF3] flex items-center justify-center">
-                  <Building2 size={17} className="text-[#003366]" />
-                </div>
+              <li key={item._id} className="flex items-center gap-3 px-5 py-3">
+                <span
+                  aria-hidden
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tl-select text-tl-brand"
+                >
+                  <Building2 size={18} />
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
+                  <p className="text-sm font-bold text-tl-ink">
                     {formatNaira(item.amountToReceive || item.amount)}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="truncate text-[13px] text-tl-muted">
                     {account
                       ? `${account.bankName} · ${maskAccountNumber(account.accountNumber)}`
                       : item.reference}
                   </p>
                 </div>
                 <WithdrawalStatusBadge status={item.status} />
-              </div>
+              </li>
             );
           })}
         </RecentPanel>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
-          <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4">Withdrawals Summary</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <section className={card}>
+          <h3 className={`${sectionTitle} mb-4`}>Withdrawals Summary</h3>
+          <div className="grid grid-cols-2 gap-2.5">
             {[
-              ["Total Withdrawn", formatNaira(summary.withdrawnBalance), "text-[#003366]"],
-              ["Successful", formatNaira(sumOf(succeeded)), "text-green-600"],
-              ["Pending", formatNaira(summary.pendingBalance), "text-orange-600"],
-              ["Failed/Cancelled", formatNaira(sumOf(unsuccessful)), "text-red-500"],
+              ["Total Withdrawn", formatNaira(summary.withdrawnBalance), "text-tl-brand"],
+              ["Successful", formatNaira(sumOf(succeeded)), "text-tl-success"],
+              ["Pending", formatNaira(summary.pendingBalance), "text-tl-warning"],
+              ["Failed/Cancelled", formatNaira(sumOf(unsuccessful)), "text-tl-danger"],
             ].map(([label, value, color]) => (
-              <div key={label} className="rounded-xl border border-gray-100 dark:border-slate-800 p-4">
-                <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
-                <p className={`mt-2 text-lg font-bold ${color}`}>{value}</p>
+              <div
+                key={label}
+                className="rounded-2xl border border-tl-line-soft bg-tl-subtle px-4 py-3"
+              >
+                <p className={eyebrow}>{label}</p>
+                <p className={`mt-1.5 text-lg font-extrabold ${color}`}>{value}</p>
               </div>
             ))}
           </div>
-          <div className="mt-4 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-tl-line-soft px-4 py-3">
             <div>
-              <p className="text-sm text-gray-500 dark:text-slate-400">Wallet Status</p>
-              <p className="font-bold text-gray-800 dark:text-slate-100 capitalize mt-1">{summary.status}</p>
+              <p className={eyebrow}>Wallet Status</p>
+              <p className="mt-1 font-extrabold capitalize text-tl-ink">{summary.status}</p>
             </div>
             <LedgerStatusBadge status={summary.status} />
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
 
+/** Props for {@link RecentPanel}. */
 interface RecentPanelProps {
+  /** The panel's heading. */
   title: string;
+  /** Opens the full list. */
   onViewAll: () => void;
+  /** True while the list loads. */
   loading: boolean;
+  /** True when the list failed to load. */
   failed: boolean;
+  /** True when it loaded with nothing. */
   empty: boolean;
+  /** The empty-state line ("No transactions yet"). */
   emptyLabel: string;
   /** What the panel was loading, used in the failure line. */
   subject: string;
+  /** The rows (`li` elements). */
   children: React.ReactNode;
 }
 
 /**
  * The card the two "recent" lists share, including their loading, failed and
- * empty lines — a failed panel says so rather than spinning forever.
+ * empty states — a failed panel says so rather than spinning forever.
  *
  * @param props - Panel copy, its three states and the rows to render.
+ * @param props.title - The heading.
+ * @param props.onViewAll - Opens the full list.
+ * @param props.loading - Whether it is loading.
+ * @param props.failed - Whether it failed.
+ * @param props.empty - Whether it is empty.
+ * @param props.emptyLabel - The empty line.
+ * @param props.subject - What it loads.
+ * @param props.children - The rows.
  * @returns The panel.
  */
 function RecentPanel({
@@ -281,26 +332,29 @@ function RecentPanel({
   children,
 }: RecentPanelProps) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
-        <h3 className="font-bold text-gray-800 dark:text-slate-100">{title}</h3>
-        <button type="button" onClick={onViewAll} className="text-sm font-semibold text-[#003366]">
+    <section className={cardFrame}>
+      <div className="flex items-center justify-between gap-3 border-b border-tl-line-soft px-5 py-2">
+        <h3 className={sectionTitle}>{title}</h3>
+        <button type="button" onClick={onViewAll} className={textLink}>
           View All
         </button>
       </div>
-      <div className="divide-y divide-gray-50">
-        {loading ? (
-          <p className="px-5 py-8 text-center text-sm text-gray-400">Loading…</p>
-        ) : failed ? (
-          <p className="px-5 py-8 text-center text-sm text-red-500">
-            Couldn&apos;t load {subject}.
-          </p>
-        ) : empty ? (
-          <p className="px-5 py-8 text-center text-sm text-gray-400">{emptyLabel}</p>
-        ) : (
-          children
-        )}
-      </div>
-    </div>
+      {loading ? (
+        <div role="status" aria-busy="true" className="flex flex-col gap-3 px-5 py-4">
+          <span className="sr-only">Loading {subject}</span>
+          {[0, 1, 2].map((row) => (
+            <div key={row} aria-hidden className={`${skeletonBlock} h-10 rounded-xl`} />
+          ))}
+        </div>
+      ) : failed ? (
+        <p role="alert" className="px-5 py-8 text-center text-sm font-semibold text-tl-danger">
+          Couldn&apos;t load {subject}.
+        </p>
+      ) : empty ? (
+        <EmptyNote compact title={emptyLabel} />
+      ) : (
+        <ul className="divide-y divide-tl-line-soft">{children}</ul>
+      )}
+    </section>
   );
 }

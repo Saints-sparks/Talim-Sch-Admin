@@ -4,23 +4,26 @@ import type { FeeCategory } from "@/app/services/fees.service";
 import type { FeeFormValues } from "@/hooks/fees/feeForm";
 import { feeTypeLabel, formatDate, totalCapacity } from "./formatters";
 import type { FeeClass } from "./types";
-import { brandTextClass, cardClass, headingClass, mutedTextClass } from "./ui";
+import { Banner, Pill, card, sectionTitle } from "@/components/tl";
 
 /**
  * One label/value line in the summary.
  *
  * @param props - The label and its value.
+ * @param props.label - The label.
+ * @param props.children - The value.
  * @returns The row.
  */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-3">
-      <span className={mutedTextClass}>{label}</span>
-      <span className="font-medium text-gray-800 dark:text-gray-100 text-right">{children}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-tl-muted">{label}</span>
+      <span className="text-right font-bold text-tl-ink">{children}</span>
     </div>
   );
 }
 
+/** Props for {@link FeeSummaryPanel}. */
 interface FeeSummaryPanelProps {
   values: FeeFormValues;
   categories: FeeCategory[];
@@ -33,6 +36,10 @@ interface FeeSummaryPanelProps {
  * will reach.
  *
  * @param props - The form values and the current class selection.
+ * @param props.values - The form values.
+ * @param props.categories - The school's categories.
+ * @param props.classes - The school's classes.
+ * @param props.selectedClassIds - The ticked classes.
  * @returns The summary panel.
  */
 export function FeeSummaryPanel({
@@ -46,18 +53,16 @@ export function FeeSummaryPanel({
   const students = totalCapacity(selectedClasses);
 
   return (
-    <div className={`${cardClass} p-4 space-y-4 sticky top-6`}>
-      <h3 className={`font-semibold ${headingClass}`}>Fee Summary</h3>
+    <section className={`${card} flex flex-col gap-4 lg:sticky lg:top-6`}>
+      <h2 className={sectionTitle}>Fee Summary</h2>
 
-      <div className="space-y-2 text-sm">
+      <div className="flex flex-col gap-2.5 text-sm">
         <Row label="Fee Name">
           <span className="block max-w-[160px] truncate">{values.name || "—"}</span>
         </Row>
         <Row label="Category">
           {category ? (
-            <span className="text-xs bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 px-2 py-0.5 rounded-full">
-              {category.name}
-            </span>
+            <Pill tone="accent">{category.name}</Pill>
           ) : (
             "—"
           )}
@@ -66,7 +71,7 @@ export function FeeSummaryPanel({
           <span className="capitalize">{feeTypeLabel(values.feeType)}</span>
         </Row>
         <Row label="Amount (NGN)">
-          <span className={brandTextClass}>
+          <span className="text-tl-brand">
             {values.defaultAmount ? Number(values.defaultAmount).toLocaleString() : "—"}
           </span>
         </Row>
@@ -81,34 +86,30 @@ export function FeeSummaryPanel({
 
       {selectedClasses.length > 0 && (
         <>
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <div className="space-y-2 text-sm">
+          <hr className="border-tl-line-soft" />
+          <div className="flex flex-col gap-2 text-sm">
             <Row label="Assigned Classes">{selectedClasses.length} Classes</Row>
-            <div className="space-y-1">
+            <ul className="flex flex-col gap-1">
               {selectedClasses.slice(0, 4).map((entry) => (
-                <div key={entry._id} className="flex items-center gap-1">
-                  <div className="w-1 h-1 rounded-full bg-[#003366] dark:bg-blue-400" />
-                  <span className={`text-xs ${mutedTextClass}`}>
+                <li key={entry._id} className="flex items-center gap-2">
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-tl-brand" />
+                  <span className="text-[13px] text-tl-muted">
                     {entry.name} ({entry.classCapacity ?? 0} Students)
                   </span>
-                </div>
+                </li>
               ))}
               {selectedClasses.length > 4 && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 pl-2">
+                <li className="pl-3.5 text-[13px] text-tl-muted">
                   +{selectedClasses.length - 4} more classes
-                </p>
+                </li>
               )}
-            </div>
+            </ul>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-950/40 rounded-lg p-3 text-xs text-blue-700 dark:text-blue-300">
-            This fee will be assigned to <strong>{students} students</strong>
-            <br />
-            <span className="text-blue-500 dark:text-blue-400">
-              Total students in the selected classes
-            </span>
-          </div>
+          <Banner tone="info" title={<>This fee will be assigned to {students} students</>}>
+            Total students in the selected classes
+          </Banner>
         </>
       )}
-    </div>
+    </section>
   );
 }

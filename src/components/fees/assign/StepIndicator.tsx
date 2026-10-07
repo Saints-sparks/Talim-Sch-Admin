@@ -4,36 +4,42 @@ import { FiCheck } from "react-icons/fi";
 import { ASSIGN_STEPS } from "@/hooks/fees/assignWizard";
 
 /**
- * The numbered progress row above the assign wizard.
+ * The numbered progress row above the assign wizard: done steps in navy with
+ * a tick, the current one outlined, the rest grey. Scrolls sideways on a
+ * phone rather than widening the page.
  *
  * @param props - The zero-based index of the current step.
+ * @param props.current - The current step.
  * @returns The indicator.
  */
 export function StepIndicator({ current }: { current: number }) {
   return (
-    <ol className="flex items-center gap-0 mb-8 overflow-x-auto">
+    <ol
+      aria-label="Steps"
+      className="flex items-center overflow-x-auto rounded-[18px] border border-tl-line bg-tl-surface px-4 py-3"
+    >
       {ASSIGN_STEPS.map((label, index) => (
-        <li key={label} className="flex items-center shrink-0">
+        <li key={label} className="flex shrink-0 items-center">
           <div className="flex items-center gap-2">
             <span
               aria-current={index === current ? "step" : undefined}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-extrabold ${
                 index < current
-                  ? "bg-[#003366] border-[#003366] text-white dark:bg-blue-500 dark:border-blue-500"
+                  ? "border-tl-brand-fill bg-tl-brand-fill text-tl-on-brand"
                   : index === current
-                    ? "border-[#003366] text-[#003366] bg-white dark:bg-gray-900 dark:border-blue-400 dark:text-blue-300"
-                    : "border-gray-200 text-gray-400 bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-gray-500"
+                    ? "border-tl-brand bg-tl-select text-tl-brand"
+                    : "border-tl-line bg-tl-surface text-tl-faint"
               }`}
             >
-              {index < current ? <FiCheck size={13} /> : index + 1}
+              {index < current ? <FiCheck size={14} aria-hidden /> : index + 1}
             </span>
             <span
-              className={`text-sm font-medium whitespace-nowrap ${
+              className={`whitespace-nowrap text-sm font-bold ${
                 index === current
-                  ? "text-[#003366] dark:text-blue-300"
+                  ? "text-tl-brand"
                   : index < current
-                    ? "text-gray-600 dark:text-gray-300"
-                    : "text-gray-400 dark:text-gray-500"
+                    ? "text-tl-body"
+                    : "text-tl-muted"
               }`}
             >
               {label}
@@ -41,9 +47,8 @@ export function StepIndicator({ current }: { current: number }) {
           </div>
           {index < ASSIGN_STEPS.length - 1 && (
             <div
-              className={`w-8 h-0.5 mx-2 ${
-                index < current ? "bg-[#003366] dark:bg-blue-500" : "bg-gray-200 dark:bg-gray-700"
-              }`}
+              aria-hidden
+              className={`mx-3 h-0.5 w-8 rounded-full ${index < current ? "bg-tl-brand-fill" : "bg-tl-line"}`}
             />
           )}
         </li>

@@ -4,6 +4,16 @@ import { useState } from "react";
 import { AlertCircle, Building2, CheckCircle, Plus } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  EmptyNote,
+  Pill,
+  card,
+  cardFrame,
+  dangerGhostButton,
+  primaryButton,
+  rowButton,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
@@ -41,6 +51,14 @@ export function PayoutAccountsTab() {
 
   const accounts = query.data ?? [];
 
+  /**
+   * Runs one account action with its busy flag and toasts.
+   *
+   * @param accountId - The account being changed.
+   * @param action - The request.
+   * @param success - The toast on success.
+   * @param failure - The fallback toast on failure.
+   */
   const runAction = async (
     accountId: string,
     action: () => Promise<unknown>,
@@ -59,6 +77,7 @@ export function PayoutAccountsTab() {
     }
   };
 
+  /** Removes the account the admin confirmed. */
   const confirmRemoval = async () => {
     if (!pendingRemoval) return;
     await runAction(
@@ -82,18 +101,14 @@ export function PayoutAccountsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-gray-500 dark:text-slate-400">
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-tl-muted">
           {accounts.length} account{accounts.length === 1 ? "" : "s"}
         </p>
         <PermissionGate permission={Permission.MANAGE_FINANCE}>
-          <button
-            type="button"
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
-          >
-            <Plus size={15} /> Add Payout Account
+          <button type="button" onClick={() => setShowAdd(true)} className={primaryButton}>
+            <Plus size={16} aria-hidden /> Add Payout Account
           </button>
         </PermissionGate>
       </div>
@@ -101,56 +116,51 @@ export function PayoutAccountsTab() {
       {query.isPending ? (
         <CardListSkeleton />
       ) : accounts.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 py-16 text-center">
-          <Building2 size={36} className="text-gray-300 mx-auto mb-3" />
-          <p className="font-semibold text-gray-600 dark:text-slate-300">No payout accounts added</p>
-          <p className="text-sm text-gray-400 mt-1">
+        <div className={cardFrame}>
+          <EmptyNote icon={<Building2 />} title="No payout accounts added">
             Add a verified business account to receive withdrawals
-          </p>
+          </EmptyNote>
         </div>
       ) : (
-        <div className="space-y-3">
+        <ul className="flex flex-col gap-3">
           {accounts.map((account) => {
             const busy = busyId === account._id;
             return (
-              <div
+              <li
                 key={account._id}
-                className={`bg-white dark:bg-slate-900 rounded-2xl border-2 p-5 ${
-                  account.isDefault ? "border-[#003366]" : "border-gray-100"
-                }`}
+                className={cn(card, account.isDefault && "border-tl-brand ring-1 ring-tl-brand")}
               >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#E8EDF3] flex items-center justify-center shrink-0">
-                      <Building2 size={18} className="text-[#003366]" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <p className="font-semibold text-gray-800 dark:text-slate-100">{account.bankName}</p>
-                        {account.isDefault && (
-                          <span className="text-xs bg-[#003366] text-white px-2 py-0.5 rounded-full">
-                            Default
-                          </span>
-                        )}
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      aria-hidden
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tl-select text-tl-brand"
+                    >
+                      <Building2 size={19} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                        <p className="font-extrabold text-tl-ink">{account.bankName}</p>
+                        {account.isDefault && <Pill tone="info">Default</Pill>}
                         {account.isVerified ? (
-                          <span className="text-xs text-green-600 flex items-center gap-1">
-                            <CheckCircle size={11} /> Verified
-                          </span>
+                          <Pill tone="success">
+                            <CheckCircle size={12} aria-hidden /> Verified
+                          </Pill>
                         ) : (
-                          <span className="text-xs text-orange-500 flex items-center gap-1">
-                            <AlertCircle size={11} /> Unverified
-                          </span>
+                          <Pill tone="warning">
+                            <AlertCircle size={12} aria-hidden /> Unverified
+                          </Pill>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-slate-300">{account.accountName}</p>
-                      <p className="font-mono text-sm text-gray-500 dark:text-slate-400">
+                      <p className="text-sm text-tl-body">{account.accountName}</p>
+                      <p className="font-mono text-sm text-tl-muted">
                         ·· {account.accountNumber.slice(-4)}
                       </p>
                     </div>
                   </div>
 
                   <PermissionGate permission={Permission.MANAGE_FINANCE}>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {!account.isVerified && (
                         <button
                           type="button"
@@ -163,7 +173,7 @@ export function PayoutAccountsTab() {
                             )
                           }
                           disabled={busy}
-                          className="text-xs px-3 py-1.5 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366]/5 disabled:opacity-40"
+                          className={rowButton}
                         >
                           {busy ? "Working…" : "Verify"}
                         </button>
@@ -180,7 +190,7 @@ export function PayoutAccountsTab() {
                             )
                           }
                           disabled={busy}
-                          className="text-xs px-3 py-1.5 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+                          className={rowButton}
                         >
                           {busy ? "Working…" : "Set Default"}
                         </button>
@@ -189,17 +199,17 @@ export function PayoutAccountsTab() {
                         type="button"
                         onClick={() => setPendingRemoval(account)}
                         disabled={busy}
-                        className="text-xs px-3 py-1.5 text-red-500 border border-red-100 rounded-lg hover:bg-red-50 disabled:opacity-40"
+                        className={dangerGhostButton}
                       >
                         Remove
                       </button>
                     </div>
                   </PermissionGate>
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
       {showAdd && <AddBankAccountModal onClose={() => setShowAdd(false)} />}

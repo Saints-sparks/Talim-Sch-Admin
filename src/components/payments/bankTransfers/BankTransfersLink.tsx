@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Landmark } from "lucide-react";
+import { ghostButton } from "@/components/tl";
 import {
   useCanReconcileBankTransfers,
   usePendingBankTransferCount,
@@ -25,12 +26,12 @@ export function BankTransfersLink() {
     <Link
       href="/fees-management/bank-transfers"
       aria-label={waiting > 0 ? `Bank transfers, ${waiting} waiting` : undefined}
-      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800"
+      className={ghostButton}
     >
-      <Landmark size={15} aria-hidden />
+      <Landmark size={16} aria-hidden />
       Bank transfers
       {waiting > 0 && (
-        <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 text-xs font-semibold">
+        <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-tl-warning-bg px-1.5 text-xs font-extrabold text-tl-warning">
           {waiting}
         </span>
       )}

@@ -1,70 +1,67 @@
 "use client";
 
 import type { WalletEntryDirection, WithdrawalStatus } from "@/app/services/finance.service";
+import { Pill, type Tone } from "@/components/tl";
 
-/** Palette per withdrawal status. Tailwind's own dark overrides handle the dark theme. */
-const WITHDRAWAL_STYLES: Record<WithdrawalStatus, { className: string; label: string }> = {
-  pending: { className: "bg-amber-50 text-amber-700", label: "Pending Review" },
-  approved: { className: "bg-indigo-50 text-indigo-700", label: "Approved" },
-  processing: { className: "bg-blue-50 text-blue-700", label: "Processing" },
-  completed: { className: "bg-green-50 text-green-700", label: "Completed" },
-  rejected: { className: "bg-red-50 text-red-600", label: "Rejected" },
-  failed: { className: "bg-red-50 text-red-600", label: "Failed" },
-  cancelled: { className: "bg-gray-100 text-gray-500", label: "Cancelled" },
+/** Tone and words per withdrawal status. */
+const WITHDRAWAL_STYLES: Record<WithdrawalStatus, { tone: Tone; label: string }> = {
+  pending: { tone: "warning", label: "Pending Review" },
+  approved: { tone: "accent", label: "Approved" },
+  processing: { tone: "info", label: "Processing" },
+  completed: { tone: "success", label: "Completed" },
+  rejected: { tone: "danger", label: "Rejected" },
+  failed: { tone: "danger", label: "Failed" },
+  cancelled: { tone: "muted", label: "Cancelled" },
 };
 
 /**
  * The status of a withdrawal request, in the same words the review email uses.
  *
  * @param props - The withdrawal's status.
+ * @param props.status - The status as the API returns it.
  * @returns A status pill.
  */
 export function WithdrawalStatusBadge({ status }: { status: string }) {
   const style = WITHDRAWAL_STYLES[status as WithdrawalStatus] ?? {
-    className: "bg-gray-100 text-gray-500",
+    tone: "muted" as const,
     label: status,
   };
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${style.className}`}
-    >
+    <Pill tone={style.tone} className="capitalize">
       {style.label}
-    </span>
+    </Pill>
   );
 }
 
-/** Palette for ledger entry states, wallet states and credit/debit direction. */
-const LEDGER_STYLES: Record<string, string> = {
-  active: "bg-green-100 text-green-700",
-  posted: "bg-green-100 text-green-700",
-  pending: "bg-yellow-100 text-yellow-700",
-  processing: "bg-blue-100 text-blue-700",
-  approved: "bg-indigo-100 text-indigo-700",
-  completed: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-600",
-  failed: "bg-red-100 text-red-600",
-  cancelled: "bg-gray-100 text-gray-500",
-  suspended: "bg-orange-100 text-orange-600",
-  closed: "bg-gray-100 text-gray-500",
-  reversed: "bg-orange-100 text-orange-600",
-  credit: "bg-green-100 text-green-700",
-  debit: "bg-red-100 text-red-600",
+/** Tone for ledger entry states, wallet states and credit/debit direction. */
+const LEDGER_TONES: Record<string, Tone> = {
+  active: "success",
+  posted: "success",
+  pending: "info",
+  processing: "info",
+  approved: "accent",
+  completed: "success",
+  rejected: "danger",
+  failed: "danger",
+  cancelled: "muted",
+  suspended: "warning",
+  closed: "muted",
+  reversed: "warning",
+  credit: "success",
+  debit: "danger",
 };
 
 /**
  * A ledger entry's state, a wallet's state, or a credit/debit direction.
  *
  * @param props - The value to colour, already lowercase as the API returns it.
+ * @param props.status - The value.
  * @returns A status pill.
  */
 export function LedgerStatusBadge({ status }: { status: string | WalletEntryDirection }) {
   return (
-    <span
-      className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
-        LEDGER_STYLES[status] ?? "bg-gray-100 text-gray-500 dark:text-slate-400"
-      }`}
-    >
+    <Pill tone={LEDGER_TONES[status] ?? "muted"} className="capitalize">
       {status}
-    </span>
+    </Pill>
   );
 }

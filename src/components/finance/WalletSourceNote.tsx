@@ -24,16 +24,20 @@ export interface WalletSourceNoteProps {
  * and confirmed bank transfers do not, because that money is already in the
  * school's own bank and could otherwise be withdrawn twice.
  *
+ * Drawn as the design system's info banner, with `role="note"`.
+ *
  * @param props - See {@link WalletSourceNoteProps}.
+ * @param props.variant - `short` or `full`.
+ * @param props.className - Extra classes.
  * @returns The note.
  */
 export function WalletSourceNote({ variant = "full", className = "" }: WalletSourceNoteProps) {
   return (
     <p
       role="note"
-      className={`flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 px-3 py-2 text-xs text-blue-900 dark:text-slate-200 ${className}`}
+      className={`flex items-start gap-3 rounded-2xl border border-tl-control bg-tl-select px-4 py-3 text-[13px] leading-relaxed text-tl-body ${className}`}
     >
-      <Info size={14} className="mt-0.5 shrink-0" aria-hidden />
+      <Info size={18} className="mt-px shrink-0 text-tl-brand" aria-hidden />
       <span>{variant === "short" ? WALLET_SOURCE_NOTE_SHORT : WALLET_SOURCE_NOTE}</span>
     </p>
   );

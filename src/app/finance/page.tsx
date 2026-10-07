@@ -11,7 +11,24 @@ import { TransactionsTab } from "@/components/finance/TransactionsTab";
 import { WithdrawalsTab } from "@/components/finance/WithdrawalsTab";
 import { WithdrawalFlow } from "@/components/finance/withdrawal/WithdrawalFlow";
 import { FINANCE_TABS, type FinanceTab } from "@/components/finance/tabs";
+import { Page, PageHeader, Tabs, ghostButton, iconButton, primaryButton } from "@/components/tl";
 import { useBankAccounts, useWalletSummary } from "@/hooks/finance/useFinanceQueries";
+
+/** The tab list's options: each tab with an id-safe value. */
+const TAB_OPTIONS = FINANCE_TABS.map((tab) => ({
+  value: tab.toLowerCase().replace(/\s+/g, "-"),
+  label: tab,
+}));
+
+/**
+ * The tab a tab-list value stands for.
+ *
+ * @param value - The option's value ("payout-accounts").
+ * @returns The tab ("Payout Accounts").
+ */
+function tabFor(value: string): FinanceTab {
+  return TAB_OPTIONS.find((option) => option.value === value)?.label ?? "Overview";
+}
 
 /**
  * School finance: the wallet, its ledger, withdrawals, payout accounts and
@@ -38,23 +55,17 @@ export default function FinancePage() {
 
   const refreshing = wallet.isFetching || accounts.isFetching;
 
+  const activeValue = TAB_OPTIONS.find((option) => option.label === activeTab)?.value ?? "overview";
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-800">
-      <div className="max-w-screen-xl mx-auto px-6 py-6 space-y-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Finance</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              Manage your school wallet, transactions and withdrawals.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveTab("Settings")}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl text-sm font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50"
-            >
-              <Shield size={16} /> Finance Settings
+    <Page>
+      <PageHeader
+        title="Finance"
+        subtitle="Manage your school wallet, transactions and withdrawals."
+        actions={
+          <>
+            <button type="button" onClick={() => setActiveTab("Settings")} className={ghostButton}>
+              <Shield size={16} aria-hidden /> Finance Settings
             </button>
             <button
               type="button"
@@ -63,70 +74,57 @@ export default function FinancePage() {
                 void accounts.refetch();
               }}
               aria-label="Refresh wallet"
-              className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
+              className={`${iconButton} border border-tl-control bg-tl-surface`}
             >
               <RefreshCw
-                size={16}
-                className={refreshing ? "animate-spin text-[#003366]" : "text-gray-500"}
+                size={17}
+                aria-hidden
+                className={refreshing ? "animate-spin text-tl-brand" : undefined}
               />
             </button>
             <PermissionGate permission={Permission.MANAGE_FINANCE}>
-              <button
-                type="button"
-                onClick={() => setShowWithdraw(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
-              >
-                <ArrowUpCircle size={16} /> Withdraw Funds
+              <button type="button" onClick={() => setShowWithdraw(true)} className={primaryButton}>
+                <ArrowUpCircle size={16} aria-hidden /> Withdraw Funds
               </button>
             </PermissionGate>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        <div className="flex gap-1 overflow-x-auto">
-          {FINANCE_TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              aria-current={activeTab === tab ? "page" : undefined}
-              className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                activeTab === tab
-                  ? "border-[#003366] text-[#003366]"
-                  : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 hover:border-gray-200"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+      <Tabs
+        options={TAB_OPTIONS}
+        value={activeValue}
+        onChange={(value) => setActiveTab(tabFor(value))}
+        label="Finance sections"
+        idPrefix="finance"
+      />
 
-        <div>
-          {activeTab === "Overview" && (
-            <OverviewTab
-              wallet={wallet}
-              onWithdraw={() => setShowWithdraw(true)}
-              onGoToTab={setActiveTab}
-            />
-          )}
-          {activeTab === "Transactions" && <TransactionsTab />}
-          {activeTab === "Withdrawals" && (
-            <WithdrawalsTab onNewWithdrawal={() => setShowWithdraw(true)} />
-          )}
-          {activeTab === "Payout Accounts" && <PayoutAccountsTab />}
-          {activeTab === "Settings" && <SecurityTab />}
-        </div>
-
-        {showWithdraw && (
-          <PermissionGate permission={Permission.MANAGE_FINANCE}>
-            <WithdrawalFlow
-              accounts={accounts.data ?? []}
-              summary={wallet.data}
-              onClose={() => setShowWithdraw(false)}
-              onViewWithdrawals={() => setActiveTab("Withdrawals")}
-            />
-          </PermissionGate>
+      <div role="tabpanel" id="finance-panel" aria-labelledby={`finance-tab-${activeValue}`}>
+        {activeTab === "Overview" && (
+          <OverviewTab
+            wallet={wallet}
+            onWithdraw={() => setShowWithdraw(true)}
+            onGoToTab={setActiveTab}
+          />
         )}
+        {activeTab === "Transactions" && <TransactionsTab />}
+        {activeTab === "Withdrawals" && (
+          <WithdrawalsTab onNewWithdrawal={() => setShowWithdraw(true)} />
+        )}
+        {activeTab === "Payout Accounts" && <PayoutAccountsTab />}
+        {activeTab === "Settings" && <SecurityTab />}
       </div>
-    </div>
+
+      {showWithdraw && (
+        <PermissionGate permission={Permission.MANAGE_FINANCE}>
+          <WithdrawalFlow
+            accounts={accounts.data ?? []}
+            summary={wallet.data}
+            onClose={() => setShowWithdraw(false)}
+            onViewWithdrawals={() => setActiveTab("Withdrawals")}
+          />
+        </PermissionGate>
+      )}
+    </Page>
   );
 }

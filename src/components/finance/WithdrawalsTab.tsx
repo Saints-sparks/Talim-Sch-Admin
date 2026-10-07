@@ -4,6 +4,22 @@ import { useState } from "react";
 import { ArrowUpCircle, Banknote, RefreshCw, X } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  CardHeader,
+  EmptyNote,
+  Segmented,
+  cardFrame,
+  dangerGhostButton,
+  iconButton,
+  primaryButton,
+  table,
+  tableScroll,
+  td,
+  th,
+  theadRow,
+  tr,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
@@ -34,6 +50,7 @@ const STATUS_FILTERS: { value: WithdrawalStatus | ""; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+/** The table's column headings. */
 const COLUMNS = ["Reference", "Amount", "Bank Account", "Status", "Requested Date", "Actions"];
 
 /**
@@ -44,6 +61,7 @@ const COLUMNS = ["Reference", "Amount", "Bank Account", "Status", "Requested Dat
  * entirely from an admin without `manage:finance`.
  *
  * @param props - Callback that opens the withdrawal flow.
+ * @param props.onNewWithdrawal - Opens the withdrawal flow.
  * @returns The withdrawals tab.
  */
 export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => void }) {
@@ -57,6 +75,7 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
   const withdrawals = query.data?.data ?? [];
   const total = query.data?.pagination?.total ?? 0;
 
+  /** Cancels the withdrawal the admin confirmed, and says so. */
   const confirmCancel = async () => {
     if (!pendingCancel) return;
     try {
@@ -81,138 +100,114 @@ export function WithdrawalsTab({ onNewWithdrawal }: { onNewWithdrawal: () => voi
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">Withdrawals</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Track all withdrawal requests and their status.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-6 overflow-x-auto border-b border-gray-100 dark:border-slate-800">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.value || "all"}
-              type="button"
-              onClick={() => {
-                setStatus(filter.value);
-                setPage(1);
-              }}
-              className={`py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2 ${
-                status === filter.value
-                  ? "border-[#003366] text-[#003366]"
-                  : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void query.refetch()}
-            aria-label="Refresh withdrawals"
-            className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
-          >
-            <RefreshCw
-              size={15}
-              className={query.isFetching ? "animate-spin text-[#003366]" : "text-gray-500"}
-            />
-          </button>
-          <PermissionGate permission={Permission.MANAGE_FINANCE}>
+    <div className="flex flex-col gap-[18px]">
+      <CardHeader
+        title="Withdrawals"
+        subtitle="Track all withdrawal requests and their status."
+        actions={
+          <>
             <button
               type="button"
-              onClick={onNewWithdrawal}
-              className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90"
+              onClick={() => void query.refetch()}
+              aria-label="Refresh withdrawals"
+              className={`${iconButton} border border-tl-control bg-tl-surface`}
             >
-              <ArrowUpCircle size={15} /> Withdraw Funds
+              <RefreshCw
+                size={16}
+                aria-hidden
+                className={query.isFetching ? "animate-spin text-tl-brand" : undefined}
+              />
             </button>
-          </PermissionGate>
-        </div>
-      </div>
+            <PermissionGate permission={Permission.MANAGE_FINANCE}>
+              <button type="button" onClick={onNewWithdrawal} className={primaryButton}>
+                <ArrowUpCircle size={16} aria-hidden /> Withdraw Funds
+              </button>
+            </PermissionGate>
+          </>
+        }
+      />
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[820px]">
-            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
-              <tr>
-                {COLUMNS.map((column) => (
-                  <th
-                    key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
-                  >
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {query.isPending ? (
-                <TableSkeleton columns={COLUMNS.length} />
-              ) : withdrawals.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-4 py-16 text-center">
-                    <Banknote size={36} className="text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-slate-400 font-medium">No withdrawals found</p>
-                    <p className="text-gray-400 text-xs mt-1">
-                      {status
-                        ? "No withdrawals with this status"
-                        : "Your withdrawal history will appear here"}
-                    </p>
-                  </td>
+      <Segmented
+        options={STATUS_FILTERS}
+        value={status}
+        onChange={(next) => {
+          setStatus(next);
+          setPage(1);
+        }}
+        label="Show withdrawals that are"
+      />
+
+      <div className={cardFrame}>
+        {!query.isPending && withdrawals.length === 0 ? (
+          <EmptyNote icon={<Banknote />} title="No withdrawals found">
+            {status ? "No withdrawals with this status" : "Your withdrawal history will appear here"}
+          </EmptyNote>
+        ) : (
+          <div className={tableScroll}>
+            <table className={cn(table, "min-w-[820px]")}>
+              <thead>
+                <tr className={theadRow}>
+                  {COLUMNS.map((column) => (
+                    <th key={column} className={th}>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                withdrawals.map((withdrawal) => {
-                  const account =
-                    typeof withdrawal.bankAccountId === "object" ? withdrawal.bankAccountId : null;
-                  const cancellable = CANCELLABLE_WITHDRAWAL_STATUSES.includes(withdrawal.status);
-                  return (
-                    <tr key={withdrawal._id} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-[#003366]">
-                        {withdrawal.reference}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100">
-                        {formatNaira(withdrawal.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
-                        {account
-                          ? `${account.bankName} · ${maskAccountNumber(account.accountNumber)}`
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <WithdrawalStatusBadge status={withdrawal.status} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap text-xs">
-                        {formatDateTime(withdrawal.createdAt)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {cancellable ? (
-                          <PermissionGate
-                            permission={Permission.MANAGE_FINANCE}
-                            fallback={<span className="text-xs text-gray-400">—</span>}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setPendingCancel(withdrawal)}
-                              disabled={cancel.isPending}
-                              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:text-red-500 hover:border-red-100 disabled:opacity-40"
+              </thead>
+              <tbody aria-busy={query.isPending || undefined}>
+                {query.isPending ? (
+                  <TableSkeleton columns={COLUMNS.length} />
+                ) : (
+                  withdrawals.map((withdrawal) => {
+                    const account =
+                      typeof withdrawal.bankAccountId === "object" ? withdrawal.bankAccountId : null;
+                    const cancellable = CANCELLABLE_WITHDRAWAL_STATUSES.includes(withdrawal.status);
+                    return (
+                      <tr key={withdrawal._id} className={tr}>
+                        <td className={cn(td, "font-mono text-xs font-bold text-tl-brand")}>
+                          {withdrawal.reference}
+                        </td>
+                        <td className={cn(td, "whitespace-nowrap font-extrabold text-tl-ink")}>
+                          {formatNaira(withdrawal.amount)}
+                        </td>
+                        <td className={td}>
+                          {account
+                            ? `${account.bankName} · ${maskAccountNumber(account.accountNumber)}`
+                            : "—"}
+                        </td>
+                        <td className={td}>
+                          <WithdrawalStatusBadge status={withdrawal.status} />
+                        </td>
+                        <td className={cn(td, "whitespace-nowrap text-[13px] text-tl-muted")}>
+                          {formatDateTime(withdrawal.createdAt)}
+                        </td>
+                        <td className={cn(td, "py-1.5")}>
+                          {cancellable ? (
+                            <PermissionGate
+                              permission={Permission.MANAGE_FINANCE}
+                              fallback={<span className="text-sm text-tl-faint">—</span>}
                             >
-                              <X size={13} /> Cancel
-                            </button>
-                          </PermissionGate>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                              <button
+                                type="button"
+                                onClick={() => setPendingCancel(withdrawal)}
+                                disabled={cancel.isPending}
+                                className={dangerGhostButton}
+                              >
+                                <X size={14} aria-hidden /> Cancel
+                              </button>
+                            </PermissionGate>
+                          ) : (
+                            <span className="text-sm text-tl-faint">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <TablePager

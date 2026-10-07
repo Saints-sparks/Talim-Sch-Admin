@@ -5,6 +5,24 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  EmptyNote,
+  Page,
+  PageHeader,
+  cardFrame,
+  dangerGhostButton,
+  focusRing,
+  iconButton,
+  primaryButton,
+  segment,
+  segmentTrack,
+  table,
+  tableScroll,
+  th,
+  theadRow,
+  tr,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { TableSkeleton } from "@/components/finance/FinanceSkeletons";
 import { TablePager } from "@/components/finance/TablePager";
 import { describeFinanceError } from "@/components/finance/financeErrors";
@@ -50,9 +68,14 @@ const STATUS_COLUMNS: Record<BankTransferStatus, readonly string[]> = {
   rejected: ["Rejected", "Reason"],
 };
 
-const headCellClass =
-  "text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300 whitespace-nowrap";
-const cellClass = "px-4 py-3 text-sm text-gray-800 dark:text-slate-200 align-top";
+/** A header cell. */
+const headCellClass = th;
+
+/** A body cell: text sits at the top so a long reason doesn't push the row's others down. */
+const cellClass = "px-4 py-3.5 text-sm text-tl-body align-top";
+
+/** A compact action button inside a row. */
+const rowActionSize = "min-h-[44px] rounded-[11px] px-3.5 py-2 text-[13px]";
 
 /** Which decision dialog is open, and for which transfer. */
 type OpenDialog = { kind: "confirm" | "reject"; transfer: AdminBankTransfer } | null;
@@ -81,6 +104,12 @@ function StatusTabs({
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
 
+  /**
+   * Arrow keys, Home and End move between the tabs.
+   *
+   * @param event - The key press.
+   * @param index - The tab it was on.
+   */
   const onKeyDown = (event: React.KeyboardEvent, index: number) => {
     const last = BANK_TRANSFER_STATUSES.length - 1;
     const next =
@@ -107,7 +136,7 @@ function StatusTabs({
     <div
       role="tablist"
       aria-label="Transfer status"
-      className="flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-xl p-1 w-fit max-w-full overflow-x-auto"
+      className={cn(segmentTrack, "w-fit flex-nowrap overflow-x-auto")}
     >
       {BANK_TRANSFER_STATUSES.map((status, index) => {
         const selected = status === active;
@@ -130,15 +159,11 @@ function StatusTabs({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(status)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-              selected
-                ? "bg-white dark:bg-slate-900 text-[#003366] dark:text-blue-300 shadow-sm"
-                : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
-            }`}
+            className={segment(selected)}
           >
             {BANK_TRANSFER_TAB_LABELS[status]}
             {status === "pending" && pendingCount !== undefined && pendingCount > 0 && (
-              <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 text-xs font-semibold">
+              <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-tl-warning-bg px-1.5 text-xs font-extrabold text-tl-warning">
                 {pendingCount}
               </span>
             )}
@@ -173,20 +198,18 @@ function TransferRow({
   const proof = safeProofUrl(transfer.proofUrl);
   const who = `${transfer.parent?.name || "parent"} for ${transfer.child?.name || "child"}`;
   return (
-    <tr className="hover:bg-gray-50/60 dark:hover:bg-slate-800/40">
+    <tr className={tr}>
       <td className={cellClass}>{transfer.parent?.name || "—"}</td>
       <td className={cellClass}>
-        <span className="block font-medium text-gray-900 dark:text-slate-100">
-          {transfer.child?.name || "—"}
-        </span>
+        <span className="block font-bold text-tl-ink">{transfer.child?.name || "—"}</span>
         {transfer.child?.admissionNumber && (
-          <span className="block text-xs text-gray-500 dark:text-slate-400">
+          <span className="block text-[13px] text-tl-muted">
             {transfer.child.admissionNumber}
           </span>
         )}
       </td>
       <td className={cellClass}>{transferClassName(transfer)}</td>
-      <td className={`${cellClass} font-semibold tabular-nums whitespace-nowrap`}>
+      <td className={cn(cellClass, "whitespace-nowrap font-extrabold tabular-nums text-tl-ink")}>
         {formatNaira(transfer.amount)}
       </td>
       <td className={`${cellClass} font-mono text-xs break-all`}>
@@ -199,14 +222,14 @@ function TransferRow({
             href={proof}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[#003366] dark:text-blue-300 underline underline-offset-2"
+            className={`inline-flex min-h-[44px] items-center gap-1 rounded-md font-bold text-tl-link underline underline-offset-2 ${focusRing}`}
           >
             View proof
             <ExternalLink size={12} aria-hidden />
             <span className="sr-only">(opens in a new tab)</span>
           </a>
         ) : (
-          <span className="text-gray-500 dark:text-slate-400">None</span>
+          <span className="text-tl-muted">None</span>
         )}
       </td>
       <td className={`${cellClass} whitespace-nowrap`}>{formatDateTime(transfer.submittedAt)}</td>
@@ -217,7 +240,7 @@ function TransferRow({
               type="button"
               onClick={onConfirm}
               aria-label={`Confirm transfer from ${who}`}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#003366] hover:bg-[#003366]/90"
+              className={cn(primaryButton, rowActionSize)}
             >
               Confirm
             </button>
@@ -225,7 +248,7 @@ function TransferRow({
               type="button"
               onClick={onReject}
               aria-label={`Reject transfer from ${who}`}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className={dangerGhostButton}
             >
               Reject
             </button>
@@ -240,7 +263,7 @@ function TransferRow({
           <td className={`${cellClass} whitespace-nowrap`}>
             {formatDateTime(transfer.reviewedAt)}
           </td>
-          <td className={`${cellClass} max-w-xs`}>{transfer.rejectionReason || "—"}</td>
+          <td className={cn(cellClass, "max-w-xs")}>{transfer.rejectionReason || "—"}</td>
         </>
       )}
     </tr>
@@ -273,11 +296,17 @@ export function BankTransfersScreen() {
   const total = query.data?.total ?? 0;
   const columns = [...COMMON_COLUMNS, ...STATUS_COLUMNS[status]];
 
+  /**
+   * Shows another status's list, from its first page.
+   *
+   * @param next - The status.
+   */
   const changeStatus = (next: BankTransferStatus) => {
     setStatus(next);
     setPage(1);
   };
 
+  /** Confirms the open transfer and reports the receipt. */
   const runConfirm = async () => {
     if (dialog?.kind !== "confirm" || confirm.isPending) return;
     try {
@@ -296,6 +325,11 @@ export function BankTransfersScreen() {
     }
   };
 
+  /**
+   * Rejects the open transfer with the parent-facing reason.
+   *
+   * @param reason - The trimmed reason.
+   */
   const runReject = async (reason: string) => {
     if (dialog?.kind !== "reject" || reject.isPending) return;
     try {
@@ -309,72 +343,75 @@ export function BankTransfersScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <Link
-              href="/fees-management"
-              className="inline-flex items-center gap-1 text-sm text-gray-600 dark:text-slate-300 hover:text-[#003366] dark:hover:text-blue-300 mb-2"
-            >
-              <ArrowLeft size={14} aria-hidden /> Fees Management
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Bank transfers</h1>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5 max-w-2xl">
-              Transfers parents reported to the school&apos;s account. Confirm one once the money
-              has arrived: the fee balances update and the parent gets a receipt.
-            </p>
-          </div>
+    <Page>
+      <Link
+        href="/fees-management"
+        className={`-mb-2 inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-md text-sm font-bold text-tl-link hover:underline ${focusRing}`}
+      >
+        <ArrowLeft size={15} aria-hidden /> Fees Management
+      </Link>
+
+      <PageHeader
+        title="Bank transfers"
+        subtitle={
+          <span className="block max-w-2xl">
+            Transfers parents reported to the school&apos;s account. Confirm one once the money has
+            arrived: the fee balances update and the parent gets a receipt.
+          </span>
+        }
+        actions={
           <button
             type="button"
             onClick={() => void query.refetch()}
             aria-label="Refresh bank transfers"
-            className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-white dark:hover:bg-slate-800"
+            className={`${iconButton} border border-tl-control bg-tl-surface`}
           >
             <RefreshCw
-              size={16}
+              size={17}
               aria-hidden
-              className={
-                query.isFetching
-                  ? "animate-spin text-[#003366] dark:text-blue-300"
-                  : "text-gray-600 dark:text-slate-300"
-              }
+              className={query.isFetching ? "animate-spin text-tl-brand" : undefined}
             />
           </button>
-        </div>
+        }
+      />
 
-        <StatusTabs
-          active={status}
-          onChange={changeStatus}
-          panelId={panelId}
-          pendingCount={pendingCount}
-        />
+      <StatusTabs
+        active={status}
+        onChange={changeStatus}
+        panelId={panelId}
+        pendingCount={pendingCount}
+      />
 
-        <div
-          id={panelId}
-          role="tabpanel"
-          aria-labelledby={`${panelId}-tab-${status}`}
-          className="space-y-4"
-        >
-          {query.isError ? (
-            (() => {
-              const copy = describeFinanceError(query.error, "bank transfers");
-              return (
-                <ErrorState
-                  title={copy.title}
-                  message={copy.message}
-                  onRetry={copy.retryable ? () => void query.refetch() : undefined}
-                />
-              );
-            })()
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 overflow-x-auto">
-              <table className="w-full min-w-[960px]">
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={`${panelId}-tab-${status}`}
+        className="flex flex-col gap-[18px]"
+      >
+        {query.isError ? (
+          (() => {
+            const copy = describeFinanceError(query.error, "bank transfers");
+            return (
+              <ErrorState
+                title={copy.title}
+                message={copy.message}
+                onRetry={copy.retryable ? () => void query.refetch() : undefined}
+              />
+            );
+          })()
+        ) : !query.isPending && transfers.length === 0 ? (
+          <div className={cardFrame}>
+            <EmptyNote title={BANK_TRANSFER_EMPTY_COPY[status]} />
+          </div>
+        ) : (
+          <div className={cardFrame}>
+            <div className={tableScroll}>
+              <table className={cn(table, "min-w-[960px]")}>
                 <caption className="sr-only">
                   {BANK_TRANSFER_TAB_LABELS[status]} bank transfers
                 </caption>
-                <thead className="bg-gray-50 dark:bg-slate-800/60">
-                  <tr>
+                <thead>
+                  <tr className={theadRow}>
                     {columns.map((column) => (
                       <th key={column} scope="col" className={headCellClass}>
                         {column}
@@ -382,18 +419,9 @@ export function BankTransfersScreen() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                <tbody aria-busy={query.isPending || undefined}>
                   {query.isPending ? (
                     <TableSkeleton columns={columns.length} rows={4} />
-                  ) : transfers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={columns.length}
-                        className="px-4 py-12 text-center text-sm text-gray-600 dark:text-slate-400"
-                      >
-                        {BANK_TRANSFER_EMPTY_COPY[status]}
-                      </td>
-                    </tr>
                   ) : (
                     transfers.map((transfer) => (
                       <TransferRow
@@ -408,16 +436,16 @@ export function BankTransfersScreen() {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+        )}
 
-          <TablePager
-            page={page}
-            pageSize={BANK_TRANSFERS_PAGE_SIZE}
-            total={total}
-            busy={query.isFetching}
-            onChange={setPage}
-          />
-        </div>
+        <TablePager
+          page={page}
+          pageSize={BANK_TRANSFERS_PAGE_SIZE}
+          total={total}
+          busy={query.isFetching}
+          onChange={setPage}
+        />
       </div>
 
       {dialog?.kind === "confirm" && (
@@ -436,6 +464,6 @@ export function BankTransfersScreen() {
           onCancel={() => setDialog(null)}
         />
       )}
-    </div>
+    </Page>
   );
 }

@@ -2,17 +2,24 @@
 
 import { FiCheck } from "react-icons/fi";
 import { formatNaira } from "../formatters";
-import { brandTextClass, cardClass, headingClass, mutedTextClass, primaryButtonClass, secondaryButtonClass } from "../ui";
+import { StatTile, card, ghostButton, primaryButton } from "@/components/tl";
+import { cn } from "@/lib/utils";
 
+/** Props for {@link SuccessStep}. */
 interface SuccessStepProps {
+  /** The fee that was assigned. */
   feeName: string;
   /** How many assignments the API actually created. */
   assigned: number;
   /** Classes that already carried this fee and were left alone. */
   skipped: number;
+  /** Students in the selected classes. */
   studentCount: number;
+  /** What the assignments add up to. */
   totalAmount: number;
+  /** Back to the fees dashboard. */
   onGoBack: () => void;
+  /** Starts the wizard again. */
   onAssignAnother: () => void;
 }
 
@@ -20,6 +27,13 @@ interface SuccessStepProps {
  * The confirmation shown after the assignments are created.
  *
  * @param props - What was assigned, and where to go next.
+ * @param props.feeName - The fee.
+ * @param props.assigned - Assignments created.
+ * @param props.skipped - Classes left alone.
+ * @param props.studentCount - Students reached.
+ * @param props.totalAmount - The total.
+ * @param props.onGoBack - Back to the dashboard.
+ * @param props.onAssignAnother - Starts again.
  * @returns The success panel.
  */
 export function SuccessStep({
@@ -32,49 +46,42 @@ export function SuccessStep({
   onAssignAnother,
 }: SuccessStepProps) {
   return (
-    <div className={`${cardClass} p-12 flex flex-col items-center text-center space-y-5`}>
-      <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-        <FiCheck className="text-green-600 dark:text-green-400" size={28} />
-      </div>
+    <section
+      className={cn(card, "flex flex-col items-center gap-5 py-[clamp(28px,5vw,48px)] text-center")}
+    >
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-tl-success-bg text-tl-success">
+        <FiCheck size={28} aria-hidden />
+      </span>
       <div>
-        <h2 className={`text-xl font-bold ${headingClass}`}>Fee Assigned Successfully!</h2>
-        <p className={`text-sm mt-1 ${mutedTextClass}`}>
+        <h2 className="text-[clamp(20px,2.6vw,24px)] font-extrabold tracking-[-0.4px] text-tl-ink">
+          Fee Assigned Successfully!
+        </h2>
+        <p className="mt-1.5 max-w-lg text-sm text-tl-muted">
           {feeName} has been assigned to {assigned} class{assigned === 1 ? "" : "es"}.
-          {skipped > 0 && ` ${skipped} class${skipped === 1 ? "" : "es"} already had it and ${skipped === 1 ? "was" : "were"} left unchanged.`}
+          {skipped > 0 &&
+            ` ${skipped} class${skipped === 1 ? "" : "es"} already had it and ${skipped === 1 ? "was" : "were"} left unchanged.`}
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
-        <div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Total Classes</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{assigned}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Total Students</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{studentCount}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Total Amount</p>
-          <p className={`text-lg font-bold ${brandTextClass}`}>{formatNaira(totalAmount)}</p>
-        </div>
+      <div className="grid w-full max-w-xl grid-cols-1 gap-3 text-left sm:grid-cols-3">
+        <StatTile subtle label="Total Classes" value={assigned} />
+        <StatTile subtle label="Total Students" value={studentCount} />
+        <StatTile
+          subtle
+          label="Total Amount"
+          value={formatNaira(totalAmount)}
+          valueClass="text-lg text-tl-brand"
+        />
       </div>
 
-      <div className="flex gap-3 flex-wrap justify-center">
-        <button
-          type="button"
-          onClick={onGoBack}
-          className={`px-5 py-2 text-sm rounded-xl ${primaryButtonClass}`}
-        >
+      <div className="flex flex-wrap justify-center gap-2.5">
+        <button type="button" onClick={onGoBack} className={primaryButton}>
           Go to Fees Management
         </button>
-        <button
-          type="button"
-          onClick={onAssignAnother}
-          className={`px-5 py-2 text-sm rounded-xl ${secondaryButtonClass}`}
-        >
+        <button type="button" onClick={onAssignAnother} className={ghostButton}>
           Assign Another Fee
         </button>
       </div>
-    </div>
+    </section>
   );
 }

@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  EmptyNote,
+  cardFrame,
+  iconButton,
+  selectControl,
+  table,
+  tableScroll,
+  td,
+  th,
+  theadRow,
+  tr,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { TableSkeleton } from "@/components/finance/FinanceSkeletons";
 import { TablePager } from "@/components/finance/TablePager";
 import { describeFinanceError } from "@/components/finance/financeErrors";
@@ -25,6 +38,7 @@ const STATUS_OPTIONS: PaymentStatus[] = [
 /** Providers, matching `PaymentProviderName` on the server. */
 const PROVIDER_OPTIONS: PaymentProviderName[] = ["paystack", "opay", "stripe"];
 
+/** The table's column headings. */
 const COLUMNS = [
   "Reference",
   "Provider",
@@ -68,9 +82,9 @@ export function PaymentTransactionsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap">
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <select
             value={status}
             onChange={(event) => {
@@ -78,7 +92,7 @@ export function PaymentTransactionsTab() {
               setPage(1);
             }}
             aria-label="Filter by payment status"
-            className="text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 capitalize focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className={cn(selectControl, "capitalize")}
           >
             <option value="">All Statuses</option>
             {STATUS_OPTIONS.map((option) => (
@@ -94,7 +108,7 @@ export function PaymentTransactionsTab() {
               setPage(1);
             }}
             aria-label="Filter by payment provider"
-            className="text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className={selectControl}
           >
             <option value="">All Providers</option>
             {PROVIDER_OPTIONS.map((option) => (
@@ -107,73 +121,71 @@ export function PaymentTransactionsTab() {
             type="button"
             onClick={() => void query.refetch()}
             aria-label="Refresh transactions"
-            className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
+            className={`${iconButton} border border-tl-control bg-tl-surface`}
           >
             <RefreshCw
-              size={15}
-              className={query.isFetching ? "animate-spin text-[#003366]" : "text-gray-500"}
+              size={16}
+              aria-hidden
+              className={query.isFetching ? "animate-spin text-tl-brand" : undefined}
             />
           </button>
         </div>
-        <p className="text-xs text-gray-400">{total} transactions</p>
+        <p className="text-[13px] font-semibold text-tl-muted">{total} transactions</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[860px]">
-            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
-              <tr>
-                {COLUMNS.map((column) => (
-                  <th
-                    key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
-                  >
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {query.isPending ? (
-                <TableSkeleton columns={COLUMNS.length} />
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-4 py-12 text-center text-gray-400">
-                    {status || provider
-                      ? "No transactions match these filters"
-                      : "No transactions found"}
-                  </td>
+      <div className={cardFrame}>
+        {!query.isPending && transactions.length === 0 ? (
+          <EmptyNote
+            title={
+              status || provider ? "No transactions match these filters" : "No transactions found"
+            }
+          />
+        ) : (
+          <div className={tableScroll}>
+            <table className={cn(table, "min-w-[860px]")}>
+              <thead>
+                <tr className={theadRow}>
+                  {COLUMNS.map((column) => (
+                    <th key={column} className={th}>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                transactions.map((transaction) => (
-                  <tr key={transaction._id} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-slate-300">
-                      {transaction.internalReference}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
-                      {PROVIDER_LABELS[transaction.providerName] ?? transaction.providerName}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100">
-                      {formatNaira(transaction.totalAmount)}
-                    </td>
-                    <td className="px-4 py-3 text-green-600 font-medium">
-                      {formatNaira(transaction.schoolAmount)}
-                    </td>
-                    <td className="px-4 py-3 capitalize text-gray-500 dark:text-slate-400">
-                      {transaction.paymentChannel?.replace(/_/g, " ") || "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <PaymentStatusBadge status={transaction.status} />
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                      {formatDate(transaction.paidAt || transaction.createdAt)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody aria-busy={query.isPending || undefined}>
+                {query.isPending ? (
+                  <TableSkeleton columns={COLUMNS.length} />
+                ) : (
+                  transactions.map((transaction) => (
+                    <tr key={transaction._id} className={tr}>
+                      <td className={cn(td, "font-mono text-xs text-tl-muted")}>
+                        {transaction.internalReference}
+                      </td>
+                      <td className={td}>
+                        {PROVIDER_LABELS[transaction.providerName] ?? transaction.providerName}
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap font-extrabold text-tl-ink")}>
+                        {formatNaira(transaction.totalAmount)}
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap font-bold text-tl-success")}>
+                        {formatNaira(transaction.schoolAmount)}
+                      </td>
+                      <td className={cn(td, "capitalize")}>
+                        {transaction.paymentChannel?.replace(/_/g, " ") || "—"}
+                      </td>
+                      <td className={td}>
+                        <PaymentStatusBadge status={transaction.status} />
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap")}>
+                        {formatDate(transaction.paidAt || transaction.createdAt)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <TablePager

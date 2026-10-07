@@ -9,12 +9,15 @@ import { FeeCategoryModal } from "./FeeCategoryModal";
 import { FeeStatCard } from "./FeeStatCard";
 import { FeeStatusBadge } from "./FeeStatusBadge";
 import { FeesPanelState } from "./FeesPanelState";
+import { StatGrid, rowButton, sectionTitle, table } from "@/components/tl";
+import { cn } from "@/lib/utils";
 import {
-  cardClass,
-  headingClass,
+  actionsCellClass,
+  frameClass,
+  frameHeaderClass,
   iconButtonClass,
-  primaryButtonClass,
-  tableBodyClass,
+  strongCellClass,
+  tableCellClass,
   tableHeadCellClass,
   tableHeadClass,
   tableRowClass,
@@ -26,6 +29,7 @@ import {
  * dialog.
  *
  * @param props - Whether the user may change categories.
+ * @param props.canManage - False for an admin without `manage:fees`.
  * @returns The Categories tab.
  */
 export function CategoriesTab({ canManage }: { canManage: boolean }) {
@@ -52,8 +56,8 @@ export function CategoriesTab({ canManage }: { canManage: boolean }) {
     );
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="flex flex-col gap-[18px]">
+      <StatGrid label="Category totals">
         <FeeStatCard
           label="Total Categories"
           value={rows.length}
@@ -78,11 +82,11 @@ export function CategoriesTab({ canManage }: { canManage: boolean }) {
           sub="Across all categories"
           loading={counts.isPending}
         />
-      </div>
+      </StatGrid>
 
-      <div className={`${cardClass} overflow-hidden`}>
-        <div className="p-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3">
-          <h3 className={`font-semibold text-sm ${headingClass}`}>Fee Categories</h3>
+      <div className={frameClass}>
+        <div className={frameHeaderClass}>
+          <h2 className={sectionTitle}>Fee Categories</h2>
           {canManage && (
             <button
               type="button"
@@ -90,9 +94,9 @@ export function CategoriesTab({ canManage }: { canManage: boolean }) {
                 setEditing(null);
                 setModalOpen(true);
               }}
-              className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg ${primaryButtonClass}`}
+              className={rowButton}
             >
-              <FiPlus size={12} /> Create Category
+              <FiPlus size={14} aria-hidden /> Create Category
             </button>
           )}
         </div>
@@ -109,30 +113,28 @@ export function CategoriesTab({ canManage }: { canManage: boolean }) {
 
         {!categories.isPending && !categories.isError && rows.length > 0 && (
           <div className={tableScrollClass}>
-            <table className="w-full text-sm">
-              <thead className={tableHeadClass}>
-                <tr>
+            <table className={table}>
+              <thead>
+                <tr className={tableHeadClass}>
                   <th className={tableHeadCellClass}>Category Name</th>
                   <th className={tableHeadCellClass}>Description</th>
                   <th className={tableHeadCellClass}>Status</th>
                   <th className={tableHeadCellClass}>Actions</th>
                 </tr>
               </thead>
-              <tbody className={tableBodyClass}>
+              <tbody>
                 {rows.map((category) => (
                   <tr key={category._id} className={tableRowClass}>
-                    <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
-                      {category.name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">
+                    <td className={strongCellClass}>{category.name}</td>
+                    <td className={cn(tableCellClass, "max-w-xs truncate text-tl-muted")}>
                       {category.description || "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableCellClass}>
                       <FeeStatusBadge status={category.status} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={actionsCellClass}>
                       {canManage ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           <button
                             type="button"
                             onClick={() => {
@@ -143,34 +145,34 @@ export function CategoriesTab({ canManage }: { canManage: boolean }) {
                             title="Edit"
                             aria-label={`Edit ${category.name}`}
                           >
-                            <FiEdit2 size={14} />
+                            <FiEdit2 size={16} aria-hidden />
                           </button>
                           {category.status === "active" ? (
                             <button
                               type="button"
                               disabled={action.isPending}
                               onClick={() => action.mutate({ type: "archive", id: category._id })}
-                              className={`${iconButtonClass} hover:text-red-500 disabled:opacity-60`}
+                              className={cn(iconButtonClass, "hover:bg-tl-danger-bg hover:text-tl-danger")}
                               title="Archive"
                               aria-label={`Archive ${category.name}`}
                             >
-                              <FiArchive size={14} />
+                              <FiArchive size={16} aria-hidden />
                             </button>
                           ) : (
                             <button
                               type="button"
                               disabled={action.isPending}
                               onClick={() => action.mutate({ type: "restore", id: category._id })}
-                              className={`${iconButtonClass} hover:text-green-600 disabled:opacity-60`}
+                              className={cn(iconButtonClass, "hover:bg-tl-success-bg hover:text-tl-success")}
                               title="Restore"
                               aria-label={`Restore ${category.name}`}
                             >
-                              <FiRefreshCw size={14} />
+                              <FiRefreshCw size={16} aria-hidden />
                             </button>
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                        <span className="px-1 text-sm text-tl-faint">—</span>
                       )}
                     </td>
                   </tr>

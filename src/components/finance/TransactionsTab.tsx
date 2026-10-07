@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  EmptyNote,
+  cardFrame,
+  iconButton,
+  selectControl,
+  table,
+  tableScroll,
+  td,
+  th,
+  theadRow,
+  tr,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import type { WalletEntryType } from "@/app/services/finance.service";
 import { useWalletTransactions } from "@/hooks/finance/useFinanceQueries";
 import { LedgerStatusBadge } from "./FinanceBadges";
@@ -23,6 +36,7 @@ const TYPE_FILTERS: { value: WalletEntryType | ""; label: string }[] = [
   { value: "manual_adjustment", label: "Manual Adjustment" },
 ];
 
+/** The table's column headings. */
 const COLUMNS = ["Date", "Type", "Description", "Reference", "Amount", "Balance After", "Status"];
 
 /**
@@ -55,9 +69,9 @@ export function TransactionsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <select
             value={type}
             onChange={(event) => {
@@ -65,7 +79,7 @@ export function TransactionsTab() {
               setPage(1);
             }}
             aria-label="Filter by transaction type"
-            className="text-sm border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+            className={selectControl}
           >
             {TYPE_FILTERS.map((option) => (
               <option key={option.value || "all"} value={option.value}>
@@ -77,74 +91,70 @@ export function TransactionsTab() {
             type="button"
             onClick={() => void query.refetch()}
             aria-label="Refresh transactions"
-            className="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50"
+            className={`${iconButton} border border-tl-control bg-tl-surface`}
           >
             <RefreshCw
-              size={15}
-              className={query.isFetching ? "animate-spin text-[#003366]" : "text-gray-500"}
+              size={16}
+              aria-hidden
+              className={query.isFetching ? "animate-spin text-tl-brand" : undefined}
             />
           </button>
         </div>
-        <p className="text-xs text-gray-400">{total} transactions</p>
+        <p className="text-[13px] font-semibold text-tl-muted">{total} transactions</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[860px]">
-            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
-              <tr>
-                {COLUMNS.map((column) => (
-                  <th
-                    key={column}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
-                  >
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {query.isPending ? (
-                <TableSkeleton columns={COLUMNS.length} />
-              ) : entries.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-4 py-12 text-center text-gray-400">
-                    {type ? "No transactions of this type" : "No transactions found"}
-                  </td>
+      <div className={cardFrame}>
+        {!query.isPending && entries.length === 0 ? (
+          <EmptyNote title={type ? "No transactions of this type" : "No transactions found"} />
+        ) : (
+          <div className={tableScroll}>
+            <table className={cn(table, "min-w-[860px]")}>
+              <thead>
+                <tr className={theadRow}>
+                  {COLUMNS.map((column) => (
+                    <th key={column} className={th}>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                entries.map((entry) => (
-                  <tr key={entry._id} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                      {formatDate(entry.createdAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <LedgerStatusBadge status={entry.direction} />
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 max-w-[200px] truncate">
-                      {entry.description}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-slate-400">{entry.reference}</td>
-                    <td
-                      className={`px-4 py-3 font-semibold ${
-                        entry.direction === "credit" ? "text-green-600" : "text-red-500"
-                      }`}
-                    >
-                      {entry.direction === "credit" ? "+" : "-"}
-                      {formatNaira(entry.amount)}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-[#003366]">
-                      {formatNaira(entry.balanceAfter)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <LedgerStatusBadge status={entry.status} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody aria-busy={query.isPending || undefined}>
+                {query.isPending ? (
+                  <TableSkeleton columns={COLUMNS.length} />
+                ) : (
+                  entries.map((entry) => (
+                    <tr key={entry._id} className={tr}>
+                      <td className={cn(td, "whitespace-nowrap")}>{formatDate(entry.createdAt)}</td>
+                      <td className={td}>
+                        <LedgerStatusBadge status={entry.direction} />
+                      </td>
+                      <td className={cn(td, "max-w-[220px] truncate")}>{entry.description}</td>
+                      <td className={cn(td, "font-mono text-xs text-tl-muted")}>
+                        {entry.reference}
+                      </td>
+                      <td
+                        className={cn(
+                          td,
+                          "whitespace-nowrap font-extrabold",
+                          entry.direction === "credit" ? "text-tl-success" : "text-tl-danger"
+                        )}
+                      >
+                        {entry.direction === "credit" ? "+" : "-"}
+                        {formatNaira(entry.amount)}
+                      </td>
+                      <td className={cn(td, "whitespace-nowrap font-bold text-tl-ink")}>
+                        {formatNaira(entry.balanceAfter)}
+                      </td>
+                      <td className={td}>
+                        <LedgerStatusBadge status={entry.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <TablePager

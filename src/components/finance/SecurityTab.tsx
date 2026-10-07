@@ -4,6 +4,19 @@ import { useState } from "react";
 import { Copy, Shield } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ErrorState } from "@/components/StateComponents";
+import {
+  CardHeader,
+  Toggle,
+  card,
+  dangerButton,
+  fieldControl,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+  quietButton,
+  textLink,
+} from "@/components/tl";
+import { cn } from "@/lib/utils";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
@@ -58,6 +71,7 @@ export function SecurityTab() {
 
   const security = status.data;
 
+  /** Starts two-factor setup and shows the QR code. */
   const handleSetup = async () => {
     try {
       setSetupData(await setup.mutateAsync());
@@ -67,6 +81,11 @@ export function SecurityTab() {
     }
   };
 
+  /**
+   * Activates two-factor with the first code from the app.
+   *
+   * @param event - The form's submit event.
+   */
   const handleEnable = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
@@ -80,6 +99,11 @@ export function SecurityTab() {
     }
   };
 
+  /**
+   * Turns two-factor off with a current code.
+   *
+   * @param event - The form's submit event.
+   */
   const handleDisable = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
@@ -93,6 +117,9 @@ export function SecurityTab() {
     }
   };
 
+  /**
+   * Flips "require 2FA for withdrawals"; turning it off asks for a code first.
+   */
   const handleToggleRequire = async () => {
     if (!security) return;
     const turningOff = security.requireTwoFactorForWithdrawals;
@@ -145,22 +172,29 @@ export function SecurityTab() {
         />
       }
     >
-      <div className="max-w-xl space-y-5">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Shield
-                  size={18}
-                  className={security.twoFactorEnabled ? "text-green-500" : "text-gray-400"}
-                />
-                <h3 className="font-bold text-gray-800 dark:text-slate-100">Two-Factor Authentication</h3>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                {security.twoFactorEnabled
-                  ? `Enabled since ${formatDate(security.twoFactorEnabledAt)}`
-                  : "Not enabled. Add an extra layer of security to your account."}
-              </p>
+      <div className="flex max-w-2xl flex-col gap-[18px]">
+        <section className={card}>
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span
+                aria-hidden
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  security.twoFactorEnabled
+                    ? "bg-tl-success-bg text-tl-success"
+                    : "bg-tl-track text-tl-muted"
+                }`}
+              >
+                <Shield size={19} />
+              </span>
+              <CardHeader
+                title="Two-Factor Authentication"
+                level={3}
+                subtitle={
+                  security.twoFactorEnabled
+                    ? `Enabled since ${formatDate(security.twoFactorEnabledAt)}`
+                    : "Not enabled. Add an extra layer of security to your account."
+                }
+              />
             </div>
             <LedgerStatusBadge status={security.twoFactorEnabled ? "active" : "pending"} />
           </div>
@@ -170,29 +204,30 @@ export function SecurityTab() {
               type="button"
               onClick={() => void handleSetup()}
               disabled={setup.isPending}
-              className="px-4 py-2 bg-[#003366] text-white rounded-xl text-sm font-semibold hover:bg-[#003366]/90 disabled:opacity-50"
+              className={primaryButton}
             >
               {setup.isPending ? "Setting up…" : "Enable 2FA"}
             </button>
           )}
 
           {setupData && (
-            <div className="space-y-4 mt-4 border-t border-gray-100 dark:border-slate-800 pt-4">
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
+            <div className="mt-4 flex flex-col gap-4 border-t border-tl-line-soft pt-4">
+              <p className="text-sm font-bold text-tl-body">
                 1. Scan this QR code with your authenticator app
               </p>
               <div className="flex justify-center">
                 {/* A data-URL QR from the server: next/image would only add a
-                    loader around bytes we already have. */}
+                    loader around bytes we already have. White behind it so a
+                    scanner reads it in the dark theme too. */}
                 <img
                   src={setupData.qrCode}
                   alt="Two-factor QR code"
                   width={192}
                   height={192}
-                  className="w-48 h-48 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900"
+                  className="h-48 w-48 rounded-2xl border border-tl-line bg-white p-1"
                 />
               </div>
-              <p className="text-sm text-gray-500 dark:text-slate-400 text-center">
+              <p className="text-center text-sm text-tl-muted">
                 Can&apos;t scan?{" "}
                 <button
                   type="button"
@@ -200,15 +235,15 @@ export function SecurityTab() {
                     void navigator.clipboard.writeText(setupData.otpauthUrl);
                     toast.success("Setup URL copied");
                   }}
-                  className="text-[#003366] hover:underline inline-flex items-center gap-1"
+                  className={textLink}
                 >
-                  Copy URL <Copy size={12} />
+                  Copy URL <Copy size={13} aria-hidden />
                 </button>
               </p>
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
+              <p className="text-sm font-bold text-tl-body">
                 2. Enter the 6-digit code from your app
               </p>
-              <form onSubmit={handleEnable} className="flex gap-2">
+              <form onSubmit={handleEnable} className="flex flex-wrap gap-2.5">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -217,12 +252,12 @@ export function SecurityTab() {
                   value={enableCode}
                   onChange={(event) => setEnableCode(onlyCode(event.target.value))}
                   placeholder="000000"
-                  className="flex-1 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/30"
+                  className={cn(fieldControl, "min-w-[140px] flex-1 text-center font-mono tracking-widest")}
                 />
                 <button
                   type="submit"
                   disabled={enableCode.length !== CODE_LENGTH || enable.isPending}
-                  className="px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-semibold disabled:opacity-40"
+                  className={primaryButton}
                 >
                   {enable.isPending ? "Verifying…" : "Activate"}
                 </button>
@@ -234,18 +269,19 @@ export function SecurityTab() {
             <button
               type="button"
               onClick={() => setShowDisable(true)}
-              className="text-sm text-red-500 hover:underline mt-2"
+              className={cn(quietButton, "-ml-3 text-tl-danger hover:bg-tl-danger-bg hover:text-tl-danger")}
             >
               Disable 2FA
             </button>
           )}
 
           {showDisable && (
-            <form onSubmit={handleDisable} className="mt-4 border-t border-gray-100 dark:border-slate-800 pt-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
-                Enter your current 2FA code to disable
-              </p>
-              <div className="flex gap-2 flex-wrap">
+            <form
+              onSubmit={handleDisable}
+              className="mt-4 flex flex-col gap-3 border-t border-tl-line-soft pt-4"
+            >
+              <p className="text-sm font-bold text-tl-body">Enter your current 2FA code to disable</p>
+              <div className="flex flex-wrap gap-2.5">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -254,12 +290,12 @@ export function SecurityTab() {
                   value={disableCode}
                   onChange={(event) => setDisableCode(onlyCode(event.target.value))}
                   placeholder="000000"
-                  className="flex-1 min-w-[140px] border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono text-center tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  className={cn(fieldControl, "min-w-[140px] flex-1 text-center font-mono tracking-widest")}
                 />
                 <button
                   type="submit"
                   disabled={disableCode.length !== CODE_LENGTH || disable.isPending}
-                  className="px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold disabled:opacity-40"
+                  className={dangerButton}
                 >
                   {disable.isPending ? "Disabling…" : "Disable"}
                 </button>
@@ -269,52 +305,40 @@ export function SecurityTab() {
                     setShowDisable(false);
                     setDisableCode("");
                   }}
-                  className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
+                  className={ghostButton}
                 >
                   Cancel
                 </button>
               </div>
             </form>
           )}
-        </div>
+        </section>
 
         {security.twoFactorEnabled && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
+          <section className={card}>
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="font-bold text-gray-800 dark:text-slate-100">Require 2FA for Withdrawals</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                  When enabled, every withdrawal will require a valid 2FA code.
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={security.requireTwoFactorForWithdrawals}
-                aria-label="Require 2FA for withdrawals"
-                onClick={() => void handleToggleRequire()}
+              <CardHeader
+                title="Require 2FA for Withdrawals"
+                level={3}
+                subtitle="When enabled, every withdrawal will require a valid 2FA code."
+              />
+              <Toggle
+                checked={security.requireTwoFactorForWithdrawals}
+                onChange={() => void handleToggleRequire()}
+                label="Require 2FA for withdrawals"
                 disabled={setRequire.isPending}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${
-                  security.requireTwoFactorForWithdrawals ? "bg-[#003366]" : "bg-gray-200"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white dark:bg-slate-900 rounded-full shadow transition-transform ${
-                    security.requireTwoFactorForWithdrawals ? "translate-x-5 left-0" : "left-0.5"
-                  }`}
-                />
-              </button>
+              />
             </div>
 
             {askRequireOffCode && (
               <form
-                className="mt-4 flex flex-wrap items-end gap-3"
+                className="mt-4 flex flex-wrap items-end gap-2.5"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void handleToggleRequire();
                 }}
               >
-                <label className="flex-1 min-w-[180px] text-sm text-gray-600 dark:text-slate-300">
+                <label className={`${fieldLabel} min-w-[180px] flex-1`}>
                   Enter the code from your authenticator app to turn this off
                   <input
                     inputMode="numeric"
@@ -322,14 +346,14 @@ export function SecurityTab() {
                     maxLength={CODE_LENGTH}
                     value={requireOffCode}
                     onChange={(event) => setRequireOffCode(onlyCode(event.target.value))}
-                    className="mt-1 w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm tracking-widest bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100"
+                    className={cn(fieldControl, "mt-1.5 font-mono tracking-widest")}
                     aria-label="Authenticator code"
                   />
                 </label>
                 <button
                   type="submit"
                   disabled={requireOffCode.length !== CODE_LENGTH || setRequire.isPending}
-                  className="px-4 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-bold disabled:opacity-40"
+                  className={primaryButton}
                 >
                   {setRequire.isPending ? "Turning off…" : "Turn off"}
                 </button>
@@ -339,13 +363,13 @@ export function SecurityTab() {
                     setAskRequireOffCode(false);
                     setRequireOffCode("");
                   }}
-                  className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300"
+                  className={ghostButton}
                 >
                   Cancel
                 </button>
               </form>
             )}
-          </div>
+          </section>
         )}
       </div>
     </PermissionGate>

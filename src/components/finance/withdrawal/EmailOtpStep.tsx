@@ -9,19 +9,26 @@ import {
   useResendWithdrawalOtp,
   useVerifyWithdrawalOtp,
 } from "@/hooks/finance/useFinanceMutations";
+import { ghostButton, primaryButton, textLink } from "@/components/tl";
 import { ModalShell } from "../ModalShell";
+import { WithdrawalSteps, withdrawalStepEyebrow } from "./WithdrawalSteps";
 import { OtpInput } from "../OtpInput";
 import { financeActionMessage } from "../financeErrors";
 
 /** Emailed codes are six digits. */
 const OTP_LENGTH = 6;
 
+/** Props for {@link EmailOtpStep}. */
 interface EmailOtpStepProps {
+  /** The draft the code belongs to. */
   draftId: string;
   /** The masked address the code went to, e.g. `a***n@school.ng`. */
   maskedEmail: string;
+  /** Back to the amount step. */
   onBack: () => void;
+  /** Closes the flow. */
   onClose: () => void;
+  /** Hands the server's figures to the confirm step. */
   onVerified: (summary: WithdrawalSummary) => void;
 }
 
@@ -45,6 +52,11 @@ function formatCountdown(seconds: number): string {
  * attempts left before the draft is burned.
  *
  * @param props - The draft, the masked email and the step's callbacks.
+ * @param props.draftId - The draft.
+ * @param props.maskedEmail - Where the code went.
+ * @param props.onBack - Back to the amount step.
+ * @param props.onClose - Closes the flow.
+ * @param props.onVerified - Moves on with the verified figures.
  * @returns The OTP step.
  */
 export function EmailOtpStep({
@@ -65,6 +77,11 @@ export function EmailOtpStep({
     return () => clearTimeout(timer);
   }, [cooldown]);
 
+  /**
+   * Verifies the code; a wrong one clears the boxes.
+   *
+   * @param event - The form's submit event.
+   */
   const handleVerify = async (event: React.FormEvent) => {
     event.preventDefault();
     if (otp.length !== OTP_LENGTH) return;
@@ -77,6 +94,7 @@ export function EmailOtpStep({
     }
   };
 
+  /** Sends a new code once the cooldown is over. */
   const handleResend = async () => {
     if (cooldown > 0) return;
     try {
@@ -91,34 +109,45 @@ export function EmailOtpStep({
   };
 
   return (
-    <ModalShell title="Verify Withdrawal (Email OTP)" onClose={onClose}>
-      <form onSubmit={handleVerify} className="p-6 space-y-6">
+    <ModalShell
+      title="Verify Withdrawal (Email OTP)"
+      eyebrowText={withdrawalStepEyebrow(1)}
+      onClose={onClose}
+    >
+      <form onSubmit={handleVerify} className="flex flex-col gap-6 px-[clamp(20px,3vw,28px)] py-5">
+        <WithdrawalSteps current={1} />
+
         <div className="flex justify-center">
-          <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
-            <Mail size={36} className="text-[#003366]" />
-          </div>
+          <span
+            aria-hidden
+            className="flex h-20 w-20 items-center justify-center rounded-full bg-tl-select text-tl-brand"
+          >
+            <Mail size={34} />
+          </span>
         </div>
 
         <div className="text-center">
-          <p className="text-gray-700 dark:text-slate-200 font-medium">We have sent a 6-digit OTP to</p>
-          <p className="font-bold text-[#003366] text-lg mt-0.5">{maskedEmail || "your email"}</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="font-semibold text-tl-body">We have sent a 6-digit OTP to</p>
+          <p className="mt-0.5 break-all text-lg font-extrabold text-tl-brand">
+            {maskedEmail || "your email"}
+          </p>
+          <p className="mt-1 text-sm text-tl-muted">
             Please enter the OTP below to confirm your withdrawal.
           </p>
         </div>
 
         <div>
-          <p className="text-sm text-gray-600 dark:text-slate-300 text-center mb-3">Enter 6-digit OTP</p>
+          <p className="mb-3 text-center text-[13px] font-bold text-tl-muted">Enter 6-digit OTP</p>
           <OtpInput value={otp} onChange={setOtp} disabled={verify.isPending} />
         </div>
 
-        <div className="text-center text-sm text-gray-500 dark:text-slate-400">
+        <div className="text-center text-sm text-tl-muted">
           Didn&apos;t receive the email?{" "}
           <button
             type="button"
             onClick={() => void handleResend()}
             disabled={cooldown > 0 || resend.isPending}
-            className="text-[#003366] font-semibold hover:underline disabled:opacity-40 disabled:no-underline"
+            className={`${textLink} disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50`}
           >
             {resend.isPending
               ? "Sending…"
@@ -127,25 +156,21 @@ export function EmailOtpStep({
                 : "Resend OTP"}
           </button>
           <br />
-          <span className="text-xs text-gray-400">Check your spam or junk folder.</span>
+          <span className="text-[13px] text-tl-muted">Check your spam or junk folder.</span>
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-600 dark:text-slate-300 flex items-center justify-center gap-1"
-          >
-            <ArrowLeft size={15} /> Cancel
+        <div className="flex flex-wrap gap-2.5">
+          <button type="button" onClick={onBack} className={`${ghostButton} flex-1`}>
+            <ArrowLeft size={16} aria-hidden /> Cancel
           </button>
           <button
             type="submit"
             disabled={otp.length !== OTP_LENGTH || verify.isPending}
-            className="flex-1 py-2.5 bg-[#003366] text-white rounded-xl text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"
+            className={`${primaryButton} flex-1`}
           >
             {verify.isPending ? (
               <>
-                <RefreshCw size={14} className="animate-spin" /> Verifying…
+                <RefreshCw size={15} className="animate-spin" aria-hidden /> Verifying…
               </>
             ) : (
               "Verify OTP"

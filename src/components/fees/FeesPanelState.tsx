@@ -1,9 +1,8 @@
 "use client";
 
 import { FiAlertCircle, FiRefreshCw } from "react-icons/fi";
-import { SectionSkeleton } from "@/components/ui/loading";
+import { EmptyNote, rowButton, skeletonBlock } from "@/components/tl";
 import { feesErrorMessage, isRetryableFeesError } from "./errors";
-import { mutedTextClass, secondaryButtonClass } from "./ui";
 
 /** Status of the panel's own query, in the order the panel checks them. */
 interface FeesPanelStateProps {
@@ -24,13 +23,21 @@ interface FeesPanelStateProps {
 }
 
 /**
- * Loading, error and empty states for one fees panel.
+ * Loading, error and empty states for one fees panel, drawn inside the
+ * panel's card.
  *
  * Returns `null` when there is data to show, so a panel renders
  * `<FeesPanelState … /> ?? <table>` style: no failed request leaves a
  * spinner turning, and every error says what happened and offers a retry.
  *
  * @param props - Query status and the copy for this panel.
+ * @param props.loading - Whether the first load is in flight.
+ * @param props.error - What the query threw.
+ * @param props.empty - Whether it loaded with nothing to show.
+ * @param props.subject - What is loading, for the error message.
+ * @param props.emptyMessage - The empty-state sentence.
+ * @param props.onRetry - Re-runs the query.
+ * @param props.rows - Skeleton rows while loading.
  * @returns The state block, or null when the panel should render its content.
  */
 export function FeesPanelState({
@@ -44,26 +51,25 @@ export function FeesPanelState({
 }: FeesPanelStateProps) {
   if (loading) {
     return (
-      <div className="p-4">
-        <SectionSkeleton rows={rows} rowClassName="h-10" />
+      <div role="status" aria-busy="true" className="flex flex-col gap-2.5 p-5">
+        <span className="sr-only">Loading {subject}</span>
+        {Array.from({ length: rows }, (_, index) => (
+          <div key={index} aria-hidden className={`${skeletonBlock} h-10 rounded-xl`} />
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="py-10 px-4 flex flex-col items-center text-center gap-3">
-        <FiAlertCircle className="text-red-500" size={22} />
-        <p className="text-sm text-gray-700 dark:text-gray-300 max-w-sm">
-          {feesErrorMessage(error, subject)}
-        </p>
+      <div role="alert" className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-tl-danger-bg text-tl-danger">
+          <FiAlertCircle size={20} aria-hidden />
+        </span>
+        <p className="max-w-sm text-sm text-tl-body">{feesErrorMessage(error, subject)}</p>
         {isRetryableFeesError(error) && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className={`flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 ${secondaryButtonClass}`}
-          >
-            <FiRefreshCw size={12} /> Try again
+          <button type="button" onClick={onRetry} className={rowButton}>
+            <FiRefreshCw size={13} aria-hidden /> Try again
           </button>
         )}
       </div>
@@ -71,7 +77,7 @@ export function FeesPanelState({
   }
 
   if (empty) {
-    return <div className={`py-12 text-center text-sm ${mutedTextClass}`}>{emptyMessage}</div>;
+    return <EmptyNote compact title={emptyMessage} />;
   }
 
   return null;
