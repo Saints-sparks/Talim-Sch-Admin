@@ -18,7 +18,8 @@ import { dismissGuide } from "./support/ui";
  *   cleared (then put back as the seed has them);
  * - Security: the signed-in devices, "Sign out of other devices", and the
  *   password rules from `GET /auth/password-policy`;
- * - Data & System: "Report a problem" and its reference;
+ * - Data & System: "Contact Talim support" opens Help & support (the old
+ *   "Report a problem" form is gone);
  * - axe on these screens in both themes, and screenshots.
  *
  * The sessions test signs the admin's other sessions out, including the one
@@ -272,20 +273,11 @@ test("office hours in School Day & Bells: set, kept after a reload, checked, and
 
 // ─── Help ───────────────────────────────────────────────────────────────────
 
-test("Data & System: Report a problem answers with a TS- reference", async ({ page }) => {
+test("Data & System: Contact Talim support opens Help & support", async ({ page }) => {
   await openSection(page, "data-system", "Data & System");
-  await page.getByRole("button", { name: "Report a problem" }).click();
-  const form = page.getByRole("dialog", { name: "Report a problem" });
-  await form.getByLabel(/What is it about/).selectOption("messages");
-  await form.getByRole("textbox").fill(`E2E ${RUN}: the office filter keeps showing a thread I have already answered.`);
-  const sent = page.waitForResponse((r) => r.url().endsWith("/support/tickets") && r.request().method() === "POST");
-  await form.getByRole("button", { name: "Send report" }).click();
-  const res = await sent;
-  expect(res.status()).toBe(201);
-  const { reference } = unwrap<{ reference: string }>(await res.json());
-  expect(reference).toMatch(/^TS-[A-HJ-NP-Z2-9]{5}$/);
-  const done = page.getByRole("dialog", { name: "Report sent" });
-  await expect(done.getByText(reference, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Report a problem" })).toHaveCount(0);
+  await page.getByRole("link", { name: /Contact Talim support/ }).click();
+  await expect(page).toHaveURL(/\/help$/);
 });
 
 // ─── Security ───────────────────────────────────────────────────────────────
@@ -337,14 +329,10 @@ async function walk(page: Page, visit: (name: string) => Promise<void>): Promise
     await page.waitForTimeout(600);
     await visit(`settings-${section}`);
   }
-  await page.getByRole("button", { name: "Report a problem" }).click();
-  await expect(page.getByRole("dialog", { name: "Report a problem" })).toBeVisible();
-  await page.waitForTimeout(400);
-  await visit("settings-report-problem");
 }
 
 for (const theme of ["light", "dark"] as const) {
-  test(`axe finds nothing serious or critical on the office inbox, group info, office hours, Security and Report a problem (${theme})`, async ({ page }) => {
+  test(`axe finds nothing serious or critical on the office inbox, group info, office hours, Security and Data & System (${theme})`, async ({ page }) => {
     test.setTimeout(300_000);
     await page.emulateMedia({ colorScheme: theme });
     await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [THEME_KEY, theme] as const);

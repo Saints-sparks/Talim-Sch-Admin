@@ -3,10 +3,12 @@
  * `talimBE-V2/docs/redesign-teachers-round4-inbox-settings.md`. Every wire
  * shape here aliases the generated contract (`./api.d.ts`, as
  * `gradingContract.ts` does), so `tsc` flags any drift; what stays written
- * here is not in the OpenAPI document (the validator limits and the office
- * room type). The section numbers below are the contract's.
+ * here is not in the OpenAPI document (the office room type). The section
+ * numbers below are the contract's. §35 (the old "Report a problem" route)
+ * is gone: tickets are raised in Help & support through `/tickets`
+ * (`./tickets.ts`).
  */
-import type { RequestBody, Schema } from "./apiContract";
+import type { Schema } from "./apiContract";
 
 // ─── §27 Room view additions ──────────────────────────────────────────────────
 
@@ -68,22 +70,6 @@ export type PasswordPolicy = Pick<
   PasswordPolicyResponse,
   "minLength" | "requireUppercase" | "requireLowercase" | "requireNumber" | "requireSymbol" | "historyCount"
 >;
-
-// ─── §35 Support tickets ──────────────────────────────────────────────────────
-
-/** What a support ticket is about (§35). */
-export type SupportTicketArea = CreateSupportTicketPayload["area"];
-
-/** Shortest description `POST /support/tickets` accepts (§35; a validator limit, not in the OpenAPI document). */
-export const SUPPORT_DESCRIPTION_MIN = 10;
-/** Longest description `POST /support/tickets` accepts (§35). */
-export const SUPPORT_DESCRIPTION_MAX = 2000;
-
-/** Body of `POST /support/tickets` (§35); `description` is 10–2000 characters. */
-export type CreateSupportTicketPayload = RequestBody<"/support/tickets", "post">;
-
-/** `POST /support/tickets` answer (§35): the `reference` (e.g. "TS-4F2K9") and `createdAt`. */
-export type SupportTicketResponse = Schema<"SupportTicketCreatedDto">;
 
 // ─── §36 Office hours ─────────────────────────────────────────────────────────
 

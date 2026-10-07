@@ -1,13 +1,12 @@
 /** @jest-environment jsdom */
 /**
  * v1.5 §3: the app is version 1.5.0, read from package.json, and shows
- * "Version 1.5.0" at the foot of the sidebar; support tickets report it.
+ * "Version 1.5.0" at the foot of the sidebar.
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import packageJson from "../../package.json";
 import { APP_VERSION, versionLabel } from "@/lib/appVersion";
-import { APP_VERSION as TICKET_VERSION } from "@/components/settings/support/supportTicketForm";
 import { SidebarFooter } from "@/components/sidebar/SidebarFooter";
 
 jest.mock("next/navigation", () => ({
@@ -19,7 +18,6 @@ describe("version 1.5.0", () => {
   it("package.json is 1.5.0 and the app reads it from there", () => {
     expect(packageJson.version).toBe("1.5.0");
     expect(APP_VERSION).toBe("1.5.0");
-    expect(TICKET_VERSION).toBe(APP_VERSION);
   });
 
   it("is shown as Version 1.5.0", () => {

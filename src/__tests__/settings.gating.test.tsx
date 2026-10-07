@@ -136,9 +136,10 @@ describe("DataSystemSection", () => {
     expect(screen.getByText(/Backups are managed by Talim/i)).toBeTruthy();
   });
 
-  it("offers Report a problem to any role that can open it", () => {
+  it("sends any role that can open it to Help & support, not the old Report a problem form", () => {
     withPermissions([]);
     render(<DataSystemSection />);
-    expect(screen.getByRole("button", { name: /Report a problem/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Contact Talim support/ })).toHaveAttribute("href", "/help");
+    expect(screen.queryByRole("button", { name: /Report a problem/ })).toBeNull();
   });
 });

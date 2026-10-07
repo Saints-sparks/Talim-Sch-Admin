@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ghostButton } from "@/components/tl/styles";
@@ -10,7 +9,6 @@ import {
   Download,
   ExternalLink,
   FileText,
-  LifeBuoy,
   MessageSquare,
   Loader2,
   Receipt,
@@ -21,9 +19,8 @@ import { useDataExport } from "@/hooks/settings/useDataExport";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import type { ExportType } from "@/app/services/school-settings.service";
-import { Card, CardHeader, OutlineBtn, SectionHeader } from "@/components/settings/ui";
-import { ReportProblemModal } from "@/components/settings/support/ReportProblemModal";
-import { APP_VERSION } from "@/components/settings/support/supportTicketForm";
+import { Card, CardHeader, SectionHeader } from "@/components/settings/ui";
+import { APP_VERSION } from "@/lib/appVersion";
 
 /** A CSV export, or a link into the module that produces the report. */
 interface DataCard {
@@ -77,8 +74,9 @@ const SYSTEM_INFO = [
 
 /**
  * Settings → Data & System: CSV exports, where the school's backups stand,
- * what this build is, "Report a problem" to Talim support (Round 4 §35), and
- * "Contact Talim support", the admin's own tickets in Help & support (v1.5 §1).
+ * what this build is, and "Contact Talim support", which opens Help & support
+ * (`/help`), where the admin raises and follows tickets to Talim through
+ * `/tickets` (v1.5 §1).
  *
  * Only the exports and reports the role may run are shown. The backup card
  * used to print a "last backup" 24 hours ago and a "next backup" six days out,
@@ -89,7 +87,6 @@ const SYSTEM_INFO = [
  */
 export function DataSystemSection() {
   const router = useRouter();
-  const [reporting, setReporting] = useState(false);
   const { hasPermission } = usePermissions();
   const { exporting, run } = useDataExport();
   const cards = CARDS.filter((c) => hasPermission(c.permission));
@@ -192,24 +189,15 @@ export function DataSystemSection() {
           <div>
             <p className="text-sm font-medium text-tl-ink">Something not working?</p>
             <p className="text-xs text-tl-muted mt-0.5">
-              Tell the Talim support team. You&apos;ll get a reference to quote, and can follow your
-              tickets in Help &amp; support.
+              Raise a ticket with the Talim support team in Help &amp; support. You&apos;ll get a
+              reference to quote, and can follow its replies there.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            <Link href="/help" className={ghostButton}>
-              <MessageSquare className="h-4 w-4" aria-hidden /> Contact Talim support
-            </Link>
-            <OutlineBtn onClick={() => setReporting(true)}>
-              <LifeBuoy className="w-3.5 h-3.5" aria-hidden /> Report a problem
-            </OutlineBtn>
-          </div>
+          <Link href="/help" className={ghostButton}>
+            <MessageSquare className="h-4 w-4" aria-hidden /> Contact Talim support
+          </Link>
         </div>
       </Card>
-
-      <AnimatePresence>
-        {reporting && <ReportProblemModal onClose={() => setReporting(false)} />}
-      </AnimatePresence>
     </div>
   );
 }
