@@ -9,30 +9,26 @@
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  BellRing,
-  HandCoins,
-  School,
-  UserCog,
-  UserRound,
-  WalletCards,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BellRing, HandCoins, School, UserCog, UserRound, WalletCards } from "lucide-react";
 import { Permission } from "@/lib/permissions";
 import type { DashboardSummary, SchoolDashboardData } from "@/app/services/dashboard.service";
+import { EmptyNote, StatGrid, StatTile, card } from "@/components/tl";
 import { formatNairaShort } from "./format";
-import { CardSkeleton, TrendBadge } from "./primitives";
+import { CardSkeleton, PanelLoading, TrendBadge } from "./primitives";
 
+/** Props for {@link KpiCards}. */
 interface KpiCardsProps {
+  /** Counts that need no extra permission. */
   base: SchoolDashboardData | null;
+  /** The dashboard summary, once loaded. */
   summary: DashboardSummary | null;
+  /** True while the base read loads. */
   isLoading: boolean;
   /** True when the viewer holds the permission (full admins always do). */
   can: (permission: string) => boolean;
 }
 
+/** One headline tile. */
 interface KpiCardDef {
   label: string;
   value: string;
@@ -40,7 +36,6 @@ interface KpiCardDef {
   sub2?: string;
   trend?: number;
   icon: React.ReactNode;
-  iconCls: string;
   href: string;
   /** Undefined means the card is open to every signed-in administrator. */
   permission?: string;
@@ -48,7 +43,8 @@ interface KpiCardDef {
 
 /**
  * The dashboard's headline tiles, each shown only to an admin who may open the
- * page it links to. The wallet tile says it holds online payments only.
+ * page it links to. Each tile is a link to that page. The wallet tile says it
+ * holds online payments only.
  *
  * @param props - See `KpiCardsProps`.
  * @param props.base - Counts that need no extra permission.
@@ -58,15 +54,15 @@ interface KpiCardDef {
  * @returns The tiles.
  */
 export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
-  const router = useRouter();
-
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <CardSkeleton key={i} />
-        ))}
-      </div>
+      <PanelLoading label="Loading key figures">
+        <StatGrid>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </StatGrid>
+      </PanelLoading>
     );
   }
 
@@ -77,8 +73,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       sub1: summary ? `${summary.students.active.toLocaleString()} Active` : undefined,
       sub2: summary ? `${summary.students.inactive} Inactive` : undefined,
       trend: summary?.students.trendPercent,
-      icon: <UserRound className="w-4 h-4" />,
-      iconCls: "bg-blue-50 text-[#003366] dark:bg-blue-900/20 dark:text-blue-400",
+      icon: <UserRound />,
       href: "/users/students",
       permission: Permission.MANAGE_STUDENTS,
     },
@@ -87,8 +82,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       value: (summary?.teachers.total ?? base?.totalTeachers ?? 0).toLocaleString(),
       sub1: summary ? `${summary.teachers.formTeachers} Form Teachers` : undefined,
       trend: summary?.teachers.trendPercent,
-      icon: <UserCog className="w-4 h-4" />,
-      iconCls: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+      icon: <UserCog />,
       href: "/users/teachers",
       permission: Permission.MANAGE_TEACHERS,
     },
@@ -97,8 +91,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       value: (summary?.classes.total ?? base?.totalClasses ?? 0).toLocaleString(),
       sub1: summary ? `${summary.classes.capacityUtilization}% Capacity` : undefined,
       trend: summary?.classes.trendPercent,
-      icon: <School className="w-4 h-4" />,
-      iconCls: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+      icon: <School />,
       href: "/classes",
       permission: Permission.MANAGE_CLASSES,
     },
@@ -108,8 +101,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       sub1: summary ? `${formatNairaShort(summary.fees.collectedAmount)} collected` : undefined,
       sub2: summary ? `of ${formatNairaShort(summary.fees.expectedAmount)}` : undefined,
       trend: summary?.fees.trendPercent,
-      icon: <HandCoins className="w-4 h-4" />,
-      iconCls: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
+      icon: <HandCoins />,
       href: "/fees-management",
       permission: Permission.MANAGE_FEES,
     },
@@ -118,8 +110,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       value: summary ? formatNairaShort(summary.wallet.balance) : "—",
       // Manual payments and confirmed bank transfers don't credit the wallet.
       sub1: summary ? "Online payments only" : undefined,
-      icon: <WalletCards className="w-4 h-4" />,
-      iconCls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
+      icon: <WalletCards />,
       href: "/finance",
       permission: Permission.MANAGE_FINANCE,
     },
@@ -129,8 +120,7 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
       sub1: summary ? `${summary.notifications.messages} Messages` : undefined,
       sub2: summary ? `${summary.notifications.alerts} Alerts` : undefined,
       trend: summary?.notifications.trendPercent,
-      icon: <BellRing className="w-4 h-4" />,
-      iconCls: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400",
+      icon: <BellRing />,
       href: "/notifications",
       // Every administrator has notifications of their own (the page is open to all).
     },
@@ -140,43 +130,34 @@ export function KpiCards({ base, summary, isLoading, can }: KpiCardsProps) {
 
   if (cards.length === 0) {
     return (
-      <div className="mb-6 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-center">
-        <p className="text-sm text-gray-500 dark:text-slate-400">
-          No metrics available for your current permissions.
-        </p>
+      <div className={card}>
+        <EmptyNote compact title="No metrics available for your current permissions." />
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-      {cards.map((card) => (
-        <button
-          key={card.label}
-          onClick={() => router.push(card.href)}
-          className="group bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 text-left hover:shadow-md hover:border-[#003366]/20 dark:hover:border-slate-600 transition-all duration-200"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className={cn("p-2 rounded-lg", card.iconCls)}>{card.icon}</div>
-            {card.trend !== undefined && <TrendBadge value={card.trend} />}
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1 tabular-nums leading-tight">
-            {card.value}
-          </div>
-          <div className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 leading-snug">
-            {card.label}
-          </div>
-          {(card.sub1 || card.sub2) && (
-            <div className="text-xs text-gray-500 dark:text-slate-400 space-y-0.5 mb-3">
-              {card.sub1 && <div>{card.sub1}</div>}
-              {card.sub2 && <div>{card.sub2}</div>}
-            </div>
-          )}
-          <div className="text-xs text-[#003366] dark:text-blue-400 font-medium group-hover:underline flex items-center gap-1 mt-3">
-            View all <ArrowRight className="w-3 h-3" />
-          </div>
-        </button>
+    <StatGrid label="Key figures">
+      {cards.map((tile) => (
+        <StatTile
+          key={tile.label}
+          href={tile.href}
+          label={tile.label}
+          value={<span className="tabular-nums">{tile.value}</span>}
+          icon={tile.icon}
+          tip={`View all: ${tile.label}`}
+          hint={
+            tile.sub1 || tile.sub2 || tile.trend !== undefined ? (
+              <span className="flex flex-col gap-1">
+                {tile.sub1 || tile.sub2 ? (
+                  <span>{[tile.sub1, tile.sub2].filter(Boolean).join(" · ")}</span>
+                ) : null}
+                {tile.trend !== undefined ? <TrendBadge value={tile.trend} /> : null}
+              </span>
+            ) : undefined
+          }
+        />
       ))}
-    </div>
+    </StatGrid>
   );
 }

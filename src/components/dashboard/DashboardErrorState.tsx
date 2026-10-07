@@ -11,14 +11,24 @@
 import React from "react";
 import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
+import { StatusScreen, primaryButton } from "@/components/tl";
 
+/** Props for {@link DashboardErrorState}. */
 interface DashboardErrorStateProps {
+  /** What the base read threw. */
   error: unknown;
+  /** Retries the read. */
   onRetry: () => void;
+  /** True while the retry runs. */
   isRetrying: boolean;
 }
 
-/** Title, explanation and whether retrying is worth offering. */
+/**
+ * Title, explanation and whether retrying is worth offering.
+ *
+ * @param error - What the base read threw.
+ * @returns The words for the screen and whether to offer a retry.
+ */
 function describe(error: unknown): { title: string; message: string; canRetry: boolean } {
   if (error instanceof ApiError) {
     switch (error.code) {
@@ -66,33 +76,34 @@ function describe(error: unknown): { title: string; message: string; canRetry: b
   };
 }
 
+/**
+ * The dashboard's whole-page error in the portals' status card: what went
+ * wrong in plain words and, when it can help, a Try Again button.
+ *
+ * @param props - See {@link DashboardErrorStateProps}.
+ * @param props.error - What the base read threw.
+ * @param props.onRetry - Retry handler.
+ * @param props.isRetrying - Whether the retry runs.
+ * @returns The error screen.
+ */
 export function DashboardErrorState({ error, onRetry, isRetrying }: DashboardErrorStateProps) {
   const { title, message, canRetry } = describe(error);
   const offline = error instanceof ApiError && error.code === "NETWORK_OFFLINE";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-6">
-      <div className="bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/40 rounded-2xl p-8 max-w-md w-full text-center shadow-sm">
-        <div className="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          {offline ? (
-            <WifiOff className="w-7 h-7 text-red-500" />
-          ) : (
-            <AlertCircle className="w-7 h-7 text-red-500" />
-          )}
-        </div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2">{title}</h2>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">{message}</p>
-        {canRetry && (
-          <button
-            onClick={onRetry}
-            disabled={isRetrying}
-            className="px-5 py-2.5 bg-[#003366] text-white text-sm font-semibold rounded-lg hover:bg-[#002244] transition-colors inline-flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw className={isRetrying ? "w-4 h-4 animate-spin" : "w-4 h-4"} />
+    <StatusScreen
+      tone="danger"
+      icon={offline ? <WifiOff /> : <AlertCircle />}
+      title={title}
+      description={message}
+      actions={
+        canRetry ? (
+          <button type="button" onClick={onRetry} disabled={isRetrying} className={primaryButton}>
+            <RefreshCw className={isRetrying ? "h-4 w-4 animate-spin" : "h-4 w-4"} aria-hidden />
             {isRetrying ? "Retrying..." : "Try Again"}
           </button>
-        )}
-      </div>
-    </div>
+        ) : null
+      }
+    />
   );
 }

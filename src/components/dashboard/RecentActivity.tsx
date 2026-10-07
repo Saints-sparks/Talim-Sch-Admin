@@ -11,35 +11,61 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight, CreditCard, Megaphone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
 import type { RecentAnnouncement, RecentPayment } from "@/app/services/dashboard.service";
-import { formatNairaFull, initialsOf } from "./format";
-import { PanelEmptyState, PanelSkeleton } from "./primitives";
+import { Avatar, CardHeader, Pill, card, textLink, type Tone } from "@/components/tl";
+import { formatNairaFull } from "./format";
+import { IconTitle, PanelEmptyState, PanelLoading, PanelSkeleton, panelGrid } from "./primitives";
 
+/** Props for {@link RecentActivity}. */
 interface RecentActivityProps {
+  /** The last few payments. */
   payments: RecentPayment[];
+  /** The last few announcements. */
   announcements: RecentAnnouncement[];
+  /** True while both load. */
   isLoading: boolean;
+  /** Whether the viewer may see payments. */
   showPayments: boolean;
+  /** Whether the viewer may see announcements. */
   showAnnouncements: boolean;
 }
 
-/** Colour of the status pill on a payment row. */
-function statusClass(status: RecentPayment["status"]): string {
-  if (status === "success")
-    return "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400";
-  if (status === "pending")
-    return "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400";
-  return "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+/**
+ * The pill tone for a payment's status.
+ *
+ * @param status - The payment's status.
+ * @returns Success, warning or danger.
+ */
+function statusTone(status: RecentPayment["status"]): Tone {
+  if (status === "success") return "success";
+  if (status === "pending") return "warning";
+  return "danger";
 }
 
-/** Renders a timestamp the API may have left empty. */
+/**
+ * Renders a timestamp the API may have left empty.
+ *
+ * @param value - An ISO date, possibly empty.
+ * @returns "3 hours ago", or "recently".
+ */
 function relativeTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "recently";
   return formatDistanceToNow(date, { addSuffix: true });
 }
 
+/**
+ * "Recent Payments" and "Recent Announcements", each a card of rows shown
+ * only to a viewer who governs it; nothing at all when neither is.
+ *
+ * @param props - See {@link RecentActivityProps}.
+ * @param props.payments - The payments.
+ * @param props.announcements - The announcements.
+ * @param props.isLoading - Whether they are loading.
+ * @param props.showPayments - Whether to show payments.
+ * @param props.showAnnouncements - Whether to show announcements.
+ * @returns The cards, their skeletons, or null.
+ */
 export function RecentActivity({
   payments,
   announcements,
@@ -51,121 +77,95 @@ export function RecentActivity({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <PanelLoading label="Loading recent activity" className={panelGrid}>
         {showPayments && <PanelSkeleton minH={260} />}
         {showAnnouncements && <PanelSkeleton minH={260} />}
-      </div>
+      </PanelLoading>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div className={panelGrid}>
       {showPayments && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-[#003366] dark:text-blue-400" />
-              Recent Payments
-            </h3>
-            <Link
-              href="/fees-management"
-              className="text-xs text-[#003366] dark:text-blue-400 hover:underline flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <section className={card}>
+          <CardHeader
+            title={<IconTitle icon={<CreditCard />}>Recent Payments</IconTitle>}
+            actions={
+              <Link href="/fees-management" className={textLink}>
+                View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            }
+          />
           {payments.length > 0 ? (
-            <div className="space-y-1">
+            <ul className="mt-2">
               {payments.map((p, i) => (
-                <div
+                <li
                   key={`${p.studentName}-${p.createdAt}-${i}`}
-                  className="flex items-center gap-3 py-2.5 border-b border-gray-50 dark:border-slate-700/50 last:border-0"
+                  className="flex items-center gap-3 border-t border-tl-line-soft py-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#003366]/10 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-[#003366] dark:text-blue-400">
-                      {initialsOf(p.studentName)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate">
-                      {p.studentName}
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1">
-                      <CreditCard className="w-2.5 h-2.5" />
-                      {p.method}
-                      <span>·</span>
-                      {relativeTime(p.createdAt)}
+                  <Avatar id={p.studentName} name={p.studentName} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-tl-ink">{p.studentName}</div>
+                    <div className="mt-0.5 text-[13px] text-tl-muted">
+                      {p.method} · {relativeTime(p.createdAt)}
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 space-y-1">
-                    <div className="text-xs font-bold text-gray-900 dark:text-slate-100">
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <div className="text-sm font-extrabold text-tl-ink tabular-nums">
                       {formatNairaFull(p.amount)}
                     </div>
-                    <span
-                      className={cn(
-                        "text-xs px-1.5 py-0.5 rounded-full font-medium",
-                        statusClass(p.status)
-                      )}
-                    >
+                    <Pill tone={statusTone(p.status)}>
                       {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
-                    </span>
+                    </Pill>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <PanelEmptyState message="No recent payments to display" />
           )}
-        </div>
+        </section>
       )}
 
       {showAnnouncements && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-[#003366] dark:text-blue-400" />
-              Recent Announcements
-            </h3>
-            <Link
-              href="/announcements"
-              className="text-xs text-[#003366] dark:text-blue-400 hover:underline flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <section className={card}>
+          <CardHeader
+            title={<IconTitle icon={<Megaphone />}>Recent Announcements</IconTitle>}
+            actions={
+              <Link href="/announcements" className={textLink}>
+                View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            }
+          />
           {announcements.length > 0 ? (
-            <div className="space-y-1">
+            <ul className="mt-2">
               {announcements.map((a, i) => (
-                <div
+                <li
                   key={`${a.title}-${a.publishedAt}-${i}`}
-                  className="flex items-start gap-3 py-2.5 border-b border-gray-50 dark:border-slate-700/50 last:border-0"
+                  className="flex items-start gap-3 border-t border-tl-line-soft py-3"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate mb-1">
-                      {a.title}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#003366]/8 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400 font-medium">
-                        {a.audience}
-                      </span>
-                      <span className="text-xs text-gray-400 dark:text-slate-500">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-tl-ink">{a.title}</div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <Pill tone="info">{a.audience}</Pill>
+                      <span className="text-[13px] text-tl-muted">
                         {relativeTime(a.publishedAt)}
                       </span>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <div className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-extrabold text-tl-ink tabular-nums">
                       {a.readRate}%
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-slate-500">read rate</div>
+                    <div className="text-xs text-tl-muted">read rate</div>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <PanelEmptyState message="No recent announcements" />
           )}
-        </div>
+        </section>
       )}
     </div>
   );

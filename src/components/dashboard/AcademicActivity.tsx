@@ -12,19 +12,36 @@
 import React from "react";
 import Link from "next/link";
 import { Activity, ArrowRight, BarChart3, BookMarked, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { AcademicSummary, SchoolDashboardData } from "@/app/services/dashboard.service";
-import { PanelEmptyState, PanelSkeleton } from "./primitives";
+import { CardHeader, Pill, card, textLink, tile } from "@/components/tl";
+import {
+  IconTitle,
+  PanelEmptyState,
+  PanelLoading,
+  PanelSkeleton,
+  narrowPanelGrid,
+} from "./primitives";
 
+/** Props for {@link AcademicActivity}. */
 interface AcademicActivityProps {
+  /** The academic summary, or null when it failed or is empty. */
   academic: AcademicSummary | null;
+  /** The base read, whose class distribution stands in for the summary's. */
   base: SchoolDashboardData | null;
+  /** True while the summary loads. */
   isLoading: boolean;
+  /** Whether the viewer may see assessments. */
   showAssessments: boolean;
+  /** Whether the viewer may see classes. */
   showClasses: boolean;
 }
 
-/** Short date for the term's start and end. */
+/**
+ * Short date for the term's start and end.
+ *
+ * @param value - An ISO date.
+ * @returns "Sep 8, 2025".
+ */
 function shortDate(value: string): string {
   return new Date(value).toLocaleDateString("en-NG", {
     month: "short",
@@ -33,6 +50,27 @@ function shortDate(value: string): string {
   });
 }
 
+/** The four assessment counts: words and the colour of the number. */
+const ASSESSMENT_TILES = [
+  { key: "active", label: "Active", tone: "text-tl-link" },
+  { key: "pending", label: "Pending", tone: "text-tl-warning" },
+  { key: "completed", label: "Completed", tone: "text-tl-success" },
+  { key: "cancelled", label: "Cancelled", tone: "text-tl-danger" },
+] as const;
+
+/**
+ * Three cards: how far through the term the school is, the assessments by
+ * state, and the five fullest classes as bars. The second and third show
+ * only to a viewer who governs assessments or classes.
+ *
+ * @param props - See {@link AcademicActivityProps}.
+ * @param props.academic - The academic summary.
+ * @param props.base - The base read.
+ * @param props.isLoading - Whether it is loading.
+ * @param props.showAssessments - Whether to show assessments.
+ * @param props.showClasses - Whether to show classes.
+ * @returns The cards, or their skeletons.
+ */
 export function AcademicActivity({
   academic,
   base,
@@ -42,11 +80,11 @@ export function AcademicActivity({
 }: AcademicActivityProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <PanelSkeleton minH={220} />
-        <PanelSkeleton minH={220} />
-        <PanelSkeleton minH={220} />
-      </div>
+      <PanelLoading label="Loading academic activity" className={narrowPanelGrid}>
+        <PanelSkeleton minH={240} />
+        <PanelSkeleton minH={240} />
+        <PanelSkeleton minH={240} />
+      </PanelLoading>
     );
   }
 
@@ -67,133 +105,112 @@ export function AcademicActivity({
   const assessments = academic?.assessments;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      {/* Term Progress */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-4 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-[#003366] dark:text-blue-400" />
-          Current Term Progress
-        </h3>
+    <div className={narrowPanelGrid}>
+      {/* Term progress */}
+      <section className={`${card} flex flex-col gap-4`}>
+        <CardHeader title={<IconTitle icon={<Activity />}>Current Term Progress</IconTitle>} />
         {term ? (
-          <>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mb-1">
+          <div className="flex flex-col gap-3">
+            <p className="text-[13px] text-tl-muted">
               {term.name} · {term.academicYear}
             </p>
-            <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-3xl font-bold text-gray-900 dark:text-slate-100 tabular-nums">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-extrabold leading-none tracking-[-0.6px] text-tl-ink tabular-nums">
                 {term.elapsedPercent}%
               </span>
-              <span className="text-xs text-gray-400 dark:text-slate-500">Elapsed</span>
+              <span className="text-[13px] font-bold text-tl-muted">Elapsed</span>
             </div>
-            <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 mb-3 overflow-hidden">
+            <div
+              role="progressbar"
+              aria-label="Term elapsed"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(term.elapsedPercent, 100)}
+              className="h-2 w-full overflow-hidden rounded bg-tl-line-soft"
+            >
               <div
-                className="bg-[#003366] dark:bg-blue-500 h-2 rounded-full transition-all duration-700"
+                className="h-full rounded bg-tl-brand-fill transition-all duration-700"
                 style={{ width: `${Math.min(term.elapsedPercent, 100)}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-400 dark:text-slate-500 mb-4">
+            <div className="flex flex-wrap justify-between gap-2 text-[13px] text-tl-muted">
               <span>Start: {shortDate(term.startDate)}</span>
               <span>End: {shortDate(term.endDate)}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#003366] dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg w-fit">
-              <Clock className="w-3.5 h-3.5" />
+            <Pill tone="info">
+              <Clock className="h-3.5 w-3.5" aria-hidden />
               {term.daysRemaining} days remaining
-            </div>
-          </>
+            </Pill>
+          </div>
         ) : (
           <PanelEmptyState message="No term data available" compact />
         )}
-      </div>
+      </section>
 
-      {/* Assessments Overview */}
+      {/* Assessments overview */}
       {showAssessments && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <BookMarked className="w-3.5 h-3.5 text-[#003366] dark:text-blue-400" />
-              Assessments Overview
-            </h3>
-            <Link
-              href="/assessments"
-              className="text-xs text-[#003366] dark:text-blue-400 hover:underline flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <section className={`${card} flex flex-col gap-4`}>
+          <CardHeader
+            title={<IconTitle icon={<BookMarked />}>Assessments Overview</IconTitle>}
+            actions={
+              <Link href="/assessments" className={textLink}>
+                View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            }
+          />
           {assessments ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  label: "Active",
-                  value: assessments.active,
-                  cls: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
-                },
-                {
-                  label: "Pending",
-                  value: assessments.pending,
-                  cls: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400",
-                },
-                {
-                  label: "Completed",
-                  value: assessments.completed,
-                  cls: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
-                },
-                {
-                  label: "Cancelled",
-                  value: assessments.cancelled,
-                  cls: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
-                },
-              ].map((item) => (
-                <div key={item.label} className={cn("rounded-xl p-3 text-center", item.cls)}>
-                  <div className="text-2xl font-bold tabular-nums">{item.value}</div>
-                  <div className="text-xs mt-0.5 opacity-80">{item.label}</div>
+            <dl className="grid grid-cols-2 gap-2.5">
+              {ASSESSMENT_TILES.map((item) => (
+                <div key={item.key} className={`${tile} flex flex-col-reverse gap-0.5 px-3 py-3`}>
+                  <dt className="text-[13px] font-bold text-tl-muted">{item.label}</dt>
+                  <dd
+                    className={`text-2xl font-extrabold tracking-[-0.3px] tabular-nums ${item.tone}`}
+                  >
+                    {assessments[item.key]}
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           ) : (
             <PanelEmptyState message="No assessment data" compact />
           )}
-        </div>
+        </section>
       )}
 
-      {/* Top Classes by Enrollment */}
+      {/* Top classes by enrolment */}
       {showClasses && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-[#003366] dark:text-blue-400" />
-              Top Classes by Enrollment
-            </h3>
-            <Link
-              href="/classes"
-              className="text-xs text-[#003366] dark:text-blue-400 hover:underline flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <section className={`${card} flex flex-col gap-4`}>
+          <CardHeader
+            title={<IconTitle icon={<BarChart3 />}>Top Classes by Enrollment</IconTitle>}
+            actions={
+              <Link href="/classes" className={textLink}>
+                View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            }
+          />
           {topClasses.length > 0 ? (
-            <div className="space-y-3">
+            <ul className="flex flex-col gap-3">
               {topClasses.map((cls) => (
-                <div key={cls.className} className="flex items-center gap-3">
-                  <div className="text-xs font-medium text-gray-700 dark:text-slate-300 w-14 flex-shrink-0 truncate">
+                <li key={cls.className} className="flex items-center gap-3">
+                  <div className="w-16 shrink-0 truncate text-[13px] font-bold text-tl-body">
                     {cls.className}
                   </div>
-                  <div className="flex-1 h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div aria-hidden className="h-2 flex-1 overflow-hidden rounded bg-tl-line-soft">
                     <div
-                      className="h-2 bg-[#003366] dark:bg-blue-500 rounded-full transition-all duration-700"
+                      className="h-full rounded bg-tl-brand-fill transition-all duration-700"
                       style={{ width: `${(cls.count / maxCount) * 100}%` }}
                     />
                   </div>
-                  <div className="text-xs tabular-nums text-gray-500 dark:text-slate-400 w-7 text-right">
+                  <div className="w-8 text-right text-[13px] font-bold text-tl-muted tabular-nums">
                     {cls.count}
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <PanelEmptyState message="No enrollment data" compact />
           )}
-        </div>
+        </section>
       )}
     </div>
   );

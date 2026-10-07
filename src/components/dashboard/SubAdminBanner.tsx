@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import { ShieldAlert } from "lucide-react";
 import { Permission } from "@/lib/permissions";
+import { Banner, pill } from "@/components/tl";
 
 /** Human labels for the permission values, keyed by the backend's strings. */
 const LABEL_MAP: Record<string, string> = {
@@ -28,39 +28,36 @@ const LABEL_MAP: Record<string, string> = {
   [Permission.MANAGE_MESSAGES]: "Messages",
   [Permission.MANAGE_SETTINGS]: "Settings",
   [Permission.MANAGE_SUB_ADMINS]: "Sub-Administrators",
+  [Permission.MANAGE_SUPPORT]: "Support Desk",
 };
 
+/**
+ * The tinted notice at the top of a sub-administrator's dashboard: the areas
+ * they were granted as pills, or a warning when they have none yet.
+ *
+ * @param props - The viewer's permissions.
+ * @param props.permissions - The permission values they hold.
+ * @returns The banner.
+ */
 export function SubAdminBanner({ permissions }: { permissions: string[] }) {
   if (permissions.length === 0) {
     return (
-      <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800/40 px-4 py-3 flex items-center gap-3">
-        <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Your account has no permissions assigned yet. Contact your school administrator to
-          grant you access.
-        </p>
-      </div>
+      <Banner tone="warning">
+        Your account has no permissions assigned yet. Contact your school administrator to grant you
+        access.
+      </Banner>
     );
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/10 px-4 py-3">
-      <div className="flex items-center gap-2 mb-2">
-        <ShieldAlert className="w-4 h-4 text-[#003366] dark:text-blue-400" />
-        <p className="text-xs font-semibold text-[#003366] dark:text-blue-400 uppercase tracking-wide">
-          Sub-Administrator · Your Access
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
+    <Banner tone="info" title="Sub-Administrator · Your Access">
+      <ul aria-label="Areas you can manage" className="mt-1.5 flex flex-wrap gap-1.5">
         {permissions.map((p) => (
-          <span
-            key={p}
-            className="text-xs bg-[#003366]/10 dark:bg-blue-900/30 text-[#003366] dark:text-blue-300 px-2 py-0.5 rounded-full font-medium"
-          >
+          <li key={p} className={`${pill} bg-tl-surface text-tl-brand`}>
             {LABEL_MAP[p] ?? p}
-          </span>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </Banner>
   );
 }

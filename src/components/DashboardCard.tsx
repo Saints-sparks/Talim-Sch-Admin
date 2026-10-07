@@ -1,46 +1,59 @@
 import React from "react";
 import { ChevronRight } from "./Icons";
+import { focusRing } from "@/components/tl";
 
+/** Props for {@link DashboardCard}. */
 interface DashboardCardProps {
   /** Identifies the card to `onNavigate`. */
   id: number;
   /** Either a rendered icon element or a component to render. */
   icon: React.ComponentType<Record<string, never>> | React.ReactElement;
+  /** The number on the tile. */
   count: number;
+  /** The words under the number. */
   label: string;
   /** Called with `id` when the card is activated. */
   onNavigate: (id: number) => void;
 }
 
 /**
- * A single counter tile: icon, number, label and a "See more" affordance.
+ * A single counter tile in the tl look: icon, number, label and a "See more"
+ * affordance.
  *
  * Kept as the reference tile used by the Storybook gallery; the dashboard page
  * itself renders `@/components/dashboard/KpiCards`.
+ *
+ * @param props - See {@link DashboardCardProps}.
+ * @param props.id - Passed back to `onNavigate`.
+ * @param props.icon - The icon.
+ * @param props.count - The number.
+ * @param props.label - The label.
+ * @param props.onNavigate - Click handler.
+ * @returns The tile.
  */
 const DashboardCard: React.FC<DashboardCardProps> = ({ id, icon, count, label, onNavigate }) => {
   return (
     <button
       type="button"
       onClick={() => onNavigate(id)}
-      className="w-full text-left h-[168px] px-6 rounded-xl border border-[#F2F2F2] dark:border-slate-700 flex flex-col justify-between bg-white dark:bg-slate-800 transition-shadow duration-300"
+      className={`flex h-[168px] w-full flex-col justify-between rounded-[18px] border border-tl-line bg-tl-surface px-5 text-left text-tl-ink transition-colors hover:border-tl-control hover:bg-tl-subtle ${focusRing}`}
     >
-      <div className="flex items-start gap-5 mt-6">
-        <div className="border border-[#F1F1F1] dark:border-slate-700 rounded-[10px] p-3">
+      <div className="mt-5 flex items-start gap-4">
+        <div className="rounded-xl border border-tl-line-soft bg-tl-subtle p-3 text-tl-brand">
           {React.isValidElement(icon)
             ? icon
             : React.createElement(icon as React.ComponentType<Record<string, never>>)}
         </div>
         <div className="flex flex-col">
-          <p className="text-[23px] leading-[120%] font-semibold text-gray-900 dark:text-slate-100">
+          <p className="text-[23px] font-extrabold leading-[120%] tracking-[-0.3px] text-tl-ink">
             {count.toLocaleString()}
           </p>
-          <p className="text-gray-500 dark:text-slate-400 text-[13px] font-medium">{label}</p>
+          <p className="text-[13px] font-bold text-tl-muted">{label}</p>
         </div>
       </div>
 
-      <div className="pt-4 border-b border-[#EBEBEB] dark:border-slate-700 -mx-6"></div>
-      <div className="mt-3 mb-5 text-gray-500 dark:text-slate-400 font-medium leading-[120%] text-[15px] flex justify-between items-center">
+      <div className="-mx-5 border-b border-tl-line-soft pt-4" />
+      <div className="mb-4 mt-3 flex items-center justify-between text-sm font-bold text-tl-link">
         <span>See more</span> <ChevronRight />
       </div>
     </button>

@@ -2,35 +2,70 @@
 
 /**
  * The small pieces every dashboard panel reuses: the trend pill, the in-panel
- * empty state, and the two skeleton shapes.
+ * empty state, the skeleton shapes and the responsive card grid.
  *
  * The skeletons hold the same height as the panel they stand in for, so the
- * page does not jump when a panel's data lands.
+ * page does not jump when a panel's data lands. Only the grey blocks pulse
+ * (`skeletonBlock`), and only while a panel loads.
  */
 
-import React from "react";
+import React, { type ReactNode } from "react";
 import { Activity, TrendingDown, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { EmptyNote, card, pill, skeletonBlock } from "@/components/tl";
 
-/** A percentage change, green when up and red when down. */
+/**
+ * A percentage change: green and rising when up, red and falling when down.
+ *
+ * @param props - The change.
+ * @param props.value - The change in percent; negative when down.
+ * @returns The pill.
+ */
 export function TrendBadge({ value }: { value: number }) {
   const positive = value >= 0;
   return (
     <span
-      className={cn(
-        "inline-flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full",
-        positive
-          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-          : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-      )}
+      className={`${pill} tabular-nums ${
+        positive ? "bg-tl-success-bg text-tl-success" : "bg-tl-danger-bg text-tl-danger"
+      }`}
     >
-      {positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      {positive ? (
+        <TrendingUp className="h-3 w-3" aria-hidden />
+      ) : (
+        <TrendingDown className="h-3 w-3" aria-hidden />
+      )}
+      <span className="sr-only">{positive ? "Up" : "Down"} </span>
       {Math.abs(value).toFixed(1)}%
     </span>
   );
 }
 
-/** "Nothing here yet" inside a panel that has already loaded. */
+/**
+ * A card heading with a small icon before the words.
+ *
+ * @param props - The icon and words.
+ * @param props.icon - The decorative icon.
+ * @param props.children - The heading's words.
+ * @returns The heading content.
+ */
+export function IconTitle({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span aria-hidden className="text-tl-brand [&>svg]:h-[18px] [&>svg]:w-[18px]">
+        {icon}
+      </span>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * "Nothing here yet" inside a panel that has already loaded.
+ *
+ * @param props - The message and size.
+ * @param props.message - The sentence to show.
+ * @param props.compact - Less vertical room (small panels).
+ * @returns The empty state.
+ */
 export function PanelEmptyState({
   message,
   compact = false,
@@ -38,49 +73,77 @@ export function PanelEmptyState({
   message: string;
   compact?: boolean;
 }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center text-center",
-        compact ? "py-6" : "py-10"
-      )}
-    >
-      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center mb-2">
-        <Activity className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-      </div>
-      <p className="text-xs text-gray-400 dark:text-slate-500">{message}</p>
-    </div>
-  );
+  return <EmptyNote title={message} icon={<Activity />} compact={compact} />;
 }
 
-/** Placeholder for one KPI card. */
+/**
+ * Placeholder for one KPI tile, the same size as a loaded `StatTile`.
+ *
+ * @returns The skeleton tile.
+ */
 export function CardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 animate-pulse">
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-9 h-9 bg-gray-200 dark:bg-slate-700 rounded-lg" />
-        <div className="w-14 h-5 bg-gray-200 dark:bg-slate-700 rounded-full" />
-      </div>
-      <div className="w-16 h-7 bg-gray-200 dark:bg-slate-700 rounded mb-2" />
-      <div className="w-24 h-3 bg-gray-100 dark:bg-slate-700 rounded mb-1.5" />
-      <div className="w-20 h-3 bg-gray-100 dark:bg-slate-700 rounded mb-4" />
-      <div className="w-16 h-3 bg-gray-100 dark:bg-slate-700 rounded" />
+    <div
+      aria-hidden
+      className="flex h-[112px] flex-col gap-2.5 rounded-[18px] border border-tl-line bg-tl-surface px-4 py-3.5"
+    >
+      <div className={`${skeletonBlock} h-3 w-24 rounded`} />
+      <div className={`${skeletonBlock} h-7 w-16 rounded-md`} />
+      <div className={`${skeletonBlock} h-3 w-28 rounded`} />
     </div>
   );
 }
 
-/** Placeholder for a chart or list panel, holding its final height. */
+/**
+ * Placeholder for a chart or list panel, holding its final height.
+ *
+ * @param props - The panel's height.
+ * @param props.minH - The loaded panel's height in px; default 280.
+ * @returns The skeleton card.
+ */
 export function PanelSkeleton({ minH = 280 }: { minH?: number }) {
   return (
-    <div
-      className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 animate-pulse"
-      style={{ minHeight: minH }}
-    >
-      <div className="w-36 h-4 bg-gray-200 dark:bg-slate-700 rounded mb-5" />
-      <div
-        className="bg-gray-100 dark:bg-slate-700 rounded-lg flex-1"
-        style={{ height: minH - 80 }}
-      />
+    <div aria-hidden className={`${card} flex flex-col gap-5`} style={{ minHeight: minH }}>
+      <div className={`${skeletonBlock} h-5 w-40 rounded`} />
+      <div className={`${skeletonBlock} rounded-2xl`} style={{ height: minH - 100 }} />
     </div>
   );
 }
+
+/**
+ * Announces a loading panel once to screen readers while its grey blocks
+ * stand in for it.
+ *
+ * @param props - What is loading and its skeletons.
+ * @param props.label - What is loading ("Loading the finance snapshot").
+ * @param props.children - The skeleton blocks.
+ * @param props.className - Layout classes (usually {@link panelGrid}).
+ * @returns The busy region.
+ */
+export function PanelLoading({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div role="status" aria-busy="true" aria-label={label} className={className}>
+      <span className="sr-only">{label}…</span>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The grid the dashboard's cards sit in: as many 320px-plus columns as fit,
+ * one column on a phone, never wider than the page.
+ */
+export const panelGrid =
+  "grid items-stretch gap-[18px] [grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))]";
+
+/** The same grid for smaller cards (260px-plus columns). */
+export const narrowPanelGrid =
+  "grid items-stretch gap-[18px] [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]";

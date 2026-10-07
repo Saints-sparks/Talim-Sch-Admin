@@ -1,7 +1,8 @@
 import React from "react";
 import { useRouter } from "next/navigation"; // Import useRouter hook
+import { CardHeader, card, pill, primaryButton, selectControl } from "@/components/tl";
 
-// Define ClassCardProps
+/** Props for {@link ClassCard}. */
 type ClassCardProps = {
   subject: string;
   title: string;
@@ -11,6 +12,19 @@ type ClassCardProps = {
   isActive?: boolean;
 };
 
+/**
+ * One upcoming class: subject, length, title, start time and head count. The
+ * class on now wears the navy "now" card.
+ *
+ * @param props - See {@link ClassCardProps}.
+ * @param props.subject - The subject.
+ * @param props.title - The lesson's title.
+ * @param props.duration - How long it runs.
+ * @param props.time - When it starts (or the countdown when on now).
+ * @param props.students - How many attend.
+ * @param props.isActive - Whether it is on now.
+ * @returns The card.
+ */
 const ClassCard: React.FC<ClassCardProps> = ({
   subject,
   title,
@@ -21,40 +35,45 @@ const ClassCard: React.FC<ClassCardProps> = ({
 }) => {
   return (
     <div
-      className={`p-4 rounded-lg shadow-md border w-[434px] h-[221px] ${
-        isActive ? "bg-[#ADBECE] border-blue-300" : "bg-white border-gray-200"
-      }`}
+      className={
+        isActive
+          ? "flex flex-col gap-4 rounded-[22px] bg-tl-now p-[clamp(18px,2.4vw,24px)] text-white"
+          : `${card} flex flex-col gap-4`
+      }
     >
-      <div className="flex justify-between items-center mb-7">
-        <span className={`text-sm font-semibold ${isActive ? "text-white" : "text-black"}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={`text-xs font-extrabold uppercase tracking-[0.07em] ${isActive ? "text-white" : "text-tl-faint"}`}
+        >
           {subject}
         </span>
         <span
-          className={`text-xs ${isActive ? "text-[#A5A5A5]" : "text-gray-600"} bg-[#F8F8F8] px-2 py-1 rounded-lg`}
+          className={`${pill} ${isActive ? "bg-white/15 text-white" : "bg-tl-track text-tl-muted"}`}
         >
           {duration}
         </span>
       </div>
-      <h3 className={`mt-6 text-lg font-medium ${isActive ? "text-white" : "text-black"}`}>
+      <h3 className={`text-lg font-extrabold ${isActive ? "text-white" : "text-tl-ink"}`}>
         {title}
       </h3>
-      <div className="flex justify-between mt-4">
-        <p className={`mt-4 text-sm ${isActive ? "text-[#003366]" : "text-gray-600"}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className={`text-sm ${isActive ? "text-white" : "text-tl-muted"}`}>
           Class {isActive ? "in" : "by"} {time}
         </p>
-        <div className="mt-2 flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-          <span
-            className={`text-sm w-6 h-6 rounded-full ${isActive ? "text-white" : "text-gray-600"}`}
-          >
-            +{students}
-          </span>
-        </div>
+        <span className={`text-sm font-bold ${isActive ? "text-white" : "text-tl-muted"}`}>
+          +{students}
+        </span>
       </div>
     </div>
   );
 };
 
+/**
+ * A static "Upcoming Classes" strip (sample data). Not mounted by any page;
+ * kept for reference.
+ *
+ * @returns The strip.
+ */
 const UpcomingClasses: React.FC = () => {
   const router = useRouter(); // Initialize the router
 
@@ -89,29 +108,24 @@ const UpcomingClasses: React.FC = () => {
   ];
 
   return (
-    <div className="px-4 py-6 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[24px] font-medium text-[#030E18]">Upcoming Classes</h2>
-          <p className="text-sm text-gray-600">You have 5 classes left today</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleCreateClass} // Add the onClick handler for the button
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
-          >
-            + Create Class
-          </button>
-          <select className="border border-gray-300 rounded-md px-3 py-2 text-sm">
-            <option>Today</option>
-            <option>Tomorrow</option>
-          </select>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4">
+      <CardHeader
+        title="Upcoming Classes"
+        subtitle="You have 5 classes left today"
+        actions={
+          <>
+            <button type="button" onClick={handleCreateClass} className={primaryButton}>
+              + Create Class
+            </button>
+            <select aria-label="Day" className={selectControl}>
+              <option>Today</option>
+              <option>Tomorrow</option>
+            </select>
+          </>
+        }
+      />
 
-      {/* Class Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
         {classes.map((classItem, index) => (
           <ClassCard key={index} {...classItem} />
         ))}

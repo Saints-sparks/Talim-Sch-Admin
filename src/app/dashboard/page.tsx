@@ -25,7 +25,16 @@ import { PendingActions } from "@/components/dashboard/PendingActions";
 import { QuickLinks } from "@/components/dashboard/QuickLinks";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { SubAdminBanner } from "@/components/dashboard/SubAdminBanner";
+import { Page } from "@/components/tl";
 
+/**
+ * The dashboard page: the greeting and shortcuts, the sub-admin's access
+ * banner or the setup card, the KPI tiles, what is waiting on the
+ * administrator, the finance snapshot, academic activity, recent activity and
+ * quick links, each panel gated by permission.
+ *
+ * @returns The page, or its error screen when the base read fails.
+ */
 export default function Dashboard() {
   const { user } = useAuth();
   const { hasPermission, isFullAdmin, isSubAdmin, permissions } = usePermissions();
@@ -47,7 +56,12 @@ export default function Dashboard() {
     refresh,
   } = useDashboardOverview();
 
-  /** A full administrator holds every permission implicitly. */
+  /**
+   * A full administrator holds every permission implicitly.
+   *
+   * @param permission - The permission value to check.
+   * @returns Whether the viewer holds it.
+   */
   const can = (permission: string) => isFullAdmin || hasPermission(permission);
 
   const schoolName = user?.schoolName ?? base?.schoolInfo?.name ?? "Your School";
@@ -59,59 +73,53 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <DashboardHero
-          adminName={adminName}
-          schoolName={schoolName}
-          termLabel={term ? `${term.name} · ${term.academicYear}` : null}
+    <Page>
+      <DashboardHero
+        adminName={adminName}
+        schoolName={schoolName}
+        termLabel={term ? `${term.name} · ${term.academicYear}` : null}
+        can={can}
+        isRefreshing={isRefreshing}
+        onRefresh={refresh}
+      />
+
+      {isSubAdmin && <SubAdminBanner permissions={permissions} />}
+
+      {isFullAdmin && <SetupProgressWidget />}
+
+      <KpiCards base={base} summary={summary} isLoading={loading.base} can={can} />
+
+      {visibility.pendingActions && (
+        <PendingActions
+          pendingActions={pendingActions}
+          isLoading={loading.pendingActions}
           can={can}
-          isRefreshing={isRefreshing}
-          onRefresh={refresh}
         />
+      )}
 
-        {isSubAdmin && <SubAdminBanner permissions={permissions} />}
+      {visibility.finance && (
+        <FinancialSnapshot finance={finance} isLoading={loading.finance} isDark={isDark} />
+      )}
 
-        {isFullAdmin && (
-          <div className="mb-6">
-            <SetupProgressWidget />
-          </div>
-        )}
-
-        <KpiCards base={base} summary={summary} isLoading={loading.base} can={can} />
-
-        {visibility.finance && (
-          <FinancialSnapshot finance={finance} isLoading={loading.finance} isDark={isDark} />
-        )}
-
-        {visibility.academics && (
-          <AcademicActivity
-            academic={academic}
-            base={base}
-            isLoading={loading.academic}
-            showAssessments={visibility.assessments}
-            showClasses={visibility.classes}
-          />
-        )}
-
-        {visibility.pendingActions && (
-          <PendingActions
-            pendingActions={pendingActions}
-            isLoading={loading.pendingActions}
-            can={can}
-          />
-        )}
-
-        <RecentActivity
-          payments={recentPayments}
-          announcements={recentAnnouncements}
-          isLoading={loading.recentActivity}
-          showPayments={visibility.recentPayments}
-          showAnnouncements={visibility.recentAnnouncements}
+      {visibility.academics && (
+        <AcademicActivity
+          academic={academic}
+          base={base}
+          isLoading={loading.academic}
+          showAssessments={visibility.assessments}
+          showClasses={visibility.classes}
         />
+      )}
 
-        <QuickLinks can={can} />
-      </div>
-    </div>
+      <RecentActivity
+        payments={recentPayments}
+        announcements={recentAnnouncements}
+        isLoading={loading.recentActivity}
+        showPayments={visibility.recentPayments}
+        showAnnouncements={visibility.recentAnnouncements}
+      />
+
+      <QuickLinks can={can} />
+    </Page>
   );
 }
