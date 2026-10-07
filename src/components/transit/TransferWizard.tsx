@@ -11,7 +11,7 @@ import {
   pageTitle,
   textLink,
 } from "@/components/tl/styles";
-import { surface, text } from "@/components/transit/ui";
+import { text } from "@/components/transit/ui";
 
 /** The numbered dots and rules across the top of a wizard. */
 export function WizardSteps({ step, steps }: { step: number; steps: string[] }) {
