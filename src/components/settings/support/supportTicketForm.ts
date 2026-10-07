@@ -8,9 +8,10 @@ import {
   type CreateSupportTicketPayload,
   type SupportTicketArea,
 } from "@/types/round4Contract";
+import { APP_VERSION } from "@/lib/appVersion";
 
-/** This build's version, as Settings → Data & System shows it and tickets report it. */
-export const APP_VERSION = "2.0.0";
+/** This build's version (from package.json), as Settings → Data & System shows it and tickets report it. */
+export { APP_VERSION };
 
 /** The areas a problem can be about, in menu order. */
 export const SUPPORT_AREAS: ReadonlyArray<{ value: SupportTicketArea; label: string }> = [

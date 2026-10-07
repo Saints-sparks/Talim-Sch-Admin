@@ -25,6 +25,7 @@ import {
 } from "@/components/settings/sections";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
+import { versionLabel } from "@/lib/appVersion";
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ export default function SettingsPage() {
           })}
         </nav>
         <div className="px-5 py-3 border-t border-gray-100 dark:border-slate-800">
-          <p className="text-[10px] text-gray-400 dark:text-slate-600">Talim School Admin v2.0</p>
+          <p className="text-[11px] font-semibold text-tl-muted">{versionLabel()}</p>
         </div>
       </aside>
 

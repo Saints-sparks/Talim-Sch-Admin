@@ -10,6 +10,7 @@ import { CollapsedBrand, ExpandedBrand } from "./sidebar/SidebarBrand";
 import { CollapsedNavItem } from "./sidebar/CollapsedNavItem";
 import { NavItemRow } from "./sidebar/NavItemRow";
 import { SidebarLogout } from "./sidebar/SidebarLogout";
+import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { groupNavItems, type NavItem } from "./sidebar/navConfig";
 
 type SidebarProps = React.ComponentProps<"nav"> & {
@@ -20,8 +21,8 @@ type SidebarProps = React.ComponentProps<"nav"> & {
 const SURFACE = "flex flex-col border-r border-tl-line bg-tl-surface font-manrope text-tl-ink";
 
 /**
- * The rows of the full sidebar: the titled groups, then Settings and Log
- * out at the foot.
+ * The rows of the full sidebar: the titled groups, then Settings, Log out
+ * and the version at the foot.
  *
  * @param props - The navigation state and the layout.
  * @param props.nav - What {@link useSidebarNav} returned.
@@ -88,6 +89,7 @@ function FullSidebarContent({
       <div className="mt-6 flex flex-col gap-0.5 border-t border-tl-line-soft pt-3.5">
         {account.length > 0 ? <ul className="flex flex-col gap-0.5">{account.map(row)}</ul> : null}
         <SidebarLogout variant="row" isLoggingOut={nav.isLoggingOut} onLogout={nav.handleLogout} />
+        <SidebarFooter />
       </div>
     </>
   );
@@ -96,7 +98,8 @@ function FullSidebarContent({
 /**
  * The app's navigation in the portals' design: the brand and school, the
  * entries in titled groups (Overview, Academics, People, Money,
- * Communication) with live badges, and Settings and Log out at the foot. At 980px and wider it sits beside the page and can collapse to an
+ * Communication) with live badges, and Settings, Log out and the version at
+ * the foot. At 980px and wider it sits beside the page and can collapse to an
  * icon rail; below that it is a drawer opened from the top bar's menu button
  * (Escape, the overlay or a link closes it).
  *
