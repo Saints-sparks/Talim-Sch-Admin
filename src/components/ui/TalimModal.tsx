@@ -15,6 +15,24 @@ interface TalimModalProps {
   isSubmitting?: boolean;
 }
 
+/**
+ * The app's large form dialog (create class, add teacher, …) in the portals'
+ * sheet look: a bottom sheet on phones and a centred card on wider screens,
+ * with the title, an optional icon and subtitle, a scrolling body and a
+ * footer. Escape and the close button close it (not while a save runs); the
+ * page behind it is frozen.
+ *
+ * @param props - See `TalimModalProps`.
+ * @param props.isOpen - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.title - The heading; also the dialog's name.
+ * @param props.subtitle - The line under the title.
+ * @param props.icon - An icon beside the title.
+ * @param props.children - The body.
+ * @param props.footer - The buttons.
+ * @param props.isSubmitting - True while a save runs.
+ * @returns The dialog, or null while closed.
+ */
 const TalimModal: React.FC<TalimModalProps> = ({
   isOpen,
   onClose,
@@ -42,54 +60,54 @@ const TalimModal: React.FC<TalimModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(15,27,46,0.45)] sm:items-center">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-hidden"
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[24px] bg-tl-surface text-tl-ink shadow-[0_30px_70px_-30px_rgba(15,27,46,0.45)] sm:mx-4 sm:max-h-[90vh] sm:rounded-[24px] dark:border dark:border-tl-line"
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative overflow-hidden flex-shrink-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {icon && (
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  {icon}
-                </div>
-              )}
-              <div>
-                <h2 id={titleId} className="text-2xl font-bold">
-                  {title}
-                </h2>
-                {subtitle && (
-                  <p className="text-blue-100 text-sm mt-1">{subtitle}</p>
-                )}
+        {/* Header: the portals' sheet heading */}
+        <div className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-tl-line-soft px-[clamp(20px,3vw,30px)] py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            {icon && (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-tl-select text-tl-brand [&_svg]:text-tl-brand">
+                {icon}
               </div>
+            )}
+            <div className="min-w-0">
+              <h2
+                id={titleId}
+                className="text-[21px] font-extrabold leading-tight tracking-[-0.4px] text-tl-ink"
+              >
+                {title}
+              </h2>
+              {subtitle && (
+                <p className="mt-1 text-[13px] leading-[1.55] text-tl-muted">{subtitle}</p>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              aria-label="Close"
-              className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <X className="w-5 h-5" aria-hidden />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            aria-label="Close"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-tl-faint transition-colors hover:bg-tl-bg hover:text-tl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tl-link disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
         </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-8">
-            <div className="space-y-8">{children}</div>
+          <div className="px-[clamp(20px,3vw,30px)] py-6">
+            <div className="space-y-6">{children}</div>
           </div>
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-8 py-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+          <div className="flex-shrink-0 border-t border-tl-line-soft bg-tl-subtle px-[clamp(20px,3vw,30px)] py-4">
             {footer}
           </div>
         )}

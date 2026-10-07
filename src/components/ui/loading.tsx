@@ -8,8 +8,15 @@ type BoxProps = {
   className?: string;
 };
 
+/**
+ * A pulsing grey block.
+ *
+ * @param props - See the props type.
+ * @param props.className - Size and shape classes.
+ * @returns The block.
+ */
 export function SkeletonBox({ className }: BoxProps) {
-  return <div className={cn("animate-pulse rounded bg-gray-200 dark:bg-slate-700", className)} />;
+  return <div className={cn("animate-pulse rounded bg-tl-line/70", className)} />;
 }
 
 type SectionSkeletonProps = {
@@ -18,6 +25,15 @@ type SectionSkeletonProps = {
   className?: string;
 };
 
+/**
+ * A column of pulsing rows (a list loading).
+ *
+ * @param props - See the props type.
+ * @param props.rows - How many rows.
+ * @param props.rowClassName - Each row's classes.
+ * @param props.className - The column's classes.
+ * @returns The rows.
+ */
 export function SectionSkeleton({
   rows = 5,
   rowClassName = "h-10",
@@ -38,6 +54,15 @@ type GridSkeletonProps = {
   cardClassName?: string;
 };
 
+/**
+ * A grid of pulsing person cards (a roster loading).
+ *
+ * @param props - See the props type.
+ * @param props.cards - How many cards.
+ * @param props.className - The grid's classes.
+ * @param props.cardClassName - Each card's classes.
+ * @returns The grid.
+ */
 export function GridSkeleton({
   cards = 9,
   className,
@@ -48,7 +73,7 @@ export function GridSkeleton({
       {Array.from({ length: cards }).map((_, index) => (
         <div
           key={index}
-          className={cn("rounded-[10px] border border-gray-200 bg-white p-4", cardClassName)}
+          className={cn("rounded-[22px] border border-tl-line bg-tl-surface p-4", cardClassName)}
         >
           <SkeletonBox className="mx-auto mb-2 h-16 w-16 rounded-full" />
           <SkeletonBox className="mx-auto mb-2 h-5 w-32" />
@@ -68,6 +93,16 @@ type PageSkeletonProps = {
   children?: React.ReactNode;
 };
 
+/**
+ * A page loading: heading, an optional filter row, then the children, with the page padding.
+ *
+ * @param props - See the props type.
+ * @param props.titleWidthClass - The heading block's width.
+ * @param props.subtitleWidthClass - The subtitle block's width.
+ * @param props.showFilterRow - Whether to draw the filter row.
+ * @param props.children - More skeleton below.
+ * @returns The skeleton.
+ */
 export function PageSkeleton({
   titleWidthClass = "w-48",
   subtitleWidthClass = "w-32",
@@ -75,7 +110,12 @@ export function PageSkeleton({
   children,
 }: PageSkeletonProps) {
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div
+      className="mx-auto w-full max-w-[1460px] px-[clamp(14px,3vw,26px)] pb-16 pt-[clamp(18px,3vw,28px)]"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading"
+    >
       <div className="mb-6">
         <SkeletonBox className={cn("mb-2 h-8", titleWidthClass)} />
         <SkeletonBox className={cn("h-4", subtitleWidthClass)} />
@@ -102,10 +142,18 @@ type InlineSpinnerProps = {
   className?: string;
 };
 
+/**
+ * A small spinner with a word, inline.
+ *
+ * @param props - See the props type.
+ * @param props.label - The word.
+ * @param props.className - Extra classes.
+ * @returns The spinner.
+ */
 export function InlineSpinner({ label = "Loading...", className }: InlineSpinnerProps) {
   return (
-    <span className={cn("inline-flex items-center gap-2 text-sm text-gray-600", className)}>
-      <Loader2 className="h-4 w-4 animate-spin" />
+    <span className={cn("inline-flex items-center gap-2 text-sm text-tl-muted", className)}>
+      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
       {label}
     </span>
   );

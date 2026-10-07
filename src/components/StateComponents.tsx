@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { card, ghostButton, primaryButton } from "@/components/tl/styles";
 
 interface LoadingStateProps {
   message?: string;
@@ -22,28 +23,38 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
+/**
+ * A page or panel that is still loading: a spinner and a line, announced as
+ * busy. Prefer the shape-holding skeletons in `@/components/tl` for new code.
+ *
+ * @param props - The line to show.
+ * @param props.message - What is loading; default "Loading...".
+ * @returns The loading state.
+ */
 export const LoadingState: React.FC<LoadingStateProps> = ({ message = "Loading..." }) => {
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center py-16"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className="flex flex-col items-center justify-center gap-3 py-16"
+      role="status"
+      aria-busy="true"
     >
-      <motion.div
-        className="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full mb-4"
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      />
-      <p className="text-gray-600 dark:text-slate-300 font-medium">{message}</p>
-    </motion.div>
+      <Loader2 className="h-8 w-8 animate-spin text-tl-brand" aria-hidden />
+      <p className="text-[15px] font-semibold text-tl-muted">{message}</p>
+    </div>
   );
 };
 
+/**
+ * A failed load in the portals' card: the title, the message and Retry. It is
+ * an alert, so it is read out when it appears.
+ *
+ * @param props - See `ErrorStateProps`.
+ * @param props.title - The bold line.
+ * @param props.message - What went wrong.
+ * @param props.onRetry - Retries the load.
+ * @param props.retryText - The button's words; default "Try Again".
+ * @returns The error state.
+ */
 export const ErrorState: React.FC<ErrorStateProps> = ({
   title,
   message,
@@ -51,43 +62,35 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   retryText = "Try Again",
 }) => {
   return (
-    <motion.div
-      className="text-center py-12 flex-1 flex items-center justify-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 max-w-md mx-4 shadow-sm">
-        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-6 h-6 text-red-600 dark:text-red-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div className="text-gray-800 dark:text-slate-100 text-lg font-semibold mb-2">{title}</div>
-        <p className="text-gray-600 dark:text-slate-300 mb-6">{message}</p>
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <div role="alert" className={`${card} w-full max-w-md text-center`}>
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-tl-danger-bg">
+          <AlertCircle className="h-6 w-6 text-tl-danger" aria-hidden />
+        </span>
+        <div className="mt-4 text-lg font-extrabold text-tl-ink">{title}</div>
+        <p className="mt-1.5 text-[15px] text-tl-body">{message}</p>
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-          >
+          <button type="button" onClick={onRetry} className={`${ghostButton} mt-6`}>
             {retryText}
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
+/**
+ * Nothing to show yet, in the portals' card: an icon, the title, the message
+ * and an optional action.
+ *
+ * @param props - See `EmptyStateProps`.
+ * @param props.icon - A glyph or emoji shown above the title (decorative).
+ * @param props.title - The bold line.
+ * @param props.message - The explanation.
+ * @param props.actionText - The action's words.
+ * @param props.onAction - Runs the action.
+ * @returns The empty state.
+ */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon,
   title,
@@ -96,32 +99,22 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onAction,
 }) => {
   return (
-    <motion.div
-      className="text-center py-12 flex-1 flex items-center justify-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-8 max-w-md mx-4 shadow-sm">
-        <motion.div
-          className="text-gray-400 text-5xl mb-4"
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.1, duration: 0.3, type: "spring" }}
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <div className={`${card} w-full max-w-md text-center`}>
+        <span
+          aria-hidden
+          className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-tl-track text-3xl"
         >
           {icon}
-        </motion.div>
-        <div className="text-gray-800 dark:text-slate-100 text-lg font-semibold mb-2">{title}</div>
-        <p className="text-gray-600 dark:text-slate-300 mb-6">{message}</p>
+        </span>
+        <div className="mt-4 text-lg font-extrabold text-tl-ink">{title}</div>
+        <p className="mt-1.5 text-[15px] text-tl-muted">{message}</p>
         {actionText && onAction && (
-          <button
-            onClick={onAction}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-          >
+          <button type="button" onClick={onAction} className={`${primaryButton} mt-6`}>
             {actionText}
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
