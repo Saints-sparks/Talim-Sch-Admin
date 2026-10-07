@@ -67,17 +67,15 @@ export function StepCard({
 }) {
   const step = stepDefinition(stepId);
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden dark:bg-slate-900 dark:border-slate-700">
-      <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3 dark:border-slate-700">
-        <div className="p-2 bg-[#EAF2FB] rounded-xl text-[#003366] dark:bg-blue-900/30 dark:text-blue-200">
-          {STEP_ICONS[stepId]}
-        </div>
+    <div className="bg-tl-surface rounded-2xl border border-tl-line-soft overflow-hidden">
+      <div className="px-6 py-5 border-b border-tl-line-soft flex items-center gap-3">
+        <div className="p-2 bg-tl-select rounded-xl text-tl-brand">{STEP_ICONS[stepId]}</div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">{step.label}</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400">{step.description}</p>
+          <h2 className="text-lg font-bold text-tl-ink">{step.label}</h2>
+          <p className="text-sm text-tl-muted">{step.description}</p>
         </div>
         {!step.required && (
-          <span className="ml-auto text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full shrink-0 dark:bg-slate-800 dark:text-slate-400">
+          <span className="ml-auto text-xs font-medium text-tl-faint bg-tl-track px-2 py-1 rounded-full shrink-0">
             Optional
           </span>
         )}
@@ -96,11 +94,11 @@ export function StepCard({
 export function StepDoneCard({ stepId }: { stepId: OnboardingStepId }) {
   const step = stepDefinition(stepId);
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-8 flex flex-col items-center text-center gap-4 dark:bg-slate-900 dark:border-slate-700">
-      <CheckCircle2 className="h-14 w-14 text-green-500" />
+    <div className="bg-tl-surface rounded-2xl border border-tl-line-soft p-8 flex flex-col items-center text-center gap-4">
+      <CheckCircle2 className="h-14 w-14 text-tl-success" />
       <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">{step.label} — Done!</h2>
-        <p className="text-sm text-gray-500 mt-1 dark:text-slate-400">{step.description}</p>
+        <h2 className="text-xl font-bold text-tl-ink">{step.label} — Done!</h2>
+        <p className="text-sm text-tl-muted mt-1">{step.description}</p>
       </div>
     </div>
   );
@@ -113,10 +111,16 @@ export function StepDoneCard({ stepId }: { stepId: OnboardingStepId }) {
  * @param props.message - What is being looked up.
  * @returns The card with a spinner.
  */
-export function StepCheckingCard({ stepId, message }: { stepId: OnboardingStepId; message: string }) {
+export function StepCheckingCard({
+  stepId,
+  message,
+}: {
+  stepId: OnboardingStepId;
+  message: string;
+}) {
   return (
     <StepCard stepId={stepId}>
-      <div className="flex items-center gap-3 py-4 text-sm text-gray-500 dark:text-slate-400">
+      <div className="flex items-center gap-3 py-4 text-sm text-tl-muted">
         <Loader2 className="h-4 w-4 animate-spin" /> {message}
       </div>
     </StepCard>
@@ -134,9 +138,9 @@ export function StepNotPermittedCard({ stepId }: { stepId: OnboardingStepId }) {
   const step = stepDefinition(stepId);
   return (
     <StepCard stepId={stepId}>
-      <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-4 dark:bg-slate-800">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-        <p className="text-sm text-gray-600 dark:text-slate-300">
+      <div className="flex items-start gap-3 rounded-lg bg-tl-subtle p-4">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-tl-faint" aria-hidden />
+        <p className="text-sm text-tl-muted">
           Your account can&apos;t complete &ldquo;{step.label}&rdquo;. Ask your school administrator
           to finish this step, or to grant you the permission it needs.
         </p>
@@ -153,23 +157,23 @@ export function StepNotPermittedCard({ stepId }: { stepId: OnboardingStepId }) {
  */
 export function CompletionCard({ onDashboard }: { onDashboard: () => void }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-10 flex flex-col items-center text-center gap-6 dark:bg-slate-900 dark:border-slate-700">
+    <div className="bg-tl-surface rounded-2xl border border-tl-line-soft p-10 flex flex-col items-center text-center gap-6">
       <div className="relative">
-        <div className="w-20 h-20 rounded-full bg-[#EAF2FB] flex items-center justify-center dark:bg-blue-900/30">
-          <Trophy className="h-10 w-10 text-[#003366] dark:text-blue-200" />
+        <div className="w-20 h-20 rounded-full bg-tl-select flex items-center justify-center">
+          <Trophy className="h-10 w-10 text-tl-brand" />
         </div>
-        <Sparkles className="h-6 w-6 text-yellow-400 absolute -top-1 -right-1" />
+        <Sparkles className="h-6 w-6 text-tl-warning absolute -top-1 -right-1" />
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">You&apos;re all set!</h2>
-        <p className="text-gray-500 mt-2 max-w-sm dark:text-slate-400">
+        <h2 className="text-2xl font-bold text-tl-ink">You&apos;re all set!</h2>
+        <p className="text-tl-muted mt-2 max-w-sm">
           Your school is fully configured. You can manage everything from the dashboard or come back
           to any section at any time.
         </p>
       </div>
       <button
         onClick={onDashboard}
-        className="flex items-center gap-2 h-12 px-8 bg-[#003366] hover:bg-[#002244] text-white font-semibold rounded-xl transition-colors"
+        className="flex items-center gap-2 h-12 px-8 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white font-semibold rounded-xl transition-colors"
       >
         <LayoutDashboard className="h-5 w-5" /> Go to Dashboard
       </button>

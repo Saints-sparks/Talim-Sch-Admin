@@ -68,15 +68,15 @@ export function TermsCard({
                 <div>
                   <label
                     htmlFor="term-academic-year"
-                    className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1"
+                    className="block text-xs font-medium text-tl-body mb-1"
                   >
-                    Academic Year <span className="text-red-500">*</span>
+                    Academic Year <span className="text-tl-danger">*</span>
                   </label>
                   <select
                     id="term-academic-year"
                     value={form.academicYearId}
                     onChange={(e) => onChange({ ...form, academicYearId: e.target.value })}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366]"
+                    className="w-full px-3 py-2.5 text-sm border border-tl-control rounded-lg outline-none focus:border-tl-link"
                     required
                   >
                     <option value="">Select academic year</option>
@@ -122,28 +122,27 @@ export function TermsCard({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
-              {["Term Name", "Start Date", "End Date", "Status", "Is Current", "Actions"].map((h) => (
-                <th key={h} className={TH}>
-                  {h}
-                </th>
-              ))}
+            <tr className="border-b border-tl-line-soft bg-tl-subtle">
+              {["Term Name", "Start Date", "End Date", "Status", "Is Current", "Actions"].map(
+                (h) => (
+                  <th key={h} className={TH}>
+                    {h}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
             {terms.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-10 text-gray-400 dark:text-slate-500 text-sm">
+                <td colSpan={6} className="text-center py-10 text-tl-faint text-sm">
                   No terms found
                 </td>
               </tr>
             ) : (
               terms.map((t) => (
-                <tr
-                  key={t._id}
-                  className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/40"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{t.name}</td>
+                <tr key={t._id} className="border-b border-tl-line-soft hover:bg-tl-bg">
+                  <td className="px-4 py-3 font-medium text-tl-ink">{t.name}</td>
                   <td className={TD}>{formatSetupDate(t.startDate)}</td>
                   <td className={TD}>{formatSetupDate(t.endDate)}</td>
                   <td className="px-4 py-3">
@@ -151,11 +150,11 @@ export function TermsCard({
                   </td>
                   <td className="px-4 py-3">
                     {t.isCurrent ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                      <span className="inline-flex items-center gap-1 text-xs text-tl-link">
                         <Check className="w-3 h-3" /> Current
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400 dark:text-slate-500">—</span>
+                      <span className="text-xs text-tl-faint">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -163,7 +162,7 @@ export function TermsCard({
                       <button
                         type="button"
                         onClick={() => onSetCurrent(t._id)}
-                        className="px-2 py-1 text-xs text-[#003366] dark:text-blue-400 border border-[#003366]/20 dark:border-blue-400/30 rounded hover:bg-[#003366]/5 dark:hover:bg-blue-400/10 transition"
+                        className="px-2 py-1 text-xs text-tl-brand border border-tl-control rounded hover:bg-tl-select transition"
                       >
                         Set Current
                       </button>

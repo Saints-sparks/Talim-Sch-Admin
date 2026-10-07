@@ -26,6 +26,8 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/lib/permissions";
 import { versionLabel } from "@/lib/appVersion";
+import { PageHeader } from "@/components/tl/Page";
+import { cardFrame, focusRing, pagePad, pageStack } from "@/components/tl/styles";
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
@@ -49,12 +51,15 @@ const SECTION_MAP: Record<SectionId, React.ComponentType<SettingsSectionProps>> 
 };
 
 /**
- * Settings — a sidebar of sections, one rendered at a time.
+ * Settings — a list of sections beside the content (a scrolling row above it
+ * on narrow screens), one section rendered at a time, in the tl layout.
  *
  * The route itself already requires `manage:settings` (RouteGuard reads
  * `routePermissions`); `canManage` passes the same fact down so a role without
  * it never sees an edit control it cannot use. Sub-Admins is reserved for the
  * primary school admin.
+ *
+ * @returns The settings page.
  */
 export default function SettingsPage() {
   const [active, setActive] = useState<SectionId>("school-profile");
@@ -68,7 +73,10 @@ export default function SettingsPage() {
   // Read once on mount from `window.location` rather than `useSearchParams`,
   // which would need a Suspense boundary around the whole page.
   useEffect(() => {
-    const requested = sectionFromQuery(new URLSearchParams(window.location.search).get("section"), sections);
+    const requested = sectionFromQuery(
+      new URLSearchParams(window.location.search).get("section"),
+      sections
+    );
     if (requested) setActive(requested);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -78,59 +86,59 @@ export default function SettingsPage() {
   const ActiveSection = SECTION_MAP[current];
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-slate-950 overflow-hidden">
-      {/* Left Sidebar */}
-      <aside className="w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col overflow-hidden">
-        <div className="px-5 py-5 border-b border-gray-100 dark:border-slate-800">
-          <h1 className="text-base font-bold text-gray-900 dark:text-slate-100">Settings</h1>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-            Manage your school&apos;s preferences
-          </p>
-        </div>
-        <nav className="flex-1 overflow-y-auto p-2" aria-label="Settings sections">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            const isActive = current === s.id;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => setActive(s.id)}
-                className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-left transition-colors ${
-                  isActive
-                    ? "bg-[#EBF0F7] dark:bg-slate-700 text-[#003366] dark:text-blue-400"
-                    : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800"
-                }`}
-              >
-                <Icon
-                  className={`w-4 h-4 mt-0.5 shrink-0 ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`}
-                />
-                <div className="min-w-0">
-                  <p
-                    className={`text-xs font-semibold truncate ${isActive ? "text-[#003366] dark:text-blue-400" : "text-gray-700 dark:text-slate-300"}`}
-                  >
-                    {s.label}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate leading-tight mt-0.5">
-                    {s.desc}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </nav>
-        <div className="px-5 py-3 border-t border-gray-100 dark:border-slate-800">
-          <p className="text-[11px] font-semibold text-tl-muted">{versionLabel()}</p>
-        </div>
-      </aside>
+    <div className={`${pagePad} ${pageStack}`}>
+      <PageHeader title="Settings" subtitle="Manage your school's preferences" />
 
-      {/* Right Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-8 py-8">
+      <div className="grid items-start gap-[18px] min-[1100px]:grid-cols-[264px_minmax(0,1fr)]">
+        {/* Sections: a column beside the content on wide screens, a scrolling row above it on narrow ones. */}
+        <aside className={`${cardFrame} min-[1100px]:sticky min-[1100px]:top-4`}>
+          <nav
+            className="flex gap-1 overflow-x-auto p-2 min-[1100px]:max-h-[calc(100dvh-220px)] min-[1100px]:flex-col min-[1100px]:overflow-y-auto min-[1100px]:overflow-x-visible"
+            aria-label="Settings sections"
+          >
+            {sections.map((s) => {
+              const Icon = s.icon;
+              const isActive = current === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => setActive(s.id)}
+                  title={s.desc}
+                  className={`flex min-h-[44px] shrink-0 items-start gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors min-[1100px]:w-full ${focusRing} ${
+                    isActive
+                      ? "bg-tl-select text-tl-brand"
+                      : "text-tl-muted hover:bg-tl-bg hover:text-tl-ink"
+                  }`}
+                >
+                  <Icon
+                    aria-hidden
+                    className={`mt-0.5 h-4 w-4 shrink-0 ${isActive ? "text-tl-brand" : "text-tl-faint"}`}
+                  />
+                  <span className="min-w-0">
+                    <span
+                      className={`block truncate text-sm ${isActive ? "font-extrabold text-tl-brand" : "font-bold text-tl-body"}`}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="mt-0.5 hidden truncate text-xs leading-tight text-tl-muted min-[1100px]:block">
+                      {s.desc}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="hidden border-t border-tl-line-soft px-5 py-3 min-[1100px]:block">
+            <p className="text-xs font-semibold text-tl-muted">{versionLabel()}</p>
+          </div>
+        </aside>
+
+        <div className="min-w-0">
           <ActiveSection canManage={canManage} onNavigate={setActive} />
         </div>
-      </main>
+      </div>
     </div>
   );
 }

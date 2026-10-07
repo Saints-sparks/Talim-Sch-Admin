@@ -35,21 +35,21 @@ export default function SchoolProfileStep({ school, saving, onContinue }: School
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-[#030E18] dark:text-slate-100">School Profile</h1>
-      <p className="mt-1 text-sm text-[#6F6F6F] mb-6 dark:text-slate-400">
+      <h1 className="text-2xl font-bold text-tl-ink">School Profile</h1>
+      <p className="mt-1 text-sm text-tl-muted mb-6">
         This information was set up by your Talim administrator. You can upload a school logo.
       </p>
 
       <div className="flex items-center gap-4 mb-6">
         <div
-          className="relative w-20 h-20 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#003366] transition-colors group dark:border-slate-600 dark:bg-slate-800"
+          className="relative w-20 h-20 rounded-full border-2 border-dashed border-tl-control bg-tl-subtle flex items-center justify-center overflow-hidden cursor-pointer hover:border-tl-brand transition-colors group"
           onClick={() => fileRef.current?.click()}
         >
           {logo.preview ? (
             // Cloudinary and blob URLs are not in the Next image allow-list.
             <img src={logo.preview} alt="School logo" className="w-full h-full object-cover" />
           ) : (
-            <School className="h-8 w-8 text-gray-300 group-hover:text-[#003366] transition-colors dark:text-slate-600" />
+            <School className="h-8 w-8 text-tl-faint group-hover:text-tl-brand transition-colors" />
           )}
           {logo.uploading && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -65,13 +65,13 @@ export default function SchoolProfileStep({ school, saving, onContinue }: School
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 text-sm font-medium text-[#003366] hover:underline dark:text-blue-300"
+              className="flex items-center gap-2 text-sm font-medium text-tl-brand hover:underline"
             >
               <Upload className="h-4 w-4" />
               {logo.preview ? "Change logo" : "Upload school logo"}
             </button>
           </Tooltip>
-          <p className="text-xs text-gray-400 mt-0.5 dark:text-slate-500">PNG, JPG up to 5MB</p>
+          <p className="text-xs text-tl-faint mt-0.5">PNG, JPG up to 5MB</p>
         </div>
         <input
           ref={fileRef}
@@ -83,8 +83,15 @@ export default function SchoolProfileStep({ school, saving, onContinue }: School
       </div>
 
       <div className="space-y-3">
-        <Tooltip content="This was set during registration. Contact support to change it." side="top">
-          <ReadOnlyField icon={<School className="h-4 w-4" />} label="School name" value={school.name} />
+        <Tooltip
+          content="This was set during registration. Contact support to change it."
+          side="top"
+        >
+          <ReadOnlyField
+            icon={<School className="h-4 w-4" />}
+            label="School name"
+            value={school.name}
+          />
         </Tooltip>
         <ReadOnlyField icon={<Mail className="h-4 w-4" />} label="Email" value={school.email} />
         <ReadOnlyField
@@ -95,9 +102,9 @@ export default function SchoolProfileStep({ school, saving, onContinue }: School
         <ReadOnlyField icon={<MapPin className="h-4 w-4" />} label="Location" value={location} />
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5 dark:bg-blue-900/20">
-        <Lock className="h-4 w-4 text-blue-500 shrink-0" />
-        <p className="text-xs text-blue-600 dark:text-blue-300">
+      <div className="mt-4 flex items-center gap-2 rounded-lg bg-tl-select px-3 py-2.5">
+        <Lock className="h-4 w-4 text-tl-link shrink-0" />
+        <p className="text-xs text-tl-link">
           School name, email and phone can only be changed by a Talim administrator.
         </p>
       </div>
@@ -105,7 +112,7 @@ export default function SchoolProfileStep({ school, saving, onContinue }: School
       <button
         onClick={() => onContinue(logo.uploadedUrl)}
         disabled={saving || logo.uploading}
-        className="mt-8 w-full h-11 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        className="mt-8 w-full h-11 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {saving ? (
           <>

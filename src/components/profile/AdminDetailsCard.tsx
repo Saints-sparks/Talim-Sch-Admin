@@ -15,11 +15,7 @@ import { Camera, Mail, Phone, Shield, User } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import ChangePasswordCard from "@/components/auth/ChangePasswordCard";
-import {
-  ProfileCardHeader,
-  ProfileField,
-  ProfileSaveBar,
-} from "@/components/profile/ProfileAtoms";
+import { ProfileCardHeader, ProfileField, ProfileSaveBar } from "@/components/profile/ProfileAtoms";
 import { useProfileImage } from "@/components/profile/useProfileImage";
 import { useSaveAdminDetails, type AdminDetails } from "@/components/profile/useProfileData";
 
@@ -64,8 +60,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
   const set = (field: keyof EditableAdmin) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const initials =
-    `${form.firstName?.[0] ?? ""}${form.lastName?.[0] ?? ""}`.toUpperCase() || "AD";
+  const initials = `${form.firstName?.[0] ?? ""}${form.lastName?.[0] ?? ""}`.toUpperCase() || "AD";
   const fullName = [form.firstName, form.lastName].filter(Boolean).join(" ") || "Administrator";
 
   const handleSave = async () => {
@@ -87,7 +82,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
       {/* Hero row: photo and name */}
       <div className="flex flex-col sm:flex-row items-start gap-6">
         <div className="relative flex-shrink-0">
-          <div className="w-24 h-24 rounded-full bg-[#003366] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg dark:border-slate-800">
+          <div className="w-24 h-24 rounded-full bg-tl-brand-fill flex items-center justify-center overflow-hidden border-4 border-tl-surface shadow-lg">
             {avatar.preview ? (
               <Image
                 src={avatar.preview}
@@ -110,8 +105,8 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
 
         <div className="space-y-3">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">{fullName}</h2>
-            <p className="text-gray-500 text-sm flex items-center gap-1.5 mt-0.5 dark:text-slate-400">
+            <h2 className="text-xl font-semibold text-tl-ink">{fullName}</h2>
+            <p className="text-tl-muted text-sm flex items-center gap-1.5 mt-0.5">
               <Shield className="w-3.5 h-3.5" />
               School Administrator
             </p>
@@ -123,7 +118,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
             >
               <label
                 htmlFor="admin-avatar-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-tl-brand-fill text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-tl-brand-fill-hover transition"
               >
                 <Camera className="w-4 h-4" />
                 Change Photo
@@ -141,7 +136,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
                 type="button"
                 onClick={avatar.remove}
                 disabled={avatar.busy}
-                className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition disabled:opacity-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                className="px-4 py-2 text-sm font-medium text-tl-danger border border-tl-danger/30 rounded-lg hover:bg-tl-danger-bg transition disabled:opacity-50"
               >
                 Remove Photo
               </button>
@@ -154,7 +149,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-700"
+        className="bg-tl-surface rounded-xl border border-tl-line shadow-sm overflow-hidden"
       >
         <ProfileCardHeader
           title="Personal Information"
@@ -200,7 +195,7 @@ export function AdminDetailsCard({ admin }: { admin: AdminDetails }) {
             />
           </div>
 
-          <div className="mt-6 border-t border-gray-100 pt-6 dark:border-slate-700">
+          <div className="mt-6 border-t border-tl-line-soft pt-6">
             <ChangePasswordCard />
           </div>
 

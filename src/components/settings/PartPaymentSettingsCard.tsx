@@ -64,13 +64,10 @@ export function PartPaymentSettingsCard({
     <Card>
       <CardHeader title="Part Payments" />
       <form onSubmit={submit} noValidate className="px-5 py-4 space-y-2">
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-gray-800 dark:text-slate-200"
-        >
+        <label htmlFor={inputId} className="block text-sm font-medium text-tl-ink">
           Minimum part payment (₦)
         </label>
-        <p id={hintId} className="text-xs text-gray-600 dark:text-slate-400">
+        <p id={hintId} className="text-xs text-tl-muted">
           Applies to fees that allow part payment. 0 means parents may pay any amount. A parent
           paying the whole remaining balance is never blocked.
         </p>
@@ -89,7 +86,7 @@ export function PartPaymentSettingsCard({
             disabled={!canManage}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? `${hintId} ${errorId}` : hintId}
-            className="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/30 disabled:opacity-60"
+            className="w-40 px-3 py-2 text-sm border border-tl-control rounded-lg outline-none focus:border-tl-link focus:ring-2 focus:ring-tl-link disabled:opacity-60"
           />
           {canManage && (
             <PrimaryBtn type="submit" loading={saving}>
@@ -98,7 +95,7 @@ export function PartPaymentSettingsCard({
           )}
         </div>
         {error && (
-          <p id={errorId} role="alert" className="text-xs text-red-700 dark:text-red-300">
+          <p id={errorId} role="alert" className="text-xs text-tl-danger">
             {error}
           </p>
         )}

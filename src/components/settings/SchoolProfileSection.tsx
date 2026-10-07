@@ -31,7 +31,12 @@ interface ProfileForm {
   contactRole: string;
 }
 
-const EMPTY_FORM: ProfileForm = { physicalAddress: "", contactName: "", contactPhone: "", contactRole: "" };
+const EMPTY_FORM: ProfileForm = {
+  physicalAddress: "",
+  contactName: "",
+  contactPhone: "",
+  contactRole: "",
+};
 
 /**
  * Settings → School Profile: the school's logo, its read-only identity
@@ -108,11 +113,11 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
       <Card>
         <CardHeader title="School Logo" />
         <div className="p-5 flex items-center gap-5">
-          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-600 flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
+          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-tl-line flex items-center justify-center bg-tl-subtle overflow-hidden">
             {school.logo ? (
               <img src={school.logo} alt="School logo" className="w-full h-full object-contain" />
             ) : (
-              <School className="w-8 h-8 text-gray-300 dark:text-slate-500" />
+              <School className="w-8 h-8 text-tl-faint" />
             )}
           </div>
           {canManage && (
@@ -128,7 +133,7 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
                 <Upload className="w-4 h-4" />
                 {uploading ? "Uploading…" : "Change Logo"}
               </OutlineBtn>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">PNG, JPG — max 2MB</p>
+              <p className="text-xs text-tl-muted mt-1.5">PNG, JPG — max 2MB</p>
             </div>
           )}
         </div>
@@ -163,8 +168,8 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
           </div>
 
           {editing ? (
-            <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-slate-700">
-              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+            <div className="space-y-4 pt-2 border-t border-tl-line-soft">
+              <p className="text-xs font-semibold text-tl-muted uppercase tracking-wide">
                 Editable Fields
               </p>
               <InputField
@@ -172,7 +177,9 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
                 value={form.physicalAddress}
                 onChange={(v) => setForm({ ...form, physicalAddress: v })}
                 placeholder="e.g. 123 Education Lane, Lagos"
-                error={addressTooLong ? `Keep the address under ${ADDRESS_MAX} characters` : undefined}
+                error={
+                  addressTooLong ? `Keep the address under ${ADDRESS_MAX} characters` : undefined
+                }
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField
@@ -198,19 +205,17 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
           ) : (
             <>
               <div className="flex items-start gap-2 pt-2">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700 dark:text-slate-300">
-                  {school.physicalAddress || "—"}
-                </span>
+                <MapPin className="w-3.5 h-3.5 text-tl-faint shrink-0 mt-0.5" />
+                <span className="text-sm text-tl-body">{school.physicalAddress || "—"}</span>
               </div>
               {contact && (
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-tl-muted">
                   <span className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />
+                    <User className="w-3.5 h-3.5 text-tl-faint" />
                     {contact.name} ({contact.role})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />
+                    <Phone className="w-3.5 h-3.5 text-tl-faint" />
                     {contact.phone}
                   </span>
                 </div>
@@ -218,7 +223,7 @@ export function SchoolProfileSection({ canManage }: { canManage: boolean }) {
             </>
           )}
 
-          <Notice icon={<Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />}>
+          <Notice icon={<Info className="w-4 h-4 text-tl-link shrink-0 mt-0.5" />}>
             School name, email and code are managed by Talim support. Contact{" "}
             <a href="mailto:support@mytalim.com" className="underline font-medium">
               support@mytalim.com

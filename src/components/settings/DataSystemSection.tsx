@@ -2,13 +2,16 @@
 
 import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ghostButton } from "@/components/tl/styles";
 import {
   CheckCircle2,
   Download,
   ExternalLink,
   FileText,
   LifeBuoy,
+  MessageSquare,
   Loader2,
   Receipt,
   UserCog,
@@ -74,7 +77,8 @@ const SYSTEM_INFO = [
 
 /**
  * Settings → Data & System: CSV exports, where the school's backups stand,
- * what this build is, and "Report a problem" to Talim support (Round 4 §35).
+ * what this build is, "Report a problem" to Talim support (Round 4 §35), and
+ * "Contact Talim support", the admin's own tickets in Help & support (v1.5 §1).
  *
  * Only the exports and reports the role may run are shown. The backup card
  * used to print a "last backup" 24 hours ago and a "next backup" six days out,
@@ -106,19 +110,19 @@ export function DataSystemSection() {
             return (
               <Card key={c.title} className="p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center shrink-0">
-                    <c.icon className="w-4 h-4 text-[#003366] dark:text-blue-400" />
+                  <div className="w-9 h-9 rounded-lg bg-tl-select flex items-center justify-center shrink-0">
+                    <c.icon className="w-4 h-4 text-tl-brand" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{c.desc}</p>
+                    <p className="text-sm font-semibold text-tl-ink">{c.title}</p>
+                    <p className="text-xs text-tl-muted mt-0.5">{c.desc}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => activate(c)}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#003366] dark:text-blue-400 font-medium hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-xs text-tl-brand font-medium hover:underline disabled:opacity-50"
                 >
                   {busy ? (
                     <>
@@ -143,13 +147,11 @@ export function DataSystemSection() {
       <Card>
         <CardHeader title="Backups" />
         <div className="p-5">
-          <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+          <div className="flex items-center gap-3 p-3 bg-tl-success-bg rounded-lg border border-tl-success/30">
+            <CheckCircle2 className="w-5 h-5 text-tl-success shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-green-700 dark:text-green-400">
-                Backups are managed by Talim
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-500">
+              <p className="text-sm font-semibold text-tl-success">Backups are managed by Talim</p>
+              <p className="text-xs text-tl-success">
                 Your school&apos;s data is backed up weekly. To request a restore, contact{" "}
                 <a href="mailto:support@mytalim.com" className="underline font-medium">
                   support@mytalim.com
@@ -167,12 +169,12 @@ export function DataSystemSection() {
           {SYSTEM_INFO.map((s) => (
             <div
               key={s.label}
-              className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 dark:border-slate-700 last:border-0"
+              className="flex items-center justify-between gap-3 py-2 border-b border-tl-line-soft last:border-0"
             >
-              <span className="text-gray-500 dark:text-slate-400">{s.label}</span>
-              <span className="text-gray-800 dark:text-slate-200 font-medium truncate">
+              <span className="text-tl-muted">{s.label}</span>
+              <span className="text-tl-ink font-medium truncate">
                 {s.label === "Support" ? (
-                  <a href={`mailto:${s.value}`} className="text-[#003366] dark:text-blue-400 hover:underline">
+                  <a href={`mailto:${s.value}`} className="text-tl-brand hover:underline">
                     {s.value}
                   </a>
                 ) : (
@@ -188,18 +190,26 @@ export function DataSystemSection() {
         <CardHeader title="Help" />
         <div className="p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Something not working?</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-              Tell the Talim support team. You&apos;ll get a reference to quote.
+            <p className="text-sm font-medium text-tl-ink">Something not working?</p>
+            <p className="text-xs text-tl-muted mt-0.5">
+              Tell the Talim support team. You&apos;ll get a reference to quote, and can follow your
+              tickets in Help &amp; support.
             </p>
           </div>
-          <OutlineBtn onClick={() => setReporting(true)}>
-            <LifeBuoy className="w-3.5 h-3.5" aria-hidden /> Report a problem
-          </OutlineBtn>
+          <div className="flex flex-wrap gap-2.5">
+            <Link href="/help" className={ghostButton}>
+              <MessageSquare className="h-4 w-4" aria-hidden /> Contact Talim support
+            </Link>
+            <OutlineBtn onClick={() => setReporting(true)}>
+              <LifeBuoy className="w-3.5 h-3.5" aria-hidden /> Report a problem
+            </OutlineBtn>
+          </div>
         </div>
       </Card>
 
-      <AnimatePresence>{reporting && <ReportProblemModal onClose={() => setReporting(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {reporting && <ReportProblemModal onClose={() => setReporting(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

@@ -78,29 +78,27 @@ export default function PersonalProfileStep({
   };
 
   const nameInputCls = (hasError: boolean) =>
-    `w-full h-10 px-3 border rounded-lg text-sm bg-[#F9FAFB] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#003366]/30 dark:bg-slate-800 dark:text-slate-100 ${
-      hasError
-        ? "border-red-400 focus:border-red-500 dark:border-red-500"
-        : "border-[#E5E7EB] focus:border-[#003366] dark:border-slate-600"
+    `w-full h-10 px-3 border rounded-lg text-sm bg-tl-subtle text-tl-ink focus:outline-none focus:ring-2 focus:ring-tl-link   ${
+      hasError ? "border-tl-danger focus:border-tl-danger" : "border-tl-line focus:border-tl-link"
     }`;
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-[#030E18] dark:text-slate-100">Your Profile</h1>
-      <p className="mt-1 text-sm text-[#6F6F6F] mb-6 dark:text-slate-400">
+      <h1 className="text-2xl font-bold text-tl-ink">Your Profile</h1>
+      <p className="mt-1 text-sm text-tl-muted mb-6">
         Add your name and a profile photo so your team recognises you.
       </p>
 
       <div className="flex items-center gap-4 mb-6">
         <div
-          className="relative w-20 h-20 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#003366] transition-colors group dark:border-slate-600 dark:bg-slate-800"
+          className="relative w-20 h-20 rounded-full border-2 border-dashed border-tl-control bg-tl-subtle flex items-center justify-center overflow-hidden cursor-pointer hover:border-tl-brand transition-colors group"
           onClick={() => fileRef.current?.click()}
         >
           {photo.preview ? (
             // Cloudinary and blob URLs are not in the Next image allow-list.
             <img src={photo.preview} alt="Your photo" className="w-full h-full object-cover" />
           ) : (
-            <User className="h-8 w-8 text-gray-300 group-hover:text-[#003366] transition-colors dark:text-slate-600" />
+            <User className="h-8 w-8 text-tl-faint group-hover:text-tl-brand transition-colors" />
           )}
           {photo.uploading && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -113,13 +111,13 @@ export default function PersonalProfileStep({
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 text-sm font-medium text-[#003366] hover:underline dark:text-blue-300"
+              className="flex items-center gap-2 text-sm font-medium text-tl-brand hover:underline"
             >
               <Upload className="h-4 w-4" />
               {photo.preview ? "Change photo" : "Upload photo"}
             </button>
           </Tooltip>
-          <p className="text-xs text-gray-400 mt-0.5 dark:text-slate-500">Optional — PNG, JPG up to 5MB</p>
+          <p className="text-xs text-tl-faint mt-0.5">Optional — PNG, JPG up to 5MB</p>
         </div>
         <input
           ref={fileRef}
@@ -139,9 +137,9 @@ export default function PersonalProfileStep({
             <div>
               <label
                 htmlFor="onboarding-first-name"
-                className="block text-sm font-medium text-[#030E18] mb-1.5 dark:text-slate-200"
+                className="block text-sm font-medium text-tl-ink mb-1.5"
               >
-                First name <span className="text-red-500">*</span>
+                First name <span className="text-tl-danger">*</span>
               </label>
               <input
                 id="onboarding-first-name"
@@ -155,14 +153,14 @@ export default function PersonalProfileStep({
                 placeholder="e.g. Sarah"
                 className={nameInputCls(Boolean(firstNameError))}
               />
-              {firstNameError && <p className="mt-1 text-xs text-red-600">{firstNameError}</p>}
+              {firstNameError && <p className="mt-1 text-xs text-tl-danger">{firstNameError}</p>}
             </div>
             <div>
               <label
                 htmlFor="onboarding-last-name"
-                className="block text-sm font-medium text-[#030E18] mb-1.5 dark:text-slate-200"
+                className="block text-sm font-medium text-tl-ink mb-1.5"
               >
-                Last name <span className="text-red-500">*</span>
+                Last name <span className="text-tl-danger">*</span>
               </label>
               <input
                 id="onboarding-last-name"
@@ -176,18 +174,22 @@ export default function PersonalProfileStep({
                 placeholder="e.g. Johnson"
                 className={nameInputCls(Boolean(lastNameError))}
               />
-              {lastNameError && <p className="mt-1 text-xs text-red-600">{lastNameError}</p>}
+              {lastNameError && <p className="mt-1 text-xs text-tl-danger">{lastNameError}</p>}
             </div>
           </div>
         </Tooltip>
 
         <ReadOnlyField icon={<Mail className="h-4 w-4" />} label="Email" value={email} />
-        <ReadOnlyField icon={<Phone className="h-4 w-4" />} label="Phone" value={phone || "Not set"} />
+        <ReadOnlyField
+          icon={<Phone className="h-4 w-4" />}
+          label="Phone"
+          value={phone || "Not set"}
+        />
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5 dark:bg-blue-900/20">
-        <Lock className="h-4 w-4 text-blue-500 shrink-0" />
-        <p className="text-xs text-blue-600 dark:text-blue-300">
+      <div className="mt-4 flex items-center gap-2 rounded-lg bg-tl-select px-3 py-2.5">
+        <Lock className="h-4 w-4 text-tl-link shrink-0" />
+        <p className="text-xs text-tl-link">
           Email and phone number can only be changed by a Talim administrator.
         </p>
       </div>
@@ -196,14 +198,14 @@ export default function PersonalProfileStep({
         <button
           type="button"
           onClick={onBack}
-          className="h-11 px-5 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="h-11 px-5 border border-tl-line text-tl-muted text-sm font-medium rounded-lg hover:bg-tl-bg transition-colors"
         >
           Back
         </button>
         <button
           onClick={handleSubmit}
           disabled={saving || photo.uploading}
-          className="flex-1 h-11 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 h-11 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {saving ? (
             <>

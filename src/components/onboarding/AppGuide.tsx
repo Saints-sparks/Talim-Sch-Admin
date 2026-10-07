@@ -2,14 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowLeft,
-  ArrowRight,
-  HelpCircle,
-  Lightbulb,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, HelpCircle, Lightbulb, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -60,7 +53,8 @@ function getCardPosition(rect: TargetRect | null) {
   const viewportPadding = 16;
   const spaceRight = window.innerWidth - (rect.left + rect.width);
   const spaceLeft = rect.left;
-  const prefersSide = window.innerWidth >= 768 && (spaceRight > cardWidth + 32 || spaceLeft > cardWidth + 32);
+  const prefersSide =
+    window.innerWidth >= 768 && (spaceRight > cardWidth + 32 || spaceLeft > cardWidth + 32);
 
   if (prefersSide) {
     const placeRight = spaceRight >= cardWidth + 32;
@@ -79,10 +73,7 @@ function getCardPosition(rect: TargetRect | null) {
   }
 
   const below = rect.top + rect.height + 20;
-  const top =
-    below + 320 < window.innerHeight
-      ? below
-      : Math.max(viewportPadding, rect.top - 320);
+  const top = below + 320 < window.innerHeight ? below : Math.max(viewportPadding, rect.top - 320);
 
   return {
     top: `${top}px`,
@@ -97,7 +88,7 @@ function getCardPosition(rect: TargetRect | null) {
 
 function ComicArrow({ side }: { side: string }) {
   const base =
-    "absolute h-5 w-5 rotate-45 border border-blue-100 bg-white dark:border-white/10 dark:bg-[#0B1220]";
+    "absolute h-5 w-5 rotate-45 border border-tl-control bg-tl-surface dark:border-white/10";
   if (side === "left") return <span className={`${base} -left-2 top-16`} />;
   if (side === "right") return <span className={`${base} -right-2 top-16`} />;
   if (side === "bottom") return <span className={`${base} -bottom-2 left-1/2 -translate-x-1/2`} />;
@@ -144,26 +135,32 @@ function GuideCard({
       }}
     >
       <ComicArrow side={position.arrow} />
-      <div className="relative overflow-hidden rounded-[20px] border border-blue-100 bg-white/95 p-5 shadow-[0_22px_70px_rgba(3,14,24,0.22)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1220]/95">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-br from-[#EAF2FB] via-white to-[#FFF4D8] opacity-80 dark:from-[#12395F] dark:via-[#0B1220] dark:to-[#4A3715]" />
+      <div className="relative overflow-hidden rounded-[20px] border border-tl-control bg-tl-surface p-5 shadow-[0_22px_70px_rgba(3,14,24,0.22)] backdrop-blur-xl dark:border-white/10">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-br from-tl-select to-tl-warning-bg opacity-80" />
 
         <div className="relative flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <motion.div
               animate={{ y: [0, -3, 0] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-              className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] shadow-lg shadow-blue-900/20"
+              className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-tl-brand-fill shadow-lg shadow-blue-900/20"
             >
-              <Image src="/img/treelogo.svg" alt="Talim" width={28} height={28} className="h-7 w-7" />
-              <span className="absolute -right-1 -top-1 rounded-full bg-[#F4B740] p-1">
-                <Sparkles className="h-3 w-3 text-[#003366]" />
+              <Image
+                src="/img/treelogo.svg"
+                alt="Talim"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+              />
+              <span className="absolute -right-1 -top-1 rounded-full bg-tl-warning-bg p-1">
+                <Sparkles className="h-3 w-3 text-tl-brand" />
               </span>
             </motion.div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#B88916] dark:text-[#F4B740]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-tl-warning">
                 {step.eyebrow || "Talim guide"}
               </p>
-              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+              <p className="text-xs font-semibold text-tl-faint">
                 Step {current + 1} of {total}
               </p>
             </div>
@@ -173,31 +170,27 @@ function GuideCard({
             type="button"
             onClick={onClose}
             aria-label="Close guide"
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+            className="rounded-full p-2 text-tl-faint transition hover:bg-tl-bg hover:text-tl-ink dark:hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="relative mt-5">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#F4B740]/40 bg-[#FFF8E8] px-3 py-1 text-xs font-semibold text-[#7A5600] dark:border-[#F4B740]/30 dark:bg-[#F4B740]/10 dark:text-[#FFE3A0]">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-tl-warning/30 bg-tl-warning-bg px-3 py-1 text-xs font-semibold text-tl-warning">
             <Icon className="h-3.5 w-3.5" />
             Quick coach note
           </div>
 
-          <h3 className="text-xl font-bold tracking-normal text-[#030E18] dark:text-white">
-            {step.title}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
-            {step.description}
-          </p>
+          <h3 className="text-xl font-bold tracking-normal text-tl-ink">{step.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-tl-muted">{step.description}</p>
 
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#EAF2FB] dark:bg-white/10">
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-tl-select dark:bg-white/10">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
-              className="h-full rounded-full bg-gradient-to-r from-[#003366] via-[#1E5B91] to-[#F4B740]"
+              className="h-full rounded-full bg-tl-brand-fill"
             />
           </div>
 
@@ -206,7 +199,7 @@ function GuideCard({
               type="button"
               onClick={onBack}
               disabled={current === 0}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-xl border border-tl-line px-4 py-2 text-sm font-semibold text-tl-muted transition hover:bg-tl-bg disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:hover:bg-white/10"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -214,7 +207,7 @@ function GuideCard({
             <button
               type="button"
               onClick={isLast ? onDone : onNext}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#003366] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:bg-[#00264D] active:translate-y-0 dark:bg-[#F4B740] dark:text-[#0B1220] dark:hover:bg-[#FFD06B]"
+              className="inline-flex items-center gap-2 rounded-xl bg-tl-brand-fill px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-tl-brand-fill-hover active:translate-y-0"
             >
               {isLast ? "Got it" : "Next"}
               {isLast ? <Sparkles className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
@@ -236,7 +229,9 @@ function GuideCard({
  * @returns The Tailwind position classes.
  */
 export function guideButtonPosition(pathname: string | null | undefined): string {
-  return pathname === "/messages" || pathname?.startsWith("/messages/") ? "bottom-24 right-5" : "bottom-5 right-5";
+  return pathname === "/messages" || pathname?.startsWith("/messages/")
+    ? "bottom-24 right-5"
+    : "bottom-5 right-5";
 }
 
 const GUIDE_POLL_MS = 250;
@@ -334,7 +329,7 @@ export default function AppGuide() {
           setStepIndex(0);
           setIsOpen(true);
         }}
-        className={`fixed ${guideButtonPosition(pathname)} z-[900] inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/90 px-4 py-3 text-sm font-bold text-[#003366] shadow-xl shadow-blue-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 dark:bg-[#0B1220]/90 dark:text-[#F4B740]`}
+        className={`fixed ${guideButtonPosition(pathname)} z-[900] inline-flex items-center gap-2 rounded-full border border-white/60 bg-tl-surface px-4 py-3 text-sm font-bold text-tl-brand shadow-xl shadow-blue-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 `}
       >
         <HelpCircle className="h-4 w-4" />
         Guide
@@ -347,13 +342,13 @@ export default function AppGuide() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[999] bg-[#030E18]/35 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[999] bg-[rgba(15,27,46,0.35)] backdrop-blur-[1px]"
             />
 
             {rect && (
               <motion.div
                 layout
-                className="pointer-events-none fixed z-[1000] rounded-[22px] border-2 border-[#F4B740] shadow-[0_0_0_9999px_rgba(3,14,24,0.28),0_0_32px_rgba(244,183,64,0.65)]"
+                className="pointer-events-none fixed z-[1000] rounded-[22px] border-2 border-tl-warning shadow-[0_0_0_9999px_rgba(3,14,24,0.28),0_0_32px_rgba(244,183,64,0.65)]"
                 style={{
                   top: Math.max(rect.top - 8, 8),
                   left: Math.max(rect.left - 8, 8),
@@ -369,9 +364,7 @@ export default function AppGuide() {
               total={config.steps.length}
               rect={rect}
               onBack={() => setStepIndex((value) => Math.max(value - 1, 0))}
-              onNext={() =>
-                setStepIndex((value) => Math.min(value + 1, config.steps.length - 1))
-              }
+              onNext={() => setStepIndex((value) => Math.min(value + 1, config.steps.length - 1))}
               onDone={() => close(true)}
               onClose={() => close(false)}
             />

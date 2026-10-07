@@ -3,7 +3,10 @@
 import React, { useMemo, useState } from "react";
 import { Info, RotateCcw } from "lucide-react";
 import { ApiError } from "@/lib/apiError";
-import { useAcademicSettings, useUpdateAcademicSettings } from "@/hooks/settings/useAcademicSettings";
+import {
+  useAcademicSettings,
+  useUpdateAcademicSettings,
+} from "@/hooks/settings/useAcademicSettings";
 import type { AcademicSettings } from "@/app/services/school-settings.service";
 import {
   Card,
@@ -65,7 +68,10 @@ export function GradingSection({ canManage }: { canManage: boolean }) {
 
   // A fresh form whenever the saved scale changes (after a save), but not when
   // School Day & Bells saves or a refetch brings back the same scale.
-  const key = JSON.stringify({ scale: query.data.gradeScale ?? null, pass: query.data.passMark ?? null });
+  const key = JSON.stringify({
+    scale: query.data.gradeScale ?? null,
+    pass: query.data.passMark ?? null,
+  });
   return <GradingForm key={key} settings={query.data} canManage={canManage} />;
 }
 
@@ -126,7 +132,7 @@ function GradingForm({ settings, canManage }: { settings: AcademicSettings; canM
       <SectionHeader title={TITLE} desc={DESC} />
 
       {!canManage && (
-        <Notice icon={<Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden />}>
+        <Notice icon={<Info className="w-4 h-4 text-tl-link shrink-0 mt-0.5" aria-hidden />}>
           You can view the grade scale. Changing it needs the Manage Settings permission.
         </Notice>
       )}
@@ -164,11 +170,12 @@ function GradingForm({ settings, canManage }: { settings: AcademicSettings; canM
             />
             <FieldError controlId="grading-pass-mark" message={errors.passMark} />
           </div>
-          <p id="grading-pass-mark-hint" className="text-xs text-gray-500 dark:text-slate-400">
-            Scores at or above this percent count as a pass, for example in the pass rates teachers see.
+          <p id="grading-pass-mark-hint" className="text-xs text-tl-muted">
+            Scores at or above this percent count as a pass, for example in the pass rates teachers
+            see.
           </p>
-          <div className="pt-3 border-t border-gray-100 dark:border-slate-700">
-            <h4 className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-2">Preview</h4>
+          <div className="pt-3 border-t border-tl-line-soft">
+            <h4 className="text-xs font-semibold text-tl-body mb-2">Preview</h4>
             <GradePreview rows={rows} passMark={passMark} />
           </div>
         </div>
@@ -177,11 +184,14 @@ function GradingForm({ settings, canManage }: { settings: AcademicSettings; canM
       {canManage && (
         <div className="flex flex-wrap items-center justify-end gap-3">
           {blocked && (
-            <p role="alert" className="mr-auto text-xs text-red-600 dark:text-red-400">
+            <p role="alert" className="mr-auto text-xs text-tl-danger">
               Fix the highlighted fields before saving.
             </p>
           )}
-          <OutlineBtn onClick={resetToDefault} disabled={saving || isDefaultGrading(rows, passMark)}>
+          <OutlineBtn
+            onClick={resetToDefault}
+            disabled={saving || isDefaultGrading(rows, passMark)}
+          >
             <RotateCcw className="w-3.5 h-3.5" aria-hidden />
             Reset to default
           </OutlineBtn>

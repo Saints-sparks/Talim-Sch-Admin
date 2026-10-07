@@ -38,13 +38,13 @@ function DetailRow({
   loading?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 text-sm py-1.5 border-b border-gray-50 dark:border-slate-700 last:border-0">
-      <span className="text-gray-500 dark:text-slate-400">{label}</span>
+    <div className="flex items-center justify-between gap-3 text-sm py-1.5 border-b border-tl-line-soft last:border-0">
+      <span className="text-tl-muted">{label}</span>
       {loading ? (
-        <span className="inline-block w-24 h-3.5 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
+        <span className="inline-block w-24 h-3.5 bg-tl-track rounded animate-pulse" />
       ) : (
         <span
-          className={`font-medium flex items-center gap-1.5 truncate max-w-[180px] ${tone || "text-gray-800 dark:text-slate-200"}`}
+          className={`font-medium flex items-center gap-1.5 truncate max-w-[180px] ${tone || "text-tl-ink"}`}
         >
           {icon}
           {value}
@@ -77,7 +77,7 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
 
   const boolLabel = (v?: boolean) => (v === undefined ? "—" : v ? "Yes" : "No");
   const boolTone = (v?: boolean) =>
-    v === undefined ? "" : v ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+    v === undefined ? "" : v ? "text-tl-success" : "text-tl-danger";
 
   return (
     <div className="space-y-5">
@@ -89,8 +89,8 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
           <div className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-3 py-2">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Account Password</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                <p className="text-sm font-medium text-tl-ink">Account Password</p>
+                <p className="text-xs text-tl-muted mt-0.5">
                   Update your password regularly for security
                 </p>
               </div>
@@ -106,35 +106,31 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
           <div className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">
-                  Email OTP (Withdrawals)
-                </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  OTP sent to: {maskEmail(email)}
-                </p>
+                <p className="text-sm font-medium text-tl-ink">Email OTP (Withdrawals)</p>
+                <p className="text-xs text-tl-muted">OTP sent to: {maskEmail(email)}</p>
               </div>
               {finance.isLoading ? (
-                <div className="w-16 h-5 bg-gray-100 dark:bg-slate-700 rounded-full animate-pulse" />
+                <div className="w-16 h-5 bg-tl-track rounded-full animate-pulse" />
               ) : finance.isError ? (
-                <span className="text-xs text-gray-500 dark:text-slate-400">Unavailable</span>
+                <span className="text-xs text-tl-muted">Unavailable</span>
               ) : (
                 <span
                   className={`text-xs font-medium border px-2 py-0.5 rounded-full shrink-0 ${
                     otpEnabled
-                      ? "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
-                      : "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700"
+                      ? "text-tl-success border-tl-success/30 bg-tl-success-bg"
+                      : "text-tl-muted border-tl-line bg-tl-subtle"
                   }`}
                 >
                   {otpEnabled ? "Enabled" : "Disabled"}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
+            <p className="text-xs text-tl-muted">
               Manage OTP settings in{" "}
               <button
                 type="button"
                 onClick={() => onNavigate("payments-finance")}
-                className="text-[#003366] dark:text-blue-400 underline font-medium"
+                className="text-tl-brand underline font-medium"
               >
                 Payments &amp; Finance
               </button>
@@ -147,9 +143,9 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
             title="Session Security"
             action={
               loadingProfile ? (
-                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-[#003366] rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-tl-control border-t-tl-brand rounded-full animate-spin" />
               ) : (
-                <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <span className="text-xs text-tl-success flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Live
                 </span>
               )
@@ -158,7 +154,9 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
           <div className="p-5 space-y-2">
             <DetailRow
               label="Last Login"
-              value={profile.data?.lastLogin ? new Date(profile.data.lastLogin).toLocaleString() : "—"}
+              value={
+                profile.data?.lastLogin ? new Date(profile.data.lastLogin).toLocaleString() : "—"
+              }
               loading={loadingProfile}
             />
             <DetailRow
@@ -167,9 +165,9 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
               tone={boolTone(profile.data?.isEmailVerified)}
               icon={
                 profile.data?.isEmailVerified === true ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-tl-success" />
                 ) : profile.data?.isEmailVerified === false ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+                  <AlertCircle className="w-3.5 h-3.5 text-tl-danger" />
                 ) : null
               }
               loading={loadingProfile}
@@ -177,7 +175,11 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
             <DetailRow
               label="Account Status"
               value={
-                profile.data?.isActive === undefined ? "—" : profile.data.isActive ? "Active" : "Inactive"
+                profile.data?.isActive === undefined
+                  ? "—"
+                  : profile.data.isActive
+                    ? "Active"
+                    : "Inactive"
               }
               tone={boolTone(profile.data?.isActive)}
               loading={loadingProfile}
@@ -191,7 +193,7 @@ export function SecuritySection({ onNavigate }: { onNavigate: (id: SectionId) =>
             <DetailRow
               label="Role"
               value={(profile.data?.role ?? user?.role ?? "school_admin").replace(/_/g, " ")}
-              tone="capitalize text-gray-800 dark:text-slate-200"
+              tone="capitalize text-tl-ink"
             />
             <DetailRow
               label="School"

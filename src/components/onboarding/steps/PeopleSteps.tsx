@@ -28,21 +28,21 @@ export function AddTeacherStep({ onComplete }: { onComplete: () => void }) {
 
   return (
     <StepCard stepId="add-teacher">
-      <p className="text-sm text-gray-600 mb-6 max-w-sm dark:text-slate-300">
+      <p className="text-sm text-tl-muted mb-6 max-w-sm">
         Register a teacher account. They will receive a login email and can be assigned to classes
         and courses.
       </p>
       <PermissionGate
         permission={Permission.MANAGE_TEACHERS}
         fallback={
-          <p className="text-sm text-gray-500 dark:text-slate-400">
+          <p className="text-sm text-tl-muted">
             Your role can&apos;t add teachers. Ask an administrator who can manage teachers.
           </p>
         }
       >
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 h-11 px-6 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <UserRound className="h-4 w-4" /> Add Teacher
         </button>
@@ -72,21 +72,21 @@ export function AddStudentStep({ onComplete }: { onComplete: () => void }) {
 
   return (
     <StepCard stepId="add-student">
-      <p className="text-sm text-gray-600 mb-6 max-w-sm dark:text-slate-300">
+      <p className="text-sm text-tl-muted mb-6 max-w-sm">
         Enrol your first student and assign them to a class. You can always add more from the
         Students section.
       </p>
       <PermissionGate
         permission={Permission.MANAGE_STUDENTS}
         fallback={
-          <p className="text-sm text-gray-500 dark:text-slate-400">
+          <p className="text-sm text-tl-muted">
             Your role can&apos;t add students. Ask an administrator who can manage students.
           </p>
         }
       >
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 h-11 px-6 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <Users className="h-4 w-4" /> Add Student
         </button>

@@ -8,10 +8,8 @@ import React from "react";
 
 /** Input and select classes, matching `InputField` in `settings/ui`. */
 export function controlClasses(hasError: boolean): string {
-  return `w-full px-3 py-2.5 text-sm border rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-[#003366]/10 dark:focus:ring-blue-500/30 outline-none transition disabled:opacity-60 ${
-    hasError
-      ? "border-red-400 dark:border-red-500 focus:border-red-500"
-      : "border-gray-300 dark:border-slate-600 focus:border-[#003366] dark:focus:border-blue-500"
+  return `w-full px-3 py-2.5 text-sm border rounded-lg bg-tl-surface text-tl-ink focus:ring-2 focus:ring-tl-link  outline-none transition disabled:opacity-60 ${
+    hasError ? "border-tl-danger focus:border-tl-danger" : "border-tl-control focus:border-tl-link"
   }`;
 }
 
@@ -33,7 +31,7 @@ export function describedBy(controlId: string, error?: string, hintId?: string) 
 export function FieldError({ controlId, message }: { controlId: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={errorId(controlId)} className="mt-1 text-xs text-red-600 dark:text-red-400">
+    <p id={errorId(controlId)} className="mt-1 text-xs text-tl-danger">
       {message}
     </p>
   );
@@ -50,10 +48,10 @@ export function FieldLabel({
   required?: boolean;
 }) {
   return (
-    <label htmlFor={htmlFor} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+    <label htmlFor={htmlFor} className="block text-xs font-medium text-tl-body mb-1">
       {children}
       {required && (
-        <span className="text-red-500" aria-hidden>
+        <span className="text-tl-danger" aria-hidden>
           {" "}
           *
         </span>

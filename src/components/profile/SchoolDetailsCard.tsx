@@ -71,9 +71,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
   const canEdit = hasPermission(Permission.MANAGE_SETTINGS);
 
   const { save, saveLogo, saving } = useSaveSchoolDetails();
-  const logo = useProfileImage("profile/school-logo", school.logo, (url) =>
-    saveLogo(url || null)
-  );
+  const logo = useProfileImage("profile/school-logo", school.logo, (url) => saveLogo(url || null));
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<EditableSchool>({
@@ -115,7 +113,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
       {/* Hero row: logo and name */}
       <div className="flex flex-col sm:flex-row items-start gap-6 mt-4">
         <div className="relative flex-shrink-0">
-          <div className="w-24 h-24 rounded-xl bg-blue-50 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden dark:bg-blue-900/30 dark:border-slate-800">
+          <div className="w-24 h-24 rounded-xl bg-tl-select border-2 border-tl-surface shadow-lg flex items-center justify-center overflow-hidden">
             {logo.preview ? (
               <Image
                 src={logo.preview}
@@ -126,7 +124,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
                 unoptimized
               />
             ) : (
-              <School className="w-10 h-10 text-[#003366] dark:text-blue-200" />
+              <School className="w-10 h-10 text-tl-brand" />
             )}
           </div>
           {logo.busy && (
@@ -138,13 +136,9 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
 
         <div className="space-y-3">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-              {school.name || "Your School"}
-            </h2>
+            <h2 className="text-xl font-semibold text-tl-ink">{school.name || "Your School"}</h2>
             {school.prefix && (
-              <p className="text-gray-500 text-sm mt-0.5 dark:text-slate-400">
-                Prefix: {school.prefix}
-              </p>
+              <p className="text-tl-muted text-sm mt-0.5">Prefix: {school.prefix}</p>
             )}
           </div>
           {canEdit && (
@@ -155,7 +149,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
               >
                 <label
                   htmlFor="school-logo-upload"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-[#002244] transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-tl-brand-fill text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-tl-brand-fill-hover transition"
                 >
                   <Camera className="w-4 h-4" />
                   Change Logo
@@ -173,7 +167,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
                   type="button"
                   onClick={logo.remove}
                   disabled={logo.busy}
-                  className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition disabled:opacity-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                  className="px-4 py-2 text-sm font-medium text-tl-danger border border-tl-danger/30 rounded-lg hover:bg-tl-danger-bg transition disabled:opacity-50"
                 >
                   Remove Logo
                 </button>
@@ -188,7 +182,7 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-700"
+        className="bg-tl-surface rounded-xl border border-tl-line shadow-sm overflow-hidden"
       >
         <ProfileCardHeader
           title="School Information"
@@ -250,9 +244,9 @@ export function SchoolDetailsCard({ school }: { school: SchoolDetails }) {
           </div>
 
           {!canEdit && (
-            <p className="mt-6 text-xs text-gray-500 dark:text-slate-400">
-              Only an administrator with the &ldquo;manage settings&rdquo; permission can change
-              the school&apos;s details.
+            <p className="mt-6 text-xs text-tl-muted">
+              Only an administrator with the &ldquo;manage settings&rdquo; permission can change the
+              school&apos;s details.
             </p>
           )}
 

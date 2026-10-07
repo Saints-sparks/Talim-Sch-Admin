@@ -3,8 +3,19 @@
 import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { AlertCircle, Loader2, LogOut, Monitor, Smartphone, Tablet } from "lucide-react";
-import { useRevokeOtherSessions, useRevokeSession, useSessions } from "@/hooks/settings/useSessions";
-import { Card, CardHeader, ModalShell, Notice, OutlineBtn, settingsErrorMessage } from "@/components/settings/ui";
+import {
+  useRevokeOtherSessions,
+  useRevokeSession,
+  useSessions,
+} from "@/hooks/settings/useSessions";
+import {
+  Card,
+  CardHeader,
+  ModalShell,
+  Notice,
+  OutlineBtn,
+  settingsErrorMessage,
+} from "@/components/settings/ui";
 import type { AuthSession } from "@/types/round4Contract";
 import { deviceKind, lastActiveLabel, sessionDetails, sessionTitle } from "./sessionFormat";
 
@@ -62,7 +73,7 @@ export function SessionsCard() {
       />
       <div className="p-5 space-y-3">
         {bulkHint && (
-          <p id="sessions-bulk-hint" className="text-xs text-gray-500 dark:text-slate-400">
+          <p id="sessions-bulk-hint" className="text-xs text-tl-muted">
             {bulkHint}
           </p>
         )}
@@ -70,20 +81,27 @@ export function SessionsCard() {
         {sessions.isLoading ? (
           <div className="space-y-2" aria-busy="true" aria-label="Loading signed-in devices">
             {[0, 1].map((i) => (
-              <div key={i} className="h-14 bg-gray-100 dark:bg-slate-700 rounded-lg animate-pulse" />
+              <div key={i} className="h-14 bg-tl-track rounded-lg animate-pulse" />
             ))}
           </div>
         ) : sessions.isError ? (
-          <Notice tone="danger" icon={<AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />}>
+          <Notice
+            tone="danger"
+            icon={<AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />}
+          >
             {settingsErrorMessage(sessions.error, "We couldn't load your signed-in devices.")}{" "}
-            <button type="button" onClick={() => void sessions.refetch()} className="underline font-medium">
+            <button
+              type="button"
+              onClick={() => void sessions.refetch()}
+              className="underline font-medium"
+            >
               Try again
             </button>
           </Notice>
         ) : list.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-slate-400">No signed-in devices to show.</p>
+          <p className="text-sm text-tl-muted">No signed-in devices to show.</p>
         ) : (
-          <ul className="divide-y divide-gray-100 dark:divide-slate-700" aria-label="Signed-in devices">
+          <ul className="divide-y divide-tl-line-soft" aria-label="Signed-in devices">
             {list.map((session) => (
               <SessionRow
                 key={session.id}
@@ -104,7 +122,7 @@ export function SessionsCard() {
             onClose={() => (revokingOthers ? undefined : setConfirming(false))}
           >
             <div className="space-y-4">
-              <p className="text-sm text-gray-700 dark:text-slate-200">
+              <p className="text-sm text-tl-body">
                 {others.length === 1
                   ? "1 other device will have to sign in again."
                   : `${others.length} other devices will have to sign in again.`}{" "}
@@ -118,7 +136,7 @@ export function SessionsCard() {
                   type="button"
                   onClick={() => void confirmRevokeOthers()}
                   disabled={revokingOthers}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-tl-danger hover:opacity-90 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
                 >
                   {revokingOthers && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />}
                   Sign out other devices
@@ -160,19 +178,19 @@ function SessionRow({
 
   return (
     <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-      <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-[#003366] dark:text-blue-400" aria-hidden />
+      <div className="w-9 h-9 rounded-lg bg-tl-select flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-tl-brand" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-800 dark:text-slate-200 flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-tl-ink flex flex-wrap items-center gap-2">
           <span className="truncate">{title}</span>
           {session.current && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border bg-tl-select text-tl-link border-tl-control">
               This device
             </span>
           )}
         </p>
-        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+        <p className="text-xs text-tl-muted truncate">
           {details && `${details} · `}
           <time dateTime={lastUsed} title={new Date(lastUsed).toLocaleString()}>
             {lastActive}
@@ -185,9 +203,13 @@ function SessionRow({
           onClick={onSignOut}
           disabled={pending}
           aria-label={`Sign out ${title}${session.ip ? ` (${session.ip})` : ""}`}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 shrink-0"
+          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-tl-danger hover:bg-tl-danger-bg disabled:opacity-50 shrink-0"
         >
-          {pending ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <LogOut className="w-3.5 h-3.5" aria-hidden />}
+          {pending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
+          ) : (
+            <LogOut className="w-3.5 h-3.5" aria-hidden />
+          )}
           Sign out
         </button>
       )}

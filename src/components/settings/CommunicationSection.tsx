@@ -59,26 +59,26 @@ export function CommunicationSection({ onNavigate }: { onNavigate: (id: SectionI
         {cards.map((c) => (
           <Card key={c.title} className="p-5">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center shrink-0">
-                <c.icon className="w-4 h-4 text-[#003366] dark:text-blue-400" />
+              <div className="w-9 h-9 rounded-lg bg-tl-select flex items-center justify-center shrink-0">
+                <c.icon className="w-4 h-4 text-tl-brand" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{c.desc}</p>
+                <p className="text-sm font-semibold text-tl-ink">{c.title}</p>
+                <p className="text-xs text-tl-muted mt-0.5">{c.desc}</p>
               </div>
             </div>
             {c.section ? (
               <button
                 type="button"
                 onClick={() => onNavigate(c.section as SectionId)}
-                className="inline-flex items-center gap-1 text-xs text-[#003366] dark:text-blue-400 font-medium hover:underline"
+                className="inline-flex items-center gap-1 text-xs text-tl-brand font-medium hover:underline"
               >
                 Configure <ChevronRight className="w-3 h-3" />
               </button>
             ) : (
               <a
                 href={c.href}
-                className="inline-flex items-center gap-1 text-xs text-[#003366] dark:text-blue-400 font-medium hover:underline"
+                className="inline-flex items-center gap-1 text-xs text-tl-brand font-medium hover:underline"
               >
                 Configure <ChevronRight className="w-3 h-3" />
               </a>
@@ -86,7 +86,7 @@ export function CommunicationSection({ onNavigate }: { onNavigate: (id: SectionI
           </Card>
         ))}
       </div>
-      <Notice tone="warning" icon={<Info className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />}>
+      <Notice tone="warning" icon={<Info className="w-4 h-4 text-tl-warning shrink-0 mt-0.5" />}>
         Full communication engine configuration is coming soon. Use the links above to access
         current messaging features.
       </Notice>

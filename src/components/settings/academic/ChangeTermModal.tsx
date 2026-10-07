@@ -12,19 +12,25 @@ interface ChangeTermModalProps {
 }
 
 /** Asks for confirmation before another term becomes the current one. */
-export function ChangeTermModal({ nextName, currentName, submitting, onCancel, onConfirm }: ChangeTermModalProps) {
+export function ChangeTermModal({
+  nextName,
+  currentName,
+  submitting,
+  onCancel,
+  onConfirm,
+}: ChangeTermModalProps) {
   return (
     <ModalShell title="Change Current Term?" onClose={onCancel}>
       <div className="text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 flex items-center justify-center mx-auto">
-          <AlertCircle className="w-6 h-6 text-orange-500" />
+        <div className="w-12 h-12 rounded-full bg-tl-warning-bg border border-tl-warning/30 flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6 text-tl-warning" />
         </div>
         <div>
-          <p className="text-sm text-gray-700 dark:text-slate-200 font-medium">
+          <p className="text-sm text-tl-body font-medium">
             {nextName} will become the current term.
           </p>
           {currentName && (
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{currentName} will be set to Upcoming.</p>
+            <p className="text-xs text-tl-muted mt-1">{currentName} will be set to Upcoming.</p>
           )}
         </div>
         <div className="flex gap-3 justify-center pt-2">
@@ -35,7 +41,7 @@ export function ChangeTermModal({ nextName, currentName, submitting, onCancel, o
             type="button"
             onClick={onConfirm}
             disabled={submitting}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+            className="px-4 py-2 bg-tl-danger hover:opacity-90 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
           >
             {submitting ? "Updating…" : "Change Term"}
           </button>

@@ -14,12 +14,12 @@ function SummaryCard({
 }) {
   return (
     <Card className="p-4">
-      <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">{label}</p>
-      <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{value || "Not set"}</p>
+      <p className="text-xs text-tl-muted mb-1">{label}</p>
+      <p className="text-lg font-bold text-tl-ink">{value || "Not set"}</p>
       {range && (
         <>
           <StatusBadge status="Active" />
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
+          <p className="text-xs text-tl-muted mt-2">
             {formatSetupDate(range.startDate)} – {formatSetupDate(range.endDate)}
           </p>
         </>
@@ -32,22 +32,22 @@ function SummaryCard({
 function ProgressCard({ progress }: { progress: AcademicProgress | null }) {
   return (
     <Card className="p-4">
-      <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Academic Progress</p>
+      <p className="text-xs text-tl-muted mb-1">Academic Progress</p>
       {progress ? (
         <>
-          <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{progress.pct}%</p>
-          <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 mt-2">
+          <p className="text-lg font-bold text-tl-ink">{progress.pct}%</p>
+          <div className="w-full bg-tl-track rounded-full h-1.5 mt-2">
             <div
-              className="bg-[#003366] dark:bg-blue-500 h-1.5 rounded-full transition-all"
+              className="bg-tl-brand-fill h-1.5 rounded-full transition-all"
               style={{ width: `${progress.pct}%` }}
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-tl-muted mt-1">
             {progress.daysElapsed}d elapsed · {progress.daysRemaining}d remaining
           </p>
         </>
       ) : (
-        <p className="text-sm text-gray-400 dark:text-slate-500">No active year</p>
+        <p className="text-sm text-tl-faint">No active year</p>
       )}
     </Card>
   );

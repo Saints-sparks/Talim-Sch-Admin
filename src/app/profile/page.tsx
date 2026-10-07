@@ -8,10 +8,12 @@
  */
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { AdminDetailsCard } from "@/components/profile/AdminDetailsCard";
 import { SchoolDetailsCard } from "@/components/profile/SchoolDetailsCard";
 import { useProfileSnapshot } from "@/components/profile/useProfileData";
+import { Page, PageHeader } from "@/components/tl/Page";
+import { Banner, PageSkeleton } from "@/components/tl/states";
+import { ghostButton } from "@/components/tl/styles";
 
 /**
  * @returns The profile screen.
@@ -20,44 +22,31 @@ export default function Profile() {
   const { admin, school, isLoading, isError, retry } = useProfileSnapshot();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950">
-        <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full dark:bg-slate-900">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4 dark:border-blue-300" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2 dark:text-slate-100">
-            Loading Profile
-          </h2>
-          <p className="text-gray-500 text-sm dark:text-slate-400">
-            Please wait while we fetch your information…
-          </p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton label="Loading Profile" blocks={[320, 280]} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6 dark:text-slate-100">Profile</h1>
+    <Page guide="profile">
+      <PageHeader title="Profile" subtitle="Your details and your school's, as Talim shows them." />
 
-      <div className="max-w-4xl space-y-6">
+      <div className="flex max-w-4xl flex-col gap-[18px]">
         {isError && (
-          <div
+          <Banner
+            tone="warning"
             role="alert"
-            className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300"
-          >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <div>
-              <p>We couldn&apos;t load your profile. Some details may be out of date.</p>
-              <button type="button" onClick={retry} className="mt-1 font-semibold underline">
+            action={
+              <button type="button" onClick={retry} className={ghostButton}>
                 Try again
               </button>
-            </div>
-          </div>
+            }
+          >
+            We couldn&apos;t load your profile. Some details may be out of date.
+          </Banner>
         )}
 
         <AdminDetailsCard admin={admin} />
         <SchoolDetailsCard school={school} />
       </div>
-    </div>
+    </Page>
   );
 }

@@ -39,11 +39,17 @@ export function BellScheduleEditor({ rows, errors, canManage, onChange }: BellSc
         action={
           canManage ? (
             <div className="flex gap-2">
-              <OutlineBtn onClick={() => onChange(addPeriod(rows, true))} className="!px-3 !py-1.5 !text-xs">
+              <OutlineBtn
+                onClick={() => onChange(addPeriod(rows, true))}
+                className="!px-3 !py-1.5 !text-xs"
+              >
                 <Coffee className="w-3.5 h-3.5" aria-hidden />
                 Add break
               </OutlineBtn>
-              <OutlineBtn onClick={() => onChange(addPeriod(rows, false))} className="!px-3 !py-1.5 !text-xs">
+              <OutlineBtn
+                onClick={() => onChange(addPeriod(rows, false))}
+                className="!px-3 !py-1.5 !text-xs"
+              >
                 <Plus className="w-3.5 h-3.5" aria-hidden />
                 Add period
               </OutlineBtn>
@@ -52,14 +58,15 @@ export function BellScheduleEditor({ rows, errors, canManage, onChange }: BellSc
         }
       />
       <div className="p-5 space-y-3">
-        <p className="text-xs text-gray-500 dark:text-slate-400">
-          Periods teachers pick on the timetable, in time order. Breaks show on teachers&apos; days but
-          cannot hold lessons. A period may start the minute the one before it ends.
+        <p className="text-xs text-tl-muted">
+          Periods teachers pick on the timetable, in time order. Breaks show on teachers&apos; days
+          but cannot hold lessons. A period may start the minute the one before it ends.
         </p>
 
         {rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 dark:border-slate-600 p-6 text-center text-sm text-gray-500 dark:text-slate-400">
-            No bell schedule yet. The timetable keeps free start and end times until you add periods.
+          <div className="rounded-lg border border-dashed border-tl-control p-6 text-center text-sm text-tl-muted">
+            No bell schedule yet. The timetable keeps free start and end times until you add
+            periods.
           </div>
         ) : (
           <ol className="space-y-2" aria-label="Periods">
@@ -98,24 +105,33 @@ interface PeriodRowProps {
   count: number;
   errors: PeriodErrors[string];
   canManage: boolean;
-  onPatch: (patch: Partial<Pick<PeriodDraft, "label" | "startTime" | "endTime" | "isBreak">>) => void;
+  onPatch: (
+    patch: Partial<Pick<PeriodDraft, "label" | "startTime" | "endTime" | "isBreak">>
+  ) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
 }
 
 /** One period or break. */
-function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRemove }: PeriodRowProps) {
+function PeriodRow({
+  row,
+  index,
+  count,
+  errors,
+  canManage,
+  onPatch,
+  onMove,
+  onRemove,
+}: PeriodRowProps) {
   const base = `period-${row.id}`;
   const name = row.label.trim() || `Row ${index + 1}`;
   const iconBtn =
-    "p-1.5 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] dark:focus-visible:ring-blue-500";
+    "p-1.5 rounded-md text-tl-muted hover:bg-tl-bg disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-link";
 
   return (
     <li
       className={`rounded-lg border p-3 ${
-        row.isBreak
-          ? "border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-900/10"
-          : "border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+        row.isBreak ? "border-tl-warning/30 bg-tl-warning-bg" : "border-tl-line bg-tl-surface"
       }`}
     >
       <div className="flex flex-wrap items-start gap-3">
@@ -143,7 +159,7 @@ function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRe
         )}
 
         <div className="flex-1 min-w-[10rem]">
-          <label htmlFor={`${base}-label`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label htmlFor={`${base}-label`} className="block text-xs font-medium text-tl-body mb-1">
             Name
           </label>
           <input
@@ -157,13 +173,13 @@ function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRe
             {...describedBy(`${base}-label`, errors.label, `${base}-key`)}
           />
           <FieldError controlId={`${base}-label`} message={errors.label} />
-          <p id={`${base}-key`} className="mt-1 text-[11px] text-gray-400 dark:text-slate-500">
+          <p id={`${base}-key`} className="mt-1 text-[11px] text-tl-faint">
             Key <span className="font-mono">{row.key}</span>
           </p>
         </div>
 
         <div className="w-32">
-          <label htmlFor={`${base}-start`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label htmlFor={`${base}-start`} className="block text-xs font-medium text-tl-body mb-1">
             Starts
           </label>
           <input
@@ -179,7 +195,7 @@ function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRe
         </div>
 
         <div className="w-32">
-          <label htmlFor={`${base}-end`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label htmlFor={`${base}-end`} className="block text-xs font-medium text-tl-body mb-1">
             Ends
           </label>
           <input
@@ -201,9 +217,9 @@ function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRe
             checked={row.isBreak}
             disabled={!canManage}
             onChange={(e) => onPatch({ isBreak: e.target.checked })}
-            className="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-[#003366] focus:ring-[#003366]"
+            className="h-4 w-4 rounded border-tl-control text-tl-brand focus:ring-tl-link"
           />
-          <label htmlFor={`${base}-break`} className="text-xs text-gray-700 dark:text-slate-300">
+          <label htmlFor={`${base}-break`} className="text-xs text-tl-body">
             Break
           </label>
         </div>
@@ -214,7 +230,7 @@ function PeriodRow({ row, index, count, errors, canManage, onPatch, onMove, onRe
               type="button"
               onClick={onRemove}
               aria-label={`Delete ${name}`}
-              className="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              className="p-2 rounded-md text-tl-faint hover:text-tl-danger hover:bg-tl-danger-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-danger"
             >
               <Trash2 className="w-4 h-4" aria-hidden />
             </button>
@@ -233,36 +249,36 @@ function DayPreview({ rows }: { rows: PeriodDraft[] }) {
   const last = segments[segments.length - 1].endTime;
 
   return (
-    <div className="pt-3 border-t border-gray-100 dark:border-slate-700">
+    <div className="pt-3 border-t border-tl-line-soft">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-gray-700 dark:text-slate-300">Preview of the day</h4>
-        <span className="text-xs text-gray-500 dark:text-slate-400">
+        <h4 className="text-xs font-semibold text-tl-body">Preview of the day</h4>
+        <span className="text-xs text-tl-muted">
           {first} – {last}
         </span>
       </div>
-      <div className="flex h-9 w-full overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700" aria-hidden>
+      <div className="flex h-9 w-full overflow-hidden rounded-lg border border-tl-line" aria-hidden>
         {segments.map((s, i) => (
           <div
             key={`${s.startTime}-${i}`}
             style={{ width: `${s.percent}%` }}
             title={`${s.label}: ${s.startTime}–${s.endTime} (${s.minutes} min)`}
-            className={`flex items-center justify-center truncate px-1 text-[10px] font-medium border-r border-white/60 dark:border-slate-900/60 last:border-r-0 ${
+            className={`flex items-center justify-center truncate px-1 text-[10px] font-medium border-r border-white/60 last:border-r-0 ${
               s.kind === "period"
-                ? "bg-[#EBF0F7] dark:bg-blue-900/40 text-[#003366] dark:text-blue-200"
+                ? "bg-tl-select text-tl-brand"
                 : s.kind === "break"
-                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
-                  : "bg-gray-50 dark:bg-slate-900/40 text-gray-400 dark:text-slate-500"
+                  ? "bg-tl-warning-bg text-tl-warning"
+                  : "bg-tl-subtle text-tl-faint"
             }`}
           >
             {s.percent > 6 ? s.label : ""}
           </div>
         ))}
       </div>
-      <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-slate-300">
+      <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-tl-muted">
         {segments.map((s, i) => (
           <li key={`${s.startTime}-${i}-row`} className="flex justify-between gap-2">
-            <span className={s.kind === "gap" ? "italic text-gray-400 dark:text-slate-500" : ""}>{s.label}</span>
-            <span className="tabular-nums text-gray-500 dark:text-slate-400">
+            <span className={s.kind === "gap" ? "italic text-tl-faint" : ""}>{s.label}</span>
+            <span className="tabular-nums text-tl-muted">
               {s.startTime}–{s.endTime} · {s.minutes} min
             </span>
           </li>

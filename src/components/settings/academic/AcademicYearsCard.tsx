@@ -1,7 +1,14 @@
 import { AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import type { AcademicYearResponse } from "@/app/services/academic.service";
-import { Card, CardHeader, InputField, OutlineBtn, PrimaryBtn, StatusBadge } from "@/components/settings/ui";
+import {
+  Card,
+  CardHeader,
+  InputField,
+  OutlineBtn,
+  PrimaryBtn,
+  StatusBadge,
+} from "@/components/settings/ui";
 import { formatSetupDate, type YearForm } from "./academicForms";
 import { Collapsible, FORM_PANEL, TD, TH } from "./academicUi";
 
@@ -74,9 +81,9 @@ export function AcademicYearsCard({
                   id="yearCurrent"
                   checked={form.isCurrent}
                   onChange={(e) => onChange({ ...form, isCurrent: e.target.checked })}
-                  className="rounded border-gray-300 dark:border-slate-600"
+                  className="rounded border-tl-control"
                 />
-                <label htmlFor="yearCurrent" className="text-xs text-gray-700 dark:text-slate-300">
+                <label htmlFor="yearCurrent" className="text-xs text-tl-body">
                   Set as current academic year
                 </label>
               </div>
@@ -95,7 +102,7 @@ export function AcademicYearsCard({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
+            <tr className="border-b border-tl-line-soft bg-tl-subtle">
               {["Academic Year", "Start Date", "End Date", "Status"].map((h) => (
                 <th key={h} className={TH}>
                   {h}
@@ -106,22 +113,17 @@ export function AcademicYearsCard({
           <tbody>
             {years.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center py-10 text-gray-400 dark:text-slate-500 text-sm">
+                <td colSpan={4} className="text-center py-10 text-tl-faint text-sm">
                   No academic years found
                 </td>
               </tr>
             ) : (
               years.map((y) => (
-                <tr
-                  key={y._id}
-                  className="border-b border-gray-50 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/40"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
+                <tr key={y._id} className="border-b border-tl-line-soft hover:bg-tl-bg">
+                  <td className="px-4 py-3 font-medium text-tl-ink">
                     {y.year}{" "}
                     {y.isCurrent && (
-                      <span className="ml-1.5 text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                        Current
-                      </span>
+                      <span className="ml-1.5 text-xs text-tl-link font-semibold">Current</span>
                     )}
                   </td>
                   <td className={TD}>{formatSetupDate(y.startDate)}</td>

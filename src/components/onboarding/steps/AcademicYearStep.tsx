@@ -152,10 +152,15 @@ export default function AcademicYearStep({ onComplete }: { onComplete: () => voi
   return (
     <StepCard stepId="academic-year">
       <div className="flex items-center gap-2 mb-6">
-        <SubStepBadge num={1} active={subStep === "year"} done={subStep === "term"} label="Academic Year" />
-        <div className="flex-1 h-0.5 bg-gray-200 dark:bg-slate-700">
+        <SubStepBadge
+          num={1}
+          active={subStep === "year"}
+          done={subStep === "term"}
+          label="Academic Year"
+        />
+        <div className="flex-1 h-0.5 bg-tl-line">
           <div
-            className={`h-full bg-[#003366] transition-all duration-500 ${subStep === "term" ? "w-full" : "w-0"}`}
+            className={`h-full bg-tl-brand-fill transition-all duration-500 ${subStep === "term" ? "w-full" : "w-0"}`}
           />
         </div>
         <SubStepBadge num={2} active={subStep === "term"} done={false} label="First Term" />
@@ -197,7 +202,7 @@ export default function AcademicYearStep({ onComplete }: { onComplete: () => voi
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer dark:text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-tl-muted cursor-pointer">
             <input
               type="checkbox"
               checked={yearForm.isCurrent}
@@ -212,7 +217,7 @@ export default function AcademicYearStep({ onComplete }: { onComplete: () => voi
         </form>
       ) : (
         <form onSubmit={handleTermSubmit} className="space-y-4 max-w-sm">
-          <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2 dark:bg-green-900/20 dark:text-green-300">
+          <p className="text-sm text-tl-success bg-tl-success-bg rounded-lg px-3 py-2">
             Academic year ready. Now add your first term.
           </p>
           <Tooltip
@@ -249,7 +254,7 @@ export default function AcademicYearStep({ onComplete }: { onComplete: () => voi
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer dark:text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-tl-muted cursor-pointer">
             <input
               type="checkbox"
               checked={termForm.isCurrent}

@@ -3,7 +3,10 @@
 import React, { useMemo, useState } from "react";
 import { Clock, Info } from "lucide-react";
 import { ApiError } from "@/lib/apiError";
-import { useAcademicSettings, useUpdateAcademicSettings } from "@/hooks/settings/useAcademicSettings";
+import {
+  useAcademicSettings,
+  useUpdateAcademicSettings,
+} from "@/hooks/settings/useAcademicSettings";
 import type { AcademicSettings } from "@/app/services/school-settings.service";
 import {
   Card,
@@ -65,7 +68,9 @@ export function SchoolDaySection({ canManage }: { canManage: boolean }) {
 
   // A fresh form whenever the saved content changes (after a save), but not
   // on a background refetch that brings back the same settings.
-  return <SchoolDayForm key={JSON.stringify(query.data)} settings={query.data} canManage={canManage} />;
+  return (
+    <SchoolDayForm key={JSON.stringify(query.data)} settings={query.data} canManage={canManage} />
+  );
 }
 
 /**
@@ -76,7 +81,13 @@ export function SchoolDaySection({ canManage }: { canManage: boolean }) {
  * @param props.canManage - False shows every field read-only.
  * @returns The form.
  */
-function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; canManage: boolean }) {
+function SchoolDayForm({
+  settings,
+  canManage,
+}: {
+  settings: AcademicSettings;
+  canManage: boolean;
+}) {
   const { save, saving } = useUpdateAcademicSettings();
   const [values, setValues] = useState<SchoolDayValues>(() => toSchoolDayValues(settings));
   const [submitted, setSubmitted] = useState(false);
@@ -129,7 +140,7 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
       <SectionHeader title={TITLE} desc={DESC} />
 
       {!canManage && (
-        <Notice icon={<Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden />}>
+        <Notice icon={<Info className="w-4 h-4 text-tl-link shrink-0 mt-0.5" aria-hidden />}>
           You can view these settings. Changing them needs the Manage Settings permission.
         </Notice>
       )}
@@ -156,16 +167,15 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                   </option>
                 ))}
               </select>
-              <p id="sd-timezone-hint" className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                &ldquo;Today&rdquo; and &ldquo;now&rdquo; for teachers are worked out in this timezone.
+              <p id="sd-timezone-hint" className="mt-1 text-xs text-tl-muted">
+                &ldquo;Today&rdquo; and &ldquo;now&rdquo; for teachers are worked out in this
+                timezone.
               </p>
               <FieldError controlId="sd-timezone" message={errors.fields.timezone} />
             </div>
 
             <fieldset {...describedBy("sd-days", errors.fields.schoolDays)}>
-              <legend className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-2">
-                School days
-              </legend>
+              <legend className="block text-xs font-medium text-tl-body mb-2">School days</legend>
               <div className="flex flex-wrap gap-2">
                 {TEACHING_WEEKDAYS.map((day) => {
                   const id = `sd-day-${day}`;
@@ -176,8 +186,8 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                       htmlFor={id}
                       className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer select-none ${
                         checked
-                          ? "border-[#003366] dark:border-blue-500 bg-[#EBF0F7] dark:bg-blue-900/30 text-[#003366] dark:text-blue-200"
-                          : "border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300"
+                          ? "border-tl-brand bg-tl-select text-tl-brand"
+                          : "border-tl-line text-tl-body"
                       } ${!canManage ? "opacity-70 cursor-default" : ""}`}
                     >
                       <input
@@ -185,8 +195,12 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                         type="checkbox"
                         checked={checked}
                         disabled={!canManage}
-                        onChange={(e) => update({ schoolDays: toggleSchoolDay(values.schoolDays, day, e.target.checked) })}
-                        className="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-[#003366] focus:ring-[#003366]"
+                        onChange={(e) =>
+                          update({
+                            schoolDays: toggleSchoolDay(values.schoolDays, day, e.target.checked),
+                          })
+                        }
+                        className="h-4 w-4 rounded border-tl-control text-tl-brand focus:ring-tl-link"
                       />
                       {day.slice(0, 3)}
                       <span className="sr-only">{day.slice(3)}</span>
@@ -195,7 +209,7 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                 })}
               </div>
               {errors.fields.schoolDays && (
-                <p id={errorId("sd-days")} className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <p id={errorId("sd-days")} className="mt-1 text-xs text-tl-danger">
                   {errors.fields.schoolDays}
                 </p>
               )}
@@ -217,9 +231,13 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                 disabled={!canManage}
                 onChange={(e) => update({ registerCloseTime: e.target.value })}
                 className={controlClasses(Boolean(errors.fields.registerCloseTime))}
-                {...describedBy("sd-register-close", errors.fields.registerCloseTime, "sd-register-close-hint")}
+                {...describedBy(
+                  "sd-register-close",
+                  errors.fields.registerCloseTime,
+                  "sd-register-close-hint"
+                )}
               />
-              <p id="sd-register-close-hint" className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+              <p id="sd-register-close-hint" className="mt-1 text-xs text-tl-muted">
                 Class teachers are reminded until the morning register is in.
               </p>
               <FieldError controlId="sd-register-close" message={errors.fields.registerCloseTime} />
@@ -235,9 +253,13 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
                 disabled={!canManage}
                 onChange={(e) => update({ registerEditUntil: e.target.value })}
                 className={controlClasses(Boolean(errors.fields.registerEditUntil))}
-                {...describedBy("sd-register-edit", errors.fields.registerEditUntil, "sd-register-edit-hint")}
+                {...describedBy(
+                  "sd-register-edit",
+                  errors.fields.registerEditUntil,
+                  "sd-register-edit-hint"
+                )}
               />
-              <p id="sd-register-edit-hint" className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+              <p id="sd-register-edit-hint" className="mt-1 text-xs text-tl-muted">
                 After this a teacher can no longer change the day&apos;s register; admins still can.
               </p>
               <FieldError controlId="sd-register-edit" message={errors.fields.registerEditUntil} />
@@ -248,13 +270,13 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
         <Card>
           <CardHeader
             title="Office hours"
-            action={<Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" aria-hidden />}
+            action={<Clock className="w-4 h-4 text-tl-faint" aria-hidden />}
           />
           <fieldset className="p-5 space-y-4" aria-describedby="sd-office-hint">
             <legend className="sr-only">Office hours (optional)</legend>
-            <p id="sd-office-hint" className="text-xs text-gray-500 dark:text-slate-400">
-              Optional. When the school office can be reached; teachers see it with the school&apos;s contact
-              details. Leave both empty for none.
+            <p id="sd-office-hint" className="text-xs text-tl-muted">
+              Optional. When the school office can be reached; teachers see it with the
+              school&apos;s contact details. Leave both empty for none.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -288,7 +310,7 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
               <button
                 type="button"
                 onClick={() => update({ officeHoursStart: "", officeHoursEnd: "" })}
-                className="text-xs font-medium text-[#003366] dark:text-blue-400 hover:underline"
+                className="text-xs font-medium text-tl-brand hover:underline"
               >
                 Clear office hours
               </button>
@@ -307,7 +329,7 @@ function SchoolDayForm({ settings, canManage }: { settings: AcademicSettings; ca
       {canManage && (
         <div className="flex items-center justify-end gap-3">
           {blocked && (
-            <p role="alert" className="mr-auto text-xs text-red-600 dark:text-red-400">
+            <p role="alert" className="mr-auto text-xs text-tl-danger">
               Fix the highlighted fields before saving.
             </p>
           )}

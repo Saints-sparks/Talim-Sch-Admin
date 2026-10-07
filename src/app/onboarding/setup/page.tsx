@@ -12,10 +12,7 @@
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useSetupChecklist } from "@/hooks/onboarding/useSetupChecklist";
-import {
-  SetupChecklistRail,
-  SetupHeader,
-} from "@/components/onboarding/SetupChecklistRail";
+import { SetupChecklistRail, SetupHeader } from "@/components/onboarding/SetupChecklistRail";
 import { StepContent } from "@/components/onboarding/steps/StepContent";
 import { CompletionCard } from "@/components/onboarding/steps/StepCard";
 
@@ -40,14 +37,14 @@ export default function OnboardingSetup() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center dark:bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-[#003366] dark:text-blue-300" />
+      <div className="min-h-screen bg-tl-bg flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-tl-brand" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex flex-col dark:bg-slate-950">
+    <div className="min-h-screen bg-tl-bg flex flex-col">
       <SetupHeader
         completedCount={completedCount}
         totalCount={totalCount}

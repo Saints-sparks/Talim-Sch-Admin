@@ -60,7 +60,7 @@ export function ClassesCurriculumSection() {
       />
       {links.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="text-sm text-gray-500 dark:text-slate-400">
+          <p className="text-sm text-tl-muted">
             Your role doesn&apos;t manage classes or curriculum.
           </p>
         </Card>
@@ -73,14 +73,14 @@ export function ClassesCurriculumSection() {
               onClick={() => router.push(c.link)}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center shrink-0">
-                  <c.icon className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+                <div className="w-10 h-10 rounded-lg bg-tl-select flex items-center justify-center shrink-0">
+                  <c.icon className="w-5 h-5 text-tl-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{c.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{c.desc}</p>
+                  <p className="text-sm font-semibold text-tl-ink">{c.title}</p>
+                  <p className="text-xs text-tl-muted mt-0.5">{c.desc}</p>
                 </div>
-                <span className="text-xs text-[#003366] dark:text-blue-400 font-medium shrink-0 flex items-center gap-1">
+                <span className="text-xs text-tl-brand font-medium shrink-0 flex items-center gap-1">
                   {c.action} <ChevronRight className="w-3 h-3" />
                 </span>
               </div>

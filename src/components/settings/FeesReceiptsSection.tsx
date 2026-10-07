@@ -91,14 +91,12 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#EBF0F7] dark:bg-slate-700 flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+              <div className="w-10 h-10 rounded-lg bg-tl-select flex items-center justify-center">
+                <Receipt className="w-5 h-5 text-tl-brand" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Fee Categories</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  Manage fee types, invoices and assignments
-                </p>
+                <p className="text-sm font-semibold text-tl-ink">Fee Categories</p>
+                <p className="text-xs text-tl-muted">Manage fee types, invoices and assignments</p>
               </div>
             </div>
             <OutlineBtn onClick={() => router.push("/fees-management")}>
@@ -120,19 +118,19 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
           />
           {settings.signatureUrl ? (
             <div className="flex flex-wrap items-start gap-5">
-              <div className="border border-gray-200 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700 min-w-[160px] text-center">
+              <div className="border border-tl-line rounded-lg p-4 bg-tl-subtle min-w-[160px] text-center">
                 <img
                   src={settings.signatureUrl}
                   alt="Authorized signature"
                   className="max-h-16 mx-auto object-contain"
                 />
                 {settings.signatureName && (
-                  <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mt-2">
+                  <p className="text-xs font-semibold text-tl-body mt-2">
                     {settings.signatureName}
                   </p>
                 )}
                 {settings.signatureTitle && (
-                  <p className="text-xs text-gray-500 dark:text-slate-400">{settings.signatureTitle}</p>
+                  <p className="text-xs text-tl-muted">{settings.signatureTitle}</p>
                 )}
               </div>
               <div className="space-y-3 flex-1 min-w-[240px]">
@@ -155,7 +153,8 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
                 {canManage && (
                   <div className="flex flex-wrap gap-2">
                     <OutlineBtn onClick={() => signatureRef.current?.click()} disabled={uploading}>
-                      <Upload className="w-3.5 h-3.5" /> {uploading ? "Uploading…" : "Change Signature"}
+                      <Upload className="w-3.5 h-3.5" />{" "}
+                      {uploading ? "Uploading…" : "Change Signature"}
                     </OutlineBtn>
                     <OutlineBtn
                       onClick={() =>
@@ -165,7 +164,7 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
                         )
                       }
                       disabled={saving}
-                      className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      className="text-tl-danger border-tl-danger/30 hover:bg-tl-danger-bg"
                     >
                       <Trash2 className="w-3.5 h-3.5" /> Remove
                     </OutlineBtn>
@@ -174,8 +173,8 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">No signature uploaded</p>
+            <div className="text-center py-8 border-2 border-dashed border-tl-line rounded-lg">
+              <p className="text-sm text-tl-muted mb-3">No signature uploaded</p>
               {canManage && (
                 <>
                   <PrimaryBtn
@@ -185,7 +184,7 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
                   >
                     <Upload className="w-4 h-4" /> Upload Signature
                   </PrimaryBtn>
-                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">PNG, JPG · max 2MB</p>
+                  <p className="text-xs text-tl-faint mt-2">PNG, JPG · max 2MB</p>
                 </>
               )}
             </div>
@@ -219,10 +218,10 @@ export function FeesReceiptsSection({ canManage }: { canManage: boolean }) {
             disabled={!canManage}
             aria-label="Receipt footer note"
             placeholder="e.g. Thank you for your payment. Every child. Every classroom. Every future."
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg outline-none focus:border-[#003366] resize-none disabled:opacity-60"
+            className="w-full px-3 py-2.5 text-sm border border-tl-control rounded-lg outline-none focus:border-tl-link resize-none disabled:opacity-60"
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 dark:text-slate-500">
+            <span className="text-xs text-tl-faint">
               {footerNote.length}/{FOOTER_MAX} characters
             </span>
             {canManage && (

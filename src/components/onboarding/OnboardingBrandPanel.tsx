@@ -14,11 +14,11 @@ import loginImage from "../../../public/img/Education-rafiki 1.svg";
  */
 export default function OnboardingBrandPanel({ step }: { step: 0 | 1 }) {
   return (
-    <div className="hidden lg:flex flex-col items-center justify-center bg-[#003366] p-12">
+    <div className="hidden lg:flex flex-col items-center justify-center bg-tl-brand-fill p-12">
       <div className="flex items-center gap-3 mb-10">
         <Image src={treelogo} alt="Talim Logo" width={44} height={44} />
         <span className="text-2xl font-bold text-white">Talim</span>
-        <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
+        <span className="rounded-full bg-tl-surface px-2.5 py-0.5 text-xs font-semibold text-white">
           School Admin
         </span>
       </div>
@@ -37,10 +37,10 @@ export default function OnboardingBrandPanel({ step }: { step: 0 | 1 }) {
       </div>
       <div className="mt-10 flex gap-2">
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${step === 0 ? "w-8 bg-white" : "w-2 bg-white/40"}`}
+          className={`h-2 rounded-full transition-all duration-300 ${step === 0 ? "w-8 bg-tl-surface" : "w-2 bg-tl-surface"}`}
         />
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${step === 1 ? "w-8 bg-white" : "w-2 bg-white/40"}`}
+          className={`h-2 rounded-full transition-all duration-300 ${step === 1 ? "w-8 bg-tl-surface" : "w-2 bg-tl-surface"}`}
         />
       </div>
     </div>

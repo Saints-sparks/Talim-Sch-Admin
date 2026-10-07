@@ -26,11 +26,14 @@ import { getErrorMessage } from "@/lib/apiError";
 /** The link that lets an optional step be passed over. */
 function SkipLink({ onSkip }: { onSkip: () => void }) {
   return (
-    <Tooltip content="You can complete this step later from the main app. It won't block your access." side="top">
+    <Tooltip
+      content="You can complete this step later from the main app. It won't block your access."
+      side="top"
+    >
       <button
         type="button"
         onClick={onSkip}
-        className="text-sm text-gray-400 hover:text-gray-600 underline self-center dark:text-slate-500 dark:hover:text-slate-300"
+        className="text-sm text-tl-faint hover:text-tl-ink underline self-center"
       >
         Skip for now
       </button>
@@ -121,7 +124,7 @@ export function TimetableStep({
   const router = useRouter();
   return (
     <StepCard stepId="timetable-entry">
-      <p className="text-sm text-gray-600 mb-6 max-w-sm dark:text-slate-300">
+      <p className="text-sm text-tl-muted mb-6 max-w-sm">
         The timetable builder lets you schedule course sessions by day and time slot. You can drag
         and drop courses into time slots and export to Excel.
       </p>
@@ -131,7 +134,7 @@ export function TimetableStep({
             onComplete();
             router.push("/timetable");
           }}
-          className="flex items-center gap-2 h-11 px-6 bg-[#003366] hover:bg-[#002244] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 h-11 px-6 bg-tl-brand-fill hover:bg-tl-brand-fill-hover text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <Clock className="h-4 w-4" /> Go to Timetable
         </button>
@@ -226,15 +229,19 @@ export function CreateAssessmentStep({
   return (
     <StepCard stepId="create-assessment">
       {loading ? (
-        <div className="flex items-center gap-2 py-4 text-sm text-gray-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 py-4 text-sm text-tl-muted">
           <Loader2 className="h-4 w-4 animate-spin" /> Checking existing assessments and terms…
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
           {terms.isError && (
-            <p role="alert" className="text-xs text-amber-600 dark:text-amber-400">
+            <p role="alert" className="text-xs text-tl-warning">
               Terms could not be loaded.{" "}
-              <button type="button" className="font-semibold underline" onClick={() => void terms.refetch()}>
+              <button
+                type="button"
+                className="font-semibold underline"
+                onClick={() => void terms.refetch()}
+              >
                 Try again
               </button>
             </p>
@@ -263,7 +270,7 @@ export function CreateAssessmentStep({
               ))}
             </select>
             {(terms.data?.length ?? 0) === 0 && !terms.isError && (
-              <p className="text-xs text-amber-600 mt-1 dark:text-amber-400">
+              <p className="text-xs text-tl-warning mt-1">
                 No terms yet — finish the &ldquo;Academic Year &amp; Terms&rdquo; step first.
               </p>
             )}

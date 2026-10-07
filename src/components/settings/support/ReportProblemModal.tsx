@@ -4,7 +4,12 @@ import React, { useState } from "react";
 import { CheckCircle2, Copy } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ModalShell, OutlineBtn, PrimaryBtn, settingsErrorMessage } from "@/components/settings/ui";
-import { FieldError, FieldLabel, controlClasses, describedBy } from "@/components/settings/schoolDay/fields";
+import {
+  FieldError,
+  FieldLabel,
+  controlClasses,
+  describedBy,
+} from "@/components/settings/schoolDay/fields";
 import { createSupportTicket } from "@/app/services/support.service";
 import { logger } from "@/lib/logger";
 import { SUPPORT_DESCRIPTION_MAX, type SupportTicketResponse } from "@/types/round4Contract";
@@ -51,7 +56,12 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
       setTicket(await createSupportTicket(payload));
     } catch (err) {
       logger.error("settings/support", "ticket failed", err);
-      toast.error(settingsErrorMessage(err, "We couldn't send your report. Try again, or email support@mytalim.com."));
+      toast.error(
+        settingsErrorMessage(
+          err,
+          "We couldn't send your report. Try again, or email support@mytalim.com."
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -76,23 +86,23 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
     return (
       <ModalShell title="Report sent" onClose={onClose}>
         <div className="space-y-4 text-center" role="status">
-          <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" aria-hidden />
+          <div className="w-12 h-12 rounded-full bg-tl-success-bg border border-tl-success/30 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6 text-tl-success" aria-hidden />
           </div>
-          <p className="text-sm text-gray-700 dark:text-slate-200">
+          <p className="text-sm text-tl-body">
             Thanks. Talim support has your report and will reply by email.
           </p>
           <div>
-            <p className="text-xs text-gray-500 dark:text-slate-400">Your reference</p>
+            <p className="text-xs text-tl-muted">Your reference</p>
             <p className="mt-1 inline-flex items-center gap-2">
-              <span className="font-mono text-lg font-semibold text-gray-900 dark:text-slate-100 select-all">
+              <span className="font-mono text-lg font-semibold text-tl-ink select-all">
                 {ticket.reference}
               </span>
               <button
                 type="button"
                 onClick={() => void copyReference()}
                 aria-label="Copy reference"
-                className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                className="rounded p-1 text-tl-muted hover:bg-tl-bg"
               >
                 <Copy className="w-4 h-4" aria-hidden />
               </button>
@@ -111,9 +121,9 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell title="Report a problem" onClose={() => (sending ? undefined : onClose())}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="text-xs text-gray-500 dark:text-slate-400">
-          This goes to the Talim support team, not to your school. We&apos;ll include the page you&apos;re on and your
-          browser.
+        <p className="text-xs text-tl-muted">
+          This goes to the Talim support team, not to your school. We&apos;ll include the page
+          you&apos;re on and your browser.
         </p>
 
         <div>
@@ -124,7 +134,9 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
             id="support-area"
             value={values.area}
             disabled={sending}
-            onChange={(e) => setValues((v) => ({ ...v, area: e.target.value as SupportTicketValues["area"] }))}
+            onChange={(e) =>
+              setValues((v) => ({ ...v, area: e.target.value as SupportTicketValues["area"] }))
+            }
             className={controlClasses(Boolean(errors.area))}
             {...describedBy("support-area", errors.area)}
           >
@@ -153,7 +165,7 @@ export function ReportProblemModal({ onClose }: { onClose: () => void }) {
             className={controlClasses(Boolean(errors.description))}
             {...describedBy("support-description", errors.description, "support-description-count")}
           />
-          <p id="support-description-count" className="mt-1 text-right text-xs text-gray-500 dark:text-slate-400">
+          <p id="support-description-count" className="mt-1 text-right text-xs text-tl-muted">
             {length}/{SUPPORT_DESCRIPTION_MAX}
           </p>
           <FieldError controlId="support-description" message={errors.description} />

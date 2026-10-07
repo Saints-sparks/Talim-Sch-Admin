@@ -9,7 +9,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "@/components/CustomToast";
 import { Field, PrimaryBtn, inputCls } from "@/components/onboarding/OnboardingAtoms";
 import { StepCard } from "@/components/onboarding/steps/StepCard";
-import { useClasses, useCourses, useInvalidateReference, useSubjects } from "@/hooks/queries/reference";
+import {
+  useClasses,
+  useCourses,
+  useInvalidateReference,
+  useSubjects,
+} from "@/hooks/queries/reference";
 import { useSchoolId } from "@/hooks/useSchoolId";
 import { createCourse, createSubject } from "@/app/services/subjects.service";
 import { teacherService, teacherUserId, type Teacher } from "@/app/services/teacher.service";
@@ -134,7 +139,8 @@ export function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
     teacherId: "",
   });
 
-  const loading = classes.isLoading || subjects.isLoading || courses.isLoading || teachers.isLoading;
+  const loading =
+    classes.isLoading || subjects.isLoading || courses.isLoading || teachers.isLoading;
 
   // A school that already created a course has done this step.
   useEffect(() => {
@@ -175,7 +181,7 @@ export function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
 
   return (
     <StepCard stepId="create-course">
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 text-sm text-blue-800 leading-relaxed dark:bg-blue-900/20 dark:border-blue-900/40 dark:text-blue-200">
+      <div className="bg-tl-select border border-tl-control rounded-xl p-4 mb-5 text-sm text-tl-brand leading-relaxed">
         <p className="font-semibold mb-1">Subjects vs. Courses</p>
         <p>
           A <span className="font-medium">Subject</span> is a broad academic area — e.g.{" "}
@@ -192,13 +198,13 @@ export function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-4 text-sm text-gray-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 py-4 text-sm text-tl-muted">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading classes, subjects and teachers…
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
           {failedToLoad && (
-            <p role="alert" className="text-xs text-amber-600 dark:text-amber-400">
+            <p role="alert" className="text-xs text-tl-warning">
               Some setup data could not be loaded.{" "}
               <button
                 type="button"
@@ -228,7 +234,7 @@ export function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
               ))}
             </select>
             {(subjects.data?.length ?? 0) === 0 && !subjects.isError && (
-              <p className="text-xs text-amber-600 mt-1 dark:text-amber-400">
+              <p className="text-xs text-tl-warning mt-1">
                 No subjects yet — complete the &ldquo;Create First Subject&rdquo; step first.
               </p>
             )}
@@ -263,7 +269,7 @@ export function CreateCourseStep({ onComplete }: { onComplete: () => void }) {
               ))}
             </select>
             {(teachers.data?.length ?? 0) === 0 && !teachers.isError && (
-              <p className="text-xs text-amber-600 mt-1 dark:text-amber-400">
+              <p className="text-xs text-tl-warning mt-1">
                 No teachers found — complete the &ldquo;Add First Teacher&rdquo; step first.
               </p>
             )}

@@ -35,10 +35,9 @@ const TITLE = "School Calendar";
 const DESC = "Holidays, events and early closes for the term";
 
 const TYPE_STYLES: Record<CalendarEvent["type"], string> = {
-  holiday: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800",
-  event: "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  early_close:
-    "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  holiday: "bg-tl-danger-bg text-tl-danger border-tl-danger/30",
+  event: "bg-tl-select text-tl-link border-tl-control",
+  early_close: "bg-tl-warning-bg text-tl-warning border-tl-warning/30",
 };
 
 /** Today in the browser's clock, `YYYY-MM-DD`. */
@@ -92,7 +91,8 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
   const eventsQuery = useCalendarEvents(from, to, { enabled: !termsQuery.isLoading });
   const groups = useMemo(() => groupByMonth(eventsQuery.data ?? []), [eventsQuery.data]);
 
-  if (termsQuery.isLoading || eventsQuery.isLoading) return <SectionSkeleton title={TITLE} desc={DESC} rows={2} />;
+  if (termsQuery.isLoading || eventsQuery.isLoading)
+    return <SectionSkeleton title={TITLE} desc={DESC} rows={2} />;
   if (eventsQuery.isError) {
     return (
       <SectionError
@@ -145,7 +145,7 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
                     id="cal-term"
                     value={term?.id ?? ""}
                     onChange={(e) => setPickedTermId(e.target.value)}
-                    className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100 focus:ring-2 focus:ring-[#003366]/10 outline-none"
+                    className="px-2.5 py-1.5 text-xs border border-tl-control rounded-lg bg-tl-surface text-tl-ink focus:ring-2 focus:ring-tl-link outline-none"
                   >
                     {!term && <option value="">Upcoming</option>}
                     {terms.map((t) => (
@@ -158,7 +158,10 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
                 </>
               )}
               {canManage && (
-                <PrimaryBtn onClick={() => setDialog({ mode: "create" })} className="!px-3 !py-1.5 !text-xs">
+                <PrimaryBtn
+                  onClick={() => setDialog({ mode: "create" })}
+                  className="!px-3 !py-1.5 !text-xs"
+                >
                   <Plus className="w-3.5 h-3.5" aria-hidden />
                   Add event
                 </PrimaryBtn>
@@ -170,9 +173,9 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
         <div className="p-5">
           {groups.length === 0 ? (
             <div className="py-10 text-center">
-              <CalendarDays className="w-8 h-8 mx-auto text-gray-300 dark:text-slate-600" aria-hidden />
-              <p className="mt-3 text-sm font-medium text-gray-700 dark:text-slate-200">Nothing on the calendar yet</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+              <CalendarDays className="w-8 h-8 mx-auto text-tl-faint" aria-hidden />
+              <p className="mt-3 text-sm font-medium text-tl-body">Nothing on the calendar yet</p>
+              <p className="mt-1 text-xs text-tl-muted">
                 {canManage
                   ? "Add holidays, school events and early closes so teachers' days show them."
                   : "Holidays, events and early closes will appear here."}
@@ -184,11 +187,11 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
                 <section key={group.key} aria-labelledby={`cal-month-${group.key}`}>
                   <h4
                     id={`cal-month-${group.key}`}
-                    className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400 mb-2"
+                    className="text-xs font-semibold uppercase tracking-wide text-tl-muted mb-2"
                   >
                     {group.label}
                   </h4>
-                  <ul className="divide-y divide-gray-100 dark:divide-slate-700 rounded-lg border border-gray-200 dark:border-slate-700">
+                  <ul className="divide-y divide-tl-line-soft rounded-lg border border-tl-line">
                     {group.events.map((event) => (
                       <EventRow
                         key={event.id}
@@ -211,23 +214,28 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
           <CalendarEventDialog
             key={dialog.mode === "edit" ? dialog.event.id : "new"}
             title={dialog.mode === "edit" ? "Edit event" : "Add event"}
-            initial={dialog.mode === "edit" ? toCalendarForm(dialog.event) : emptyCalendarForm(defaultDay)}
+            initial={
+              dialog.mode === "edit" ? toCalendarForm(dialog.event) : emptyCalendarForm(defaultDay)
+            }
             saving={actions.saving}
             onCancel={() => setDialog(null)}
             onSubmit={submit}
           />
         )}
         {deleting && (
-          <ModalShell title="Delete event?" onClose={() => (actions.deleting ? undefined : setDeleting(null))}>
+          <ModalShell
+            title="Delete event?"
+            onClose={() => (actions.deleting ? undefined : setDeleting(null))}
+          >
             <div className="text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center justify-center mx-auto">
-                <AlertCircle className="w-6 h-6 text-red-500" aria-hidden />
+              <div className="w-12 h-12 rounded-full bg-tl-danger-bg border border-tl-danger/30 flex items-center justify-center mx-auto">
+                <AlertCircle className="w-6 h-6 text-tl-danger" aria-hidden />
               </div>
               <div>
-                <p className="text-sm text-gray-700 dark:text-slate-200 font-medium">
+                <p className="text-sm text-tl-body font-medium">
                   Delete &ldquo;{deleting.title}&rdquo;?
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-tl-muted mt-1">
                   {formatEventRange(deleting.startDate, deleting.endDate)} ·{" "}
                   {deleting.type === "holiday"
                     ? "lessons on these days will be back on teachers' timetables."
@@ -242,7 +250,7 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
                   type="button"
                   onClick={() => void confirmDelete()}
                   disabled={actions.deleting}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                  className="px-4 py-2 bg-tl-danger hover:opacity-90 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
                 >
                   {actions.deleting ? "Deleting…" : "Delete event"}
                 </button>
@@ -276,8 +284,8 @@ function EventRow({
         {eventTypeLabel(event.type)}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{event.title}</p>
-        <p className="text-xs text-gray-500 dark:text-slate-400">
+        <p className="text-sm font-medium text-tl-ink truncate">{event.title}</p>
+        <p className="text-xs text-tl-muted">
           {formatEventRange(event.startDate, event.endDate)}
           {days > 1 ? ` · ${days} days` : ""}
           {event.type === "early_close" && event.endsAt ? ` · closes at ${event.endsAt}` : ""}
@@ -289,7 +297,7 @@ function EventRow({
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${event.title}`}
-            className="p-2 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] dark:focus-visible:ring-blue-500"
+            className="p-2 rounded-md text-tl-muted hover:bg-tl-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-link"
           >
             <Pencil className="w-4 h-4" aria-hidden />
           </button>
@@ -297,7 +305,7 @@ function EventRow({
             type="button"
             onClick={onDelete}
             aria-label={`Delete ${event.title}`}
-            className="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            className="p-2 rounded-md text-tl-faint hover:text-tl-danger hover:bg-tl-danger-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-danger"
           >
             <Trash2 className="w-4 h-4" aria-hidden />
           </button>

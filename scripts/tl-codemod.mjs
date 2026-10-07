@@ -242,7 +242,7 @@ function rewrite(file, dry, singles = false) {
     });
   }
   // Classes removed above can leave double spaces inside a class string.
-  if (singles) after = after.replace(/(className=(?:"|\{?`)[^"`]*?) {2,}/g, (m) => m.replace(/ {2,}/g, " "));
+  if (singles) after = after.replace(/(className=(?:"|\{?`)[^"`\n]*?) {2,}/g, (m) => m.replace(/ {2,}/g, " "));
   // A dark: variant left behind on a token is now redundant noise; drop the ones that duplicate it.
   after = after.replace(/(\b(?:bg|text|border)-tl-[\w-]+) dark:\1\b/g, "$1");
   if (changed && !dry) fs.writeFileSync(file, after);

@@ -3,7 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Camera, Loader2, Lock, Pencil } from "lucide-react";
-import { useAdminProfile, useUpdateAdminAvatar, useUpdateAdminProfile } from "@/hooks/settings/useAdminProfile";
+import {
+  useAdminProfile,
+  useUpdateAdminAvatar,
+  useUpdateAdminProfile,
+} from "@/hooks/settings/useAdminProfile";
 import { useImageUpload } from "@/hooks/settings/useImageUpload";
 import { useAuth } from "@/context/AuthContext";
 import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
@@ -89,11 +93,15 @@ export function AdminAccountSection() {
         <CardHeader title="Profile Picture" />
         <div className="p-5 flex items-center gap-5">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full border-2 border-gray-200 dark:border-slate-600 flex items-center justify-center bg-[#EBF0F7] dark:bg-slate-700 overflow-hidden">
+            <div className="w-20 h-20 rounded-full border-2 border-tl-line flex items-center justify-center bg-tl-select overflow-hidden">
               {userAvatar ? (
-                <img src={userAvatar} alt="Your profile picture" className="w-full h-full object-cover" />
+                <img
+                  src={userAvatar}
+                  alt="Your profile picture"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <span className="text-xl font-bold text-[#003366] dark:text-blue-300">{initials || "A"}</span>
+                <span className="text-xl font-bold text-tl-brand">{initials || "A"}</span>
               )}
             </div>
             {uploading && (
@@ -114,7 +122,7 @@ export function AdminAccountSection() {
               <Camera className="w-4 h-4" />
               {uploading ? "Uploading…" : "Change Picture"}
             </OutlineBtn>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">PNG, JPG — max 2MB</p>
+            <p className="text-xs text-tl-muted mt-1.5">PNG, JPG — max 2MB</p>
           </div>
         </div>
       </Card>
@@ -178,7 +186,7 @@ export function AdminAccountSection() {
             )}
           </div>
           {lastLogin && (
-            <p className="text-xs text-gray-500 dark:text-slate-400">
+            <p className="text-xs text-tl-muted">
               Last login: {new Date(lastLogin).toLocaleString()}
             </p>
           )}
@@ -190,8 +198,8 @@ export function AdminAccountSection() {
         <div className="p-5">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Password</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">Update your account password</p>
+              <p className="text-sm font-medium text-tl-ink">Password</p>
+              <p className="text-xs text-tl-muted">Update your account password</p>
             </div>
             <OutlineBtn onClick={() => setShowPwModal(true)}>
               <Lock className="w-3.5 h-3.5" /> Change Password

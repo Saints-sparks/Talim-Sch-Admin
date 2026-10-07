@@ -48,7 +48,8 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [saving, setSaving] = useState(false);
 
-  const mismatch = values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
+  const mismatch =
+    values.confirmPassword.length > 0 && values.confirmPassword !== values.newPassword;
   const canSubmit =
     values.currentPassword.length > 0 &&
     isPasswordValid(values.newPassword, rules) &&
@@ -84,9 +85,9 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           <div key={key}>
             <label
               htmlFor={`settings-${key}`}
-              className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1"
+              className="block text-xs font-medium text-tl-body mb-1"
             >
-              {label} <span className="text-red-500">*</span>
+              {label} <span className="text-tl-danger">*</span>
             </label>
             <div className="relative">
               <input
@@ -99,20 +100,20 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 aria-describedby={key === "newPassword" ? "settings-password-rules" : undefined}
                 disabled={saving}
                 required
-                className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:border-[#003366] focus:ring-2 focus:ring-[#003366]/10 outline-none"
+                className="w-full px-3 py-2.5 pr-10 text-sm border border-tl-control rounded-lg focus:border-tl-link focus:ring-2 focus:ring-tl-link outline-none"
               />
               <button
                 type="button"
                 aria-label={show[key] ? `Hide ${label}` : `Show ${label}`}
                 onClick={() => setShow((s) => ({ ...s, [key]: !s[key] }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-tl-faint"
               >
                 {show[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {errors[key] && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[key]}</p>}
+            {errors[key] && <p className="mt-1 text-xs text-tl-danger">{errors[key]}</p>}
             {key === "confirmPassword" && mismatch && !errors[key] && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">New passwords do not match</p>
+              <p className="mt-1 text-xs text-tl-danger">New passwords do not match</p>
             )}
           </div>
         ))}

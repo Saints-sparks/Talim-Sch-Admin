@@ -34,7 +34,13 @@ interface GradeScaleEditorProps {
  * `moveBand`); a new grade goes just above the 0% floor and its letter field
  * takes focus.
  */
-export function GradeScaleEditor({ rows, errors, scaleError, canManage, onChange }: GradeScaleEditorProps) {
+export function GradeScaleEditor({
+  rows,
+  errors,
+  scaleError,
+  canManage,
+  onChange,
+}: GradeScaleEditorProps) {
   const [focusId, setFocusId] = useState<string | null>(null);
   const letterRefs = useRef(new Map<string, HTMLInputElement>());
 
@@ -64,14 +70,15 @@ export function GradeScaleEditor({ rows, errors, scaleError, canManage, onChange
         }
       />
       <div className="p-5 space-y-3">
-        <p id="grade-scale-help" className="text-xs text-gray-500 dark:text-slate-400">
-          Highest grade first. A grade runs from its minimum up to the next grade&apos;s minimum. Letters must be
-          unique, each minimum lower than the one above it, and the last grade must start at 0%.
+        <p id="grade-scale-help" className="text-xs text-tl-muted">
+          Highest grade first. A grade runs from its minimum up to the next grade&apos;s minimum.
+          Letters must be unique, each minimum lower than the one above it, and the last grade must
+          start at 0%.
           {canManage && " Moving a grade swaps it with its neighbour; the minimums stay in order."}
         </p>
 
         {scaleError && (
-          <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+          <p role="alert" className="text-xs text-tl-danger">
             {scaleError}
           </p>
         )}
@@ -122,14 +129,24 @@ interface BandRowProps {
 }
 
 /** One grade. */
-function BandRow({ row, index, count, errors, canManage, letterRef, onPatch, onMove, onRemove }: BandRowProps) {
+function BandRow({
+  row,
+  index,
+  count,
+  errors,
+  canManage,
+  letterRef,
+  onPatch,
+  onMove,
+  onRemove,
+}: BandRowProps) {
   const base = `grade-${row.id}`;
   const name = row.letter.trim() ? `grade ${row.letter.trim()}` : `row ${index + 1}`;
   const iconBtn =
-    "p-1.5 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] dark:focus-visible:ring-blue-500";
+    "p-1.5 rounded-md text-tl-muted hover:bg-tl-bg disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-link";
 
   return (
-    <li className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+    <li className="rounded-lg border border-tl-line bg-tl-surface p-3">
       <div className="flex flex-wrap items-start gap-3">
         {canManage && (
           <div className="flex flex-col pt-5">
@@ -155,7 +172,7 @@ function BandRow({ row, index, count, errors, canManage, letterRef, onPatch, onM
         )}
 
         <div className="w-24">
-          <label htmlFor={`${base}-letter`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label htmlFor={`${base}-letter`} className="block text-xs font-medium text-tl-body mb-1">
             Letter
           </label>
           <input
@@ -174,7 +191,7 @@ function BandRow({ row, index, count, errors, canManage, letterRef, onPatch, onM
         </div>
 
         <div className="w-32">
-          <label htmlFor={`${base}-min`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label htmlFor={`${base}-min`} className="block text-xs font-medium text-tl-body mb-1">
             Minimum (%)
           </label>
           <input
@@ -194,8 +211,8 @@ function BandRow({ row, index, count, errors, canManage, letterRef, onPatch, onM
         </div>
 
         <div className="flex-1 min-w-[10rem]">
-          <label htmlFor={`${base}-remark`} className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
-            Remark <span className="font-normal text-gray-500 dark:text-slate-400">(optional)</span>
+          <label htmlFor={`${base}-remark`} className="block text-xs font-medium text-tl-body mb-1">
+            Remark <span className="font-normal text-tl-muted">(optional)</span>
           </label>
           <input
             id={`${base}-remark`}
@@ -218,7 +235,7 @@ function BandRow({ row, index, count, errors, canManage, letterRef, onPatch, onM
               onClick={onRemove}
               disabled={count === 1}
               aria-label={`Delete ${name}`}
-              className="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              className="p-2 rounded-md text-tl-faint hover:text-tl-danger hover:bg-tl-danger-bg disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-danger"
             >
               <Trash2 className="w-4 h-4" aria-hidden />
             </button>

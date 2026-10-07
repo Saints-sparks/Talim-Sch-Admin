@@ -72,9 +72,9 @@ export default function CreateClassStep({ onComplete }: { onComplete: () => void
 
   return (
     <StepCard stepId="create-class">
-      <p className="text-sm text-gray-500 mb-4 max-w-sm dark:text-slate-400">
-        A class groups students of the same grade together. You can have multiple classes per grade —
-        e.g. <span className="font-medium">Grade 7A</span> and{" "}
+      <p className="text-sm text-tl-muted mb-4 max-w-sm">
+        A class groups students of the same grade together. You can have multiple classes per grade
+        — e.g. <span className="font-medium">Grade 7A</span> and{" "}
         <span className="font-medium">Grade 7B</span>.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
@@ -107,7 +107,10 @@ export default function CreateClassStep({ onComplete }: { onComplete: () => void
             />
           </Field>
         </Tooltip>
-        <Tooltip content="Maximum number of students that can be enrolled in this class." side="right">
+        <Tooltip
+          content="Maximum number of students that can be enrolled in this class."
+          side="right"
+        >
           <Field label="Capacity" hint="Maximum number of students">
             <input
               type="number"

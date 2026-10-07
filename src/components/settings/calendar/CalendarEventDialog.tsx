@@ -3,7 +3,12 @@
 import React, { useState } from "react";
 import { ApiError } from "@/lib/apiError";
 import { ModalShell, OutlineBtn, PrimaryBtn } from "@/components/settings/ui";
-import { FieldError, FieldLabel, controlClasses, describedBy } from "@/components/settings/schoolDay/fields";
+import {
+  FieldError,
+  FieldLabel,
+  controlClasses,
+  describedBy,
+} from "@/components/settings/schoolDay/fields";
 import {
   EVENT_TYPES,
   validateCalendarForm,
@@ -26,19 +31,30 @@ interface CalendarEventDialogProps {
  * close only — the time school ends. Checks run on submit and then follow
  * every edit; the API's field errors land on the field they name.
  */
-export function CalendarEventDialog({ title, initial, saving, onCancel, onSubmit }: CalendarEventDialogProps) {
+export function CalendarEventDialog({
+  title,
+  initial,
+  saving,
+  onCancel,
+  onSubmit,
+}: CalendarEventDialogProps) {
   const [values, setValues] = useState<CalendarFormValues>(initial);
   const [submitted, setSubmitted] = useState(false);
   const [serverErrors, setServerErrors] = useState<CalendarFormErrors>({});
 
-  const errors: CalendarFormErrors = submitted ? { ...serverErrors, ...validateCalendarForm(values) } : serverErrors;
+  const errors: CalendarFormErrors = submitted
+    ? { ...serverErrors, ...validateCalendarForm(values) }
+    : serverErrors;
   const typeHint = EVENT_TYPES.find((t) => t.value === values.type)?.hint;
 
   const set = (patch: Partial<CalendarFormValues>) => {
     setValues((prev) => {
       const next = { ...prev, ...patch };
       // Moving the first day past the last day drags the last day along.
-      if (patch.startDate && (!prev.endDate || prev.endDate < patch.startDate || prev.endDate === prev.startDate)) {
+      if (
+        patch.startDate &&
+        (!prev.endDate || prev.endDate < patch.startDate || prev.endDate === prev.startDate)
+      ) {
         next.endDate = patch.startDate;
       }
       return next;
@@ -102,7 +118,7 @@ export function CalendarEventDialog({ title, initial, saving, onCancel, onSubmit
               </option>
             ))}
           </select>
-          <p id="cal-type-hint" className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+          <p id="cal-type-hint" className="mt-1 text-xs text-tl-muted">
             {typeHint}
           </p>
           <FieldError controlId="cal-type" message={errors.type} />

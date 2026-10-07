@@ -21,11 +21,31 @@ const TITLE = "Notifications";
 const DESC = "Manage notification preferences and alerts";
 
 const ALERTS: Array<{ field: keyof AdminNotifPrefs; label: string; desc: string }> = [
-  { field: "announcementsEnabled", label: "Announcement notifications", desc: "Get notified when announcements are published" },
-  { field: "feesEnabled", label: "Fee payment alerts", desc: "Notify when parents make payments or withdrawals" },
-  { field: "attendanceEnabled", label: "Leave request alerts", desc: "Notify on new or updated leave requests" },
-  { field: "resultsEnabled", label: "Result publishing alerts", desc: "Notify when results are published to parents" },
-  { field: "messagesEnabled", label: "New message alerts", desc: "Notify when you receive a new message" },
+  {
+    field: "announcementsEnabled",
+    label: "Announcement notifications",
+    desc: "Get notified when announcements are published",
+  },
+  {
+    field: "feesEnabled",
+    label: "Fee payment alerts",
+    desc: "Notify when parents make payments or withdrawals",
+  },
+  {
+    field: "attendanceEnabled",
+    label: "Leave request alerts",
+    desc: "Notify on new or updated leave requests",
+  },
+  {
+    field: "resultsEnabled",
+    label: "Result publishing alerts",
+    desc: "Notify when results are published to parents",
+  },
+  {
+    field: "messagesEnabled",
+    label: "New message alerts",
+    desc: "Notify when you receive a new message",
+  },
 ];
 
 const DELIVERY: Array<{ field: keyof AdminNotifPrefs; label: string; desc: string }> = [
@@ -58,7 +78,15 @@ export function NotificationsSection() {
     );
   }
 
-  const row = ({ field, label, desc }: { field: keyof AdminNotifPrefs; label: string; desc: string }) => (
+  const row = ({
+    field,
+    label,
+    desc,
+  }: {
+    field: keyof AdminNotifPrefs;
+    label: string;
+    desc: string;
+  }) => (
     <ToggleRow
       key={field}
       label={label}
@@ -104,10 +132,7 @@ export function NotificationsSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-3">
               {(["quietHoursStart", "quietHoursEnd"] as const).map((field) => (
                 <div key={field}>
-                  <label
-                    htmlFor={field}
-                    className="block text-xs text-gray-500 dark:text-slate-400 mb-1"
-                  >
+                  <label htmlFor={field} className="block text-xs text-tl-muted mb-1">
                     {field === "quietHoursStart" ? "Start time" : "End time"}
                   </label>
                   <input
@@ -116,7 +141,7 @@ export function NotificationsSection() {
                     value={prefs[field]}
                     disabled={savingField === field}
                     onChange={(e) => void save(field, e.target.value)}
-                    className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#003366] disabled:opacity-60"
+                    className="text-sm border border-tl-line rounded-lg px-2 py-1.5 bg-tl-surface focus:outline-none focus:ring-2 focus:ring-tl-link disabled:opacity-60"
                   />
                 </div>
               ))}
