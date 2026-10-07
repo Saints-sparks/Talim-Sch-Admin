@@ -1,61 +1,57 @@
 "use client";
 
-import React from 'react';
-import { useWebSocketContext } from '../context/WebSocketContext';
+import React from "react";
+import { useWebSocketContext } from "../context/WebSocketContext";
+import { focusRing } from "@/components/tl/styles";
 
+/** The words and dot for each connection state. */
+const STATE: Record<string, { text: string; short: string; dot: string; tone: string }> = {
+  connected: { text: "Connected", short: "Online", dot: "tl-dot-success", tone: "text-tl-success" },
+  connecting: {
+    text: "Connecting...",
+    short: "Connecting",
+    dot: "tl-dot-warning",
+    tone: "text-tl-warning",
+  },
+  disconnected: {
+    text: "Disconnected",
+    short: "Offline",
+    dot: "tl-dot-neutral",
+    tone: "text-tl-muted",
+  },
+  error: { text: "Connection Error", short: "Error", dot: "tl-dot-danger", tone: "text-tl-danger" },
+};
+
+/**
+ * The live-connection status in the top bar: a dot and a word in a pill
+ * (Connected, Connecting..., Disconnected, Connection Error), with Retry
+ * after an error.
+ *
+ * @returns The status.
+ */
 export const WebSocketStatus: React.FC = () => {
-  const { connectionStatus, isConnected, reconnect } = useWebSocketContext();
-
-  // Debug the WebSocket status component state
-
-  const getStatusIcon = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return '🟢';
-      case 'connecting':
-        return '🟡';
-      case 'disconnected':
-        return '⚫';
-      case 'error':
-        return '🔴';
-      default:
-        return '⚫';
-    }
-  };
-
-  const getStatusText = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return 'Connected';
-      case 'connecting':
-        return 'Connecting...';
-      case 'disconnected':
-        return 'Disconnected';
-      case 'error':
-        return 'Connection Error';
-      default:
-        return 'Unknown';
-    }
+  const { connectionStatus, reconnect } = useWebSocketContext();
+  const state = STATE[connectionStatus] ?? {
+    text: "Unknown",
+    short: "Offline",
+    dot: "tl-dot-neutral",
+    tone: "text-tl-muted",
   };
 
   return (
-    <div className="flex items-center space-x-1 sm:space-x-2 text-xs">
-      <span className="text-sm sm:text-lg">{getStatusIcon()}</span>
-      <span className={`font-medium text-xs sm:text-sm ${
-        isConnected ? 'text-green-700 dark:text-green-400' : 'text-gray-500'
-      }`}>
-        {/* Show full text on desktop, shortened on mobile */}
-        <span className="hidden sm:inline">{getStatusText()}</span>
-        <span className="sm:hidden">
-          {connectionStatus === 'connected' ? 'Online' : 
-           connectionStatus === 'connecting' ? 'Connecting' : 
-           connectionStatus === 'error' ? 'Error' : 'Offline'}
-        </span>
+    <div className="flex items-center gap-2" role="status" aria-live="polite">
+      <span
+        className={`inline-flex min-h-[32px] items-center gap-2 rounded-full border border-tl-line bg-tl-surface px-3 text-xs font-extrabold ${state.tone}`}
+      >
+        <span aria-hidden className={`h-2 w-2 rounded-full ${state.dot}`} />
+        <span className="hidden sm:inline">{state.text}</span>
+        <span className="sm:hidden">{state.short}</span>
       </span>
-      {connectionStatus === 'error' && (
+      {connectionStatus === "error" && (
         <button
+          type="button"
           onClick={reconnect}
-          className="text-blue-600 hover:text-blue-800 underline"
+          className={`min-h-[44px] rounded-md px-1 text-xs font-bold text-tl-link underline ${focusRing}`}
           title="Reconnect"
         >
           Retry

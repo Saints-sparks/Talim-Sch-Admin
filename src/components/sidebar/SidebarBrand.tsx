@@ -2,28 +2,56 @@
 
 import React from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { focusRing, iconButton } from "@/components/tl/styles";
 
 const LOGO_SRC = "/img/treelogo.svg";
 
 /**
+ * The tree mark on its navy tile (decorative; "Talim" is written beside it,
+ * or the rail's button names itself).
+ *
+ * @param props - The tile's size.
+ * @param props.size - Edge length in px.
+ * @returns The mark.
+ */
+function BrandMark({ size }: { size: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{ width: size, height: size }}
+      className="flex shrink-0 items-center justify-center rounded-[10px] bg-tl-brand-fill"
+    >
+      <Image
+        src={LOGO_SRC}
+        alt=""
+        width={size - 12}
+        height={size - 12}
+        className="brightness-0 invert"
+      />
+    </span>
+  );
+}
+
+/**
  * Logo and expand button at the top of the collapsed rail.
  *
+ * @param props - The expand handler.
  * @param props.onExpand - Expands the sidebar.
  * @returns The rail header.
  */
 export function CollapsedBrand({ onExpand }: { onExpand: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-1 p-3 border-b-2 border-[#F3F3F3] dark:border-slate-700">
-      <div className="bg-[#003366] p-2 rounded-lg">
-        <Image src={LOGO_SRC} alt="Talim Logo" width={20} height={20} className="w-5 h-5 filter brightness-0 invert" />
-      </div>
+    <div className="flex flex-col items-center gap-1.5 border-b border-tl-line-soft px-2 pb-3 pt-[22px]">
+      <BrandMark size={32} />
       <button
+        type="button"
         onClick={onExpand}
-        className="mt-1 flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+        className={iconButton}
         aria-label="Expand sidebar"
+        title="Expand sidebar"
       >
-        <ChevronRight className="w-4 h-4" />
+        <PanelLeftOpen className="h-[18px] w-[18px]" aria-hidden />
       </button>
     </div>
   );
@@ -31,6 +59,8 @@ export function CollapsedBrand({ onExpand }: { onExpand: () => void }) {
 
 interface ExpandedBrandProps {
   isMobile: boolean;
+  /** The school's name, under "Talim". */
+  schoolName: string;
   /** Closes the mobile drawer. */
   onCloseMobile: () => void;
   /** Collapses the desktop sidebar to the icon rail. */
@@ -38,55 +68,53 @@ interface ExpandedBrandProps {
 }
 
 /**
- * Close button (mobile), logo and collapse button (desktop) at the top of the
- * full sidebar.
+ * The top of the full sidebar: the mark, "Talim" and the school (the portals'
+ * brand block), with Close (drawer) or Collapse (desktop).
  *
- * @param props - Layout flag and the two handlers.
+ * @param props - See {@link ExpandedBrandProps}.
+ * @param props.isMobile - Whether the sidebar is the drawer.
+ * @param props.schoolName - The school's name.
+ * @param props.onCloseMobile - Closes the drawer.
+ * @param props.onCollapse - Collapses to the rail.
  * @returns The header.
  */
-export function ExpandedBrand({ isMobile, onCloseMobile, onCollapse }: ExpandedBrandProps) {
+export function ExpandedBrand({
+  isMobile,
+  schoolName,
+  onCloseMobile,
+  onCollapse,
+}: ExpandedBrandProps) {
   return (
-    <>
-      {isMobile && (
-        <div className="flex justify-end p-4 md:hidden border-b border-gray-100 dark:border-slate-700">
-          <button
-            onClick={onCloseMobile}
-            aria-label="Close menu"
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <div className="flex items-center gap-2.5 px-3 pb-2 pt-1">
+      <BrandMark size={32} />
+      <div className="min-w-0 flex-1">
+        <div className="text-[19px] font-extrabold leading-tight tracking-[-0.2px] text-tl-ink">
+          Talim
         </div>
-      )}
-
-      <div className="p-[21px] border-b-2 border-[#F3F3F3] dark:border-slate-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-600 rounded-lg opacity-20"></div>
-              <div className="relative bg-[#003366] p-2 rounded-lg">
-                <Image
-                  src={LOGO_SRC}
-                  alt="Talim Logo"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6 filter brightness-0 invert"
-                />
-              </div>
-            </div>
-            <h1 className="text-[18px] font-semibold text-[#030E18] dark:text-white">Talim</h1>
-          </div>
-          {!isMobile && (
-            <button
-              onClick={onCollapse}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
-              aria-label="Collapse sidebar"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
+        <div className="truncate text-xs font-semibold text-tl-muted" title={schoolName}>
+          {schoolName}
         </div>
       </div>
-    </>
+      {isMobile ? (
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          aria-label="Close menu"
+          className={`${iconButton} ${focusRing}`}
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onCollapse}
+          className={iconButton}
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar"
+        >
+          <PanelLeftClose className="h-[18px] w-[18px]" aria-hidden />
+        </button>
+      )}
+    </div>
   );
 }

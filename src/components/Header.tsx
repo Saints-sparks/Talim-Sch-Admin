@@ -1,27 +1,53 @@
+"use client";
+
 import Link from "next/link";
-import { Menu, GraduationCap, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { format } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { useEffect, useState } from "react";
 import { WebSocketStatus } from "./WebSocketStatus";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar } from "./Icons";
 import { ThemeToggle } from "./theme-toggle";
-import { useEffect, useState } from "react";
 import { getUnreadNotificationCount } from "@/app/services/notification.service";
 import { NOTIFICATION_RECEIVED_EVENT } from "@/context/ChatAlertsContext";
+import { focusRing } from "@/components/tl/styles";
 
+/**
+ * Initials for the avatar: the first letters of the first and last names.
+ *
+ * @param first - First name.
+ * @param last - Last name.
+ * @returns One or two capitals, or "U".
+ */
+export function headerInitials(first?: string, last?: string): string {
+  return `${first?.trim().charAt(0) ?? ""}${last?.trim().charAt(0) ?? ""}`.toUpperCase() || "U";
+}
+
+/**
+ * The top bar in the portals' design: the menu button (below 980px), the
+ * school's logo and name, today's date, the live-connection status, the
+ * theme menu, notifications with an unread badge, and the admin's avatar
+ * linking to their profile.
+ *
+ * The unread count comes from `GET /notifications/unread-count`, refreshed
+ * every 30 seconds and whenever a socket notification arrives.
+ *
+ * @returns The header.
+ */
 export function Header() {
-  const { setMobileOpen } = useSidebar();
+  const { isMobileOpen, setMobileOpen } = useSidebar();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
     const userId = user?.userId ?? user?._id;
     if (!userId) return;
 
     const fetchUnread = () =>
-      getUnreadNotificationCount(userId).then(setUnreadCount).catch(() => {});
+      getUnreadNotificationCount(userId)
+        .then(setUnreadCount)
+        .catch(() => {});
 
     fetchUnread();
     const interval = setInterval(fetchUnread, 30_000);
@@ -31,110 +57,82 @@ export function Header() {
       clearInterval(interval);
       window.removeEventListener(NOTIFICATION_RECEIVED_EVENT, fetchUnread);
     };
-  }, [user?.userId]);
+  }, [user?.userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Generate user initials from first and last name
-  const getUserInitials = () => {
-    if (!user?.firstName && !user?.lastName) return "U";
-
-    const firstInitial = user?.firstName?.charAt(0).toUpperCase() || "";
-    const lastInitial = user?.lastName?.charAt(0).toUpperCase() || "";
-
-    return `${firstInitial}${lastInitial}` || "U";
-  };
+  const initials = headerInitials(user?.firstName, user?.lastName);
+  const schoolName = user?.schoolName || "Your school";
+  const unread = unreadCount > 0 ? unreadCount : 0;
+  const showLogo = Boolean(user?.schoolLogo) && !logoFailed;
 
   return (
-    <header className="font-manrope px-5 border-b border-b-[#F3F3F3] dark:border-b-slate-800 py-2 bg-white dark:bg-slate-900">
-      {/* Top row: School Name (left) and Menu, Date, Notifications, Avatar (right) */}
-      <div className="flex flex-col sm:flex-row items-center w-full justify-between gap-4 py-3">
-        {/* Left Side: School Name */}
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl  flex items-center justify-center  overflow-hidden">
-            {user?.schoolLogo ? (
-              <img
-                src={user.schoolLogo}
-                alt="School Logo"
-                className="w-full h-full object-cover rounded-xl"
-                onError={(e) => {
-                  // Fallback to graduation cap if image fails to load
-                  e.currentTarget.style.display = "none";
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const fallback = parent.querySelector(".fallback-icon");
-                    if (fallback) {
-                      (fallback as HTMLElement).style.display = "block";
-                    }
-                  }
-                }}
-              />
-            ) : null}
-            <GraduationCap
-              className={`w-5 h-5 text-white fallback-icon ${
-                user?.schoolLogo ? "hidden" : "block"
-              }`}
-            />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100 tracking-tight">
-              {user?.schoolName || "School Name"}
-            </h1>
-          </div>
-        </div>
+    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-tl-line bg-tl-surface px-[clamp(14px,3vw,26px)] py-3 font-manrope text-tl-ink">
+      <button
+        type="button"
+        id="hamburger-menu"
+        onClick={() => setMobileOpen(!isMobileOpen)}
+        aria-label={isMobileOpen ? "Close the menu" : "Open sidebar"}
+        aria-expanded={isMobileOpen}
+        aria-controls="mobile-sidebar"
+        className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-tl-line min-[980px]:hidden ${focusRing}`}
+      >
+        <span aria-hidden className="h-0.5 w-[18px] rounded bg-tl-brand" />
+        <span aria-hidden className="h-0.5 w-[18px] rounded bg-tl-brand" />
+        <span aria-hidden className="h-0.5 w-[18px] rounded bg-tl-brand" />
+      </button>
 
-        {/* Right Side: Menu, Date, Notifications, Avatar */}
-        <div className="flex items-center w-full sm:w-auto justify-between sm:justify-end">
-          <button
-            className="sm:hidden rounded-md shadow-none p-2 hover:bg-gray-100 transition-colors"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open sidebar"
-          >
-            <Menu className="text-[#003366]" size={24} />
-          </button>
-
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2 items-center text-[#6F6F6F] dark:text-slate-400 p-2 rounded-lg border border-[#F0F0F0] dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700">
-              <p className="font-medium leading-[24px]">
-                {format(new Date(), "dd MMM, yyyy")}
-              </p>
-              <Calendar />
-            </div>
-            {/* WebSocket Status - Always visible but compact on mobile */}
-            <div className="flex items-center">
-              <WebSocketStatus />
-            </div>
-            <ThemeToggle />
-            {/* One named link (it used to hold an unnamed button, which axe flags as critical). */}
-            <Link
-              href="/notifications"
-              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
-              className="relative inline-flex bg-white dark:bg-slate-800 shadow-none border border-[#F0F0F0] dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg p-2.5 transition-colors"
-            >
-              <Bell className="h-5 w-5 text-gray-600 dark:text-slate-300" aria-hidden />
-              {unreadCount > 0 && (
-                <span
-                  aria-hidden
-                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold px-1 leading-none"
-                >
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Link>
-            <Link href="/profile">
-              <Avatar>
-                <AvatarImage
-                  src={user?.userAvatar || ""}
-                  alt={`${user?.firstName || "User"} ${
-                    user?.lastName || ""
-                  } avatar`}
-                />
-                <AvatarFallback className="bg-blue-600 text-white font-semibold">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-          </div>
-        </div>
+      <div className="flex min-w-[120px] flex-1 items-center gap-2.5">
+        {showLogo ? (
+          <img
+            src={user?.schoolLogo}
+            alt=""
+            className="h-8 w-8 shrink-0 rounded-[9px] object-cover"
+            onError={() => setLogoFailed(true)}
+          />
+        ) : (
+          <span aria-hidden className="h-8 w-8 shrink-0 rounded-[9px] bg-tl-success-bg" />
+        )}
+        <div className="truncate text-[15px] font-bold text-tl-ink">{schoolName}</div>
       </div>
+
+      <div className="hidden whitespace-nowrap text-sm text-tl-muted min-[560px]:block">
+        {format(new Date(), "EEE, d MMM yyyy")}
+      </div>
+
+      <div className="hidden min-[720px]:block">
+        <WebSocketStatus />
+      </div>
+
+      <ThemeToggle />
+
+      <Link
+        href="/notifications"
+        title="Announcements, reminders and alerts"
+        aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+        className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-tl-line hover:bg-tl-bg ${focusRing}`}
+      >
+        <Bell className="h-[19px] w-[19px] text-tl-brand" aria-hidden />
+        {unread > 0 ? (
+          <span
+            aria-hidden
+            className="absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-tl-surface bg-tl-danger px-[5px] text-[11px] font-extrabold text-white dark:text-tl-bg"
+          >
+            {unread > 99 ? "99+" : unread}
+          </span>
+        ) : null}
+      </Link>
+
+      <Link
+        href="/profile"
+        title="Your profile"
+        aria-label="Your profile"
+        className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-tl-select text-[13px] font-extrabold text-tl-brand ${focusRing}`}
+      >
+        {user?.userAvatar ? (
+          <img src={user.userAvatar} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
+      </Link>
     </header>
   );
 }

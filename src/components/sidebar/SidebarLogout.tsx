@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { Loader2, LogOut } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Power } from "@/components/Icons";
-import { cn } from "@/lib/utils";
+import { focusRing } from "@/components/tl/styles";
 
 interface SidebarLogoutProps {
   /** `icon` for the collapsed rail, `row` for the full sidebar. */
@@ -13,53 +12,50 @@ interface SidebarLogoutProps {
   onLogout: () => void;
 }
 
-/** The spinner shown while signing out. */
-function LogoutSpinner() {
-  return <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />;
-}
-
 /**
- * The "Logout Account" control at the foot of the sidebar.
+ * "Log out" at the foot of the sidebar (red on hover, as in the portals).
  *
  * @param props - Layout variant, the in-flight flag and the sign-out handler.
+ * @param props.variant - Rail icon or full row.
+ * @param props.isLoggingOut - Whether sign-out is running.
+ * @param props.onLogout - Signs out.
  * @returns The control.
  */
 export function SidebarLogout({ variant, isLoggingOut, onLogout }: SidebarLogoutProps) {
+  const icon = isLoggingOut ? (
+    <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden />
+  ) : (
+    <LogOut className="h-[18px] w-[18px]" aria-hidden />
+  );
+  const tone =
+    "text-tl-muted hover:bg-tl-danger-bg hover:text-tl-danger disabled:cursor-not-allowed disabled:opacity-60";
+
   if (variant === "icon") {
     return (
-      <div className="border-t border-[#F4F4F4] dark:border-slate-700 px-2 py-2">
-        <Tooltip content="Logout Account" side="right">
-          <div
-            className={cn(
-              "flex items-center justify-center w-10 h-10 mx-auto rounded-md cursor-pointer transition-all duration-200",
-              isLoggingOut
-                ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
-                : "text-[#4A5568] dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400",
-            )}
-            onClick={isLoggingOut ? undefined : onLogout}
-          >
-            {isLoggingOut ? <LogoutSpinner /> : <Power />}
-          </div>
-        </Tooltip>
-      </div>
+      <Tooltip content="Log out" side="right">
+        <button
+          type="button"
+          aria-label={isLoggingOut ? "Logging out" : "Log out"}
+          onClick={onLogout}
+          disabled={isLoggingOut}
+          className={`mx-auto flex h-11 w-11 items-center justify-center rounded-[14px] transition-colors ${tone} ${focusRing}`}
+        >
+          {icon}
+        </button>
+      </Tooltip>
     );
   }
 
   return (
-    <div className="border-t border-[#F4F4F4] dark:border-slate-700 px-3 py-2">
-      <motion.div
-        className={cn(
-          "group flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all duration-200",
-          isLoggingOut
-            ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
-            : "text-[#4A5568] dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400",
-        )}
-        whileTap={!isLoggingOut ? { scale: 0.98 } : {}}
-        onClick={isLoggingOut ? undefined : onLogout}
-      >
-        <div className="flex items-center justify-center w-6 h-6">{isLoggingOut ? <LogoutSpinner /> : <Power />}</div>
-        <span className="text-base font-medium">{isLoggingOut ? "Logging out..." : "Logout Account"}</span>
-      </motion.div>
-    </div>
+    <button
+      type="button"
+      title="Sign out of School Admin"
+      onClick={onLogout}
+      disabled={isLoggingOut}
+      className={`flex min-h-[44px] w-full items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-left text-[15px] font-semibold transition-colors ${tone} ${focusRing}`}
+    >
+      {icon}
+      <span>{isLoggingOut ? "Logging out…" : "Log out"}</span>
+    </button>
   );
 }

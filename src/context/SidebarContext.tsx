@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -18,15 +12,18 @@ type SidebarContextType = {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
+/** Below this width (px) the sidebar is a drawer opened from the top bar's menu button. */
+export const SIDEBAR_DRAWER_BELOW = 980;
+
 export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check if we're on mobile
+  // Below the drawer breakpoint the sidebar becomes a drawer (the portals' shell).
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < SIDEBAR_DRAWER_BELOW);
     };
 
     checkMobile();
@@ -79,7 +76,6 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
 
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
-  if (!context)
-    throw new Error("useSidebar must be used within SidebarProvider");
+  if (!context) throw new Error("useSidebar must be used within SidebarProvider");
   return context;
 };

@@ -26,10 +26,20 @@ export type NavIconKey =
   | "leaveRequests"
   | "transit"
   | "messages"
-  | "settings";
+  | "settings"
+  | "support";
 
 /** A live count shown on an item. */
 export type NavBadgeKey = "unreadMessages";
+
+/** The titled groups the sidebar arranges its entries in (the portals' grouped navigation). */
+export type NavSectionKey =
+  | "overview"
+  | "academics"
+  | "people"
+  | "money"
+  | "communication"
+  | "account";
 
 /** A page reached from inside a group. */
 export interface NavSubItem {
@@ -54,13 +64,22 @@ export interface NavItem {
   subItems?: readonly NavSubItem[];
   /** A count drawn on the item. */
   badge?: NavBadgeKey;
+  /** The titled group it is listed under. `account` entries sit at the foot of the sidebar. */
+  section: NavSectionKey;
 }
 
 /** Everything the sidebar can show, in order. */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", tooltip: "Dashboard", icon: "dashboard" },
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    tooltip: "Dashboard",
+    icon: "dashboard",
+    section: "overview",
+  },
   {
     path: "/classes",
+    section: "academics",
     label: "Classes",
     tooltip: "Classes",
     icon: "classes",
@@ -68,6 +87,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/curriculum",
+    section: "academics",
     label: "Curriculum",
     tooltip: "Curriculum (Subjects & Courses)",
     icon: "curriculum",
@@ -75,6 +95,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/assessments",
+    section: "academics",
     label: "Assessments",
     tooltip: "Assessments",
     icon: "assessments",
@@ -82,6 +103,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/term-results",
+    section: "academics",
     label: "Term Results",
     tooltip: "Review and publish class results",
     icon: "termResults",
@@ -89,6 +111,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/timetable",
+    section: "academics",
     label: "Timetable",
     tooltip: "Timetable",
     icon: "timetable",
@@ -96,6 +119,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/fees-management",
+    section: "money",
     label: "Fees Management",
     tooltip: "Fees Management",
     icon: "fees",
@@ -103,6 +127,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/payments",
+    section: "money",
     label: "Payments",
     tooltip: "Payments",
     icon: "payments",
@@ -110,6 +135,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/finance",
+    section: "money",
     label: "Finance",
     tooltip: "Wallet & Withdrawals",
     icon: "finance",
@@ -117,6 +143,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/users",
+    section: "people",
     label: "Users",
     tooltip: "Users",
     icon: "users",
@@ -150,6 +177,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/announcements",
+    section: "communication",
     label: "Announcements",
     tooltip: "Announcements",
     icon: "announcements",
@@ -157,6 +185,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/leave-requests",
+    section: "communication",
     label: "Leave Requests",
     tooltip: "Leave Requests",
     icon: "leaveRequests",
@@ -164,6 +193,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/transit",
+    section: "people",
     label: "Transit",
     tooltip: "Student Transfers & Promotions",
     icon: "transit",
@@ -177,6 +207,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/messages",
+    section: "communication",
     label: "Messages",
     tooltip: "Messages",
     icon: "messages",
@@ -185,12 +216,43 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     path: "/settings",
+    section: "account",
     label: "Settings",
     tooltip: "Academic Year & Term Settings",
     icon: "settings",
     permission: Permission.MANAGE_SETTINGS,
   },
 ];
+
+/** The sidebar's titled groups, in display order (Account sits at the foot, untitled). */
+export const NAV_SECTIONS: ReadonlyArray<{
+  key: Exclude<NavSectionKey, "account">;
+  title: string;
+}> = [
+  { key: "overview", title: "Overview" },
+  { key: "academics", title: "Academics" },
+  { key: "people", title: "People" },
+  { key: "money", title: "Money" },
+  { key: "communication", title: "Communication" },
+];
+
+/**
+ * Splits the visible entries into the sidebar's titled groups, keeping each
+ * entry's order and leaving out groups with nothing visible.
+ *
+ * @param items - The visible entries (see {@link visibleNavItems}).
+ * @returns The titled groups with their entries, and the Account entries for the foot.
+ */
+export function groupNavItems(items: readonly NavItem[]): {
+  sections: Array<{ key: NavSectionKey; title: string; items: NavItem[] }>;
+  account: NavItem[];
+} {
+  const sections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: items.filter((item) => item.section === section.key),
+  })).filter((section) => section.items.length > 0);
+  return { sections, account: items.filter((item) => item.section === "account") };
+}
 
 /** What the filter needs to know about the signed-in administrator. */
 export interface NavAccess {
@@ -250,7 +312,7 @@ export function visibleNavItems(items: readonly NavItem[], access: NavAccess): N
   return items.filter((item) =>
     item.subItems?.length
       ? visibleSubItems(item, access).length > 0
-      : !item.permission || access.hasPermission(item.permission),
+      : !item.permission || access.hasPermission(item.permission)
   );
 }
 
@@ -279,6 +341,6 @@ export function isSubItemActive(pathname: string, sub: Pick<NavSubItem, "path">)
 }
 
 /** The paths of the entries that open in place rather than navigate. */
-export const NAV_GROUP_PATHS: readonly string[] = NAV_ITEMS.filter((item) => item.subItems?.length).map(
-  (item) => item.path,
-);
+export const NAV_GROUP_PATHS: readonly string[] = NAV_ITEMS.filter(
+  (item) => item.subItems?.length
+).map((item) => item.path);

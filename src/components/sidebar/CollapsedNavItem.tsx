@@ -3,7 +3,7 @@
 import React from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import SmoothLink from "@/components/SmoothLink";
-import { cn } from "@/lib/utils";
+import { focusRing } from "@/components/tl/styles";
 import { NavBadge } from "./NavBadge";
 import { NavIcon } from "./NavIcon";
 import { isNavItemActive, type NavItem } from "./navConfig";
@@ -19,44 +19,50 @@ interface CollapsedNavItemProps {
 }
 
 /**
- * One icon-only entry of the collapsed sidebar. A group toggles instead of
- * navigating; its pages are reached by expanding the sidebar.
+ * One icon-only entry of the collapsed rail. Its label is the tooltip and the
+ * accessible name. A group toggles instead of navigating; its pages are
+ * reached by expanding the sidebar.
  *
  * @param props - The entry, the location, its badge and the handlers.
+ * @param props.item - The entry.
+ * @param props.pathname - The current location.
+ * @param props.badge - Its unread count.
+ * @param props.onToggle - Toggles a group.
+ * @param props.onNavigate - Runs when a link is followed.
  * @returns The entry.
  */
-export function CollapsedNavItem({ item, pathname, badge, onToggle, onNavigate }: CollapsedNavItemProps) {
+export function CollapsedNavItem({
+  item,
+  pathname,
+  badge,
+  onToggle,
+  onNavigate,
+}: CollapsedNavItemProps) {
   const active = isNavItemActive(pathname, item);
-  const tone = active
-    ? "bg-[#003366]/20 text-[#003366] dark:text-blue-300"
-    : "text-[#4A5568] dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700";
+  const tone = `relative mx-auto flex h-11 w-11 items-center justify-center rounded-[14px] transition-colors ${focusRing} ${
+    active ? "bg-tl-select" : "hover:bg-tl-bg"
+  }`;
 
   return (
-    <Tooltip content={item.label} side="right">
-      {item.subItems ? (
-        <div
-          className={cn(
-            "flex items-center justify-center w-10 h-10 mx-auto rounded-md cursor-pointer transition-all duration-200",
-            tone,
-          )}
-          onClick={onToggle}
-        >
-          <NavIcon icon={item.icon} active={active} />
-        </div>
-      ) : (
-        <SmoothLink href={item.path}>
-          <div
-            className={cn(
-              "relative flex items-center justify-center w-10 h-10 mx-auto rounded-md cursor-pointer transition-all duration-200",
-              tone,
-            )}
+    <li>
+      <Tooltip content={item.label} side="right">
+        {item.subItems ? (
+          <button type="button" aria-label={item.label} onClick={onToggle} className={tone}>
+            <NavIcon icon={item.icon} active={active} />
+          </button>
+        ) : (
+          <SmoothLink
+            href={item.path}
+            aria-label={item.label}
+            aria-current={active ? "page" : undefined}
             onClick={() => onNavigate(item.path)}
+            className={tone}
           >
             <NavIcon icon={item.icon} active={active} />
             <NavBadge count={badge} variant="floating" />
-          </div>
-        </SmoothLink>
-      )}
-    </Tooltip>
+          </SmoothLink>
+        )}
+      </Tooltip>
+    </li>
   );
 }

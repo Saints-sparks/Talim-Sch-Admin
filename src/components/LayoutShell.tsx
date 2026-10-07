@@ -5,37 +5,45 @@ import { Header } from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
 import RouteGuard from "@/components/RouteGuard";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 
 type LayoutShellProps = {
   children: React.ReactNode;
   showSidebar: boolean;
 };
 
+/**
+ * The app shell in the portals' design: the sidebar (a drawer below 980px),
+ * the top bar, and the scrolling page on the grey `tl-bg` canvas. Signed-in
+ * pages go through the route guard; the sign-in, recovery and onboarding
+ * pages render alone (`showSidebar` false).
+ *
+ * @param props - The page and whether it is a signed-in page.
+ * @param props.children - The page.
+ * @param props.showSidebar - True for signed-in pages, which get the sidebar, top bar and guard.
+ * @returns The shell.
+ */
 export default function LayoutShell({ children, showSidebar }: LayoutShellProps) {
   const pathname = usePathname();
 
+  if (!showSidebar) {
+    return (
+      <main className="min-h-dvh bg-tl-bg font-manrope text-tl-ink">
+        <PageTransition key={pathname}>{children}</PageTransition>
+      </main>
+    );
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Always rendered, handles its own mobile responsiveness */}
-      {showSidebar && <Sidebar />}
-
-      <motion.div
-        className="flex-1 flex flex-col transition-all duration-300 w-screen md:w-auto overflow-x-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        {/* Header - Only show when sidebar is visible (authenticated pages) */}
-        {showSidebar && <Header />}
-
-        {/* <SchoolAdminNavbar user="Jessica" title="School Admin" /> */}
-        <main className="flex-1 overflow-y-auto bg-[#F2F2F2] dark:bg-slate-950">
+    <div className="flex h-dvh min-h-dvh overflow-hidden bg-tl-bg font-manrope text-tl-ink">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Header />
+        <main className="min-w-0 flex-1 overflow-y-auto bg-tl-bg">
           <PageTransition key={pathname}>
-            {showSidebar ? <RouteGuard>{children}</RouteGuard> : children}
+            <RouteGuard>{children}</RouteGuard>
           </PageTransition>
         </main>
-      </motion.div>
+      </div>
     </div>
   );
 }

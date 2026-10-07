@@ -6,9 +6,10 @@
 
 /* Root Variables */
 
-/* Global Styles */
+/* Global Styles. Manrope is loaded by next/font (layout.tsx) under a hashed
+   family name, exposed as --font-manrope; the bare name is a fallback. */
 body {
-  font-family: "Manrope", Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), "Manrope", Arial, Helvetica, sans-serif;
 }
 
 /* Enhanced smooth scrolling */
@@ -52,31 +53,33 @@ a[href] {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* The shadcn variables follow the portals' tl palette (below), so the
+       ui/* primitives sit in the same design language as the tl layer. */
+    --background: 220 38% 97%; /* tl-bg #F4F6FA */
+    --foreground: 217 51% 12%; /* tl-ink #0F1B2E */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 217 51% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 73.7% 41.8%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --popover-foreground: 217 51% 12%;
+    --primary: 215 79% 21%; /* tl-brand #0B2E5E */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 31% 94%; /* tl-track */
+    --secondary-foreground: 217 51% 12%;
+    --muted: 216 31% 94%;
+    --muted-foreground: 214 17% 43%; /* tl-muted #5B6B80 */
+    --accent: 217 62% 96%; /* tl-select */
+    --accent-foreground: 215 79% 21%;
+    --destructive: 10 59% 44%; /* tl-danger #B2432E */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 32% 93%; /* tl-line #E6EAF2 */
+    --input: 218 51% 90%; /* tl-control #D7E1F2 */
+    --ring: 223 74% 53%; /* tl-link #2C5FE0 */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.875rem;
     /* Text colours as RGB channels (tailwind.config.ts textColor). Each is AA
        (>= 4.5:1) on white and on the light tints it sits on (gray-50/100, the
        green/red-50 badges), and keeps its rank: gray/slate 400 lighter than 500,
@@ -98,25 +101,25 @@ a[href] {
     --text-green-600: 22 163 74;
     --text-yellow-600: 202 138 4;
     --text-red-600: 220 38 38;
-    --background: 222 47% 5%;
-    --foreground: 213 31% 91%;
-    --card: 217 33% 10%;
-    --card-foreground: 213 31% 91%;
-    --popover: 217 33% 10%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 213 94% 68%;
-    --primary-foreground: 222 47% 5%;
+    --background: 223 49% 8%; /* tl-bg */
+    --foreground: 214 32% 91%; /* tl-ink */
+    --card: 222 47% 11%; /* tl-surface */
+    --card-foreground: 214 32% 91%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 214 32% 91%;
+    --primary: 221 83% 53%; /* tl-brand-fill (white text on it is AA) */
+    --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 17%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 213 31% 91%;
+    --secondary-foreground: 214 32% 91%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 216 23% 71%; /* tl-muted */
+    --accent: 220 42% 18%; /* tl-select */
+    --accent-foreground: 214 32% 91%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 213 94% 68%;
+    --destructive-foreground: 214 32% 91%;
+    --border: 217 33% 17%; /* tl-line */
+    --input: 215 25% 27%; /* tl-control */
+    --ring: 220 100% 74%; /* tl-link */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -133,6 +136,103 @@ a[href] {
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================================
+   The portals' design tokens (`tl-*`), shared with Talim-Teachers
+   and Talim-students-web (TALIM Redesign/*.dc.html). Channels
+   ("r g b") so Tailwind's `tl-*` colours keep opacity modifiers;
+   see tailwind.config.ts. Every text/surface pair the tl layer
+   uses clears WCAG AA in both themes.
+   ============================================================ */
+:root {
+  --tl-bg: 244 246 250;          /* #F4F6FA page */
+  --tl-surface: 255 255 255;
+  --tl-subtle: 248 250 253;      /* #F8FAFD tiles, notes */
+  --tl-today: 244 247 252;       /* #F4F7FC today's column */
+  --tl-ink: 15 27 46;            /* #0F1B2E text */
+  --tl-body: 60 77 99;           /* #3C4D63 long copy */
+  --tl-muted: 91 107 128;        /* #5B6B80 */
+  --tl-faint: 98 112 133;        /* #627085: the design's #96A2B4 darkened to AA */
+  --tl-line: 230 234 242;        /* #E6EAF2 */
+  --tl-line-soft: 238 241 247;   /* #EEF1F7 */
+  --tl-control: 215 225 242;     /* #D7E1F2 ghost button border */
+  --tl-brand: 11 46 94;          /* #0B2E5E navy as text */
+  --tl-brand-fill: 11 46 94;
+  --tl-brand-fill-hover: 18 60 119;
+  --tl-on-brand: 255 255 255;
+  --tl-link: 44 95 224;          /* #2C5FE0 */
+  --tl-select: 238 243 251;      /* #EEF3FB active nav */
+  --tl-track: 234 238 244;       /* #EAEEF4 segmented control */
+  --tl-success: 27 122 85;
+  --tl-success-bg: 228 243 236;
+  --tl-success-soft: 242 248 245;
+  --tl-warning: 138 84 22;
+  --tl-warning-bg: 248 238 225;
+  --tl-danger: 178 67 46;
+  --tl-danger-bg: 251 233 229;
+  --tl-accent: 107 79 184;
+  --tl-accent-bg: 238 234 248;
+  --tl-now: 11 46 94;            /* the navy hero card */
+  --tl-badge: 160 88 20;         /* #A05814 unread badge: white text on it is AA */
+}
+
+html.dark {
+  --tl-bg: 11 17 32;
+  --tl-surface: 15 23 42;
+  --tl-subtle: 20 30 50;
+  --tl-today: 23 35 56;
+  --tl-ink: 226 232 240;
+  --tl-body: 203 213 225;
+  --tl-muted: 163 177 198;
+  --tl-faint: 138 154 178;
+  --tl-line: 30 41 59;
+  --tl-line-soft: 26 36 54;
+  --tl-control: 51 65 85;
+  --tl-brand: 147 197 253;
+  --tl-brand-fill: 37 99 235;
+  --tl-brand-fill-hover: 29 78 216;
+  --tl-on-brand: 255 255 255;
+  --tl-link: 122 167 255;
+  --tl-select: 26 39 64;
+  --tl-track: 30 41 59;
+  --tl-success: 74 222 128;
+  --tl-success-bg: 15 42 32;
+  --tl-success-soft: 13 34 27;
+  --tl-warning: 251 191 36;
+  --tl-warning-bg: 42 31 10;
+  --tl-danger: 248 113 113;
+  --tl-danger-bg: 46 20 17;
+  --tl-accent: 196 181 253;
+  --tl-accent-bg: 34 26 64;
+  --tl-now: 16 44 88;
+  --tl-badge: 154 85 18;
+}
+
+/* Stable tones for avatars and class or subject chips (`.tl-tone-N` + bg-tone-bg text-tone-fg). */
+.tl-tone-0 { --tone-bg: 248 238 225; --tone-fg: 138 84 22;  --tone-bd: 234 214 188; } /* amber */
+.tl-tone-1 { --tone-bg: 234 241 255; --tone-fg: 11 46 94;   --tone-bd: 201 216 243; } /* blue */
+.tl-tone-2 { --tone-bg: 228 243 236; --tone-fg: 27 122 85;  --tone-bd: 191 224 207; } /* green */
+.tl-tone-3 { --tone-bg: 238 234 248; --tone-fg: 107 79 184; --tone-bd: 214 204 240; } /* purple */
+.tl-tone-4 { --tone-bg: 225 243 244; --tone-fg: 22 103 110; --tone-bd: 186 223 226; } /* teal */
+.tl-tone-5 { --tone-bg: 251 233 229; --tone-fg: 178 67 46;  --tone-bd: 240 207 199; } /* red */
+html.dark .tl-tone-0 { --tone-bg: 42 31 14;  --tone-fg: 252 211 77;  --tone-bd: 87 66 32; }
+html.dark .tl-tone-1 { --tone-bg: 21 37 74;  --tone-fg: 191 212 255; --tone-bd: 42 68 120; }
+html.dark .tl-tone-2 { --tone-bg: 15 42 32;  --tone-fg: 134 239 172; --tone-bd: 31 77 58; }
+html.dark .tl-tone-3 { --tone-bg: 34 26 64;  --tone-fg: 196 181 253; --tone-bd: 63 52 112; }
+html.dark .tl-tone-4 { --tone-bg: 14 42 45;  --tone-fg: 126 224 230; --tone-bd: 31 78 82; }
+html.dark .tl-tone-5 { --tone-bg: 46 20 17;  --tone-fg: 252 165 165; --tone-bd: 92 42 35; }
+
+/* Status dots (decorative; the text beside them carries the meaning). */
+.tl-dot-warning { background-color: #E0A33B; }
+.tl-dot-neutral { background-color: #96A2B4; }
+.tl-dot-success { background-color: #1B7A55; }
+.tl-dot-info    { background-color: #2C5FE0; }
+.tl-dot-accent  { background-color: #6B4FB8; }
+.tl-dot-danger  { background-color: #D1573F; }
+html.dark .tl-dot-success { background-color: #4ADE80; }
+html.dark .tl-dot-info    { background-color: #7AA7FF; }
+html.dark .tl-dot-accent  { background-color: #C4B5FD; }
+html.dark .tl-dot-danger  { background-color: #F87171; }
 
 /* Custom utility classes for improved UI */
 @layer utilities {
@@ -417,12 +517,12 @@ html.dark {
 }
 
 html.dark body {
-  background-color: #0f1629;
-  color: #f1f5f9;
+  background-color: rgb(var(--tl-bg));
+  color: rgb(var(--tl-ink));
 }
 
 html.dark .min-h-screen {
-  background-color: #0f1629;
+  background-color: rgb(var(--tl-bg));
 }
 
 /* bg-gray-50 is the info-field / input surface — must be visually distinct from
