@@ -1,32 +1,51 @@
 "use client";
 
 /**
- * The "Recent Curriculum Content" panel: the five newest entries teachers have
- * published, with its own loading, error and empty states so a failed request
- * never leaves the dashboard half-drawn.
+ * The "Recent Curriculum Content" card: the five newest entries teachers have
+ * published as edge-to-edge rows, with its own loading, error and empty
+ * states so a failed request never leaves the dashboard half-drawn.
  */
 import React from "react";
-import { Book, FileText, TrendingUp } from "lucide-react";
+import { Book, FileText } from "lucide-react";
 import type { CurriculumContent } from "@/app/services/subjects.service";
 import {
   contentTeacherDisplay,
   courseDisplay,
   termDisplay,
 } from "@/components/curriculum/curriculum.presentation";
+import {
+  Banner,
+  CardHeader,
+  EmptyNote,
+  Pill,
+  cardFrame,
+  rowButton,
+  skeletonBlock,
+  toneClass,
+} from "@/components/tl";
 import { getErrorMessage } from "@/lib/apiError";
 
+/** Props for {@link RecentCurriculumContent}. */
 interface RecentCurriculumContentProps {
+  /** The entries, already sorted newest first. */
   entries: CurriculumContent[];
+  /** True while they load. */
   isLoading: boolean;
+  /** Why they failed, if they did. */
   error: unknown;
+  /** Loads them again. */
   onRetry: () => void;
 }
 
 /**
- * Renders the panel.
+ * Renders the card.
  *
  * @param props - The entries (already sorted newest first) and query state.
- * @returns The panel.
+ * @param props.entries - The entries.
+ * @param props.isLoading - Whether they load.
+ * @param props.error - Why they failed.
+ * @param props.onRetry - Retries.
+ * @returns The card.
  */
 export function RecentCurriculumContent({
   entries,
@@ -35,77 +54,72 @@ export function RecentCurriculumContent({
   onRetry,
 }: RecentCurriculumContentProps) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden mb-8">
-      <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center">
-          <TrendingUp className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-          Recent Curriculum Content
-        </h2>
+    <section className={cardFrame}>
+      <div className="px-[clamp(18px,2.4vw,24px)] pt-[clamp(18px,2.4vw,24px)]">
+        <CardHeader
+          title="Recent Curriculum Content"
+          subtitle="The newest entries teachers have published."
+        />
       </div>
 
-      <div className="p-6">
+      <div className="mt-4">
         {isLoading ? (
-          <div className="space-y-3">
+          <div
+            aria-busy="true"
+            aria-label="Loading curriculum content"
+            className="flex flex-col gap-3 px-[clamp(18px,2.4vw,24px)] pb-6"
+          >
             {[0, 1, 2].map((row) => (
-              <div
-                key={row}
-                className="h-20 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse"
-              />
+              <div key={row} aria-hidden className={`${skeletonBlock} h-16 rounded-2xl`} />
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-6 text-center">
-            <p className="text-sm text-red-700 dark:text-red-300">
-              {getErrorMessage(error, "Could not load curriculum content.")}
-            </p>
-            <button
-              onClick={onRetry}
-              className="mt-4 px-5 py-2 rounded-xl bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
+          <div className="px-[clamp(18px,2.4vw,24px)] pb-6">
+            <Banner
+              tone="danger"
+              role="alert"
+              action={
+                <button type="button" onClick={onRetry} className={rowButton}>
+                  Try again
+                </button>
+              }
             >
-              Try again
-            </button>
+              {getErrorMessage(error, "Could not load curriculum content.")}
+            </Banner>
           </div>
         ) : entries.length > 0 ? (
-          <div className="space-y-3">
+          <ul>
             {entries.map((content) => (
-              <div
+              <li
                 key={content._id}
-                className="group flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+                className="flex flex-wrap items-center gap-3.5 border-t border-tl-line-soft px-[clamp(18px,2.4vw,24px)] py-3.5 transition-colors hover:bg-tl-subtle"
               >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 flex-shrink-0">
-                    <Book className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                <span
+                  aria-hidden
+                  className={`${toneClass(content.course?._id ?? content._id)} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tone-bd bg-tone-bg text-tone-fg`}
+                >
+                  <Book className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-bold text-tl-ink">
+                    {courseDisplay(content.course)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 dark:text-slate-100 truncate">
-                      {courseDisplay(content.course)}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400 mt-1 truncate">
-                      {termDisplay(content.term)} • {contentTeacherDisplay(content)}
-                    </div>
+                  <div className="mt-0.5 truncate text-[13px] text-tl-muted">
+                    {termDisplay(content.term)} • {contentTeacherDisplay(content)}
                   </div>
                 </div>
-
-                <div className="text-sm text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg flex-shrink-0">
-                  {new Date(content.createdAt).toLocaleDateString()}
-                </div>
-              </div>
+                <Pill tone="muted">{new Date(content.createdAt).toLocaleDateString()}</Pill>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FileText className="h-12 w-12 text-gray-400 dark:text-slate-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
-              No curriculum content yet
-            </h3>
-            <p className="text-gray-500 dark:text-slate-400 max-w-md mx-auto">
+          <div className="border-t border-tl-line-soft">
+            <EmptyNote icon={<FileText />} title="No curriculum content yet">
               Start creating curriculum content to see them appear here
-            </p>
+            </EmptyNote>
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

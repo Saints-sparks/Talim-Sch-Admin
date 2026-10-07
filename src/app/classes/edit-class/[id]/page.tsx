@@ -11,13 +11,25 @@
  */
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FiSave, FiX } from "react-icons/fi";
-import { ChevronLeft, Info, User } from "lucide-react";
+import { ChevronLeft, Info, Loader2, Save, User, X } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { ErrorState } from "@/components/StateComponents";
 import { ClassDetailsForm } from "@/components/classes/ClassDetailsForm";
 import { AssignTeacherPanel } from "@/components/classes/AssignTeacherPanel";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  Banner,
+  Page,
+  PageHeader,
+  Tabs,
+  ghostButton,
+  pagePad,
+  pageStack,
+  primaryButton,
+  quietButton,
+  skeletonBlock,
+  type TabOption,
+} from "@/components/tl";
 import { useClassDetail, useClassMutations } from "@/hooks/classes/queries";
 import { useTeacherOptions } from "@/hooks/curriculum/queries";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,6 +53,56 @@ const EMPTY_FORM: ClassPayload = {
   classCapacity: "",
 };
 
+/** The edit screen's sections. */
+type EditTab = "details" | "teacher";
+
+/** The tabs, in order, with their icons. */
+const TAB_OPTIONS: readonly TabOption<EditTab>[] = [
+  {
+    value: "details",
+    label: (
+      <>
+        <Info className="h-4 w-4" aria-hidden />
+        Class Details
+      </>
+    ),
+  },
+  {
+    value: "teacher",
+    label: (
+      <>
+        <User className="h-4 w-4" aria-hidden />
+        Assign Teacher
+      </>
+    ),
+  },
+];
+
+/**
+ * The edit screen's loading state: the links, heading, tabs and form card.
+ *
+ * @returns The skeleton.
+ */
+function EditClassSkeleton() {
+  return (
+    <div
+      className={`${pagePad} ${pageStack}`}
+      role="status"
+      aria-busy="true"
+      aria-label="Loading the class"
+    >
+      <span className="sr-only">Loading the class…</span>
+      <div aria-hidden className={`${skeletonBlock} h-11 w-64 max-w-full rounded-[11px]`} />
+      <div aria-hidden className="flex flex-wrap items-end justify-between gap-4">
+        <div className={`${skeletonBlock} h-9 w-56 max-w-full rounded-lg`} />
+        <div className={`${skeletonBlock} h-11 w-60 max-w-full rounded-[14px]`} />
+      </div>
+      <div aria-hidden className={`${skeletonBlock} h-11 w-72 max-w-full rounded-lg`} />
+      <div aria-hidden className={`${skeletonBlock} h-96 rounded-[22px]`} />
+    </div>
+  );
+}
+
 /**
  * The class edit route.
  *
@@ -58,7 +120,7 @@ export default function EditClassPage() {
   const teachersQuery = useTeacherOptions();
   const { update } = useClassMutations(classId);
 
-  const [activeTab, setActiveTab] = useState<"details" | "teacher">("details");
+  const [activeTab, setActiveTab] = useState<EditTab>("details");
   const [form, setForm] = useState<ClassPayload>(EMPTY_FORM);
   const [errors, setErrors] = useState<ClassFormErrors>({});
   const [saved, setSaved] = useState(false);
@@ -128,157 +190,124 @@ export default function EditClassPage() {
     }
   };
 
-  if (classQuery.isLoading && !classData) {
-    return (
-      <div className="min-h-screen bg-gray-100 dark:bg-slate-950 p-6 space-y-6">
-        <div className="h-16 bg-white dark:bg-slate-900 rounded-lg animate-pulse" />
-        <div className="h-12 bg-white dark:bg-slate-900 rounded-lg animate-pulse" />
-        <div className="h-96 bg-white dark:bg-slate-900 rounded-lg animate-pulse" />
-      </div>
-    );
-  }
+  if (classQuery.isLoading && !classData) return <EditClassSkeleton />;
 
   if (classQuery.isError || !classData) {
     const notFound = classQuery.error instanceof ApiError && classQuery.error.code === "NOT_FOUND";
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-slate-950 p-6">
-        <div className="max-w-md mx-auto mt-24">
-          <ErrorState
-            title={notFound ? "Class Not Found" : "Error Loading Class"}
-            message={
-              notFound
-                ? "The class you're looking for doesn't exist or has been removed."
-                : getErrorMessage(classQuery.error, "Failed to load class details.")
-            }
-            onRetry={notFound ? undefined : () => classQuery.refetch()}
-          />
-          <div className="text-center mt-6">
-            <button
-              onClick={() => router.push("/classes")}
-              className="inline-flex items-center px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors"
-            >
-              <ChevronLeft className="mr-2 w-4 h-4" /> Back to Classes
-            </button>
-          </div>
-        </div>
-      </div>
+      <Page>
+        <button
+          type="button"
+          onClick={() => router.push("/classes")}
+          className={`${quietButton} -ml-3 w-fit`}
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden />
+          Back to Classes
+        </button>
+        <ErrorState
+          title={notFound ? "Class Not Found" : "Error Loading Class"}
+          message={
+            notFound
+              ? "The class you're looking for doesn't exist or has been removed."
+              : getErrorMessage(classQuery.error, "Failed to load class details.")
+          }
+          onRetry={notFound ? undefined : () => classQuery.refetch()}
+        />
+      </Page>
     );
   }
 
-  const tabs = [
-    { id: "details", label: "Class Details", icon: <Info className="w-4 h-4 mr-2" /> },
-    { id: "teacher", label: "Assign Teacher", icon: <User className="w-4 h-4 mr-2" /> },
-  ] as const;
-
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-slate-950">
-      <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center text-sm text-gray-600 dark:text-slate-400 min-w-0">
+    <Page>
+      <nav aria-label="Breadcrumb" className="-ml-3 flex flex-wrap items-center gap-1">
+        <button type="button" onClick={() => router.push("/classes")} className={quietButton}>
+          <ChevronLeft className="h-5 w-5" aria-hidden />
+          Back to Classes
+        </button>
+        <span aria-hidden className="text-tl-faint">
+          ·
+        </span>
+        <button
+          type="button"
+          onClick={() => router.push(`/classes/${classId}`)}
+          className={quietButton}
+        >
+          <User className="h-4 w-4" aria-hidden />
+          Class Profile
+        </button>
+      </nav>
+
+      <PageHeader
+        eyebrowText="Edit class"
+        title={classData.name}
+        subtitle="Change the class's details, or assign its class teacher."
+        actions={
+          <>
             <button
-              onClick={() => router.push("/classes")}
-              className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back to Classes
-            </button>
-            <span className="mx-2">|</span>
-            <button
+              type="button"
               onClick={() => router.push(`/classes/${classId}`)}
-              className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className={ghostButton}
             >
-              <User className="w-4 h-4 mr-1" />
-              Class Profile
-            </button>
-            <span className="mx-2">|</span>
-            <span className="text-gray-900 dark:text-slate-100 font-semibold truncate">
-              {classData.name}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <button
-              onClick={() => router.push(`/classes/${classId}`)}
-              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors flex items-center text-sm font-medium"
-            >
-              <FiX className="mr-2 w-4 h-4" /> Cancel
+              <X className="h-4 w-4" aria-hidden /> Cancel
             </button>
             <PermissionGate permission={Permission.MANAGE_CLASSES}>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={update.isPending}
-                className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center text-sm font-medium"
+                className={primaryButton}
               >
                 {update.isPending ? (
                   <>
-                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <FiSave className="mr-2 w-4 h-4" /> Save Changes
+                    <Save className="h-4 w-4" aria-hidden /> Save Changes
                   </>
                 )}
               </button>
             </PermissionGate>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
-        <nav className="px-6 grid grid-cols-2 gap-0">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {saved && (
+        <Banner tone="success" role="status" title="Class updated successfully!">
+          Redirecting you to the class profile...
+        </Banner>
+      )}
 
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            {saved && (
-              <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 rounded-lg">
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                  Class updated successfully!
-                </p>
-                <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-                  Redirecting you to the class profile...
-                </p>
-              </div>
-            )}
+      <Tabs
+        options={TAB_OPTIONS}
+        value={activeTab}
+        onChange={setActiveTab}
+        label="Edit sections"
+        idPrefix="edit-class"
+      />
 
-            {activeTab === "details" ? (
-              <ClassDetailsForm
-                form={form}
-                errors={errors}
-                onChange={setField}
-                courseCount={classData.courses?.length ?? 0}
-                teacherName={classTeacherName(classData)}
-                canManage={canManage}
-              />
-            ) : (
-              <AssignTeacherPanel
-                classData={classData}
-                classId={classId ?? ""}
-                teachers={teachersQuery.data ?? []}
-                isLoadingTeachers={teachersQuery.isLoading}
-                teachersError={teachersQuery.error}
-                onRetryTeachers={() => teachersQuery.refetch()}
-              />
-            )}
-          </div>
-        </div>
+      <div role="tabpanel" id="edit-class-panel" aria-labelledby={`edit-class-tab-${activeTab}`}>
+        {activeTab === "details" ? (
+          <ClassDetailsForm
+            form={form}
+            errors={errors}
+            onChange={setField}
+            courseCount={classData.courses?.length ?? 0}
+            teacherName={classTeacherName(classData)}
+            canManage={canManage}
+          />
+        ) : (
+          <AssignTeacherPanel
+            classData={classData}
+            classId={classId ?? ""}
+            teachers={teachersQuery.data ?? []}
+            isLoadingTeachers={teachersQuery.isLoading}
+            teachersError={teachersQuery.error}
+            onRetryTeachers={() => teachersQuery.refetch()}
+          />
+        )}
       </div>
-    </div>
+    </Page>
   );
 }

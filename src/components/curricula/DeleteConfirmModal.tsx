@@ -1,29 +1,47 @@
-import React from 'react';
+"use client";
 
+import React from "react";
+import { ConfirmSheet } from "@/components/tl";
+
+/** Props for {@link DeleteConfirmModal}. */
 type DeleteConfirmModalProps = {
+  /** Whether it is shown. */
   isOpen: boolean;
+  /** Closes without deleting. */
   onClose: () => void;
+  /** Deletes. */
   onConfirm: () => void;
+  /** What will be deleted, in a sentence. */
   message: string;
 };
 
-const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose, onConfirm, message }) => {
-  if (!isOpen) return null;
-
+/**
+ * A plain delete confirmation in the design system's confirm sheet: the
+ * message, Cancel and a red Delete.
+ *
+ * @param props - See {@link DeleteConfirmModalProps}.
+ * @param props.isOpen - Whether it is shown.
+ * @param props.onClose - Cancel handler.
+ * @param props.onConfirm - Delete handler.
+ * @param props.message - The sentence.
+ * @returns The sheet, or null while closed.
+ */
+const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  message,
+}) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-full max-w-sm shadow-lg">
-        <p className="text-gray-800 mb-4">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 border rounded-md hover:bg-gray-100">
-            Cancel
-          </button>
-          <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmSheet
+      open={isOpen}
+      title="Delete this item?"
+      body={message}
+      confirmLabel="Delete"
+      danger
+      onConfirm={onConfirm}
+      onCancel={onClose}
+    />
   );
 };
 

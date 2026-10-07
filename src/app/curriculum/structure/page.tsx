@@ -10,7 +10,7 @@
  */
 import React, { Suspense, useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BookOpen, ChevronLeft, Loader2, Plus } from "lucide-react";
+import { BookOpen, ChevronLeft, Plus } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import CourseModal from "@/components/CourseModal";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -19,28 +19,51 @@ import { StructureToolbar } from "@/components/curriculum/StructureToolbar";
 import { SubjectAccordion } from "@/components/curriculum/SubjectAccordion";
 import { SubjectFormModal } from "@/components/curriculum/SubjectFormModal";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  EmptyNote,
+  Page,
+  PageHeader,
+  PageSkeleton,
+  ScreenError,
+  card,
+  primaryButton,
+  quietButton,
+} from "@/components/tl";
 import { useClasses, useSubjects } from "@/hooks/queries/reference";
-import { useCourseMutations, useSubjectMutations, useTeacherOptions } from "@/hooks/curriculum/queries";
-import { useStructureUrlAction, type StructureAction } from "@/hooks/curriculum/useStructureUrlAction";
+import {
+  useCourseMutations,
+  useSubjectMutations,
+  useTeacherOptions,
+} from "@/hooks/curriculum/queries";
+import {
+  useStructureUrlAction,
+  type StructureAction,
+} from "@/hooks/curriculum/useStructureUrlAction";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import { Permission } from "@/lib/permissions";
 import type { Course, Subject } from "@/app/services/subjects.service";
 
-/** Shown while the subject list loads, and as the Suspense fallback. */
+/**
+ * Shown while the subject list loads, and as the Suspense fallback: the
+ * heading, the three stat tiles, the filter card and a few subject cards.
+ *
+ * @returns The skeleton.
+ */
 function StructureLoading() {
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-950">
-      <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-[#003366] dark:text-blue-400" />
-        <p className="text-sm text-gray-500 dark:text-slate-400">Loading curriculum structure...</p>
-      </div>
-    </div>
+    <PageSkeleton label="Loading curriculum structure" tiles={3} blocks={[76, 72, 72, 72, 72]} />
   );
 }
 
-/** The structure screen; separate so `useSearchParams` sits inside `<Suspense>`. */
+/**
+ * The structure screen; separate so `useSearchParams` sits inside
+ * `<Suspense>`. The heading with Add Subject, the stat tiles and filters, the
+ * subject cards, and the subject, course and delete sheets.
+ *
+ * @returns The screen.
+ */
 function CurriculumStructureMain() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,7 +148,7 @@ function CurriculumStructureMain() {
 
   const totalCourses = useMemo(
     () => subjects.reduce((total, subject) => total + (subject.courses?.length ?? 0), 0),
-    [subjects],
+    [subjects]
   );
 
   const toggleSubject = (subjectId: string) =>
@@ -175,124 +198,103 @@ function CurriculumStructureMain() {
   const isFiltered = searchTerm.trim().length > 0 || selectedClass !== "all";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-      <div
-        className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-5"
-        data-guide="curriculum-structure-header"
+    <Page>
+      <button
+        type="button"
+        onClick={() => router.push("/curriculum")}
+        className={`${quietButton} -ml-3 w-fit`}
       >
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/curriculum")}
-              className="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-slate-400 hover:text-[#003366] dark:hover:text-blue-300 hover:bg-[#003366]/5 dark:hover:bg-slate-800 rounded-lg transition-all"
-              aria-label="Back to Curriculum"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#003366]">
-              <BookOpen className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-                Curriculum Structure
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-slate-400">
-                Manage subjects and their associated courses
-              </p>
-            </div>
-          </div>
+        <ChevronLeft className="h-5 w-5" aria-hidden />
+        Back to Curriculum
+      </button>
+
+      <PageHeader
+        guide="curriculum-structure-header"
+        title="Curriculum Structure"
+        subtitle="Manage subjects and their associated courses"
+        actions={
           <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
             <Tooltip
               content="Create a new subject area. You can add courses to it afterwards."
               side="top"
             >
               <button
+                type="button"
                 onClick={() => setSubjectModal({ isOpen: true, mode: "add", subject: null })}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+                className={primaryButton}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" aria-hidden />
                 Add Subject
               </button>
             </Tooltip>
           </PermissionGate>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
-        <StructureToolbar
-          totalSubjects={subjects.length}
-          totalCourses={totalCourses}
-          totalClasses={classes.length}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          classes={classes}
-          selectedClass={selectedClass}
-          onClassChange={setSelectedClass}
-        />
+      <StructureToolbar
+        totalSubjects={subjects.length}
+        totalCourses={totalCourses}
+        totalClasses={classes.length}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        classes={classes}
+        selectedClass={selectedClass}
+        onClassChange={setSelectedClass}
+      />
 
-        <div data-guide="curriculum-structure-list">
-          {subjectsQuery.isError ? (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 py-12 text-center">
-              <p className="text-sm text-red-700 dark:text-red-300">
-                {getErrorMessage(subjectsQuery.error, "Could not load subjects.")}
-              </p>
-              <button
-                onClick={() => subjectsQuery.refetch()}
-                className="mt-4 px-5 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244]"
-              >
-                Try again
-              </button>
-            </div>
-          ) : filteredSubjects.length > 0 ? (
-            <SubjectAccordion
-              subjects={filteredSubjects}
-              classes={classes}
-              teachers={teachers}
-              expanded={expanded}
-              onToggle={toggleSubject}
-              canManage={canManage}
-              deletingCourseId={removeCourse.isPending ? (courseToDelete?._id ?? null) : null}
-              onAddCourse={(subject) =>
-                setCourseModal({ isOpen: true, mode: "add", course: null, subject })
-              }
-              onEditSubject={(subject) => setSubjectModal({ isOpen: true, mode: "edit", subject })}
-              onDeleteSubject={setSubjectToDelete}
-              onEditCourse={(course) =>
-                setCourseModal({ isOpen: true, mode: "edit", course, subject: null })
-              }
-              onDeleteCourse={setCourseToDelete}
-            />
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700 py-16">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[#003366]/10 dark:bg-blue-900/30 flex items-center justify-center">
-                  <BookOpen className="w-7 h-7 text-[#003366] dark:text-blue-300" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                    {isFiltered ? "No subjects found" : "No subjects yet"}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                    {isFiltered
-                      ? "Try adjusting your search or filters to find what you're looking for."
-                      : "Get started by creating your first subject to begin building your curriculum structure."}
-                  </p>
-                </div>
-                {!isFiltered && (
+      <div data-guide="curriculum-structure-list">
+        {subjectsQuery.isError ? (
+          <ScreenError
+            title="Could not load subjects"
+            message={getErrorMessage(subjectsQuery.error, "Could not load subjects.")}
+            onRetry={() => subjectsQuery.refetch()}
+            retrying={subjectsQuery.isFetching}
+          />
+        ) : filteredSubjects.length > 0 ? (
+          <SubjectAccordion
+            subjects={filteredSubjects}
+            classes={classes}
+            teachers={teachers}
+            expanded={expanded}
+            onToggle={toggleSubject}
+            canManage={canManage}
+            deletingCourseId={removeCourse.isPending ? (courseToDelete?._id ?? null) : null}
+            onAddCourse={(subject) =>
+              setCourseModal({ isOpen: true, mode: "add", course: null, subject })
+            }
+            onEditSubject={(subject) => setSubjectModal({ isOpen: true, mode: "edit", subject })}
+            onDeleteSubject={setSubjectToDelete}
+            onEditCourse={(course) =>
+              setCourseModal({ isOpen: true, mode: "edit", course, subject: null })
+            }
+            onDeleteCourse={setCourseToDelete}
+          />
+        ) : (
+          <div className={card}>
+            <EmptyNote
+              icon={<BookOpen />}
+              title={isFiltered ? "No subjects found" : "No subjects yet"}
+              action={
+                !isFiltered ? (
                   <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
                     <button
+                      type="button"
                       onClick={() => setSubjectModal({ isOpen: true, mode: "add", subject: null })}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors font-medium text-sm shadow-sm"
+                      className={primaryButton}
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="h-4 w-4" aria-hidden />
                       Add First Subject
                     </button>
                   </PermissionGate>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+                ) : undefined
+              }
+            >
+              {isFiltered
+                ? "Try adjusting your search or filters to find what you're looking for."
+                : "Get started by creating your first subject to begin building your curriculum structure."}
+            </EmptyNote>
+          </div>
+        )}
       </div>
 
       <SubjectFormModal
@@ -330,7 +332,7 @@ function CurriculumStructureMain() {
         subjectName={courseModal.subject?.name}
         initialClassId=""
       />
-    </div>
+    </Page>
   );
 }
 

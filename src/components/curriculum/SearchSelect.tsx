@@ -2,34 +2,47 @@
 
 /**
  * A single-select dropdown with a search box, for lists long enough that a
- * plain `<select>` is unusable (every teacher or class in a school).
+ * plain `<select>` is unusable (every teacher or class in a school), in the
+ * design system's field look.
  *
  * Keyboard: type to filter, Up/Down to move, Enter to pick, Escape to close.
  * The button shows the chosen label, so the value is readable without opening.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { fieldControl, fieldLabel } from "@/components/tl";
 
 /** One choice: `id` is what the form stores, `label` what the user reads. */
 export interface SearchOption {
+  /** What the form stores. */
   id: string;
+  /** What the user reads. */
   label: string;
   /** Secondary line, e.g. an email address or grade level. */
   hint?: string;
 }
 
+/** Props for {@link SearchSelect}. */
 interface SearchSelectProps {
   /** Id for the control, used to label it. */
   id: string;
+  /** The visible label. */
   label: string;
+  /** The choices. */
   options: SearchOption[];
   /** The selected option's id, or "" for none. */
   value: string;
+  /** Called with the chosen id. */
   onChange: (id: string) => void;
+  /** True while the options load. */
   isLoading?: boolean;
+  /** Shown on the button while loading. */
   loadingLabel?: string;
+  /** Shown on the button when there is nothing to choose. */
   emptyLabel?: string;
+  /** Shown on the button before a choice, and in the search box. */
   placeholder?: string;
+  /** Greyed out and not clickable. */
   disabled?: boolean;
 }
 
@@ -37,6 +50,16 @@ interface SearchSelectProps {
  * Renders the labelled combobox.
  *
  * @param props - See {@link SearchSelectProps}.
+ * @param props.id - The control's id.
+ * @param props.label - The label.
+ * @param props.options - The choices.
+ * @param props.value - The chosen id.
+ * @param props.onChange - Choice handler.
+ * @param props.isLoading - Whether the options load.
+ * @param props.loadingLabel - Words while loading.
+ * @param props.emptyLabel - Words with no options.
+ * @param props.placeholder - Words before a choice.
+ * @param props.disabled - Whether it is disabled.
  * @returns The control.
  */
 export function SearchSelect({
@@ -64,7 +87,8 @@ export function SearchSelect({
     if (!term) return options;
     return options.filter(
       (option) =>
-        option.label.toLowerCase().includes(term) || (option.hint ?? "").toLowerCase().includes(term),
+        option.label.toLowerCase().includes(term) ||
+        (option.hint ?? "").toLowerCase().includes(term)
     );
   }, [options, query]);
 
@@ -102,6 +126,8 @@ export function SearchSelect({
       event.preventDefault();
       choose(filtered[active]);
     } else if (event.key === "Escape") {
+      // Close the list only, not a sheet around it.
+      event.stopPropagation();
       setOpen(false);
     }
   };
@@ -109,8 +135,8 @@ export function SearchSelect({
   const unavailable = isLoading || options.length === 0;
 
   return (
-    <div ref={containerRef} className="relative">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1.5">
+    <div ref={containerRef} className="relative flex flex-col gap-1.5">
+      <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
       <button
@@ -120,18 +146,22 @@ export function SearchSelect({
         onClick={() => setOpen((isOpen) => !isOpen)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
+        className={`${fieldControl} flex items-center justify-between gap-2 text-left`}
       >
-        <span className={selected ? "" : "text-gray-400 dark:text-slate-500"}>
-          {isLoading ? loadingLabel : options.length === 0 ? emptyLabel : selected?.label ?? placeholder}
+        <span className={`truncate ${selected ? "" : "font-medium text-tl-faint"}`}>
+          {isLoading
+            ? loadingLabel
+            : options.length === 0
+              ? emptyLabel
+              : (selected?.label ?? placeholder)}
         </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-tl-faint" aria-hidden />
       </button>
 
       {open && (
-        <div className="absolute z-30 mt-1 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-slate-800 px-3 py-2">
-            <Search className="h-4 w-4 text-gray-400" />
+        <div className="absolute left-0 top-full z-30 mt-1 w-full overflow-hidden rounded-[14px] border border-tl-line bg-tl-surface shadow-[0_18px_40px_-20px_rgba(15,27,46,0.35)]">
+          <div className="flex items-center gap-2 border-b border-tl-line-soft px-3.5">
+            <Search className="h-4 w-4 shrink-0 text-tl-faint" aria-hidden />
             <input
               ref={searchRef}
               value={query}
@@ -141,13 +171,13 @@ export function SearchSelect({
               }}
               onKeyDown={onKeyDown}
               placeholder={placeholder}
-              className="w-full bg-transparent text-sm text-gray-900 dark:text-slate-100 outline-none"
+              className="min-h-[44px] w-full bg-transparent text-sm text-tl-ink outline-none placeholder:text-tl-faint"
               aria-label={`Search ${label}`}
             />
           </div>
           <ul role="listbox" aria-label={label} className="max-h-60 overflow-y-auto py-1">
             {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-gray-500 dark:text-slate-400">No match</li>
+              <li className="px-3.5 py-3 text-sm text-tl-muted">No match</li>
             )}
             {filtered.map((option, index) => (
               <li key={option.id}>
@@ -157,17 +187,19 @@ export function SearchSelect({
                   aria-selected={option.id === value}
                   onMouseEnter={() => setActive(index)}
                   onClick={() => choose(option)}
-                  className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
-                    index === active ? "bg-gray-50 dark:bg-slate-800" : ""
-                  } text-gray-900 dark:text-slate-100`}
+                  className={`flex min-h-[44px] w-full items-center justify-between gap-2 px-3.5 py-2 text-left text-sm text-tl-ink ${
+                    index === active ? "bg-tl-subtle" : ""
+                  }`}
                 >
                   <span className="min-w-0">
-                    <span className="block truncate">{option.label}</span>
+                    <span className="block truncate font-semibold">{option.label}</span>
                     {option.hint && (
-                      <span className="block truncate text-xs text-gray-500 dark:text-slate-400">{option.hint}</span>
+                      <span className="block truncate text-xs text-tl-muted">{option.hint}</span>
                     )}
                   </span>
-                  {option.id === value && <Check className="h-4 w-4 shrink-0 text-[#003366] dark:text-blue-400" />}
+                  {option.id === value && (
+                    <Check className="h-4 w-4 shrink-0 text-tl-brand" aria-hidden />
+                  )}
                 </button>
               </li>
             ))}

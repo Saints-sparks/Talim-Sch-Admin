@@ -1,38 +1,76 @@
 "use client";
 
 /**
- * The "Courses" tab on the class detail screen.
+ * The "Courses" tab on the class detail screen: one tile per course, each in
+ * its subject's tone.
  *
  * Editing and deleting a course is a curriculum change, so those controls are
  * gated on `manage:curriculum` — the permission the courses endpoints check —
  * rather than on `manage:classes`.
  */
 import React from "react";
-import { FiEdit, FiTrash2 } from "react-icons/fi";
-import { BookOpen, Clock } from "lucide-react";
+import { BookOpen, Clock, Pencil, Trash2 } from "lucide-react";
+import {
+  CardHeader,
+  EmptyNote,
+  Pill,
+  card,
+  focusRing,
+  iconButton,
+  toneClass,
+} from "@/components/tl";
 import type { ClassCourse } from "@/components/classes/class.model";
 
+/** Props for {@link ClassCoursesTab}. */
 interface ClassCoursesTabProps {
+  /** The class's courses. */
   courses: ClassCourse[];
   /** True when the signed-in administrator may change the curriculum. */
   canManageCurriculum: boolean;
   /** The course currently being deleted, so its row can show progress. */
   deletingCourseId: string | null;
+  /** Opens the course in the course sheet. */
   onEditCourse: (course: ClassCourse) => void;
+  /** Asks to delete the course. */
   onDeleteCourse: (course: ClassCourse) => void;
 }
 
-/** A course's subject, however the route populated it. */
+/**
+ * A course's subject, however the route populated it.
+ *
+ * @param course - The course.
+ * @returns "Mathematics (MTH)", the name alone, or "Not set".
+ */
 function subjectLabel(course: ClassCourse): string {
   const subject = course.subjectId;
   if (!subject || typeof subject === "string") return "Not set";
-  return subject.code ? `${subject.name ?? "Subject"} (${subject.code})` : (subject.name ?? "Not set");
+  return subject.code
+    ? `${subject.name ?? "Subject"} (${subject.code})`
+    : (subject.name ?? "Not set");
+}
+
+/**
+ * The id a course's tone is keyed on: its subject, so every course of one
+ * subject wears the same colour.
+ *
+ * @param course - The course.
+ * @returns A stable id.
+ */
+function toneKey(course: ClassCourse): string {
+  const subject = course.subjectId;
+  if (typeof subject === "string") return subject;
+  return subject?._id || course._id;
 }
 
 /**
  * Renders the courses tab.
  *
  * @param props - See {@link ClassCoursesTabProps}.
+ * @param props.courses - The courses.
+ * @param props.canManageCurriculum - Whether edit and delete show.
+ * @param props.deletingCourseId - The course being deleted.
+ * @param props.onEditCourse - Edit handler.
+ * @param props.onDeleteCourse - Delete handler.
  * @returns The tab body.
  */
 export function ClassCoursesTab({
@@ -43,80 +81,70 @@ export function ClassCoursesTab({
   onDeleteCourse,
 }: ClassCoursesTabProps) {
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Courses</h2>
-        <p className="text-gray-600 dark:text-slate-400 mt-1">Manage courses for this class</p>
-      </div>
+    <section className={card}>
+      <CardHeader title="Courses" subtitle="Manage courses for this class" />
 
       {courses.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
-          <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100 mb-2">
-            No courses yet
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            Courses assigned from Curriculum will appear here.
-          </p>
-        </div>
+        <EmptyNote icon={<BookOpen />} title="No courses yet">
+          Courses assigned from Curriculum will appear here.
+        </EmptyNote>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ul className="mt-[18px] grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))]">
           {courses.map((course) => (
-            <div
+            <li
               key={course._id}
-              className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
+              className={`${toneClass(toneKey(course))} flex flex-col gap-3 rounded-2xl border border-tl-line-soft bg-tl-subtle p-4`}
             >
-              <div className="flex justify-between items-start mb-4 gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 min-w-0 truncate">
-                  {course.title || "Untitled Course"}
-                </h3>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tone-bd bg-tone-bg text-tone-fg"
+                  >
+                    <BookOpen className="h-[18px] w-[18px]" />
+                  </span>
+                  <h3 className="min-w-0 truncate text-[15px] font-extrabold text-tl-ink">
+                    {course.title || "Untitled Course"}
+                  </h3>
+                </div>
                 {canManageCurriculum && (
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="-mr-2 -mt-2 flex shrink-0 items-center">
                     <button
+                      type="button"
                       onClick={() => onEditCourse(course)}
-                      className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
+                      className={iconButton}
                       aria-label={`Edit ${course.title ?? "course"}`}
                     >
-                      <FiEdit className="w-4 h-4" />
+                      <Pencil className="h-4 w-4" aria-hidden />
                     </button>
                     <button
+                      type="button"
                       onClick={() => onDeleteCourse(course)}
                       disabled={deletingCourseId === course._id}
-                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition disabled:opacity-50"
+                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-tl-danger transition-colors hover:bg-tl-danger-bg disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
                       aria-label={`Delete ${course.title ?? "course"}`}
                     >
-                      <FiTrash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-slate-300">Code:</span>
-                  <span className="text-gray-900 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                    {course.courseCode || "N/A"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-slate-300">Subject:</span>
-                  <span className="text-gray-900 dark:text-slate-100">{subjectLabel(course)}</span>
-                </div>
-
-                {course.updatedAt && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-600 dark:text-slate-400">
-                      Updated {new Date(course.updatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
+              <div className="flex flex-wrap items-center gap-2 text-sm text-tl-body">
+                <Pill tone="muted">{course.courseCode || "N/A"}</Pill>
+                <span className="min-w-0 break-words">{subjectLabel(course)}</span>
               </div>
-            </div>
+
+              {course.updatedAt && (
+                <p className="flex items-center gap-1.5 text-xs text-tl-muted">
+                  <Clock className="h-3.5 w-3.5" aria-hidden />
+                  Updated {new Date(course.updatedAt).toLocaleDateString()}
+                </p>
+              )}
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

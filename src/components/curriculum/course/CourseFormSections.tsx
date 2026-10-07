@@ -1,62 +1,68 @@
 import React from "react";
-import { AlertCircle, BookOpen, Loader2, User, X } from "lucide-react";
+import { AlertCircle, BookOpen, Loader2, User } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { SearchSelect, type SearchOption } from "@/components/curriculum/SearchSelect";
+import {
+  Banner,
+  describedByFor,
+  eyebrow,
+  fieldControl,
+  fieldError,
+  fieldHint,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+  textareaControl,
+} from "@/components/tl";
 import { getErrorMessage } from "@/lib/apiError";
 import type { CourseForm } from "./courseForm";
 
-const INPUT_CLASS =
-  "w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500";
-const LABEL_CLASS = "block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2";
-const SECTION_HEADING =
-  "text-sm font-semibold text-gray-700 dark:text-slate-200 mb-6 uppercase tracking-wide flex items-center gap-2";
+/** The small uppercase heading over each group of fields. */
+const SECTION_HEADING = `${eyebrow} mb-4 flex items-center gap-2 [&>svg]:h-4 [&>svg]:w-4`;
 
+/** Sets one field of the course form. */
 type SetField = <K extends keyof CourseForm>(field: K, value: CourseForm[K]) => void;
 
-/** The gradient title bar with the close button. */
-export function CourseModalHeader({
-  mode,
-  subjectName,
-  isSubmitting,
-  onClose,
-}: {
-  mode: "add" | "edit";
-  subjectName?: string;
-  isSubmitting: boolean;
-  onClose: () => void;
-}) {
+/**
+ * The red line under a field, tied to it by id.
+ *
+ * @param props - The control's id and its message.
+ * @param props.id - The control's id.
+ * @param props.message - The error, if any.
+ * @returns The message, or null.
+ */
+function FieldMessage({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative overflow-hidden flex-shrink-0">
-      <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">{mode === "add" ? "Add New Course" : "Edit Course"}</h2>
-            <p className="text-blue-100 text-sm mt-1">
-              {mode === "add" && subjectName
-                ? `Create a new course for ${subjectName}`
-                : mode === "add"
-                  ? "Create a new course"
-                  : "Update the course information"}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          disabled={isSubmitting}
-          aria-label="Close"
-          className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+    <p id={`${id}-error`} className={fieldError}>
+      {message}
+    </p>
   );
 }
 
-/** Title, code and description. */
+/**
+ * `aria-invalid` and `aria-describedby` for one control.
+ *
+ * @param id - The control's id.
+ * @param message - Its error, if any.
+ * @returns The attributes.
+ */
+function a11y(id: string, message?: string) {
+  return {
+    "aria-invalid": message ? true : undefined,
+    "aria-describedby": describedByFor(id, undefined, message),
+  } as const;
+}
+
+/**
+ * Title, code and description.
+ *
+ * @param props - The form, its server-side field errors and the setter.
+ * @param props.form - The values.
+ * @param props.fieldErrors - Errors keyed by field.
+ * @param props.onChange - Sets a field.
+ * @returns The section.
+ */
 export function CourseInfoSection({
   form,
   fieldErrors,
@@ -69,13 +75,13 @@ export function CourseInfoSection({
   return (
     <section>
       <h3 className={SECTION_HEADING}>
-        <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        <BookOpen aria-hidden />
         Course Information
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className={LABEL_CLASS} htmlFor="course-title">
+      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label className={fieldLabel} htmlFor="course-title">
             Course Title *
           </label>
           <input
@@ -84,18 +90,19 @@ export function CourseInfoSection({
             value={form.title}
             onChange={(e) => onChange("title", e.target.value)}
             placeholder="e.g., Algebra I"
-            className={INPUT_CLASS}
+            className={fieldControl}
             required
+            {...a11y("course-title", fieldErrors.title)}
           />
-          {fieldErrors.title && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{fieldErrors.title}</p>}
+          <FieldMessage id="course-title" message={fieldErrors.title} />
         </div>
 
-        <div>
+        <div className="flex flex-col gap-1.5">
           <Tooltip
             content="A short unique identifier for this course (e.g. MTH101). Used on timetables and assessments."
             side="right"
           >
-            <label className={LABEL_CLASS} htmlFor="course-code">
+            <label className={`${fieldLabel} w-fit`} htmlFor="course-code">
               Course Code *
             </label>
           </Tooltip>
@@ -105,16 +112,15 @@ export function CourseInfoSection({
             value={form.courseCode}
             onChange={(e) => onChange("courseCode", e.target.value)}
             placeholder="e.g., MATH101"
-            className={INPUT_CLASS}
+            className={fieldControl}
             required
+            {...a11y("course-code", fieldErrors.courseCode)}
           />
-          {fieldErrors.courseCode && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{fieldErrors.courseCode}</p>
-          )}
+          <FieldMessage id="course-code" message={fieldErrors.courseCode} />
         </div>
 
-        <div className="md:col-span-2">
-          <label className={LABEL_CLASS} htmlFor="course-description">
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label className={fieldLabel} htmlFor="course-description">
             Description *
           </label>
           <textarea
@@ -123,45 +129,81 @@ export function CourseInfoSection({
             onChange={(e) => onChange("description", e.target.value)}
             placeholder="Enter course description..."
             rows={3}
-            className={`${INPUT_CLASS} resize-none`}
+            className={`${textareaControl} resize-none`}
+            {...a11y("course-description", fieldErrors.description)}
           />
-          {fieldErrors.description && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{fieldErrors.description}</p>
-          )}
+          <FieldMessage id="course-description" message={fieldErrors.description} />
         </div>
       </div>
     </section>
   );
 }
 
-/** A grey notice under a picker. */
+/**
+ * A grey notice under a picker.
+ *
+ * @param props - The words.
+ * @param props.children - The words.
+ * @returns The notice.
+ */
 function EmptyNotice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 mt-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
-      <AlertCircle className="h-4 w-4 text-gray-500 mt-0.5" />
-      <div className="text-sm text-gray-600 dark:text-slate-300">{children}</div>
-    </div>
+    <p className="flex items-start gap-2 rounded-xl border border-tl-line-soft bg-tl-subtle px-3 py-2.5 text-sm text-tl-muted">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+      {children}
+    </p>
   );
 }
 
+/** Props for {@link CourseAssignmentSection}. */
 interface AssignmentSectionProps {
+  /** Add or edit. */
   mode: "add" | "edit";
+  /** The values. */
   form: CourseForm;
+  /** Sets a field. */
   onChange: SetField;
+  /** The teacher picker's rows. */
   teacherOptions: SearchOption[];
+  /** The class picker's rows. */
   classOptions: SearchOption[];
+  /** How many teachers the school has. */
   teacherCount: number;
+  /** How many classes the school has. */
   classCount: number;
   /** Name of the course's class, shown read-only when editing. */
   className: string;
+  /** True while the teachers load. */
   teachersLoading: boolean;
+  /** Why the teachers failed. */
   teachersError: unknown;
+  /** True when the teachers failed. */
   teachersFailed: boolean;
+  /** Loads the teachers again. */
   onRetryTeachers: () => void;
+  /** True while the classes load. */
   classesLoading: boolean;
 }
 
-/** Teacher and class pickers (the class is fixed once the course exists). */
+/**
+ * Teacher and class pickers (the class is fixed once the course exists).
+ *
+ * @param props - See {@link AssignmentSectionProps}.
+ * @param props.mode - Add or edit.
+ * @param props.form - The values.
+ * @param props.onChange - Sets a field.
+ * @param props.teacherOptions - Teacher rows.
+ * @param props.classOptions - Class rows.
+ * @param props.teacherCount - Teachers in the school.
+ * @param props.classCount - Classes in the school.
+ * @param props.className - The fixed class's name.
+ * @param props.teachersLoading - Whether teachers load.
+ * @param props.teachersError - Why they failed.
+ * @param props.teachersFailed - Whether they failed.
+ * @param props.onRetryTeachers - Retries them.
+ * @param props.classesLoading - Whether classes load.
+ * @returns The section.
+ */
 export function CourseAssignmentSection({
   mode,
   form,
@@ -180,12 +222,12 @@ export function CourseAssignmentSection({
   return (
     <section>
       <h3 className={SECTION_HEADING}>
-        <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        <User aria-hidden />
         Assignment Information
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+      <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
+        <div className="flex flex-col gap-2">
           <SearchSelect
             id="course-teacher"
             label="Assigned Teacher *"
@@ -198,25 +240,30 @@ export function CourseAssignmentSection({
             placeholder="Search and select a teacher..."
           />
           {teachersFailed && (
-            <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
-              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
-              <div className="text-sm text-red-700 dark:text-red-300">
-                {getErrorMessage(teachersError, "Could not load teachers.")}{" "}
-                <button type="button" onClick={onRetryTeachers} className="underline">
+            <Banner
+              tone="danger"
+              action={
+                <button
+                  type="button"
+                  onClick={onRetryTeachers}
+                  className="min-h-[44px] text-sm font-bold text-tl-danger underline"
+                >
                   Retry
                 </button>
-              </div>
-            </div>
+              }
+            >
+              {getErrorMessage(teachersError, "Could not load teachers.")}
+            </Banner>
           )}
           {!teachersLoading && !teachersFailed && teacherCount === 0 && (
             <EmptyNotice>No teachers found. Please add teachers first.</EmptyNotice>
           )}
         </div>
 
-        <div>
+        <div className="flex flex-col gap-2">
           {mode === "edit" ? (
-            <>
-              <label className={LABEL_CLASS} htmlFor="course-class">
+            <div className="flex flex-col gap-1.5">
+              <label className={fieldLabel} htmlFor="course-class">
                 Class *
               </label>
               <input
@@ -225,13 +272,14 @@ export function CourseAssignmentSection({
                 value={className}
                 readOnly
                 disabled
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl cursor-not-allowed text-gray-500 dark:text-slate-400"
+                className={`${fieldControl} bg-tl-subtle`}
                 placeholder="Class is fixed for existing courses"
+                aria-describedby="course-class-hint"
               />
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+              <p id="course-class-hint" className={fieldHint}>
                 Class cannot be changed for existing courses
               </p>
-            </>
+            </div>
           ) : (
             <SearchSelect
               id="course-class"
@@ -254,7 +302,17 @@ export function CourseAssignmentSection({
   );
 }
 
-/** Cancel and save. */
+/**
+ * Cancel and save, along the bottom of the course sheet.
+ *
+ * @param props - The mode and the submit state.
+ * @param props.mode - Add or edit.
+ * @param props.isSubmitting - Whether the save runs.
+ * @param props.canSubmit - Whether every required field is filled.
+ * @param props.onCancel - Closes without saving.
+ * @param props.onSubmit - Saves.
+ * @returns The buttons.
+ */
 export function CourseFormFooter({
   mode,
   isSubmitting,
@@ -269,12 +327,12 @@ export function CourseFormFooter({
   onSubmit: () => void;
 }) {
   return (
-    <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+    <>
       <button
         type="button"
         onClick={onCancel}
         disabled={isSubmitting}
-        className="px-6 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`${ghostButton} min-h-[48px] flex-1 sm:flex-none`}
       >
         Cancel
       </button>
@@ -282,17 +340,17 @@ export function CourseFormFooter({
         type="button"
         onClick={onSubmit}
         disabled={isSubmitting || !canSubmit}
-        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+        className={`${primaryButton} min-h-[48px] flex-1 sm:ml-auto sm:flex-none`}
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             {mode === "add" ? "Creating..." : "Updating..."}
           </>
         ) : (
           <>{mode === "add" ? "Create Course" : "Update Course"}</>
         )}
       </button>
-    </div>
+    </>
   );
 }

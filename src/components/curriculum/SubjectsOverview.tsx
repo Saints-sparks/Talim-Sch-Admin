@@ -1,26 +1,46 @@
 "use client";
 
 /**
- * The "Subjects Overview" grid on the curriculum dashboard's Structure tab.
+ * The "Subjects Overview" grid on the curriculum dashboard's Structure tab:
+ * one tile per subject in its tone.
  *
- * Read-only: the card opens the subject, and the "create your first subject"
+ * Read-only: the tile opens the subject, and the "create your first subject"
  * call to action is gated on `manage:curriculum`.
  */
 import React from "react";
-import { BookOpen, GraduationCap, Plus } from "lucide-react";
+import { BookOpen, ChevronRight, GraduationCap, Plus } from "lucide-react";
 import type { Subject } from "@/app/services/subjects.service";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  Banner,
+  CardHeader,
+  EmptyNote,
+  Pill,
+  card,
+  focusRing,
+  primaryButton,
+  rowButton,
+  skeletonBlock,
+  toneClass,
+} from "@/components/tl";
 import { Permission } from "@/lib/permissions";
 import { getErrorMessage } from "@/lib/apiError";
 
+/** Props for {@link SubjectsOverview}. */
 interface SubjectsOverviewProps {
+  /** The subjects to show (already filtered by the search). */
   subjects: Subject[];
+  /** True while they load. */
   isLoading: boolean;
+  /** Why they failed, if they did. */
   error: unknown;
+  /** Loads them again. */
   onRetry: () => void;
   /** True when the empty grid is the result of a search rather than no data. */
   isFiltered: boolean;
+  /** Opens one subject in the structure screen. */
   onOpenSubject: (subjectId: string) => void;
+  /** Opens the add-subject sheet. */
   onAddSubject: () => void;
 }
 
@@ -28,7 +48,14 @@ interface SubjectsOverviewProps {
  * Renders the subject grid.
  *
  * @param props - The subjects to show plus query and filter state.
- * @returns The panel.
+ * @param props.subjects - The subjects.
+ * @param props.isLoading - Whether they load.
+ * @param props.error - Why they failed.
+ * @param props.onRetry - Retries.
+ * @param props.isFiltered - Whether a search narrowed them.
+ * @param props.onOpenSubject - Opens a subject.
+ * @param props.onAddSubject - Adds a subject.
+ * @returns The card.
  */
 export function SubjectsOverview({
   subjects,
@@ -40,90 +67,91 @@ export function SubjectsOverview({
   onAddSubject,
 }: SubjectsOverviewProps) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden mb-8">
-      <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center">
-          <BookOpen className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-          Subjects Overview
-        </h2>
-      </div>
+    <section className={card}>
+      <CardHeader
+        title="Subjects Overview"
+        subtitle="Open a subject to see and change its courses."
+      />
 
-      <div className="p-6">
+      <div className="mt-[18px]">
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((card) => (
-              <div
-                key={card}
-                className="h-36 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse"
-              />
+          <div
+            aria-busy="true"
+            aria-label="Loading subjects"
+            className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))]"
+          >
+            {[0, 1, 2].map((tile) => (
+              <div key={tile} aria-hidden className={`${skeletonBlock} h-32 rounded-2xl`} />
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-6 text-center">
-            <p className="text-sm text-red-700 dark:text-red-300">
-              {getErrorMessage(error, "Could not load subjects.")}
-            </p>
-            <button
-              onClick={onRetry}
-              className="mt-4 px-5 py-2 rounded-xl bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
-            >
-              Try again
-            </button>
-          </div>
-        ) : subjects.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject) => (
-              <button
-                key={subject._id}
-                type="button"
-                onClick={() => onOpenSubject(subject._id)}
-                className="group text-left border-2 border-gray-200 dark:border-slate-700 rounded-xl p-5 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40">
-                    <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                  </div>
-                  <span className="text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-lg">
-                    {subject.code}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">
-                  {subject.name}
-                </h3>
-                <div className="flex items-center text-sm text-gray-500 dark:text-slate-400">
-                  <GraduationCap className="w-4 h-4 mr-1.5" />
-                  {subject.courseCount ?? subject.courses?.length ?? 0} courses
-                </div>
+          <Banner
+            tone="danger"
+            role="alert"
+            action={
+              <button type="button" onClick={onRetry} className={rowButton}>
+                Try again
               </button>
-            ))}
+            }
+          >
+            {getErrorMessage(error, "Could not load subjects.")}
+          </Banner>
+        ) : subjects.length > 0 ? (
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))]">
+            {subjects.map((subject) => {
+              const count = subject.courseCount ?? subject.courses?.length ?? 0;
+              return (
+                <button
+                  key={subject._id}
+                  type="button"
+                  onClick={() => onOpenSubject(subject._id)}
+                  className={`${toneClass(subject._id)} group flex flex-col gap-3 rounded-2xl border border-tl-line-soft bg-tl-surface p-4 text-left transition-colors hover:border-tl-control hover:bg-tl-subtle ${focusRing}`}
+                >
+                  <span className="flex w-full items-start justify-between gap-2">
+                    <span
+                      aria-hidden
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-tone-bd bg-tone-bg text-tone-fg"
+                    >
+                      <BookOpen className="h-[18px] w-[18px]" />
+                    </span>
+                    <Pill tone="info">{subject.code}</Pill>
+                  </span>
+                  <span className="text-[15px] font-extrabold text-tl-ink">{subject.name}</span>
+                  <span className="flex w-full items-center justify-between gap-2 text-[13px] text-tl-muted">
+                    <span className="inline-flex items-center gap-1.5">
+                      <GraduationCap className="h-4 w-4" aria-hidden />
+                      {count} courses
+                    </span>
+                    <ChevronRight
+                      aria-hidden
+                      className="h-4 w-4 text-tl-faint transition-transform group-hover:translate-x-0.5"
+                    />
+                  </span>
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="h-12 w-12 text-gray-400 dark:text-slate-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
-              {isFiltered ? "No subjects found" : "No subjects created yet"}
-            </h3>
-            <p className="text-gray-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-              {isFiltered
-                ? "Try adjusting your search criteria to find what you're looking for."
-                : "Get started by creating your first subject to organize your curriculum."}
-            </p>
-            {!isFiltered && (
-              <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
-                <button
-                  onClick={onAddSubject}
-                  className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-xl"
-                >
-                  <Plus className="h-5 w-5 mr-3" />
-                  Create Your First Subject
-                </button>
-              </PermissionGate>
-            )}
-          </div>
+          <EmptyNote
+            icon={<BookOpen />}
+            title={isFiltered ? "No subjects found" : "No subjects created yet"}
+            action={
+              !isFiltered ? (
+                <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
+                  <button type="button" onClick={onAddSubject} className={primaryButton}>
+                    <Plus className="h-4 w-4" aria-hidden />
+                    Create Your First Subject
+                  </button>
+                </PermissionGate>
+              ) : undefined
+            }
+          >
+            {isFiltered
+              ? "Try adjusting your search criteria to find what you're looking for."
+              : "Get started by creating your first subject to organize your curriculum."}
+          </EmptyNote>
         )}
       </div>
-    </div>
+    </section>
   );
 }

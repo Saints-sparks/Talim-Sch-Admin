@@ -1,18 +1,27 @@
 "use client";
 
 /**
- * Creates a class.
+ * Creates a class, in the design system's sheet.
  *
  * Owns the write: it runs the mutation, which invalidates the class caches, so
  * the grid behind it updates without the page refetching. Validation mirrors
  * `CreateClassDto` so the form refuses before the request does.
  */
 import React, { useEffect, useState } from "react";
-import { FiPlus, FiX } from "react-icons/fi";
+import { Plus } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { InlineSpinner } from "@/components/ui/loading";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import {
+  Sheet,
+  describedByFor,
+  fieldControl,
+  fieldError,
+  fieldLabel,
+  ghostButton,
+  primaryButton,
+  textareaControl,
+} from "@/components/tl";
 import { useClassMutations } from "@/hooks/classes/queries";
 import {
   CAPACITY_OPTIONS,
@@ -24,8 +33,11 @@ import {
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 
+/** Props for {@link ClassFormModal}. */
 interface ClassFormModalProps {
+  /** Whether the sheet is shown. */
   isOpen: boolean;
+  /** Closes it (Cancel, Escape, the close button, the overlay). */
   onClose: () => void;
   /** Called after the class has been created. */
   onCreated?: () => void;
@@ -38,18 +50,39 @@ const EMPTY_FORM: ClassPayload = {
   classCapacity: "",
 };
 
+/** The form's id, so the footer's submit button can sit outside it. */
+const FORM_ID = "create-class-form";
+
 /**
- * Renders the create-class modal, or nothing when closed.
+ * The red line under a field, tied to it by id.
+ *
+ * @param props - The control's id and its message.
+ * @param props.id - The control's id.
+ * @param props.message - The error, if any.
+ * @returns The message, or null.
+ */
+function FieldMessage({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={`${id}-error`} className={fieldError}>
+      {message}
+    </p>
+  );
+}
+
+/**
+ * Renders the create-class sheet, or nothing when closed.
  *
  * @param props - See {@link ClassFormModalProps}.
- * @returns The modal.
+ * @param props.isOpen - Whether it is shown.
+ * @param props.onClose - Closes it.
+ * @param props.onCreated - Called after a successful create.
+ * @returns The sheet.
  */
 export function ClassFormModal({ isOpen, onClose, onCreated }: ClassFormModalProps) {
   const { create } = useClassMutations();
   const [form, setForm] = useState<ClassPayload>(EMPTY_FORM);
   const [errors, setErrors] = useState<ClassFormErrors>({});
-
-  useBodyScrollLock(isOpen);
 
   // Start from a blank form each time, so a cancelled draft never reappears.
   useEffect(() => {
@@ -91,164 +124,142 @@ export function ClassFormModal({ isOpen, onClose, onCreated }: ClassFormModalPro
 
   if (!isOpen) return null;
 
-  const fieldClass =
-    "w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
-  const labelClass = "block text-gray-700 dark:text-slate-200 font-semibold mb-2";
+  /**
+   * `aria-invalid` and `aria-describedby` for one control.
+   *
+   * @param id - The control's id.
+   * @param message - Its error, if any.
+   * @returns The attributes.
+   */
+  const a11y = (id: string, message?: string) => ({
+    "aria-invalid": message ? true : undefined,
+    "aria-describedby": describedByFor(id, undefined, message),
+  });
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Create new class"
-      onClick={create.isPending ? undefined : onClose}
+    <Sheet
+      open={isOpen}
+      onOpenChange={(next) => !next && onClose()}
+      dismissible={!create.isPending}
+      eyebrowText="Classes"
+      title="Create New Class"
+      ariaLabel="Create new class"
+      subtitle="Name the class and set its grade and capacity. Students, teachers and courses come afterwards."
+      size="lg"
+      footer={
+        <>
+          <button
+            type="button"
+            className={`${ghostButton} min-h-[48px] flex-1 sm:flex-none`}
+            onClick={onClose}
+            disabled={create.isPending}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form={FORM_ID}
+            className={`${primaryButton} min-h-[48px] flex-1 sm:ml-auto sm:flex-none`}
+            disabled={create.isPending}
+          >
+            {create.isPending ? (
+              <InlineSpinner label="Creating Class..." className="text-tl-on-brand" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4" aria-hidden />
+                Create Class
+              </>
+            )}
+          </button>
+        </>
+      }
     >
-      <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div
-          className="sticky top-0 px-6 py-5 rounded-t-2xl z-10"
-          style={{ background: "linear-gradient(to right, #003366, #004488)" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                <FiPlus className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-white">Create New Class</h3>
-            </div>
-            <button
-              type="button"
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
-              onClick={onClose}
-              disabled={create.isPending}
-              aria-label="Close"
+      <form id={FORM_ID} onSubmit={handleSubmit} noValidate className="flex flex-col gap-[18px]">
+        <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className={fieldLabel} htmlFor="class-name">
+              Class Name *
+            </label>
+            <input
+              id="class-name"
+              type="text"
+              data-autofocus
+              placeholder="Enter class name"
+              value={form.name}
+              onChange={(event) => setField("name", event.target.value)}
+              className={fieldControl}
+              {...a11y("class-name", errors.name)}
+            />
+            <FieldMessage id="class-name" message={errors.name} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Tooltip
+              content="Optional grouping (e.g. Grade 1–12). Used for filtering and reporting."
+              side="right"
             >
-              <FiX className="h-5 w-5 text-white" />
-            </button>
+              <label className={`${fieldLabel} w-fit`} htmlFor="class-grade">
+                Grade Level *
+              </label>
+            </Tooltip>
+            <select
+              id="class-grade"
+              value={form.gradeLevel}
+              onChange={(event) => setField("gradeLevel", event.target.value)}
+              className={fieldControl}
+              {...a11y("class-grade", errors.gradeLevel)}
+            >
+              <option value="">Select grade</option>
+              {GRADE_OPTIONS.map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </select>
+            <FieldMessage id="class-grade" message={errors.gradeLevel} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Tooltip
+              content="Maximum students that can be enrolled. Students beyond this limit will be flagged during enrolment."
+              side="right"
+            >
+              <label className={`${fieldLabel} w-fit`} htmlFor="class-capacity">
+                Class Capacity *
+              </label>
+            </Tooltip>
+            <select
+              id="class-capacity"
+              value={form.classCapacity}
+              onChange={(event) => setField("classCapacity", event.target.value)}
+              className={fieldControl}
+              {...a11y("class-capacity", errors.classCapacity)}
+            >
+              <option value="">Choose capacity</option>
+              {CAPACITY_OPTIONS.map((capacity) => (
+                <option key={capacity} value={capacity}>
+                  {capacity} Students
+                </option>
+              ))}
+            </select>
+            <FieldMessage id="class-capacity" message={errors.classCapacity} />
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6" noValidate>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass} htmlFor="class-name">
-                  Class Name *
-                </label>
-                <input
-                  id="class-name"
-                  type="text"
-                  placeholder="Enter class name"
-                  value={form.name}
-                  onChange={(event) => setField("name", event.target.value)}
-                  className={fieldClass}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <Tooltip
-                  content="Optional grouping (e.g. Grade 1–12). Used for filtering and reporting."
-                  side="right"
-                >
-                  <label className={labelClass} htmlFor="class-grade">
-                    Grade Level *
-                  </label>
-                </Tooltip>
-                <select
-                  id="class-grade"
-                  value={form.gradeLevel}
-                  onChange={(event) => setField("gradeLevel", event.target.value)}
-                  className={fieldClass}
-                >
-                  <option value="">Select grade</option>
-                  {GRADE_OPTIONS.map((grade) => (
-                    <option key={grade} value={grade}>
-                      {grade}
-                    </option>
-                  ))}
-                </select>
-                {errors.gradeLevel && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.gradeLevel}</p>
-                )}
-              </div>
-
-              <div>
-                <Tooltip
-                  content="Maximum students that can be enrolled. Students beyond this limit will be flagged during enrolment."
-                  side="right"
-                >
-                  <label className={labelClass} htmlFor="class-capacity">
-                    Class Capacity *
-                  </label>
-                </Tooltip>
-                <select
-                  id="class-capacity"
-                  value={form.classCapacity}
-                  onChange={(event) => setField("classCapacity", event.target.value)}
-                  className={fieldClass}
-                >
-                  <option value="">Choose capacity</option>
-                  {CAPACITY_OPTIONS.map((capacity) => (
-                    <option key={capacity} value={capacity}>
-                      {capacity} Students
-                    </option>
-                  ))}
-                </select>
-                {errors.classCapacity && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    {errors.classCapacity}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass} htmlFor="class-description">
-                Class Description
-              </label>
-              <textarea
-                id="class-description"
-                placeholder="Provide additional notes about the class"
-                value={form.classDescription}
-                onChange={(event) => setField("classDescription", event.target.value)}
-                className={`${fieldClass} resize-none`}
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
-            <button
-              type="button"
-              className="px-6 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-all duration-300 disabled:opacity-50"
-              onClick={onClose}
-              disabled={create.isPending}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-8 py-3 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center hover:opacity-90"
-              style={{ background: "linear-gradient(to right, #003366, #004488)" }}
-              disabled={create.isPending}
-            >
-              {create.isPending ? (
-                <InlineSpinner label="Creating Class..." className="text-white" />
-              ) : (
-                <>
-                  <FiPlus className="mr-2 h-5 w-5" />
-                  Create Class
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex flex-col gap-1.5">
+          <label className={fieldLabel} htmlFor="class-description">
+            Class Description
+          </label>
+          <textarea
+            id="class-description"
+            placeholder="Provide additional notes about the class"
+            value={form.classDescription}
+            onChange={(event) => setField("classDescription", event.target.value)}
+            className={`${textareaControl} resize-none`}
+            rows={4}
+          />
+        </div>
+      </form>
+    </Sheet>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Class detail — one class's fields, its courses and its class teacher.
+ * Class detail — one class's fields, its courses and its class teacher, as
+ * three tabs under the class's heading.
  *
  * The class is a cached query keyed on the school and the class id, so coming
  * back from the edit screen shows the saved values without a refetch, and
@@ -9,19 +10,26 @@
  */
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FiEdit } from "react-icons/fi";
-import { BookOpen, ChevronLeft, GraduationCap, Info, User } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { BookOpen, ChevronLeft, Info, Pencil, User } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import CourseModal, { type CourseForModal } from "@/components/CourseModal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { ErrorState } from "@/components/StateComponents";
 import { ConfirmDialog } from "@/components/curriculum/ConfirmDialog";
 import { ClassCoursesTab } from "@/components/classes/ClassCoursesTab";
 import { ClassDetailsTab } from "@/components/classes/ClassDetailsTab";
 import { ClassTeacherTab } from "@/components/classes/ClassTeacherTab";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  Page,
+  PageHeader,
+  Tabs,
+  pagePad,
+  pageStack,
+  primaryButton,
+  quietButton,
+  skeletonBlock,
+  type TabOption,
+} from "@/components/tl";
 import { useClassDetail } from "@/hooks/classes/queries";
 import { useCourseMutations } from "@/hooks/curriculum/queries";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -30,41 +38,79 @@ import { logger } from "@/lib/logger";
 import { Permission } from "@/lib/permissions";
 import type { ClassCourse } from "@/components/classes/class.model";
 
-/** The class detail screen's loading state, shaped like the real screen. */
+/** The detail screen's sections. */
+type ClassTab = "details" | "courses" | "teacher";
+
+/** The tabs, in order, with their icons. */
+const TAB_OPTIONS: readonly TabOption<ClassTab>[] = [
+  {
+    value: "details",
+    label: (
+      <>
+        <Info className="h-4 w-4" aria-hidden />
+        Class Details
+      </>
+    ),
+  },
+  {
+    value: "courses",
+    label: (
+      <>
+        <BookOpen className="h-4 w-4" aria-hidden />
+        Courses
+      </>
+    ),
+    tip: "Courses currently assigned to this class. Manage courses in Curriculum.",
+  },
+  {
+    value: "teacher",
+    label: (
+      <>
+        <User className="h-4 w-4" aria-hidden />
+        Class Teacher
+      </>
+    ),
+  },
+];
+
+/**
+ * The class detail screen's loading state, shaped like the real screen: the
+ * back link, the heading, the tabs and the first tab's tiles.
+ *
+ * @returns The skeleton.
+ */
 function ClassDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-      <div className="bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-        <div className="flex items-center justify-between">
-          <div className="h-6 w-32 bg-gray-200 dark:bg-slate-800 rounded animate-pulse" />
-          <div className="h-10 w-28 bg-gray-200 dark:bg-slate-800 rounded-lg animate-pulse" />
+    <div
+      className={`${pagePad} ${pageStack}`}
+      role="status"
+      aria-busy="true"
+      aria-label="Loading the class"
+    >
+      <span className="sr-only">Loading the class…</span>
+      <div aria-hidden className={`${skeletonBlock} h-11 w-40 rounded-[11px]`} />
+      <div aria-hidden className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-2.5">
+          <div className={`${skeletonBlock} h-4 w-24 rounded`} />
+          <div className={`${skeletonBlock} h-9 w-56 max-w-full rounded-lg`} />
+          <div className={`${skeletonBlock} h-5 w-72 max-w-full rounded`} />
         </div>
+        <div className={`${skeletonBlock} h-11 w-32 rounded-[14px]`} />
       </div>
-      <div className="p-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
-          <div className="border-b border-gray-200 dark:border-slate-800 px-6 py-4 bg-gray-50 dark:bg-slate-800/50">
-            <div className="flex space-x-8">
-              {[0, 1, 2].map((tab) => (
-                <div
-                  key={tab}
-                  className="h-6 w-24 bg-gray-200 dark:bg-slate-800 rounded animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
-          <div className="p-8 space-y-6">
-            <div className="h-8 w-48 bg-gray-200 dark:bg-slate-800 rounded animate-pulse" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[0, 1, 2, 3].map((field) => (
-                <div
-                  key={field}
-                  className="h-16 bg-gray-200 dark:bg-slate-800 rounded animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+      <div aria-hidden className="flex gap-3">
+        {[0, 1, 2].map((tab) => (
+          <div key={tab} className={`${skeletonBlock} h-11 w-32 rounded-lg`} />
+        ))}
       </div>
+      <div
+        aria-hidden
+        className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]"
+      >
+        {[0, 1, 2].map((tile) => (
+          <div key={tile} className={`${skeletonBlock} h-[96px] rounded-[18px]`} />
+        ))}
+      </div>
+      <div aria-hidden className={`${skeletonBlock} h-[320px] rounded-[22px]`} />
     </div>
   );
 }
@@ -85,7 +131,7 @@ export default function ViewClassPage() {
   const classQuery = useClassDetail(classId);
   const { remove: removeCourse } = useCourseMutations();
 
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState<ClassTab>("details");
   const [courseToEdit, setCourseToEdit] = useState<ClassCourse | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<ClassCourse | null>(null);
 
@@ -117,137 +163,92 @@ export default function ViewClassPage() {
     }
   };
 
+  const backToClasses = (
+    <button
+      type="button"
+      onClick={() => router.push("/classes")}
+      className={`${quietButton} -ml-3 w-fit`}
+    >
+      <ChevronLeft className="h-5 w-5" aria-hidden />
+      Back to Classes
+    </button>
+  );
+
   if (classQuery.isLoading && !classData) return <ClassDetailSkeleton />;
 
   if (classQuery.isError || !classData) {
     const notFound = classQuery.error instanceof ApiError && classQuery.error.code === "NOT_FOUND";
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-6">
-        <div className="max-w-md mx-auto mt-24">
-          <ErrorState
-            title={notFound ? "Class Not Found" : "Error Loading Class"}
-            message={
-              notFound
-                ? "The class you're looking for doesn't exist or has been removed."
-                : getErrorMessage(classQuery.error, "Failed to load class details.")
-            }
-            onRetry={notFound ? undefined : () => classQuery.refetch()}
-          />
-          <div className="text-center mt-6">
-            <button
-              onClick={() => router.push("/classes")}
-              className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors"
-            >
-              Back to Classes
-            </button>
-          </div>
-        </div>
-      </div>
+      <Page>
+        {backToClasses}
+        <ErrorState
+          title={notFound ? "Class Not Found" : "Error Loading Class"}
+          message={
+            notFound
+              ? "The class you're looking for doesn't exist or has been removed."
+              : getErrorMessage(classQuery.error, "Failed to load class details.")
+          }
+          onRetry={notFound ? undefined : () => classQuery.refetch()}
+        />
+      </Page>
     );
   }
 
   const courses = classData.courses ?? [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-      <div className="bg-white dark:bg-slate-900 px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center space-x-4 min-w-0">
-            <button
-              onClick={() => router.push("/classes")}
-              className="flex items-center space-x-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 transition-colors group"
-            >
-              <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">Back to Classes</span>
-            </button>
-            <div className="text-gray-300 dark:text-slate-600">|</div>
-            <div className="flex items-center space-x-2 min-w-0">
-              <GraduationCap className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600 dark:text-slate-400 truncate">
-                Class Details
-              </span>
-            </div>
-          </div>
+    <Page>
+      {backToClasses}
+
+      <PageHeader
+        eyebrowText="Class Details"
+        title={classData.name}
+        subtitle={[
+          classData.gradeLevel || "Grade not set",
+          `${courses.length} ${courses.length === 1 ? "course" : "courses"}`,
+          classData.classCapacity ? `capacity ${classData.classCapacity}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        actions={
           <PermissionGate permission={Permission.MANAGE_CLASSES}>
             <button
+              type="button"
               onClick={() => router.push(`/classes/edit-class/${classId}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition-colors shadow-sm font-medium flex-shrink-0"
+              className={primaryButton}
             >
-              <FiEdit className="w-4 h-4" />
+              <Pencil className="h-4 w-4" aria-hidden />
               Edit Class
             </button>
           </PermissionGate>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="p-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 rounded-none h-auto p-0">
-              <TabsTrigger
-                value="details"
-                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] dark:data-[state=active]:text-blue-300 rounded-none font-medium transition-all"
-              >
-                <Info className="w-4 h-4" />
-                Class Details
-              </TabsTrigger>
-              <Tooltip
-                content="Courses currently assigned to this class. Manage courses in Curriculum."
-                side="top"
-              >
-                <TabsTrigger
-                  value="courses"
-                  className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] dark:data-[state=active]:text-blue-300 rounded-none font-medium transition-all"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Courses
-                </TabsTrigger>
-              </Tooltip>
-              <TabsTrigger
-                value="teacher"
-                className="flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:text-[#003366] dark:data-[state=active]:text-blue-300 rounded-none font-medium transition-all"
-              >
-                <User className="w-4 h-4" />
-                Class Teacher
-              </TabsTrigger>
-            </TabsList>
+      <Tabs
+        options={TAB_OPTIONS}
+        value={activeTab}
+        onChange={setActiveTab}
+        label="Class sections"
+        idPrefix="class"
+      />
 
-            <div className="p-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TabsContent value="details" className="mt-0">
-                    <ClassDetailsTab classData={classData} />
-                  </TabsContent>
-
-                  <TabsContent value="courses" className="mt-0">
-                    <ClassCoursesTab
-                      courses={courses}
-                      canManageCurriculum={canManageCurriculum}
-                      deletingCourseId={
-                        removeCourse.isPending ? (courseToDelete?._id ?? null) : null
-                      }
-                      onEditCourse={setCourseToEdit}
-                      onDeleteCourse={setCourseToDelete}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="teacher" className="mt-0">
-                    <ClassTeacherTab
-                      classData={classData}
-                      onAssignTeacher={() => router.push(`/classes/edit-class/${classId}`)}
-                    />
-                  </TabsContent>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </Tabs>
-        </div>
+      <div role="tabpanel" id="class-panel" aria-labelledby={`class-tab-${activeTab}`}>
+        {activeTab === "details" && <ClassDetailsTab classData={classData} />}
+        {activeTab === "courses" && (
+          <ClassCoursesTab
+            courses={courses}
+            canManageCurriculum={canManageCurriculum}
+            deletingCourseId={removeCourse.isPending ? (courseToDelete?._id ?? null) : null}
+            onEditCourse={setCourseToEdit}
+            onDeleteCourse={setCourseToDelete}
+          />
+        )}
+        {activeTab === "teacher" && (
+          <ClassTeacherTab
+            classData={classData}
+            onAssignTeacher={() => router.push(`/classes/edit-class/${classId}`)}
+          />
+        )}
       </div>
 
       <ConfirmDialog
@@ -273,6 +274,6 @@ export default function ViewClassPage() {
         }
         initialClassId={classId || ""}
       />
-    </div>
+    </Page>
   );
 }

@@ -1,57 +1,91 @@
 "use client";
 
 /**
- * The "Quick Actions" panel on the curriculum dashboard.
+ * The "Quick Actions" card on the curriculum dashboard: one row button per
+ * shortcut.
  *
  * The two creating actions are only rendered for an administrator who holds
  * `manage:curriculum`; a sub-admin without it sees the read-only "Manage
  * Structure" shortcut rather than buttons the API would refuse.
  */
-import React from "react";
-import { BookOpen, ChevronRight, GraduationCap, Settings, Target } from "lucide-react";
+import React, { forwardRef } from "react";
+import { BookOpen, ChevronRight, GraduationCap, Settings } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { CardHeader, card, focusRing } from "@/components/tl";
 import { Permission } from "@/lib/permissions";
 
+/** Props for {@link CurriculumQuickActions}. */
 interface CurriculumQuickActionsProps {
+  /** Opens the structure screen with the add-subject sheet. */
   onAddSubject: () => void;
+  /** Opens the structure screen with the add-course sheet. */
   onAddCourse: () => void;
+  /** Opens the structure screen. */
   onManageStructure: () => void;
 }
 
-interface ActionButtonProps {
+/** Props for {@link ActionButton}. */
+interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** The bold line. */
   title: string;
+  /** The grey line under it. */
   subtitle: string;
+  /** The icon in the tone chip. */
   icon: React.ReactNode;
-  iconClass: string;
-  hoverClass: string;
-  onClick: () => void;
-}
-
-/** One action tile. */
-function ActionButton({ title, subtitle, icon, iconClass, hoverClass, onClick }: ActionButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`group flex w-full items-center justify-between p-5 border-2 border-gray-200 dark:border-slate-700 rounded-xl transition-all duration-300 hover:shadow-lg ${hoverClass}`}
-    >
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl transition-all duration-300 ${iconClass}`}>{icon}</div>
-        <div className="text-left">
-          <div className="font-semibold text-gray-900 dark:text-slate-100">{title}</div>
-          <div className="text-sm text-gray-500 dark:text-slate-400">{subtitle}</div>
-        </div>
-      </div>
-      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-all" />
-    </button>
-  );
+  /** The tone class for the chip (`tl-tone-N`). */
+  tone: string;
 }
 
 /**
- * Renders the quick-action panel.
+ * One shortcut: a full-width row button with a tone chip, two lines and a
+ * chevron. Forwards its ref and props so a tooltip can wrap it.
+ *
+ * @param props - See {@link ActionButtonProps}.
+ * @param props.title - The bold line.
+ * @param props.subtitle - The grey line.
+ * @param props.icon - The icon.
+ * @param props.tone - The chip's tone class.
+ * @param ref - The button.
+ * @returns The button.
+ */
+const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(function ActionButton(
+  { title, subtitle, icon, tone, className = "", ...rest },
+  ref
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      {...rest}
+      className={`group flex min-h-[64px] w-full items-center gap-3.5 rounded-2xl border border-tl-line-soft bg-tl-surface px-4 py-3.5 text-left transition-colors hover:border-tl-control hover:bg-tl-subtle ${focusRing} ${className}`}
+    >
+      <span
+        aria-hidden
+        className={`${tone} flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-tone-bd bg-tone-bg text-tone-fg [&>svg]:h-5 [&>svg]:w-5`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-bold text-tl-ink">{title}</span>
+        <span className="mt-0.5 block text-[13px] text-tl-muted">{subtitle}</span>
+      </span>
+      <ChevronRight
+        aria-hidden
+        className="h-5 w-5 shrink-0 text-tl-faint transition-transform group-hover:translate-x-0.5"
+      />
+    </button>
+  );
+});
+
+/**
+ * Renders the quick-action card.
  *
  * @param props - Handlers for each shortcut.
- * @returns The panel.
+ * @param props.onAddSubject - Add a subject.
+ * @param props.onAddCourse - Add a course.
+ * @param props.onManageStructure - Open the structure.
+ * @returns The card.
  */
 export function CurriculumQuickActions({
   onAddSubject,
@@ -59,18 +93,10 @@ export function CurriculumQuickActions({
   onManageStructure,
 }: CurriculumQuickActionsProps) {
   return (
-    <div
-      className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden mb-8"
-      data-guide="curriculum-actions"
-    >
-      <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center">
-          <Target className="h-5 w-5 mr-2 text-[#003366] dark:text-blue-400" />
-          Quick Actions
-        </h2>
-      </div>
+    <section className={card} data-guide="curriculum-actions">
+      <CardHeader title="Quick Actions" subtitle="Shortcuts into the curriculum structure." />
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="mt-[18px] grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))]">
         <PermissionGate permission={Permission.MANAGE_CURRICULUM}>
           <Tooltip
             content="Create a new subject area. You can add courses to it afterwards."
@@ -79,9 +105,8 @@ export function CurriculumQuickActions({
             <ActionButton
               title="Add Subject"
               subtitle="Create new subject"
-              icon={<BookOpen className="w-6 h-6 text-white" />}
-              iconClass="bg-[#003366]"
-              hoverClass="hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+              icon={<BookOpen />}
+              tone="tl-tone-1"
               onClick={onAddSubject}
             />
           </Tooltip>
@@ -95,9 +120,8 @@ export function CurriculumQuickActions({
             <ActionButton
               title="Add Course"
               subtitle="Create new course"
-              icon={<GraduationCap className="w-6 h-6 text-emerald-600 dark:text-emerald-300" />}
-              iconClass="bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/40"
-              hoverClass="hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              icon={<GraduationCap />}
+              tone="tl-tone-2"
               onClick={onAddCourse}
             />
           </Tooltip>
@@ -106,12 +130,11 @@ export function CurriculumQuickActions({
         <ActionButton
           title="Manage Structure"
           subtitle="View all settings"
-          icon={<Settings className="w-6 h-6 text-purple-600 dark:text-purple-300" />}
-          iconClass="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40"
-          hoverClass="hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+          icon={<Settings />}
+          tone="tl-tone-3"
           onClick={onManageStructure}
         />
       </div>
-    </div>
+    </section>
   );
 }

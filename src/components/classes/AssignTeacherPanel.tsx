@@ -11,29 +11,55 @@
  * than a generic failure.
  */
 import React, { useMemo, useState } from "react";
-import { AlertCircle, User } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "@/components/CustomToast";
 import { SearchSelect, type SearchOption } from "@/components/curriculum/SearchSelect";
 import { ConfirmDialog } from "@/components/curriculum/ConfirmDialog";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import {
+  Avatar,
+  Banner,
+  CardHeader,
+  card,
+  eyebrow,
+  primaryButton,
+  rowButton,
+  sectionTitle,
+  tile,
+} from "@/components/tl";
 import { useClassMutations } from "@/hooks/classes/queries";
 import { teacherUserId, type Teacher } from "@/app/services/teacher.service";
-import { classTeacherEmail, classTeacherName, type ClassDetail } from "@/components/classes/class.model";
+import {
+  classTeacherEmail,
+  classTeacherName,
+  type ClassDetail,
+} from "@/components/classes/class.model";
 import { ApiError, getErrorMessage } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import { Permission } from "@/lib/permissions";
 
+/** Props for {@link AssignTeacherPanel}. */
 interface AssignTeacherPanelProps {
+  /** The class. */
   classData: ClassDetail;
+  /** The school's teachers, for the picker. */
   teachers: Teacher[];
+  /** True while the teacher list loads. */
   isLoadingTeachers: boolean;
+  /** Why the teacher list failed, if it did. */
   teachersError: unknown;
+  /** Loads the teacher list again. */
   onRetryTeachers: () => void;
   /** The class being changed; the mutation is keyed on it. */
   classId: string;
 }
 
-/** A teacher's display name, tolerating accounts with no profile yet. */
+/**
+ * A teacher's display name, tolerating accounts with no profile yet.
+ *
+ * @param teacher - The teacher.
+ * @returns The name, the email, or "Unnamed teacher".
+ */
 function teacherLabel(teacher: Teacher): string {
   const name = `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim();
   return name || teacher.email || "Unnamed teacher";
@@ -60,9 +86,16 @@ export function assignTeacherMessage(error: unknown): string {
 }
 
 /**
- * Renders the assign-teacher panel.
+ * Renders the assign-teacher panel: the current class teacher, the picker,
+ * the Assign button and the guidelines, in one card.
  *
  * @param props - See {@link AssignTeacherPanelProps}.
+ * @param props.classData - The class.
+ * @param props.teachers - The teachers to choose from.
+ * @param props.isLoadingTeachers - Whether they are loading.
+ * @param props.teachersError - Why they failed.
+ * @param props.onRetryTeachers - Retries the list.
+ * @param props.classId - The class id.
  * @returns The tab body.
  */
 export function AssignTeacherPanel({
@@ -89,7 +122,7 @@ export function AssignTeacherPanel({
         label: teacherLabel(teacher),
         hint: teacher.email ?? "",
       })),
-    [teachers],
+    [teachers]
   );
 
   const selected = options.find((option) => option.id === selectedId) ?? null;
@@ -104,7 +137,7 @@ export function AssignTeacherPanel({
       // than claiming a success the class page will contradict.
       if (!updated?.classTeacherId) {
         toast.warning(
-          "The assignment did not complete. Please reload the page and check the class teacher.",
+          "The assignment did not complete. Please reload the page and check the class teacher."
         );
         return;
       }
@@ -119,38 +152,24 @@ export function AssignTeacherPanel({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm">
-      <div className="p-6 border-b border-gray-200 dark:border-slate-800">
-        <div className="flex items-center">
-          <div className="p-2 bg-[#003366]/10 dark:bg-blue-950/40 rounded-lg mr-3">
-            <User className="w-5 h-5 text-[#003366] dark:text-blue-300" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-            Assign Class Teacher
-          </h2>
-        </div>
-      </div>
+    <section className={card}>
+      <CardHeader
+        title="Assign Class Teacher"
+        subtitle="The class teacher takes the morning register and sees the class's grades and attendance."
+      />
 
-      <div className="p-6 space-y-6">
+      <div className="mt-[18px] flex flex-col gap-[18px]">
         {hasCurrentTeacher && (
-          <div className="bg-[#003366]/5 dark:bg-slate-800 border border-[#003366]/20 dark:border-slate-700 rounded-xl p-6">
-            <h3 className="text-lg font-medium text-[#003366] dark:text-blue-300 mb-4">
-              Current Class Teacher
-            </h3>
-            <div className="flex items-center gap-6">
-              <div className="p-4 bg-[#003366]/10 dark:bg-blue-950/40 rounded-full flex-shrink-0">
-                <User className="w-12 h-12 text-[#003366] dark:text-blue-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xl font-bold text-[#003366] dark:text-blue-200 mb-1 truncate">
+          <div className="flex flex-col gap-3 rounded-2xl border border-tl-line-soft bg-tl-subtle p-4">
+            <h3 className={eyebrow}>Current Class Teacher</h3>
+            <div className="flex flex-wrap items-center gap-4">
+              <Avatar id={currentTeacherName} name={currentTeacherName} size={56} />
+              <div className="min-w-0 flex-1">
+                <h4 className="truncate text-[19px] font-extrabold tracking-[-0.3px] text-tl-ink">
                   {currentTeacherName}
                 </h4>
-                <p className="text-[#003366]/80 dark:text-blue-300/80 font-medium mb-2">
-                  Primary Class Teacher
-                </p>
-                <p className="text-gray-600 dark:text-slate-400 truncate">
-                  {classTeacherEmail(classData)}
-                </p>
+                <p className="text-sm font-bold text-tl-brand">Primary Class Teacher</p>
+                <p className="truncate text-sm text-tl-muted">{classTeacherEmail(classData)}</p>
               </div>
             </div>
           </div>
@@ -159,14 +178,11 @@ export function AssignTeacherPanel({
         <PermissionGate
           permission={Permission.MANAGE_CLASSES}
           fallback={
-            <div className="flex items-start gap-2 p-4 rounded-xl bg-gray-50 dark:bg-slate-800 text-sm text-gray-600 dark:text-slate-300">
-              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              Your role can view the class teacher but not change them.
-            </div>
+            <Banner tone="muted">Your role can view the class teacher but not change them.</Banner>
           }
         >
           <>
-            <div>
+            <div className="flex flex-col gap-2">
               <SearchSelect
                 id="assign-teacher"
                 label="Search and Select Teacher"
@@ -180,42 +196,44 @@ export function AssignTeacherPanel({
                 disabled={assignTeacher.isPending}
               />
               {Boolean(teachersError) && (
-                <div className="flex items-start gap-2 mt-2 p-3 bg-red-50 dark:bg-red-950/30 rounded-xl">
-                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-red-700 dark:text-red-300">
-                    {getErrorMessage(teachersError, "Could not load the teacher list.")}{" "}
-                    <button type="button" onClick={onRetryTeachers} className="underline">
+                <Banner
+                  tone="danger"
+                  action={
+                    <button type="button" onClick={onRetryTeachers} className={rowButton}>
                       Retry
                     </button>
-                  </div>
-                </div>
+                  }
+                >
+                  {getErrorMessage(teachersError, "Could not load the teacher list.")}
+                </Banner>
               )}
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-slate-800">
+            <div className="flex justify-end border-t border-tl-line-soft pt-[18px]">
               <button
                 type="button"
                 onClick={() => setIsConfirming(true)}
                 disabled={!selectedId || assignTeacher.isPending}
-                className="flex items-center px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] disabled:bg-gray-400 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+                className={primaryButton}
               >
-                <User className="w-4 h-4 mr-2" />
+                <UserPlus className="h-4 w-4" aria-hidden />
                 Assign Teacher
               </button>
             </div>
 
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-6">
-              <h4 className="font-medium text-gray-900 dark:text-slate-100 mb-3">
-                Teacher Assignment Guidelines
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-300">
+            <div className={tile}>
+              <h4 className={sectionTitle}>Teacher Assignment Guidelines</h4>
+              <ul className="mt-3 flex flex-col gap-2 text-sm text-tl-body">
                 {[
                   "Search teachers by name or email address.",
                   "A class has one class teacher: assigning a new one removes the previous teacher's access to this class.",
                   'Use "Save Changes" for the class details — it does not change the teacher.',
                 ].map((line) => (
-                  <li key={line} className="flex items-start">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-1.5 flex-shrink-0" />
+                  <li key={line} className="flex items-start gap-3">
+                    <span
+                      aria-hidden
+                      className="tl-dot-info mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
+                    />
                     {line}
                   </li>
                 ))}
@@ -239,6 +257,6 @@ export function AssignTeacherPanel({
         onConfirm={handleAssign}
         onCancel={() => setIsConfirming(false)}
       />
-    </div>
+    </section>
   );
 }
