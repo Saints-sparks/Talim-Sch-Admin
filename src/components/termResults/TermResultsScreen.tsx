@@ -8,7 +8,6 @@ import { useTermResultCounts, useTermResultsQueue } from "@/hooks/termResults/us
 import { usePermissions } from "@/hooks/usePermissions";
 import { getErrorMessage } from "@/lib/apiError";
 import { Permission } from "@/lib/permissions";
-import { cn } from "@/lib/utils";
 import type { TermResultStatus, TermResultSubmission } from "@/types/gradingContract";
 import { TermResultDetail } from "./TermResultDetail";
 import {
@@ -20,10 +19,10 @@ import {
   personName,
   termOptions,
 } from "./termResults.model";
+import { pagePad, pageStack, pageTitle, segment, segmentTrack } from "@/components/tl/styles";
 
-const TH =
-  "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300";
-const TD = "px-4 py-3 text-sm text-gray-800 dark:text-slate-200 align-top";
+const TH = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-tl-muted";
+const TD = "px-4 py-3 text-sm text-tl-ink align-top";
 
 /**
  * Term Results: the office's queue of class results. Class teachers submit
@@ -102,14 +101,12 @@ export function TermResultsScreen() {
     <Page>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[#003366]/10 dark:bg-blue-900/30">
-            <ClipboardCheck className="w-6 h-6 text-[#003366] dark:text-blue-300" aria-hidden />
+          <div className="p-2.5 rounded-xl bg-tl-select">
+            <ClipboardCheck className="w-6 h-6 text-tl-brand" aria-hidden />
           </div>
           <div>
-            <h1 className="text-[19px] font-semibold text-gray-900 dark:text-slate-100">
-              Term Results
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-slate-300">
+            <h1 className={pageTitle}>Term Results</h1>
+            <p className="text-sm text-tl-muted">
               Review the results class teachers submit, add the principal&apos;s remarks, then
               publish or return them.
             </p>
@@ -119,7 +116,7 @@ export function TermResultsScreen() {
         <div>
           <label
             htmlFor="term-results-term"
-            className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1"
+            className="block text-xs font-medium text-tl-body mb-1"
           >
             Term
           </label>
@@ -129,7 +126,7 @@ export function TermResultsScreen() {
               value={termId}
               onChange={(e) => setPickedTermId(e.target.value)}
               disabled={options.length === 0}
-              className="appearance-none min-w-[14rem] rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 pl-3 pr-8 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#003366]/20 dark:focus:ring-blue-500/30"
+              className="appearance-none min-w-[14rem] rounded-lg border border-tl-control bg-tl-surface py-2 pl-3 pr-8 text-sm text-tl-ink focus:outline-none focus:ring-2 focus:ring-tl-link"
             >
               {termsQuery.isLoading ? (
                 <option value="">Loading terms…</option>
@@ -145,26 +142,21 @@ export function TermResultsScreen() {
               )}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400"
+              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-tl-muted"
               aria-hidden
             />
           </div>
         </div>
       </div>
 
-      <div role="group" aria-label="Show results that are" className="flex flex-wrap gap-2">
+      <div role="group" aria-label="Show results that are" className={`${segmentTrack} w-fit`}>
         {STATUS_TABS.map((t) => (
           <button
             key={t.status}
             type="button"
             aria-pressed={status === t.status}
             onClick={() => setStatus(t.status)}
-            className={cn(
-              "rounded-xl px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] dark:focus-visible:ring-blue-500",
-              status === t.status
-                ? "bg-[#003366] text-white dark:bg-blue-600"
-                : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-            )}
+            className={segment(status === t.status)}
           >
             {t.label}
             {countFor(t.status) !== undefined ? ` (${countFor(t.status)})` : ""}
@@ -172,15 +164,15 @@ export function TermResultsScreen() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+      <div className="rounded-xl border border-tl-line bg-tl-surface overflow-hidden">
         {termsQuery.isLoading || (queue.isLoading && Boolean(termId)) ? (
           <div className="p-5 space-y-2" aria-busy="true" aria-label="Loading the results">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-10 rounded bg-gray-100 dark:bg-slate-700 animate-pulse" />
+              <div key={i} className="h-10 rounded bg-tl-track animate-pulse" />
             ))}
           </div>
         ) : !termId ? (
-          <p className="p-8 text-center text-sm text-gray-600 dark:text-slate-300">
+          <p className="p-8 text-center text-sm text-tl-muted">
             Set up the academic year and its terms in Settings first.
           </p>
         ) : queue.isError ? (
@@ -192,14 +184,14 @@ export function TermResultsScreen() {
             />
           </div>
         ) : (queue.data ?? []).length === 0 ? (
-          <p className="p-8 text-center text-sm text-gray-600 dark:text-slate-300">{tab.empty}</p>
+          <p className="p-8 text-center text-sm text-tl-muted">{tab.empty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <caption className="sr-only">
                 {tab.label} results for {termLabel}
               </caption>
-              <thead className="bg-gray-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700">
+              <thead className="bg-tl-subtle border-b border-tl-line">
                 <tr>
                   <th scope="col" className={TH}>
                     Class
@@ -224,18 +216,15 @@ export function TermResultsScreen() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+              <tbody className="divide-y divide-tl-line-soft">
                 {(queue.data ?? []).map((s) => {
                   const verb = s.status === "submitted" && canManage ? "Review" : "Open";
                   return (
                     <tr key={s.id}>
-                      <th
-                        scope="row"
-                        className={`${TD} text-left font-semibold text-gray-900 dark:text-slate-100`}
-                      >
+                      <th scope="row" className={`${TD} text-left font-semibold text-tl-ink`}>
                         {s.class.name}
                         {s.status === "returned" && s.returnReason && (
-                          <span className="block mt-0.5 max-w-xs text-xs font-normal text-rose-700 dark:text-rose-300">
+                          <span className="block mt-0.5 max-w-xs text-xs font-normal text-tl-danger">
                             Returned: {s.returnReason}
                           </span>
                         )}
@@ -247,9 +236,7 @@ export function TermResultsScreen() {
                       <td className={TD}>
                         <span
                           className={
-                            s.missingRemarks > 0
-                              ? "font-medium text-amber-700 dark:text-amber-300"
-                              : "text-gray-600 dark:text-slate-300"
+                            s.missingRemarks > 0 ? "font-medium text-tl-warning" : "text-tl-muted"
                           }
                         >
                           {missingRemarksLabel(s.missingRemarks)}
@@ -264,7 +251,7 @@ export function TermResultsScreen() {
                           }}
                           onClick={() => setOpen(s)}
                           aria-label={`${verb} ${s.class.name} results`}
-                          className="rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-[#003366] dark:text-blue-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] dark:focus-visible:ring-blue-500"
+                          className="rounded-lg border border-tl-line px-3 py-1.5 text-xs font-semibold text-tl-brand hover:bg-tl-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-link"
                         >
                           {verb}
                         </button>
@@ -281,7 +268,13 @@ export function TermResultsScreen() {
   );
 }
 
-/** The page frame. */
+/**
+ * The page frame: the tl page padding and rhythm.
+ *
+ * @param props - The page.
+ * @param props.children - The page's blocks.
+ * @returns The frame.
+ */
 function Page({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen p-4 md:p-6 space-y-5">{children}</div>;
+  return <div className={`${pagePad} ${pageStack}`}>{children}</div>;
 }

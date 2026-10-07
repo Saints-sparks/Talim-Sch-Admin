@@ -40,7 +40,12 @@ export function hasActiveFilters(filters: AssessmentFilterState): boolean {
  * @returns The assessments to render.
  */
 export function filterAssessments<
-  T extends { name: string; description?: string; status: AssessmentStatus; termId: { _id: string } },
+  T extends {
+    name: string;
+    description?: string;
+    status: AssessmentStatus;
+    termId: { _id: string };
+  },
 >(assessments: T[], filters: AssessmentFilterState): T[] {
   const search = filters.search.trim().toLowerCase();
   return assessments.filter((assessment) => {
@@ -79,17 +84,17 @@ export function AssessmentFilters({
     onChange({ ...filters, [key]: value });
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-6">
+    <div className="bg-tl-surface rounded-xl shadow-sm border border-tl-line p-6">
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
           <div className="relative group">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-tl-faint group-focus-within:text-tl-link transition-colors" />
             <input
               type="search"
               value={filters.search}
               onChange={(event) => set("search", event.target.value)}
               aria-label="Search assessments"
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-500"
+              className="w-full pl-10 pr-4 py-3 border border-tl-control rounded-lg focus:ring-2 focus:ring-tl-link focus:border-tl-link transition-all duration-300 bg-tl-surface text-tl-ink placeholder:text-tl-faint"
               placeholder="Search assessments by name or description..."
             />
           </div>
@@ -98,7 +103,7 @@ export function AssessmentFilters({
         <button
           onClick={onToggle}
           aria-expanded={isOpen}
-          className="inline-flex items-center bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300"
+          className="inline-flex items-center bg-tl-surface border border-tl-control text-tl-body hover:bg-tl-bg px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300"
         >
           <FiFilter className="h-4 w-4 mr-2" />
           Filters
@@ -106,13 +111,11 @@ export function AssessmentFilters({
       </div>
 
       {isOpen && (
-        <div className="mt-6 p-6 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+        <div className="mt-6 p-6 bg-tl-subtle rounded-lg border border-tl-line">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                Filter by Term
-              </label>
-              <div className="border border-gray-300 dark:border-slate-700 rounded-lg">
+              <label className="block text-sm font-medium text-tl-body mb-2">Filter by Term</label>
+              <div className="border border-tl-control rounded-lg">
                 <TermSelector
                   terms={terms}
                   selectedTermId={filters.termId}
@@ -125,7 +128,7 @@ export function AssessmentFilters({
 
             <div>
               <label
-                className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+                className="block text-sm font-medium text-tl-body mb-2"
                 htmlFor="assessment-status-filter"
               >
                 Filter by Status
@@ -134,7 +137,7 @@ export function AssessmentFilters({
                 id="assessment-status-filter"
                 value={filters.status}
                 onChange={(event) => set("status", event.target.value as AssessmentStatus | "")}
-                className="w-full px-3 py-3 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+                className="w-full px-3 py-3 border border-tl-control rounded-lg focus:ring-2 focus:ring-tl-link focus:border-tl-link transition-all duration-300 bg-tl-surface text-tl-ink"
               >
                 <option value="">All statuses</option>
                 {ASSESSMENT_STATUSES.map((status) => (
@@ -149,7 +152,7 @@ export function AssessmentFilters({
               <button
                 onClick={() => onChange(EMPTY_FILTERS)}
                 disabled={!hasActiveFilters(filters)}
-                className="w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 text-sm font-medium text-tl-body bg-tl-surface border border-tl-control rounded-lg hover:bg-tl-bg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Clear All Filters
               </button>

@@ -33,35 +33,35 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
     switch (status) {
       case "pending":
         return {
-          color: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+          color: "bg-tl-warning-bg text-tl-warning border border-tl-warning/30",
           icon: <Clock className="h-3 w-3" />,
           label: "Pending",
           tooltip: "Not yet visible to teachers. Still being prepared.",
         };
       case "active":
         return {
-          color: "bg-blue-100 text-blue-800 border border-blue-200",
+          color: "bg-tl-select text-tl-brand border border-tl-control",
           icon: <PlayCircle className="h-3 w-3" />,
           label: "Active",
           tooltip: "Visible to teachers. Scores can now be entered.",
         };
       case "completed":
         return {
-          color: "bg-green-100 text-green-800 border border-green-200",
+          color: "bg-tl-success-bg text-tl-success border border-tl-success/30",
           icon: <CheckCircle className="h-3 w-3" />,
           label: "Completed",
           tooltip: "Scoring period has ended. Results are finalised.",
         };
       case "cancelled":
         return {
-          color: "bg-red-100 text-red-800 border border-red-200",
+          color: "bg-tl-danger-bg text-tl-danger border border-tl-danger/30",
           icon: <XCircle className="h-3 w-3" />,
           label: "Cancelled",
           tooltip: null,
         };
       default:
         return {
-          color: "bg-gray-100 text-gray-800 border border-gray-200",
+          color: "bg-tl-track text-tl-ink border border-tl-line",
           icon: <AlertCircle className="h-3 w-3" />,
           label: status,
           tooltip: null,
@@ -86,28 +86,28 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return { text: "Started", color: "text-green-700" };
+      return { text: "Started", color: "text-tl-success" };
     } else if (diffDays === 0) {
-      return { text: "Today", color: "text-orange-700" };
+      return { text: "Today", color: "text-tl-warning" };
     } else if (diffDays === 1) {
-      return { text: "1 day left", color: "text-orange-700" };
+      return { text: "1 day left", color: "text-tl-warning" };
     } else if (diffDays <= 7) {
-      return { text: `${diffDays} days left`, color: "text-orange-700" };
+      return { text: `${diffDays} days left`, color: "text-tl-warning" };
     } else {
-      return { text: `${diffDays} days left`, color: "text-gray-600" };
+      return { text: `${diffDays} days left`, color: "text-tl-muted" };
     }
   };
 
   const daysRemaining = getDaysRemaining();
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 h-fit">
+    <div className="bg-tl-surface rounded-lg border border-tl-line p-6 hover:shadow-md transition-shadow duration-200 h-fit">
       {/* Header with status */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">{assessment.name}</h3>
+          <h3 className="font-medium text-tl-ink mb-1 line-clamp-2">{assessment.name}</h3>
           {assessment.description && (
-            <p className="text-sm text-gray-500 line-clamp-2">{assessment.description}</p>
+            <p className="text-sm text-tl-muted line-clamp-2">{assessment.description}</p>
           )}
         </div>
         {statusConfig.tooltip ? (
@@ -131,18 +131,18 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
 
       {/* Term and Date Info */}
       <div className="space-y-3 mb-4">
-        <div className="flex items-center text-sm text-gray-600">
-          <Users className="h-4 w-4 mr-2 text-purple-500" />
+        <div className="flex items-center text-sm text-tl-muted">
+          <Users className="h-4 w-4 mr-2 text-tl-accent" />
           <span>{assessment.termId.name}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-2">
-          <div className="flex items-center text-sm text-gray-600">
-            <Calendar className="h-4 w-4 mr-2 text-green-500" />
+          <div className="flex items-center text-sm text-tl-muted">
+            <Calendar className="h-4 w-4 mr-2 text-tl-success" />
             <span>Start: {formatDate(assessment.startDate)}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="h-4 w-4 mr-2 text-orange-500" />
+          <div className="flex items-center text-sm text-tl-muted">
+            <Clock className="h-4 w-4 mr-2 text-tl-warning" />
             <span>End: {formatDate(assessment.endDate)}</span>
           </div>
         </div>
@@ -152,32 +152,32 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
         </div>
 
         {assessment.maxScore !== undefined && (
-          <div className="text-sm text-gray-600">Scored out of {assessment.maxScore}</div>
+          <div className="text-sm text-tl-muted">Scored out of {assessment.maxScore}</div>
         )}
       </div>
 
       {/* Created By */}
-      <div className="text-xs text-gray-500 mb-4">Created by {assessment.createdBy.name}</div>
+      <div className="text-xs text-tl-muted mb-4">Created by {assessment.createdBy.name}</div>
 
       {/* Actions */}
-      <div className="flex justify-center gap-2 pt-4 border-t border-gray-100">
+      <div className="flex justify-center gap-2 pt-4 border-t border-tl-line-soft">
         <button
           onClick={() => onView(assessment)}
-          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-tl-link bg-tl-select rounded-md hover:bg-tl-select transition-colors"
         >
           <Eye className="h-3 w-3" />
           View
         </button>
         <button
           onClick={() => onEdit(assessment)}
-          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-tl-muted bg-tl-subtle rounded-md hover:bg-tl-bg transition-colors"
         >
           <Edit className="h-3 w-3" />
           Edit
         </button>
         <button
           onClick={() => onDelete(assessment)}
-          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+          className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-tl-danger bg-tl-danger-bg rounded-md hover:bg-tl-danger-bg transition-colors"
         >
           <Trash2 className="h-3 w-3" />
           Delete

@@ -37,7 +37,7 @@ interface TimetableControlsProps {
 }
 
 const SELECT_CLASSES =
-  "appearance-none border border-[#E0E0E0] dark:border-slate-600 bg-transparent dark:bg-slate-800 text-[#1A1A1A] dark:text-slate-100 rounded-xl px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60";
+  "appearance-none border border-tl-line bg-transparent text-tl-ink rounded-xl px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-tl-link focus:border-tl-link disabled:opacity-60";
 
 export function TimetableControls({
   classes,
@@ -55,10 +55,10 @@ export function TimetableControls({
 }: TimetableControlsProps) {
   return (
     <div
-      className="bg-white dark:bg-slate-800 gap-4 p-4 mt-4 mb-6 border border-[#F2F2F2] dark:border-slate-700 rounded-xl"
+      className="bg-tl-surface gap-4 p-4 mt-4 mb-6 border border-tl-line rounded-xl"
       data-guide="timetable-controls"
     >
-      <div className="bg-[#F8F8F8] dark:bg-slate-900/40 border border-[#F2F2F2] dark:border-slate-700 flex flex-wrap p-6 gap-4 items-center rounded-lg">
+      <div className="bg-tl-subtle border border-tl-line flex flex-wrap p-6 gap-4 items-center rounded-lg">
         <div className="relative">
           <Tooltip
             content="The academic period this timetable is being built for. Lessons themselves are stored per class, not per term."
@@ -66,7 +66,7 @@ export function TimetableControls({
           >
             <label
               htmlFor="timetable-term"
-              className="block text-[15px] font-semibold text-[#4D4D4D] dark:text-slate-300 mb-1"
+              className="block text-[15px] font-semibold text-tl-body mb-1"
             >
               Session/Term
             </label>
@@ -90,7 +90,7 @@ export function TimetableControls({
                 ))
               )}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-tl-faint pointer-events-none" />
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export function TimetableControls({
           <Tooltip content="Narrow the timetable to one class." side="right">
             <label
               htmlFor="timetable-class"
-              className="block text-[15px] font-semibold text-[#4D4D4D] dark:text-slate-300 mb-1"
+              className="block text-[15px] font-semibold text-tl-body mb-1"
             >
               Class
             </label>
@@ -120,7 +120,7 @@ export function TimetableControls({
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-tl-faint pointer-events-none" />
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export function TimetableControls({
               <button
                 onClick={onApplyTemplate}
                 disabled={isApplyingTemplate || !hasCourses}
-                className="flex items-center gap-2 px-6 py-2 bg-white dark:bg-slate-800 text-[15px] font-semibold text-[#1A1A1A] dark:text-slate-100 border border-[#E0E0E0] dark:border-slate-600 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors mt-6 disabled:opacity-60"
+                className="flex items-center gap-2 px-6 py-2 bg-tl-surface text-[15px] font-semibold text-tl-ink border border-tl-line rounded-xl hover:bg-tl-select transition-colors mt-6 disabled:opacity-60"
               >
                 <Copy />
                 {isApplyingTemplate ? "Applying..." : "Copy from Template"}
@@ -146,7 +146,7 @@ export function TimetableControls({
               <button
                 onClick={onAddEntry}
                 disabled={!selectedClassId || !hasCourses}
-                className="flex items-center gap-2 px-6 py-2 bg-[#003366] text-white text-[15px] font-semibold border border-[#003366] rounded-xl hover:bg-[#002244] transition-colors mt-6 disabled:opacity-60"
+                className="flex items-center gap-2 px-6 py-2 bg-tl-brand-fill text-white text-[15px] font-semibold border border-tl-brand rounded-xl hover:bg-tl-brand-fill-hover transition-colors mt-6 disabled:opacity-60"
               >
                 Add Entry
               </button>

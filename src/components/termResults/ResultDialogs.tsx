@@ -30,15 +30,13 @@ interface PublishDialogProps {
 export function PublishDialog({ submission, pending, onConfirm, onCancel }: PublishDialogProps) {
   return (
     <ModalShell title="Publish results?" onClose={pending ? stay : onCancel}>
-      <div className="space-y-3 text-sm text-gray-700 dark:text-slate-300">
+      <div className="space-y-3 text-sm text-tl-body">
         <p>
           Publish the results for{" "}
-          <span className="font-semibold text-gray-900 dark:text-slate-100">
-            {submission.class.name}
-          </span>
-          , {submission.term.name} ({basisLabel(submission.basis)})?
+          <span className="font-semibold text-tl-ink">{submission.class.name}</span>,{" "}
+          {submission.term.name} ({basisLabel(submission.basis)})?
         </p>
-        <p className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-amber-800 dark:text-amber-200">
+        <p className="flex items-start gap-2 rounded-lg border border-tl-warning/30 bg-tl-warning-bg p-3 text-tl-warning">
           <BellRing className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
           <span>
             {submission.studentCount} {submission.studentCount === 1 ? "student" : "students"} and
@@ -89,7 +87,7 @@ export function ReturnDialog({ submission, pending, onConfirm, onCancel }: Retur
   return (
     <ModalShell title="Return to class teacher" onClose={pending ? stay : onCancel}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="text-sm text-gray-700 dark:text-slate-300">
+        <p className="text-sm text-tl-body">
           Send the {submission.class.name} results back so the class teacher can correct them and
           submit again.
         </p>
@@ -111,7 +109,7 @@ export function ReturnDialog({ submission, pending, onConfirm, onCancel }: Retur
             className={`${controlClasses(Boolean(error))} resize-y`}
             {...describedBy("return-reason", error, "return-reason-hint")}
           />
-          <p id="return-reason-hint" className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+          <p id="return-reason-hint" className="mt-1 text-xs text-tl-muted">
             The class teacher is notified with this reason.
           </p>
           <FieldError controlId="return-reason" message={error} />

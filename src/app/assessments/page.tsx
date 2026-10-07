@@ -28,13 +28,13 @@ export default function AssessmentsPage() {
   // so a failure here is the page's failure, not a silent empty dropdown.
   if (termsQuery.isError) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-6">
-        <div className="max-w-md mx-auto mt-24">
+      <div className="px-[clamp(14px,3vw,26px)] py-10">
+        <div className="mx-auto mt-12 max-w-md">
           <ErrorState
             title="Could not load terms"
             message={getErrorMessage(
               termsQuery.error,
-              "Assessments belong to a term, and the term list could not be loaded.",
+              "Assessments belong to a term, and the term list could not be loaded."
             )}
             onRetry={() => termsQuery.refetch()}
           />
@@ -43,9 +43,5 @@ export default function AssessmentsPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col">
-      <AssessmentManagementPage terms={termsQuery.data ?? []} />
-    </div>
-  );
+  return <AssessmentManagementPage terms={termsQuery.data ?? []} />;
 }

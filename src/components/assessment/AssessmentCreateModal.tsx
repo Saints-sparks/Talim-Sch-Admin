@@ -7,6 +7,7 @@
  * throws back a message, which the modal shows above the form so the draft
  * survives a failed save.
  */
+import { ghostButton, primaryButton } from "@/components/tl/styles";
 import React, { useEffect, useRef, useState } from "react";
 import { AlertCircle, Calendar, Clock, FileText, Hash, Target } from "lucide-react";
 import TalimModal from "@/components/ui/TalimModal";
@@ -21,7 +22,11 @@ import {
   type AssessmentFormErrors,
 } from "@/components/assessment/assessment.form";
 import { assessmentService, ASSESSMENT_STATUSES } from "@/app/services/assessment.service";
-import type { Assessment, AssessmentForm, Term } from "@/components/assessment/AssessmentForm.types";
+import type {
+  Assessment,
+  AssessmentForm,
+  Term,
+} from "@/components/assessment/AssessmentForm.types";
 import { logger } from "@/lib/logger";
 import { MAX_SCORE_MAX, MAX_SCORE_MIN } from "@/types/gradingContract";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
@@ -40,15 +45,13 @@ interface AssessmentCreateModalProps {
   loading?: boolean;
 }
 
-const labelClass = "flex items-center text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3";
+const labelClass = "mb-2 flex items-center text-[13px] font-bold text-tl-muted";
 
 /** Input classes, tinted when the field is in error. */
 function inputClass(hasError: boolean): string {
   const base =
-    "w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100";
-  return hasError
-    ? `${base} border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30`
-    : `${base} border-gray-200 dark:border-slate-700 focus:border-blue-300`;
+    "min-h-[46px] w-full rounded-[13px] border bg-tl-surface px-3.5 py-2.5 text-[15px] font-semibold text-tl-ink placeholder:text-tl-faint focus:outline-none focus-visible:ring-2 focus-visible:ring-tl-link focus-visible:ring-offset-2";
+  return hasError ? `${base} border-tl-danger` : `${base} border-tl-control focus:border-tl-link`;
 }
 
 /** The id of a field's error message, which the field names in `aria-describedby`. */
@@ -74,7 +77,7 @@ function FieldError({ controlId, message }: { controlId: string; message?: strin
   return (
     <p
       id={errorId(controlId)}
-      className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center bg-red-50 dark:bg-red-950/30 p-2 rounded-lg"
+      className="mt-2 text-sm text-tl-danger flex items-center bg-tl-danger-bg p-2 rounded-lg"
     >
       <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" aria-hidden />
       {message}
@@ -101,7 +104,9 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   editingAssessment,
   loading = false,
 }) => {
-  const [formData, setFormData] = useState<AssessmentForm>(() => toAssessmentForm(editingAssessment));
+  const [formData, setFormData] = useState<AssessmentForm>(() =>
+    toAssessmentForm(editingAssessment)
+  );
   const [errors, setErrors] = useState<AssessmentFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   /** The failure from the last save, shown above the form. */
@@ -131,7 +136,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   }, [editingAssessment, isOpen]);
 
   const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target;
 
@@ -199,24 +204,14 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
   if (!isOpen) return null;
 
   const footer = (
-    <div className="flex justify-end space-x-4">
-      <button
-        type="button"
-        onClick={onClose}
-        disabled={submitting}
-        className="px-6 py-2.5 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-all duration-300 disabled:opacity-50"
-      >
+    <div className="flex flex-wrap justify-end gap-2.5">
+      <button type="button" onClick={onClose} disabled={submitting} className={ghostButton}>
         Cancel
       </button>
-      <button
-        type="submit"
-        form="assessment-form"
-        disabled={submitting}
-        className="px-8 py-2.5 text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-      >
+      <button type="submit" form="assessment-form" disabled={submitting} className={primaryButton}>
         {submitting ? (
           <span className="flex items-center">
-            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-tl-surface mr-2" />
             {isEditing ? "Updating..." : "Creating..."}
           </span>
         ) : isEditing ? (
@@ -246,17 +241,17 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
         {submitError && (
           <div
             role="alert"
-            className="flex items-start gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50"
+            className="flex items-start gap-2 p-4 rounded-xl bg-tl-danger-bg border border-tl-danger/30"
           >
-            <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+            <AlertCircle className="h-4 w-4 text-tl-danger mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-tl-danger">{submitError}</p>
           </div>
         )}
 
         <div>
           <label className={labelClass} htmlFor="assessment-name">
-            <span className="w-8 h-8 bg-blue-100 dark:bg-blue-950/50 rounded-lg flex items-center justify-center mr-3">
-              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+            <span className="w-8 h-8 bg-tl-select rounded-lg flex items-center justify-center mr-3">
+              <FileText className="h-4 w-4 text-tl-link" />
             </span>
             Assessment Name *
           </label>
@@ -276,7 +271,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
         <div>
           <label
-            className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3"
+            className="block text-sm font-semibold text-tl-body mb-3"
             htmlFor="assessment-description"
           >
             Description (Optional)
@@ -298,13 +293,11 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
             content="Filter assessments by academic term. Set the current term in Settings."
             side="right"
           >
-            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3">
-              Term *
-            </label>
+            <label className="block text-sm font-semibold text-tl-body mb-3">Term *</label>
           </Tooltip>
           <div
             className={`rounded-xl border-2 ${
-              errors.termId ? "border-red-300 dark:border-red-800" : "border-gray-200 dark:border-slate-700"
+              errors.termId ? "border-tl-danger/30" : "border-tl-line"
             }`}
           >
             <TermSelector
@@ -322,8 +315,8 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className={labelClass} htmlFor="assessment-start">
-              <span className="w-8 h-8 bg-emerald-100 dark:bg-emerald-950/50 rounded-lg flex items-center justify-center mr-3">
-                <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+              <span className="w-8 h-8 bg-tl-success-bg rounded-lg flex items-center justify-center mr-3">
+                <Calendar className="h-4 w-4 text-tl-success" />
               </span>
               Start Date *
             </label>
@@ -345,8 +338,8 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
           <div>
             <label className={labelClass} htmlFor="assessment-end">
-              <span className="w-8 h-8 bg-amber-100 dark:bg-amber-950/50 rounded-lg flex items-center justify-center mr-3">
-                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+              <span className="w-8 h-8 bg-tl-warning-bg rounded-lg flex items-center justify-center mr-3">
+                <Clock className="h-4 w-4 text-tl-warning" />
               </span>
               End Date *
             </label>
@@ -367,8 +360,8 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
 
         <div>
           <label className={labelClass} htmlFor="assessment-max-score">
-            <span className="w-8 h-8 bg-indigo-100 dark:bg-indigo-950/50 rounded-lg flex items-center justify-center mr-3">
-              <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-300" aria-hidden />
+            <span className="w-8 h-8 bg-tl-select rounded-lg flex items-center justify-center mr-3">
+              <Hash className="h-4 w-4 text-tl-accent" aria-hidden />
             </span>
             Max Score *
           </label>
@@ -389,9 +382,9 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
             aria-required
             {...describedBy("assessment-max-score", errors.maxScore, "assessment-max-score-hint")}
           />
-          <p id="assessment-max-score-hint" className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-            Teachers enter every score out of this whole number ({MAX_SCORE_MIN}–{MAX_SCORE_MAX}). It
-            can&apos;t change once scores for this assessment are published.
+          <p id="assessment-max-score-hint" className="mt-2 text-sm text-tl-muted">
+            Teachers enter every score out of this whole number ({MAX_SCORE_MIN}–{MAX_SCORE_MAX}).
+            It can&apos;t change once scores for this assessment are published.
           </p>
           <FieldError controlId="assessment-max-score" message={errors.maxScore} />
         </div>
@@ -399,7 +392,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
         {isEditing && (
           <div>
             <label
-              className="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3"
+              className="block text-sm font-semibold text-tl-body mb-3"
               htmlFor="assessment-status"
             >
               Status
@@ -421,15 +414,13 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
                   className="capitalize"
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
-                  {status === "active" && !isRunning
-                    ? " (only during the assessment period)"
-                    : ""}
+                  {status === "active" && !isRunning ? " (only during the assessment period)" : ""}
                 </option>
               ))}
             </select>
             <FieldError controlId="assessment-status" message={errors.status} />
             {!isRunning && (
-              <p className="mt-2 text-sm text-gray-500 dark:text-slate-400 flex items-center">
+              <p className="mt-2 text-sm text-tl-muted flex items-center">
                 <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
                 Assessment period: {readableDate(formData.startDate)} –{" "}
                 {readableDate(formData.endDate)}

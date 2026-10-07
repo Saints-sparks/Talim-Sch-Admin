@@ -13,9 +13,8 @@ import {
   positionLabel,
 } from "./termResults.model";
 
-const TH =
-  "px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 whitespace-nowrap";
-const TD = "px-3 py-2 text-sm text-gray-800 dark:text-slate-200 whitespace-nowrap tabular-nums";
+const TH = "px-3 py-2 text-left text-xs font-semibold text-tl-muted whitespace-nowrap";
+const TD = "px-3 py-2 text-sm text-tl-ink whitespace-nowrap tabular-nums";
 
 /**
  * A class's broadsheet (§21), read-only: one row per student, one column per
@@ -38,11 +37,11 @@ export function BroadsheetTable({
   return (
     <div data-print-root>
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-tl-line-soft">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{title}</h3>
+            <h3 className="text-sm font-semibold text-tl-ink">{title}</h3>
             {query.data && (
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-tl-muted mt-0.5">
                 {cellUnit(query.data.basis)} · published scores only
               </p>
             )}
@@ -62,16 +61,16 @@ export function BroadsheetTable({
         {query.isLoading ? (
           <div className="p-5 space-y-2" aria-busy="true" aria-label="Loading the broadsheet">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-8 rounded bg-gray-100 dark:bg-slate-700 animate-pulse" />
+              <div key={i} className="h-8 rounded bg-tl-track animate-pulse" />
             ))}
           </div>
         ) : query.isError || !query.data ? (
-          <div className="p-5 text-sm text-gray-600 dark:text-slate-300" role="alert">
+          <div className="p-5 text-sm text-tl-muted" role="alert">
             {settingsErrorMessage(query.error, "The broadsheet could not be loaded.")}{" "}
             <button
               type="button"
               onClick={() => void query.refetch()}
-              className="font-semibold text-[#003366] dark:text-blue-400 underline"
+              className="font-semibold text-tl-brand underline"
             >
               Try again
             </button>
@@ -91,7 +90,7 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
   return (
     <>
       {!sheet.ready && sheet.waitingOn.length > 0 && (
-        <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-xs text-amber-800 dark:text-amber-200">
+        <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-tl-warning/30 bg-tl-warning-bg p-3 text-xs text-tl-warning">
           <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden />
           <span>
             Not every subject is published: waiting on{" "}
@@ -102,7 +101,7 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
       )}
 
       {sheet.rows.length === 0 ? (
-        <p className="p-5 text-sm text-gray-500 dark:text-slate-400">No students in this class.</p>
+        <p className="p-5 text-sm text-tl-muted">No students in this class.</p>
       ) : (
         <div className="overflow-x-auto p-2" data-print-overflow>
           <table className="min-w-full border-collapse">
@@ -110,8 +109,8 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
               {caption}. {cellUnit(sheet.basis)}.
             </caption>
             <thead>
-              <tr className="border-b border-gray-200 dark:border-slate-700">
-                <th scope="col" className={`${TH} sticky left-0 z-10 bg-white dark:bg-slate-800`}>
+              <tr className="border-b border-tl-line">
+                <th scope="col" className={`${TH} sticky left-0 z-10 bg-tl-surface`}>
                   Student
                 </th>
                 {sheet.subjects.map((s) => (
@@ -142,19 +141,14 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
             </thead>
             <tbody>
               {sheet.rows.map((row) => (
-                <tr
-                  key={row.student.id}
-                  className="border-b border-gray-100 dark:border-slate-700/60 last:border-0"
-                >
+                <tr key={row.student.id} className="border-b border-tl-line-soft last:border-0">
                   <th
                     scope="row"
-                    className={`${TD} text-left font-medium sticky left-0 bg-white dark:bg-slate-800`}
+                    className={`${TD} text-left font-medium sticky left-0 bg-tl-surface`}
                   >
-                    <span className="block text-gray-900 dark:text-slate-100">
-                      {row.student.name}
-                    </span>
+                    <span className="block text-tl-ink">{row.student.name}</span>
                     {row.student.admissionNumber && (
-                      <span className="block text-[11px] font-normal text-gray-500 dark:text-slate-400">
+                      <span className="block text-[11px] font-normal text-tl-muted">
                         {row.student.admissionNumber}
                       </span>
                     )}
@@ -167,9 +161,7 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
                   <td className={`${TD} text-right font-medium`}>{row.total ?? "—"}</td>
                   <td className={`${TD} text-right`}>{formatPercent(row.average)}</td>
                   <td className={`${TD} text-right`}>{positionLabel(row.position)}</td>
-                  <td
-                    className={`${TD} text-center font-semibold text-[#003366] dark:text-blue-300`}
-                  >
+                  <td className={`${TD} text-center font-semibold text-tl-brand`}>
                     {row.grade ?? "—"}
                   </td>
                 </tr>
@@ -177,9 +169,7 @@ function BroadsheetBody({ sheet, caption }: { sheet: Broadsheet; caption: string
             </tbody>
           </table>
           {unpublished.length > 0 && (
-            <p className="px-3 pt-2 text-[11px] text-gray-500 dark:text-slate-400">
-              * Not published yet.
-            </p>
+            <p className="px-3 pt-2 text-[11px] text-tl-muted">* Not published yet.</p>
           )}
         </div>
       )}

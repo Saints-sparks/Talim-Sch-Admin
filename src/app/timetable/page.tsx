@@ -51,6 +51,7 @@ import {
   type TimetableEntry,
 } from "@/components/timetable/timetable.model";
 import { useTimetableBoard } from "@/components/timetable/useTimetableBoard";
+import { eyebrow, ghostButton, pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 
 function TimetablePage() {
   const { hasPermission, isFullAdmin } = usePermissions();
@@ -88,7 +89,9 @@ function TimetablePage() {
         },
         {
           onSuccess: () =>
-            toast.success(`${course.title} added to ${day} at ${slot.title ? `${slot.title} (${slot.label})` : slot.label}`),
+            toast.success(
+              `${course.title} added to ${day} at ${slot.title ? `${slot.title} (${slot.label})` : slot.label}`
+            ),
           onError: (err) => {
             logger.error("timetable", "Failed to add a timetable entry", err);
             toast.error(getErrorMessage(err, "Failed to add timetable entry"));
@@ -208,17 +211,15 @@ function TimetablePage() {
   }, [board]);
 
   return (
-    <div className="min-h-screen leading-[120%] p-8">
-      <div className="flex items-center justify-between" data-guide="timetable-header">
-        <h1 className="text-[19px] font-semibold text-[#1A1A1A] dark:text-slate-100">
-          Class Timetable
-        </h1>
-        <div className="flex items-center gap-2" data-guide="timetable-actions">
+    <div className={`${pagePad} ${pageStack}`}>
+      <div className="flex flex-wrap items-end justify-between gap-4" data-guide="timetable-header">
+        <div className="min-w-0">
+          <p className={`${eyebrow} mb-1.5`}>Academics</p>
+          <h1 className={pageTitle}>Class Timetable</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5" data-guide="timetable-actions">
           {canOpenSettings && (
-            <a
-              href={SCHOOL_CALENDAR_SETTINGS_HREF}
-              className="bg-white dark:bg-slate-800 border border-[#E0E0E0] dark:border-slate-600 font-semibold rounded-xl flex items-center gap-2 px-3 py-2 text-[#1A1A1A] dark:text-slate-100 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
+            <a href={SCHOOL_CALENDAR_SETTINGS_HREF} className={ghostButton}>
               <CalendarDays className="w-4 h-4" aria-hidden />
               School calendar
             </a>
@@ -230,7 +231,7 @@ function TimetablePage() {
             <button
               onClick={handleRefresh}
               disabled={board.isRefreshing}
-              className="bg-white dark:bg-slate-800 border border-[#E0E0E0] dark:border-slate-600 font-semibold rounded-xl h-full flex items-center gap-2 px-4 py-2 text-[#1A1A1A] dark:text-slate-100 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-60"
+              className={ghostButton}
               title="Refresh timetable"
               aria-label="Refresh timetable"
             >
@@ -241,10 +242,7 @@ function TimetablePage() {
             content="Download the timetable as an Excel file for printing or sharing."
             side="top"
           >
-            <button
-              onClick={handleDownload}
-              className="bg-white dark:bg-slate-800 border border-[#E0E0E0] dark:border-slate-600 font-semibold rounded-xl h-full flex items-center gap-2 px-2 py-2 text-[#1A1A1A] dark:text-slate-100 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
+            <button onClick={handleDownload} className={ghostButton}>
               Download
               <Download />
             </button>
@@ -289,7 +287,7 @@ function TimetablePage() {
               isRetrying={board.isRefreshing}
             />
           ) : (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-[#F0F0F0] dark:border-slate-700">
+            <div className="bg-tl-surface rounded-2xl border border-tl-line">
               {board.isEmpty && <NoTimetableNotice canManage={canManage} />}
               <TimetableGrid
                 grid={grid}

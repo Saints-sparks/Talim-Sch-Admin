@@ -52,14 +52,14 @@ export function AssessmentPagination({ pagination, onPageChange }: AssessmentPag
   const last = Math.min(currentPage * limit, totalCount);
 
   const buttonClass =
-    "inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-gray-500 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center px-3 py-2 border border-tl-control bg-tl-surface text-sm font-medium text-tl-muted rounded-lg hover:bg-tl-bg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <nav
       aria-label="Assessment pages"
-      className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800"
+      className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-tl-subtle border-t border-tl-line"
     >
-      <p className="text-sm text-gray-600 dark:text-slate-400">
+      <p className="text-sm text-tl-muted">
         Showing <span className="font-medium">{first}</span> to{" "}
         <span className="font-medium">{last}</span> of{" "}
         <span className="font-medium">{totalCount}</span> assessments
@@ -83,8 +83,8 @@ export function AssessmentPagination({ pagination, onPageChange }: AssessmentPag
               aria-current={page === currentPage ? "page" : undefined}
               className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                 page === currentPage
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-700"
+                  ? "bg-tl-brand-fill text-white shadow-lg"
+                  : "bg-tl-surface text-tl-muted hover:bg-tl-bg border border-tl-control"
               }`}
             >
               {page}

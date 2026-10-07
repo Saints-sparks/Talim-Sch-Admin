@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import { ChevronDown } from 'lucide-react';
-import { Term } from '@/components/assessment/AssessmentForm.types';
+import React from "react";
+import { ChevronDown } from "lucide-react";
+import { Term } from "@/components/assessment/AssessmentForm.types";
 
 interface TermSelectorProps {
   terms: Term[];
@@ -26,8 +26,8 @@ const TermSelector: React.FC<TermSelectorProps> = ({
   if (loading) {
     return (
       <div className={`relative ${className}`}>
-        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 animate-pulse">
-          <div className="h-5 bg-gray-200 rounded"></div>
+        <div className="w-full px-3 py-2 border border-tl-control rounded-md bg-tl-subtle animate-pulse">
+          <div className="h-5 bg-tl-line rounded"></div>
         </div>
       </div>
     );
@@ -38,18 +38,17 @@ const TermSelector: React.FC<TermSelectorProps> = ({
       <select
         value={selectedTermId}
         onChange={(e) => onTermSelect(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+        className="w-full px-3 py-2 border border-tl-control rounded-md focus:outline-none focus:ring-2 focus:ring-tl-link focus:border-tl-link appearance-none bg-tl-surface"
       >
         {allowEmpty && <option value="">{placeholder}</option>}
         {!allowEmpty && !selectedTermId && <option value="">{placeholder}</option>}
         {terms.map((term) => (
           <option key={term._id} value={term._id}>
-            {term.name} ({new Date(term.startDate).getFullYear()})
-            {term.isCurrent && ' - Current'}
+            {term.name} ({new Date(term.startDate).getFullYear()}){term.isCurrent && " - Current"}
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-tl-faint pointer-events-none" />
     </div>
   );
 };

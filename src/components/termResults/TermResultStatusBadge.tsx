@@ -4,18 +4,15 @@ import type { TermResultStatus } from "@/types/gradingContract";
 const STYLES: Record<TermResultStatus, { label: string; className: string }> = {
   submitted: {
     label: "Submitted",
-    className:
-      "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    className: "bg-tl-warning-bg text-tl-warning border-tl-warning/30",
   },
   returned: {
     label: "Returned",
-    className:
-      "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+    className: "bg-tl-danger-bg text-tl-danger border-tl-danger/30",
   },
   published: {
     label: "Published",
-    className:
-      "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    className: "bg-tl-success-bg text-tl-success border-tl-success/30",
   },
 };
 

@@ -59,7 +59,7 @@ interface TimetableEntryModalProps {
 }
 
 const FIELD_CLASSES =
-  "w-full rounded-xl border px-4 py-3 bg-white dark:bg-slate-900 text-[#1A1A1A] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+  "w-full rounded-xl border px-4 py-3 bg-tl-surface text-tl-ink focus:outline-none focus:ring-2 focus:ring-tl-link focus:border-tl-link";
 
 export function TimetableEntryModal({
   open,
@@ -113,39 +113,33 @@ export function TimetableEntryModal({
   };
 
   const border = (field: keyof EntryFormValues) =>
-    errors[field] ? "border-red-400 dark:border-red-500" : "border-[#E0E0E0] dark:border-slate-600";
+    errors[field] ? "border-tl-danger" : "border-tl-line";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,27,46,0.45)] p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-xl"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-tl-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="timetable-entry-title"
       >
-        <div className="border-b border-gray-100 dark:border-slate-700 px-6 py-4">
-          <h2
-            id="timetable-entry-title"
-            className="text-lg font-semibold text-[#030E18] dark:text-slate-100"
-          >
+        <div className="border-b border-tl-line-soft px-6 py-4">
+          <h2 id="timetable-entry-title" className="text-lg font-semibold text-tl-ink">
             Add Timetable Entry
           </h2>
-          <p className="mt-1 text-sm text-[#4D4D4D] dark:text-slate-400">
+          <p className="mt-1 text-sm text-tl-body">
             Schedule a registered course for the selected class.
           </p>
         </div>
 
         <form className="space-y-4 p-6" onSubmit={handleSubmit} noValidate>
           <div>
-            <label
-              htmlFor="entry-course"
-              className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
-            >
+            <label htmlFor="entry-course" className="mb-1 block text-sm font-semibold text-tl-body">
               Subject/Course
             </label>
             <select
@@ -166,10 +160,7 @@ export function TimetableEntryModal({
           </div>
 
           <div>
-            <label
-              htmlFor="entry-day"
-              className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
-            >
+            <label htmlFor="entry-day" className="mb-1 block text-sm font-semibold text-tl-body">
               Day
             </label>
             <select
@@ -193,7 +184,7 @@ export function TimetableEntryModal({
             <div>
               <label
                 htmlFor="entry-period"
-                className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
+                className="mb-1 block text-sm font-semibold text-tl-body"
               >
                 Period
               </label>
@@ -211,7 +202,7 @@ export function TimetableEntryModal({
                   </option>
                 ))}
               </select>
-              <p id="entry-period-hint" className="mt-1 text-xs text-[#4D4D4D] dark:text-slate-400">
+              <p id="entry-period-hint" className="mt-1 text-xs text-tl-body">
                 Picking a period fills in its times. Change a time to use a custom slot.
               </p>
               <FieldError id="entry-period" message={errors.periodKey} />
@@ -226,7 +217,7 @@ export function TimetableEntryModal({
               >
                 <label
                   htmlFor="entry-start"
-                  className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
+                  className="mb-1 block text-sm font-semibold text-tl-body"
                 >
                   Start Time
                 </label>
@@ -235,7 +226,9 @@ export function TimetableEntryModal({
                 id="entry-start"
                 type="time"
                 value={values.startTime}
-                onChange={(e) => setValues((prev) => editTime(prev, "startTime", e.target.value, periods))}
+                onChange={(e) =>
+                  setValues((prev) => editTime(prev, "startTime", e.target.value, periods))
+                }
                 className={`${FIELD_CLASSES} ${border("startTime")}`}
                 {...invalid("entry-start", errors.startTime)}
               />
@@ -248,7 +241,7 @@ export function TimetableEntryModal({
               >
                 <label
                   htmlFor="entry-end"
-                  className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
+                  className="mb-1 block text-sm font-semibold text-tl-body"
                 >
                   End Time
                 </label>
@@ -257,7 +250,9 @@ export function TimetableEntryModal({
                 id="entry-end"
                 type="time"
                 value={values.endTime}
-                onChange={(e) => setValues((prev) => editTime(prev, "endTime", e.target.value, periods))}
+                onChange={(e) =>
+                  setValues((prev) => editTime(prev, "endTime", e.target.value, periods))
+                }
                 className={`${FIELD_CLASSES} ${border("endTime")}`}
                 {...invalid("entry-end", errors.endTime)}
               />
@@ -266,7 +261,7 @@ export function TimetableEntryModal({
           </div>
 
           {choices.length === 0 && (
-            <p className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-xs text-blue-800 dark:text-blue-300">
+            <p className="rounded-xl border border-tl-control bg-tl-select px-4 py-3 text-xs text-tl-brand">
               No bell schedule yet, so times are typed in freely.{" "}
               {bellScheduleHref ? (
                 <>
@@ -282,11 +277,8 @@ export function TimetableEntryModal({
           )}
 
           <div>
-            <label
-              htmlFor="entry-room"
-              className="mb-1 block text-sm font-semibold text-[#4D4D4D] dark:text-slate-300"
-            >
-              Room <span className="font-normal text-[#808080] dark:text-slate-500">(optional)</span>
+            <label htmlFor="entry-room" className="mb-1 block text-sm font-semibold text-tl-body">
+              Room <span className="font-normal text-tl-muted">(optional)</span>
             </label>
             <input
               id="entry-room"
@@ -301,19 +293,19 @@ export function TimetableEntryModal({
             <FieldError id="entry-room" message={errors.room} />
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-gray-100 dark:border-slate-700 pt-4">
+          <div className="flex justify-end gap-3 border-t border-tl-line-soft pt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="rounded-xl border border-gray-200 dark:border-slate-600 px-5 py-2.5 font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-60"
+              className="rounded-xl border border-tl-line px-5 py-2.5 font-semibold text-tl-body hover:bg-tl-bg disabled:opacity-60"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-xl bg-[#003366] px-5 py-2.5 font-semibold text-white hover:bg-[#002244] disabled:opacity-60"
+              className="rounded-xl bg-tl-brand-fill px-5 py-2.5 font-semibold text-white hover:bg-tl-brand-fill-hover disabled:opacity-60"
             >
               {isSaving ? "Adding..." : "Add Entry"}
             </button>
@@ -334,14 +326,17 @@ export function TimetableEntryModal({
  */
 function invalid(id: string, message?: string, hintId?: string) {
   const describedBy = [message ? `${id}-error` : null, hintId ?? null].filter(Boolean).join(" ");
-  return { "aria-invalid": message ? true : undefined, "aria-describedby": describedBy || undefined };
+  return {
+    "aria-invalid": message ? true : undefined,
+    "aria-describedby": describedBy || undefined,
+  };
 }
 
 /** One field's validation message. */
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={`${id}-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">
+    <p id={`${id}-error`} className="mt-1 text-xs text-tl-danger">
       {message}
     </p>
   );

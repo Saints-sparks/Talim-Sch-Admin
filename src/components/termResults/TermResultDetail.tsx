@@ -137,7 +137,7 @@ export function TermResultDetail({ submission: row, canManage, onBack }: TermRes
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#003366] dark:text-blue-400 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-tl-brand hover:underline"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden />
           Back to the queue
@@ -150,19 +150,19 @@ export function TermResultDetail({ submission: row, canManage, onBack }: TermRes
             <h2
               ref={heading}
               tabIndex={-1}
-              className="text-xl font-bold text-gray-900 dark:text-slate-100 focus:outline-none"
+              className="text-xl font-bold text-tl-ink focus:outline-none"
             >
               {submission.class.name} · {submission.term.name}
             </h2>
             <TermResultStatusBadge status={submission.status} />
           </div>
-          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+          <p className="mt-1 text-sm text-tl-muted">
             {basisLabel(submission.basis)} · submitted by {personName(submission.submittedBy)} on{" "}
             {formatWhen(submission.submittedAt)} · {submission.studentCount}{" "}
             {submission.studentCount === 1 ? "student" : "students"}
           </p>
           {submission.status === "returned" && (
-            <p className="mt-2 text-sm text-rose-700 dark:text-rose-300">
+            <p className="mt-2 text-sm text-tl-danger">
               Returned{" "}
               {submission.returnedAt
                 ? `on ${formatWhen(submission.returnedAt)}`
@@ -172,7 +172,7 @@ export function TermResultDetail({ submission: row, canManage, onBack }: TermRes
             </p>
           )}
           {submission.status === "published" && (
-            <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+            <p className="mt-2 text-sm text-tl-success">
               Published{submission.publishedAt ? ` on ${formatWhen(submission.publishedAt)}` : ""}
               {submission.publishedBy ? ` by ${personName(submission.publishedBy)}` : ""}. Students
               and parents can see these results.
@@ -200,10 +200,7 @@ export function TermResultDetail({ submission: row, canManage, onBack }: TermRes
               </PrimaryBtn>
             </div>
             {publishBlocker && (
-              <p
-                id="publish-blocker"
-                className="max-w-xs text-right text-xs text-amber-700 dark:text-amber-300"
-              >
+              <p id="publish-blocker" className="max-w-xs text-right text-xs text-tl-warning">
                 {publishBlocker}
               </p>
             )}
