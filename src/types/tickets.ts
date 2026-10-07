@@ -7,9 +7,8 @@
  * Dates arrive as ISO strings. Ids are strings. `requester.email` is only in
  * staff and observer views. `unread` is per side: for the desk, the
  * requester's messages since a desk member last opened or acted on the
- * ticket (always 0 for observers). Hand-written here: the desk's filters with
- * several statuses (the API takes them comma-separated), the 409 reason
- * codes, and the limits the forms check.
+ * ticket (always 0 for observers). Hand-written here: the 409 reason codes
+ * and the limits the forms check.
  */
 import type { RequestBody, RequestQuery, Schema } from "./apiContract";
 
@@ -55,16 +54,14 @@ export type TicketPriority = Ticket["priority"];
 export type TicketAccess = Ticket["access"];
 
 /**
- * Filters of a desk queue (`GET /tickets/desk/school`). The contract types
- * `status` as one value; the API takes several, comma-separated.
+ * Filters of a desk queue (`GET /tickets/desk/school`), without the Talim
+ * desk's `scope` and `schoolId`. `status` is a list (sent comma-separated);
  * `assigneeId` is a staff user id, `me`, or `none` (alias `unassigned`);
  * `q` is a reference (exact) or words of the subject, at most 100 characters.
  */
-export type DeskTicketQuery = Omit<RequestQuery<"/tickets/desk/school">, "status" | "scope" | "schoolId"> & {
-  status?: TicketStatus[];
-};
-/** Filters of `GET /tickets/mine` (several statuses, comma-separated). */
-export type MyTicketQuery = Omit<RequestQuery<"/tickets/mine">, "status"> & { status?: TicketStatus[] };
+export type DeskTicketQuery = Omit<RequestQuery<"/tickets/desk/school">, "scope" | "schoolId">;
+/** Filters of `GET /tickets/mine`: a list of statuses (sent comma-separated) and paging. */
+export type MyTicketQuery = RequestQuery<"/tickets/mine">;
 
 /** Body of `POST /tickets`: school staff raise tickets to `talim` only. */
 export type CreateTicketBody = RequestBody<"/tickets">;
