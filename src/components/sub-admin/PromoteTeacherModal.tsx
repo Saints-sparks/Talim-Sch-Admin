@@ -43,7 +43,9 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
       try {
         const res = await apiClient.get(API_ENDPOINTS.GET_TEACHERS);
         if (res.ok) {
-          const data = unwrapEnvelope<unknown>(await res.json()) as Teacher[] | { data?: Teacher[] };
+          const data = unwrapEnvelope<unknown>(await res.json()) as
+            | Teacher[]
+            | { data?: Teacher[] };
           // API may return { data: Teacher[] } or Teacher[]
           setTeachers(Array.isArray(data) ? data : (data.data ?? []));
         }
@@ -110,19 +112,19 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
       icon={<GraduationCap className="w-5 h-5 text-white" />}
       isSubmitting={isSubmitting}
       footer={
-        <div className="flex justify-end gap-3 px-8 py-5 border-t border-gray-100">
+        <div className="flex justify-end gap-3 px-8 py-5 border-t border-tl-line-soft">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl border border-tl-line text-tl-body text-sm font-medium hover:bg-tl-bg transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !selectedTeacher || permissions.length === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-tl-brand-fill text-white text-sm font-medium hover:bg-tl-brand-fill-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -139,31 +141,31 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
       <div className="px-8 py-6 space-y-6">
         {/* Teacher selection */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Teacher</h3>
+          <h3 className="text-sm font-semibold text-tl-body mb-3">Select Teacher</h3>
 
           {/* Search */}
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tl-faint" />
             <input
               type="text"
               placeholder="Search by name or email…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 border border-tl-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tl-link"
             />
           </div>
 
-          {errors.teacher && <p className="text-red-500 text-xs mb-2">{errors.teacher}</p>}
+          {errors.teacher && <p className="text-tl-danger text-xs mb-2">{errors.teacher}</p>}
 
           {/* Teacher list */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+          <div className="border border-tl-line rounded-lg overflow-hidden max-h-48 overflow-y-auto">
             {loadingTeachers ? (
-              <div className="flex items-center justify-center py-8 text-gray-400">
+              <div className="flex items-center justify-center py-8 text-tl-faint">
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
                 Loading teachers…
               </div>
             ) : filteredTeachers.length === 0 ? (
-              <div className="text-center py-8 text-sm text-gray-400">
+              <div className="text-center py-8 text-sm text-tl-faint">
                 {searchQuery ? "No teachers match your search" : "No teachers found"}
               </div>
             ) : (
@@ -177,11 +179,11 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
                       setSelectedTeacher(teacher);
                       if (errors.teacher) setErrors((er) => ({ ...er, teacher: "" }));
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-gray-100 last:border-0 ${
-                      isSelected ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50 text-gray-700"
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-tl-line-soft last:border-0 ${
+                      isSelected ? "bg-tl-select text-tl-link" : "hover:bg-tl-bg text-tl-body"
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0 text-xs font-semibold text-gray-600 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-tl-line flex items-center justify-center shrink-0 text-xs font-semibold text-tl-muted overflow-hidden">
                       {teacher.userAvatar ? (
                         <img
                           src={teacher.userAvatar}
@@ -196,10 +198,10 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
                       <p className="text-sm font-medium truncate">
                         {teacher.firstName} {teacher.lastName}
                       </p>
-                      <p className="text-xs text-gray-400 truncate">{teacher.email}</p>
+                      <p className="text-xs text-tl-faint truncate">{teacher.email}</p>
                     </div>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-tl-brand-fill flex items-center justify-center shrink-0">
                         <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
                           <path
                             fillRule="evenodd"
@@ -216,7 +218,7 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
           </div>
 
           {selectedTeacher && (
-            <div className="mt-2 px-3 py-2 bg-blue-50 rounded-lg text-xs text-blue-700">
+            <div className="mt-2 px-3 py-2 bg-tl-select rounded-lg text-xs text-tl-link">
               Selected:{" "}
               <span className="font-semibold">
                 {selectedTeacher.firstName} {selectedTeacher.lastName}
@@ -228,11 +230,13 @@ export function PromoteTeacherModal({ isOpen, onClose, onSuccess }: PromoteTeach
 
         {/* Permissions */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Assign Permissions *</h3>
-          <p className="text-xs text-gray-500 mb-3">
+          <h3 className="text-sm font-semibold text-tl-body mb-1">Assign Permissions *</h3>
+          <p className="text-xs text-tl-muted mb-3">
             Choose which areas of the admin portal this teacher can also access.
           </p>
-          {errors.permissions && <p className="text-red-500 text-xs mb-2">{errors.permissions}</p>}
+          {errors.permissions && (
+            <p className="text-tl-danger text-xs mb-2">{errors.permissions}</p>
+          )}
           <PermissionSelector
             selected={permissions}
             onChange={(p) => {

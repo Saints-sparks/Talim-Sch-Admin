@@ -49,9 +49,7 @@ export function EditPermissionsModal({
       const updated = await subAdminService.updatePermissions(subAdmin.userId, {
         permissions,
       });
-      toast.success(
-        `Permissions updated for ${updated.firstName} ${updated.lastName}`
-      );
+      toast.success(`Permissions updated for ${updated.firstName} ${updated.lastName}`);
       onSuccess(updated);
       handleClose();
     } catch (error) {
@@ -72,19 +70,19 @@ export function EditPermissionsModal({
       icon={<ShieldCheck className="w-5 h-5 text-white" />}
       isSubmitting={isSubmitting}
       footer={
-        <div className="flex justify-end gap-3 px-8 py-5 border-t border-gray-100">
+        <div className="flex justify-end gap-3 px-8 py-5 border-t border-tl-line-soft">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl border border-tl-line text-tl-body text-sm font-medium hover:bg-tl-bg transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || permissions.length === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-tl-brand-fill text-white text-sm font-medium hover:bg-tl-brand-fill-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -99,12 +97,11 @@ export function EditPermissionsModal({
       }
     >
       <div className="px-8 py-6">
-        <div className="mb-4 flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
-          <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-700">
-            Removing a permission immediately revokes access to that section of
-            the portal — the change takes effect on the sub-admin&apos;s next
-            page load.
+        <div className="mb-4 flex items-center gap-3 p-3 bg-tl-warning-bg rounded-lg border border-tl-warning/30">
+          <ShieldCheck className="w-5 h-5 text-tl-warning shrink-0" />
+          <p className="text-xs text-tl-warning">
+            Removing a permission immediately revokes access to that section of the portal — the
+            change takes effect on the sub-admin&apos;s next page load.
           </p>
         </div>
         <PermissionSelector selected={permissions} onChange={setPermissions} />

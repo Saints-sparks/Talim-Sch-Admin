@@ -20,12 +20,12 @@ export function DetailField({
 }) {
   return (
     <div className={`space-y-3 ${className}`}>
-      <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
+      <span className="text-sm font-medium text-tl-body flex items-center gap-2">
         <Icon className="w-4 h-4" />
         {label}
       </span>
       <div
-        className={`px-3 py-3 sm:px-4 sm:py-3 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-900 dark:text-slate-100 text-sm sm:text-base ${
+        className={`px-3 py-3 sm:px-4 sm:py-3 bg-tl-subtle border border-tl-line rounded-lg text-tl-ink text-sm sm:text-base ${
           mono ? "font-mono" : ""
         }`}
       >
@@ -48,43 +48,47 @@ export function StudentIdentityCard({
   badge: string;
 }) {
   const fallbackTone = {
-    blue: "bg-blue-500",
-    green: "bg-green-500",
-    purple: "bg-purple-500",
+    blue: "bg-tl-brand-fill",
+    green: "bg-tl-success",
+    purple: "bg-tl-accent",
   }[tone];
   const badgeTone = {
-    blue: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-    green: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-    purple: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+    blue: "bg-tl-select text-tl-brand",
+    green: "bg-tl-success-bg text-tl-success",
+    purple: "bg-tl-accent-bg text-tl-accent",
   }[tone];
 
   return (
     <div className="flex flex-col items-center space-y-4 order-1 lg:order-none">
       <div className="text-center">
         <div className="relative">
-          <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-gray-100 dark:ring-slate-700">
+          <Avatar className="w-24 h-24 sm:w-32 sm:h-32 ring-4 ring-tl-line">
             <AvatarImage
               src={student.userId.userAvatar || "/placeholder.svg"}
               alt={`${student.userId.firstName} ${student.userId.lastName}`}
             />
-            <AvatarFallback className={`${fallbackTone} text-white text-lg sm:text-2xl font-semibold`}>
+            <AvatarFallback
+              className={`${fallbackTone} text-white text-lg sm:text-2xl font-semibold`}
+            >
               {student.userId.firstName?.[0]}
               {student.userId.lastName?.[0]}
             </AvatarFallback>
           </Avatar>
           <div
-            className={`absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white dark:border-slate-800 ${
-              student.isActive ? "bg-green-500" : "bg-gray-400"
+            className={`absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-tl-surface ${
+              student.isActive ? "bg-tl-success" : "bg-tl-faint"
             }`}
           />
         </div>
 
         <div className="text-center mt-4 space-y-2">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-base sm:text-lg font-semibold text-tl-ink">
             {student.userId.firstName} {student.userId.lastName}
           </h3>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">Student</p>
-          <div className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium inline-block ${badgeTone}`}>
+          <p className="text-sm sm:text-base text-tl-muted">Student</p>
+          <div
+            className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium inline-block ${badgeTone}`}
+          >
             {badge}
           </div>
         </div>
@@ -106,10 +110,10 @@ export function TabHeading({
   subtitle?: string;
 }) {
   const tones = {
-    blue: "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300",
-    green: "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300",
-    purple: "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300",
-    orange: "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300",
+    blue: "bg-tl-select text-tl-link",
+    green: "bg-tl-success-bg text-tl-success",
+    purple: "bg-tl-accent-bg text-tl-accent",
+    orange: "bg-tl-warning-bg text-tl-warning",
   }[tone];
 
   return (
@@ -118,8 +122,8 @@ export function TabHeading({
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
-        {subtitle && <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{subtitle}</p>}
+        <h2 className="text-lg sm:text-xl font-semibold text-tl-ink">{title}</h2>
+        {subtitle && <p className="text-xs text-tl-faint mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ const TABS = [
 ] as const;
 
 const triggerClass =
-  "flex items-center gap-2 py-4 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none font-medium transition-all";
+  "flex items-center gap-2 py-4 px-6 data-[state=active]:bg-tl-surface data-[state=active]:border-b-2 data-[state=active]:border-tl-brand data-[state=active]:text-tl-brand rounded-none font-medium transition-all";
 
 function EditStudentProfile() {
   const params = useParams();
@@ -85,7 +85,7 @@ function EditStudentProfile() {
         toast.error(
           fields.length > 0
             ? fields.map(([field, reason]) => `${field}: ${reason}`).join("; ")
-            : error.message,
+            : error.message
         );
         return;
       }
@@ -113,27 +113,27 @@ function EditStudentProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <div className="bg-white dark:bg-slate-800 px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+    <div className="mx-auto w-full max-w-[1460px] pb-16">
+      <div className="px-[clamp(14px,3vw,26px)] pt-[clamp(18px,3vw,28px)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={backToProfile}
-              className="flex items-center space-x-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors group"
+              className="flex items-center space-x-2 text-tl-muted hover:text-tl-ink transition-colors group"
             >
               <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-medium">Back to Profile</span>
             </button>
-            <div className="text-gray-300 dark:text-slate-600">|</div>
+            <div className="text-tl-faint">|</div>
             <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-slate-400">Edit Student Profile</span>
+              <User className="w-4 h-4 text-tl-faint" />
+              <span className="text-sm text-tl-muted">Edit Student Profile</span>
             </div>
           </div>
           <button
             onClick={handleSave}
             disabled={updateStudent.isPending || isUploading || !isDirty}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-tl-success text-white rounded-lg hover:opacity-90 transition-colors shadow-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiSave className="w-4 h-4" />
             {updateStudent.isPending ? "Saving..." : "Save Changes"}
@@ -142,9 +142,9 @@ function EditStudentProfile() {
       </div>
 
       <div className="p-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-tl-surface rounded-xl shadow-sm border border-tl-line overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-50 dark:bg-slate-700/40 border-b border-gray-200 dark:border-slate-700 rounded-none h-auto p-0">
+            <TabsList className="grid w-full grid-cols-3 bg-tl-subtle border-b border-tl-line rounded-none h-auto p-0">
               {TABS.map(({ value, icon: Icon, label }) => (
                 <TabsTrigger key={value} value={value} className={triggerClass}>
                   <Icon className="w-4 h-4" />

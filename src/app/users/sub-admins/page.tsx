@@ -26,7 +26,7 @@ function SubAdminsView() {
   if (!isFullAdmin) return null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto w-full max-w-[1460px] px-[clamp(14px,3vw,26px)] pb-16 pt-[clamp(18px,3vw,28px)]">
       <SubAdminsSection />
     </div>
   );

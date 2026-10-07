@@ -25,25 +25,25 @@ export function ParentStatCards({ stats }: { stats: ParentsStats }) {
       label: "Total Parents",
       value: stats.totalParents,
       icon: UsersRound,
-      tone: "bg-blue-50 text-[#003366] dark:bg-blue-900/30 dark:text-blue-400",
+      tone: "bg-tl-select text-tl-brand",
     },
     {
       label: "Active Parents",
       value: stats.activeParents,
       icon: CheckCircle2,
-      tone: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      tone: "bg-tl-success-bg text-tl-success",
     },
     {
       label: "Inactive Parents",
       value: stats.inactiveParents,
       icon: UserRound,
-      tone: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      tone: "bg-tl-warning-bg text-tl-warning",
     },
     {
       label: "Total Children",
       value: stats.totalChildren,
       icon: UsersRound,
-      tone: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+      tone: "bg-tl-accent-bg text-tl-accent",
     },
   ];
 
@@ -54,15 +54,15 @@ export function ParentStatCards({ stats }: { stats: ParentsStats }) {
         return (
           <div
             key={card.label}
-            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm sm:p-5"
+            className="rounded-2xl border border-tl-line bg-tl-surface p-4 shadow-sm sm:p-5"
           >
             <div className="flex items-center gap-4">
               <div className={cn("rounded-2xl p-3", card.tone)}>
                 <Icon className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-950 dark:text-white">{card.value}</p>
-                <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
+                <p className="text-2xl font-bold text-tl-ink">{card.value}</p>
+                <p className="mt-1 text-sm font-medium text-tl-muted">{card.label}</p>
               </div>
             </div>
           </div>
@@ -92,7 +92,7 @@ interface ParentFiltersBarProps {
 }
 
 const selectClass =
-  "h-11 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 text-sm font-semibold text-slate-700 dark:text-slate-300";
+  "h-11 rounded-xl border border-tl-line bg-tl-surface px-3 text-sm font-semibold text-tl-body";
 
 /** Search, status, gender and sort — all applied by the API, not the browser. */
 export function ParentFiltersBar({
@@ -106,17 +106,17 @@ export function ParentFiltersBar({
   onSortChange,
 }: ParentFiltersBarProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
+    <section className="rounded-2xl border border-tl-line bg-tl-surface p-3 shadow-sm">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px]">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tl-faint" />
           <input
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search parents..."
             aria-label="Search parents by name, email or phone"
-            className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 pl-10 pr-4 text-sm focus:border-[#003366] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30"
+            className="h-11 w-full rounded-xl border border-tl-line bg-tl-surface text-tl-ink placeholder:text-tl-faint pl-10 pr-4 text-sm focus:border-tl-link focus:ring-2 focus:ring-tl-link"
           />
         </div>
         <select

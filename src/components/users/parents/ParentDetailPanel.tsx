@@ -19,14 +19,16 @@ interface ParentDetailPanelProps {
 
 /** A child's display name, or a placeholder when the account has no name. */
 function childName(child: ParentChild): string {
-  return `${child.userId?.firstName ?? ""} ${child.userId?.lastName ?? ""}`.trim() || "Unknown Student";
+  return (
+    `${child.userId?.firstName ?? ""} ${child.userId?.lastName ?? ""}`.trim() || "Unknown Student"
+  );
 }
 
 /** The right-hand panel: one parent's profile and the children linked to them. */
 export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) {
   if (!parent) {
     return (
-      <aside className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center text-sm text-slate-500 dark:text-slate-400 shadow-sm">
+      <aside className="rounded-2xl border border-tl-line bg-tl-surface p-8 text-center text-sm text-tl-muted shadow-sm">
         Select a parent to view their profile and linked children.
       </aside>
     );
@@ -35,7 +37,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
   const parentProfile = profiles[parent.userId?._id] ?? {};
 
   return (
-    <aside className="space-y-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm sm:p-5">
+    <aside className="space-y-5 rounded-2xl border border-tl-line bg-tl-surface p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar
@@ -46,16 +48,16 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
           />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="min-w-0 break-words text-lg font-bold text-slate-950 dark:text-white sm:text-xl">
+              <h2 className="min-w-0 break-words text-lg font-bold text-tl-ink sm:text-xl">
                 {parentName(parent)}
               </h2>
               <StatusBadge active={parent.userId?.isActive !== false} />
             </div>
-            <p className="mt-3 flex min-w-0 items-center gap-2 break-all text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-3 flex min-w-0 items-center gap-2 break-all text-sm text-tl-muted">
               <Mail className="h-4 w-4" />
               {parent.userId?.email ?? "-"}
             </p>
-            <p className="mt-2 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-2 flex items-center gap-2 text-sm text-tl-muted">
               <Phone className="h-4 w-4" />
               {parent.userId?.phoneNumber ?? "-"}
             </p>
@@ -66,7 +68,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
             type="button"
             disabled
             title="Editing a parent's details is not available yet."
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 text-sm font-semibold text-slate-700 dark:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-tl-line bg-tl-surface px-3 text-sm font-semibold text-tl-body disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             <Pencil className="h-4 w-4" />
             Edit
@@ -74,7 +76,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
         </PermissionGate>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 p-4 text-sm sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-tl-line-soft bg-tl-subtle p-4 text-sm sm:grid-cols-2">
         <Info
           label="Date of Birth"
           value={formatDate(parentProfile.dateOfBirth ?? parent.userId?.dateOfBirth)}
@@ -86,15 +88,13 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
 
       <div>
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="font-bold text-slate-950 dark:text-white">
-            Children ({parent.children?.length ?? 0})
-          </h3>
+          <h3 className="font-bold text-tl-ink">Children ({parent.children?.length ?? 0})</h3>
           <PermissionGate permission={Permission.MANAGE_PARENTS}>
             <button
               type="button"
               disabled
               title="Children are linked when a student is enrolled with this parent's contact details."
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 px-3 text-sm font-semibold text-[#003366] dark:text-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-tl-select px-3 text-sm font-semibold text-tl-brand disabled:cursor-not-allowed disabled:opacity-50"
             >
               Link Child
             </button>
@@ -106,7 +106,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
             parent.children.map((child) => (
               <div
                 key={child._id}
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                className="rounded-2xl border border-tl-line p-4 transition hover:bg-tl-bg"
               >
                 <div className="flex gap-3">
                   <Avatar
@@ -117,16 +117,16 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-bold text-slate-950 dark:text-white">{childName(child)}</p>
-                      <span className="rounded-lg bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-bold text-[#003366] dark:text-blue-400">
+                      <p className="font-bold text-tl-ink">{childName(child)}</p>
+                      <span className="rounded-lg bg-tl-select px-2 py-1 text-xs font-bold text-tl-brand">
                         Student
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 text-sm text-tl-muted">
                       {child.gradeLevel ?? child.classId?.gradeLevel ?? "-"} •{" "}
                       {child.classId?.name ?? "No class"}
                     </p>
-                    <p className="mt-2 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 flex items-center gap-2 text-sm text-tl-muted">
                       <Mail className="h-4 w-4" />
                       {child.userId?.email ?? "-"}
                     </p>
@@ -137,7 +137,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
                   <Info
                     label="Date of Birth"
                     value={formatDate(
-                      profiles[child.userId?._id]?.dateOfBirth ?? child.userId?.dateOfBirth,
+                      profiles[child.userId?._id]?.dateOfBirth ?? child.userId?.dateOfBirth
                     )}
                   />
                   <Info label="Status" value={child.isActive ? "Active" : "Inactive"} />
@@ -145,16 +145,16 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
               </div>
             ))
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-600 p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="rounded-2xl border border-dashed border-tl-line p-6 text-center text-sm text-tl-muted">
               No children are linked to this parent yet.
             </div>
           )}
         </div>
       </div>
 
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-        You can view and manage the children linked to this parent. To make changes, please unlink the
-        child first.
+      <div className="rounded-xl bg-tl-select px-4 py-3 text-sm text-tl-muted">
+        You can view and manage the children linked to this parent. To make changes, please unlink
+        the child first.
       </div>
     </aside>
   );

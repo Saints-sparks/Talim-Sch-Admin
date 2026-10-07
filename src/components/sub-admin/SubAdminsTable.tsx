@@ -6,12 +6,7 @@
  */
 "use client";
 
-import {
-  ShieldCheck,
-  ToggleLeft,
-  ToggleRight,
-  Trash2,
-} from "lucide-react";
+import { ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { type SubAdmin } from "@/app/services/sub-admin.service";
 import { PERMISSION_GROUPS } from "./PermissionSelector";
 
@@ -47,7 +42,7 @@ function Avatar({ sub }: { sub: SubAdmin }) {
   }
   const initials = `${sub.firstName?.[0] ?? ""}${sub.lastName?.[0] ?? ""}`.toUpperCase();
   return (
-    <div className="w-10 h-10 rounded-full bg-[#003366]/10 text-[#003366] flex items-center justify-center text-sm font-semibold shrink-0 dark:bg-blue-900/30 dark:text-blue-200">
+    <div className="w-10 h-10 rounded-full bg-tl-select text-tl-brand flex items-center justify-center text-sm font-semibold shrink-0">
       {initials}
     </div>
   );
@@ -77,38 +72,35 @@ export function SubAdminsTable({
 }: SubAdminsTableProps) {
   // The container scrolls on narrow screens, so the page never does.
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto">
+    <div className="bg-tl-surface rounded-xl border border-tl-line overflow-x-auto">
       <table className="w-full min-w-[640px]">
         <thead>
-          <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80">
-            <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+          <tr className="border-b border-tl-line-soft bg-tl-subtle">
+            <th className="px-5 py-3 text-left text-xs font-semibold text-tl-muted uppercase tracking-wider">
               Name
             </th>
-            <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="px-5 py-3 text-left text-xs font-semibold text-tl-muted uppercase tracking-wider">
               Permissions
             </th>
-            <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="px-5 py-3 text-left text-xs font-semibold text-tl-muted uppercase tracking-wider">
               Status
             </th>
-            <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+            <th className="px-5 py-3 text-right text-xs font-semibold text-tl-muted uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+        <tbody className="divide-y divide-tl-line-soft">
           {subAdmins.map((sub) => (
-            <tr
-              key={sub.userId}
-              className="hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
-            >
+            <tr key={sub.userId} className="hover:bg-tl-bg transition-colors">
               <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
                   <Avatar sub={sub} />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <p className="text-sm font-semibold text-tl-ink">
                       {sub.firstName} {sub.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">{sub.email}</p>
+                    <p className="text-xs text-tl-muted">{sub.email}</p>
                   </div>
                 </div>
               </td>
@@ -118,13 +110,13 @@ export function SubAdminsTable({
                   {sub.permissions.slice(0, 3).map((p) => (
                     <span
                       key={p}
-                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-tl-select text-tl-link"
                     >
                       {getPermissionLabel(p)}
                     </span>
                   ))}
                   {sub.permissions.length > 3 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-tl-track text-tl-muted">
                       +{sub.permissions.length - 3} more
                     </span>
                   )}
@@ -134,14 +126,12 @@ export function SubAdminsTable({
               <td className="px-5 py-4">
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                    sub.isActive
-                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                      : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
+                    sub.isActive ? "bg-tl-success-bg text-tl-success" : "bg-tl-track text-tl-muted"
                   }`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      sub.isActive ? "bg-green-500" : "bg-gray-400"
+                      sub.isActive ? "bg-tl-success" : "bg-tl-faint"
                     }`}
                   />
                   {sub.isActive ? "Active" : "Suspended"}
@@ -155,7 +145,7 @@ export function SubAdminsTable({
                     onClick={() => onEdit(sub)}
                     title="Edit permissions"
                     aria-label={`Edit permissions for ${sub.firstName} ${sub.lastName}`}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-tl-faint hover:text-tl-link hover:bg-tl-select transition-colors"
                   >
                     <ShieldCheck className="w-4 h-4" />
                   </button>
@@ -165,10 +155,10 @@ export function SubAdminsTable({
                     onClick={() => onToggleStatus(sub)}
                     title={sub.isActive ? "Suspend" : "Activate"}
                     aria-label={`${sub.isActive ? "Suspend" : "Activate"} ${sub.firstName} ${sub.lastName}`}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-tl-faint hover:text-tl-warning hover:bg-tl-warning-bg transition-colors"
                   >
                     {sub.isActive ? (
-                      <ToggleRight className="w-4 h-4 text-green-500" />
+                      <ToggleRight className="w-4 h-4 text-tl-success" />
                     ) : (
                       <ToggleLeft className="w-4 h-4" />
                     )}
@@ -179,7 +169,7 @@ export function SubAdminsTable({
                     onClick={() => onRemove(sub)}
                     title="Remove sub-admin"
                     aria-label={`Remove ${sub.firstName} ${sub.lastName} as sub-admin`}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-tl-faint hover:text-tl-danger hover:bg-tl-danger-bg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

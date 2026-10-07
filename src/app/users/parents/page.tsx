@@ -9,7 +9,11 @@ import RosterErrorState from "@/components/users/RosterErrorState";
 import RosterPagination from "@/components/users/RosterPagination";
 import ParentsTable, { parentName } from "@/components/users/parents/ParentsTable";
 import ParentDetailPanel from "@/components/users/parents/ParentDetailPanel";
-import { emptyParentStats, ParentFiltersBar, ParentStatCards } from "@/components/users/parents/ParentsToolbar";
+import {
+  emptyParentStats,
+  ParentFiltersBar,
+  ParentStatCards,
+} from "@/components/users/parents/ParentsToolbar";
 import type { Parent } from "@/app/services/parent.service";
 
 /** Rows per page. The API paginates, so this is what it is asked for. */
@@ -27,7 +31,7 @@ function exportParents(parents: Parent[]): void {
       parent.userId?.isActive ? "Active" : "Inactive",
     ]
       .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-      .join(","),
+      .join(",")
   );
 
   const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -58,7 +62,7 @@ function ParentsDirectory() {
 
   const selectedParent = useMemo(
     () => parents.find((parent) => parent._id === selectedParentId) ?? parents[0],
-    [parents, selectedParentId],
+    [parents, selectedParentId]
   );
 
   const profileUserIds = useMemo(() => {
@@ -72,20 +76,20 @@ function ParentsDirectory() {
   const profiles = useParentProfileFields(profileUserIds);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+    <div className="mx-auto w-full max-w-[1460px] px-[clamp(14px,3vw,26px)] pb-16 pt-[clamp(18px,3vw,28px)]">
       <div className="mx-auto max-w-[1500px] space-y-6">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Parents</h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              View and manage parents information.
-            </p>
+            <h1 className="m-0 text-[clamp(24px,3.4vw,32px)] font-extrabold tracking-[-0.6px] text-tl-ink">
+              Parents
+            </h1>
+            <p className="mt-2 text-sm text-tl-muted">View and manage parents information.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={() => exportParents(parents)}
               disabled={parents.length === 0}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-tl-line bg-tl-surface px-5 text-sm font-semibold text-tl-body shadow-sm hover:bg-tl-bg disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               Export
@@ -107,7 +111,11 @@ function ParentsDirectory() {
         />
 
         {query.isError ? (
-          <RosterErrorState error={query.error} resource="parents" onRetry={() => query.refetch()} />
+          <RosterErrorState
+            error={query.error}
+            resource="parents"
+            onRetry={() => query.refetch()}
+          />
         ) : (
           <>
             <div className="grid gap-4 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">

@@ -84,20 +84,17 @@ export function ParentLinkCodeCard({ studentId, studentName }: ParentLinkCodeCar
   return (
     <section
       aria-labelledby="parent-link-code-heading"
-      className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4"
+      className="rounded-xl border border-tl-line bg-tl-surface p-5 space-y-4"
     >
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+        <div className="p-2 rounded-lg bg-tl-success-bg text-tl-success">
           <KeyRound className="w-5 h-5" aria-hidden />
         </div>
         <div className="min-w-0">
-          <h3
-            id="parent-link-code-heading"
-            className="text-base font-semibold text-gray-900 dark:text-slate-100"
-          >
+          <h3 id="parent-link-code-heading" className="text-base font-semibold text-tl-ink">
             Parent link code
           </h3>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">
+          <p className="text-sm text-tl-muted mt-0.5">
             A parent enters this code in the Talim parent app to add {studentName || "this student"}{" "}
             to their account, even if their other children are at another school. It works once and
             lasts 14 days.
@@ -111,14 +108,14 @@ export function ParentLinkCodeCard({ studentId, studentName }: ParentLinkCodeCar
             <output
               aria-live="polite"
               aria-label="Parent link code"
-              className="font-mono text-2xl font-bold tracking-widest text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-900 border border-dashed border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 select-all"
+              className="font-mono text-2xl font-bold tracking-widest text-tl-ink bg-tl-subtle border border-dashed border-tl-control rounded-lg px-4 py-2 select-all"
             >
               {current.code}
             </output>
             <button
               type="button"
               onClick={() => void copy()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-tl-line text-tl-body hover:bg-tl-bg"
             >
               {copied ? (
                 <Check className="w-4 h-4" aria-hidden />
@@ -131,16 +128,14 @@ export function ParentLinkCodeCard({ studentId, studentName }: ParentLinkCodeCar
               type="button"
               onClick={() => setConfirmingNew(true)}
               disabled={issue.isPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-tl-line text-tl-body hover:bg-tl-bg disabled:opacity-50"
             >
               <RefreshCw className="w-4 h-4" aria-hidden />
               Generate a new code
             </button>
           </div>
-          <p className="text-xs text-gray-600 dark:text-slate-400">
-            {linkCodeExpiry(current.expiresAt)}
-          </p>
-          <p className="text-xs text-gray-600 dark:text-slate-400">
+          <p className="text-xs text-tl-muted">{linkCodeExpiry(current.expiresAt)}</p>
+          <p className="text-xs text-tl-muted">
             The code is shown only now. If it is lost, generate a new one.
           </p>
         </div>
@@ -149,7 +144,7 @@ export function ParentLinkCodeCard({ studentId, studentName }: ParentLinkCodeCar
           type="button"
           onClick={() => void generate()}
           disabled={issue.isPending}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#003366] hover:bg-[#002244] dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-tl-brand-fill hover:bg-tl-brand-fill-hover disabled:opacity-50"
         >
           <KeyRound className="w-4 h-4" aria-hidden />
           {issue.isPending ? "Generating…" : "Generate parent link code"}

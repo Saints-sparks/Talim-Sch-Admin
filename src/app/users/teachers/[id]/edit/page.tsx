@@ -48,7 +48,7 @@ const TABS = [
 ] as const;
 
 const triggerClass =
-  "data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md text-xs sm:text-sm";
+  "data-[state=active]:bg-tl-surface h-[45px] data-[state=active]:border-b-2 data-[state=active]:border-tl-brand rounded-md text-xs sm:text-sm";
 
 /**
  * The teacher editor: one tab per section, each saved on its own.
@@ -77,7 +77,7 @@ function TeacherEditor() {
       teacher?.hasTeacherProfile === false
         ? undefined
         : classTeacherIdsOf(teacher?.classTeacherOf, classes, teacher?._id),
-    [classes, teacher?._id, teacher?.classTeacherOf, teacher?.hasTeacherProfile],
+    [classes, teacher?._id, teacher?.classTeacherOf, teacher?.hasTeacherProfile]
   );
   const savingSection = saveSection.isPending
     ? (saveSection.variables as SaveTeacherSectionInput | undefined)?.section
@@ -94,7 +94,7 @@ function TeacherEditor() {
         toast.error(
           fields.length > 0
             ? fields.map(([field, reason]) => `${field}: ${reason}`).join("; ")
-            : error.message,
+            : error.message
         );
         return;
       }
@@ -150,21 +150,21 @@ function TeacherEditor() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F3F3] dark:bg-slate-900">
-      <div className="p-6">
+    <div className="mx-auto w-full max-w-[1460px] pb-16">
+      <div className="px-[clamp(14px,3vw,26px)] pt-[clamp(18px,3vw,28px)] pb-4">
         <button
           onClick={() => router.push(`/users/teachers/${teacherId}`)}
-          className="flex items-center space-x-2 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors group"
+          className="flex items-center space-x-2 text-tl-muted hover:text-tl-ink transition-colors group"
         >
           <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
           <span className="text-sm font-medium">Back to Profile</span>
         </button>
       </div>
 
-      <div className="px-6 pb-6">
+      <div className="px-[clamp(14px,3vw,26px)]">
         <Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-gray-100 dark:bg-slate-700 rounded-lg">
+            <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-tl-track rounded-lg">
               {TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className={triggerClass}>
                   {tab.label}
@@ -174,9 +174,10 @@ function TeacherEditor() {
 
             <CardContent className="p-4 sm:p-8">
               {teacher.hasTeacherProfile === false && (
-                <div className="mb-6 rounded-md border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-                  This teacher account does not have a full teacher profile yet. Personal details and
-                  deactivation are available; the other sections need the profile to be set up first.
+                <div className="mb-6 rounded-md border border-tl-warning/30 bg-tl-warning-bg px-4 py-3 text-sm text-tl-warning">
+                  This teacher account does not have a full teacher profile yet. Personal details
+                  and deactivation are available; the other sections need the profile to be set up
+                  first.
                 </div>
               )}
 
@@ -186,7 +187,7 @@ function TeacherEditor() {
                   isSaving={savingSection === "personal"}
                   onSubmit={submit(
                     () => ({ userId, section: "personal", payload: personalPayload(draft) }),
-                    "Personal details updated successfully",
+                    "Personal details updated successfully"
                   )}
                 />
               </TabsContent>
@@ -196,8 +197,12 @@ function TeacherEditor() {
                   {...shared}
                   isSaving={savingSection === "qualifications"}
                   onSubmit={submit(
-                    () => ({ userId, section: "qualifications", payload: qualificationsPayload(draft) }),
-                    "Qualifications updated successfully",
+                    () => ({
+                      userId,
+                      section: "qualifications",
+                      payload: qualificationsPayload(draft),
+                    }),
+                    "Qualifications updated successfully"
                   )}
                 />
               </TabsContent>
@@ -208,7 +213,7 @@ function TeacherEditor() {
                   isSaving={savingSection === "employment"}
                   onSubmit={submit(
                     () => ({ userId, section: "employment", payload: employmentPayload(draft) }),
-                    "Employment details updated successfully",
+                    "Employment details updated successfully"
                   )}
                 />
               </TabsContent>
@@ -226,7 +231,7 @@ function TeacherEditor() {
                   isSaving={savingSection === "assignments"}
                   onSubmit={submit(
                     () => ({ userId, section: "assignments", payload: assignmentsPayload(draft) }),
-                    "Class and course assignments updated successfully",
+                    "Class and course assignments updated successfully"
                   )}
                 />
               </TabsContent>
@@ -237,8 +242,12 @@ function TeacherEditor() {
                   toggleInList={toggleInList}
                   isSaving={savingSection === "availability"}
                   onSubmit={submit(
-                    () => ({ userId, section: "availability", payload: availabilityPayload(draft) }),
-                    "Availability updated successfully",
+                    () => ({
+                      userId,
+                      section: "availability",
+                      payload: availabilityPayload(draft),
+                    }),
+                    "Availability updated successfully"
                   )}
                 />
               </TabsContent>

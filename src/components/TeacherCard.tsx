@@ -12,16 +12,16 @@ interface TeacherCardProps {
 }
 
 const TeacherCard: React.FC<TeacherCardProps> = ({ teacher }) => (
-  <div className="p-4 border border-gray-200 rounded shadow-sm bg-white h-64 flex flex-col justify-between">
+  <div className="p-4 border border-tl-line rounded shadow-sm bg-tl-surface h-64 flex flex-col justify-between">
     <img
       src={teacher.imageUrl} // Updated
       alt={teacher.name}
       className="w-16 h-16 rounded-full mx-auto mb-2"
     />
     <h3 className="text-center text-lg font-semibold">{teacher.name}</h3>
-    <p className="text-center text-gray-500">{teacher.classLevel}</p> {/* Updated */}
+    <p className="text-center text-tl-muted">{teacher.classLevel}</p> {/* Updated */}
     <div className="flex justify-center mt-4">
-      <button className="px-4 py-1 bg-gray-200 text[#154473] rounded">View Profile</button>
+      <button className="px-4 py-1 bg-tl-line text-tl-brand rounded">View Profile</button>
     </div>
   </div>
 );

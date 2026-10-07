@@ -30,7 +30,7 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
+      <span className="text-sm font-medium text-tl-body flex items-center gap-2">
         <Icon className="w-4 h-4" />
         {label}
       </span>
@@ -43,8 +43,8 @@ function TabHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
-        <p className="text-gray-600 dark:text-slate-400 mt-1">{subtitle}</p>
+        <h2 className="text-2xl font-bold text-tl-ink">{title}</h2>
+        <p className="text-tl-muted mt-1">{subtitle}</p>
       </div>
     </div>
   );
@@ -69,9 +69,12 @@ export function StudentEditPersonalTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="flex flex-col items-center space-y-6">
           <div className="relative">
-            <Avatar className="w-32 h-32 ring-4 ring-gray-100 dark:ring-slate-700">
-              <AvatarImage src={draft.userAvatar || "/placeholder.svg"} alt={`${draft.firstName} ${draft.lastName}`} />
-              <AvatarFallback className="bg-blue-500 text-white text-2xl font-semibold">
+            <Avatar className="w-32 h-32 ring-4 ring-tl-line">
+              <AvatarImage
+                src={draft.userAvatar || "/placeholder.svg"}
+                alt={`${draft.firstName} ${draft.lastName}`}
+              />
+              <AvatarFallback className="bg-tl-brand-fill text-white text-2xl font-semibold">
                 {draft.firstName?.[0]}
                 {draft.lastName?.[0]}
               </AvatarFallback>
@@ -81,7 +84,7 @@ export function StudentEditPersonalTab({
               aria-label="Upload a new profile photo"
               disabled={isUploading}
               onClick={() => document.getElementById("photoInput")?.click()}
-              className="absolute bottom-2 right-2 w-8 h-8 bg-blue-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center hover:bg-blue-600 transition-colors disabled:opacity-60"
+              className="absolute bottom-2 right-2 w-8 h-8 bg-tl-brand-fill rounded-full border-2 border-tl-surface flex items-center justify-center hover:bg-tl-brand-fill-hover transition-colors disabled:opacity-60"
             >
               <FiUpload className="w-4 h-4 text-white" />
             </button>
@@ -99,12 +102,10 @@ export function StudentEditPersonalTab({
           </div>
 
           <div className="text-center">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-xl font-semibold text-tl-ink">
               {draft.firstName} {draft.lastName}
             </h3>
-            <p className="text-gray-600 dark:text-slate-400 mt-1">
-              {isUploading ? "Uploading photo…" : "Student"}
-            </p>
+            <p className="text-tl-muted mt-1">{isUploading ? "Uploading photo…" : "Student"}</p>
           </div>
         </div>
 
@@ -166,7 +167,13 @@ export function StudentEditPersonalTab({
 }
 
 /** The guardian's name, relationship and contact details. */
-export function StudentEditGuardianTab({ draft, setField }: { draft: StudentDraft; setField: SetField }) {
+export function StudentEditGuardianTab({
+  draft,
+  setField,
+}: {
+  draft: StudentDraft;
+  setField: SetField;
+}) {
   return (
     <div className="space-y-8">
       <TabHeader
@@ -185,7 +192,9 @@ export function StudentEditGuardianTab({ draft, setField }: { draft: StudentDraf
         <Field icon={Heart} label="Relationship">
           <Select
             value={draft.relationship}
-            onValueChange={(value) => setField("relationship", value as StudentDraft["relationship"])}
+            onValueChange={(value) =>
+              setField("relationship", value as StudentDraft["relationship"])
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select relationship" />
@@ -231,7 +240,10 @@ export function StudentEditSettingsTab({
 }) {
   return (
     <div className="space-y-8">
-      <TabHeader title="Student Settings" subtitle="Manage the student's class and account status" />
+      <TabHeader
+        title="Student Settings"
+        subtitle="Manage the student's class and account status"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Field icon={School} label="Class">
@@ -266,16 +278,16 @@ export function StudentEditSettingsTab({
 
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Actions</h3>
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-lg">
-            <h4 className="text-red-800 dark:text-red-300 font-semibold mb-2">Danger Zone</h4>
-            <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+          <h3 className="text-lg font-semibold text-tl-ink mb-4">Account Actions</h3>
+          <div className="p-4 bg-tl-danger-bg border border-tl-danger/30 rounded-lg">
+            <h4 className="text-tl-danger font-semibold mb-2">Danger Zone</h4>
+            <p className="text-tl-danger text-sm mb-4">
               Deactivating stops the student signing in. Their records are kept, and you can
               reactivate them here at any time. The change is applied when you save.
             </p>
             <Button
               variant="destructive"
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-tl-danger hover:opacity-90"
               disabled={!draft.isActive}
               onClick={() => {
                 if (window.confirm("Are you sure you want to deactivate this student account?")) {

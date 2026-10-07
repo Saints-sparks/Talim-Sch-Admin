@@ -13,10 +13,10 @@ export const PERMISSION_GROUPS = [
     label: "Academics",
     description: "Class, curriculum, assessment and timetable management",
     permissions: [
-      { value: Permission.MANAGE_CLASSES,    label: "Manage Classes" },
+      { value: Permission.MANAGE_CLASSES, label: "Manage Classes" },
       { value: Permission.MANAGE_CURRICULUM, label: "Manage Curriculum" },
-      { value: Permission.MANAGE_ASSESSMENTS,label: "Manage Assessments" },
-      { value: Permission.MANAGE_TIMETABLE,  label: "Manage Timetable" },
+      { value: Permission.MANAGE_ASSESSMENTS, label: "Manage Assessments" },
+      { value: Permission.MANAGE_TIMETABLE, label: "Manage Timetable" },
     ],
   },
   {
@@ -24,9 +24,9 @@ export const PERMISSION_GROUPS = [
     label: "Finance",
     description: "Fees, payments and financial reporting",
     permissions: [
-      { value: Permission.MANAGE_FEES,     label: "Manage Fees" },
+      { value: Permission.MANAGE_FEES, label: "Manage Fees" },
       { value: Permission.MANAGE_PAYMENTS, label: "Manage Payments" },
-      { value: Permission.MANAGE_FINANCE,  label: "Manage Finance & Wallet" },
+      { value: Permission.MANAGE_FINANCE, label: "Manage Finance & Wallet" },
     ],
   },
   {
@@ -36,7 +36,7 @@ export const PERMISSION_GROUPS = [
     permissions: [
       { value: Permission.MANAGE_STUDENTS, label: "Manage Students" },
       { value: Permission.MANAGE_TEACHERS, label: "Manage Teachers" },
-      { value: Permission.MANAGE_PARENTS,  label: "Manage Parents" },
+      { value: Permission.MANAGE_PARENTS, label: "Manage Parents" },
     ],
   },
   {
@@ -44,19 +44,17 @@ export const PERMISSION_GROUPS = [
     label: "Administration",
     description: "Announcements, leave requests, transit, messages, the support desk and settings",
     permissions: [
-      { value: Permission.MANAGE_ANNOUNCEMENTS,  label: "Manage Announcements" },
+      { value: Permission.MANAGE_ANNOUNCEMENTS, label: "Manage Announcements" },
       { value: Permission.MANAGE_LEAVE_REQUESTS, label: "Manage Leave Requests" },
-      { value: Permission.MANAGE_TRANSIT,        label: "Manage Transit" },
-      { value: Permission.MANAGE_MESSAGES,       label: "Manage Messages" },
-      { value: Permission.MANAGE_SUPPORT,        label: "Manage Support Desk" },
-      { value: Permission.MANAGE_SETTINGS,       label: "Manage Settings" },
+      { value: Permission.MANAGE_TRANSIT, label: "Manage Transit" },
+      { value: Permission.MANAGE_MESSAGES, label: "Manage Messages" },
+      { value: Permission.MANAGE_SUPPORT, label: "Manage Support Desk" },
+      { value: Permission.MANAGE_SETTINGS, label: "Manage Settings" },
     ],
   },
 ];
 
-export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) =>
-  g.permissions.map((p) => p.value)
-);
+export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.permissions.map((p) => p.value));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -73,11 +71,7 @@ export function PermissionSelector({
 }: PermissionSelectorProps) {
   const toggle = (value: PermissionValue) => {
     if (disabled) return;
-    onChange(
-      selected.includes(value)
-        ? selected.filter((p) => p !== value)
-        : [...selected, value]
-    );
+    onChange(selected.includes(value) ? selected.filter((p) => p !== value) : [...selected, value]);
   };
 
   const toggleGroup = (groupPermissions: PermissionValue[]) => {
@@ -109,20 +103,20 @@ export function PermissionSelector({
           type="button"
           onClick={selectAll}
           disabled={disabled}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40"
+          className="text-xs text-tl-link hover:text-tl-link font-medium disabled:opacity-40"
         >
           Select All
         </button>
-        <span className="text-gray-300">|</span>
+        <span className="text-tl-faint">|</span>
         <button
           type="button"
           onClick={clearAll}
           disabled={disabled}
-          className="text-xs text-gray-500 hover:text-gray-700 font-medium disabled:opacity-40"
+          className="text-xs text-tl-muted hover:text-tl-ink font-medium disabled:opacity-40"
         >
           Clear All
         </button>
-        <span className="ml-auto text-xs text-gray-400">
+        <span className="ml-auto text-xs text-tl-faint">
           {selected.length} / {ALL_PERMISSIONS.length} selected
         </span>
       </div>
@@ -130,32 +124,26 @@ export function PermissionSelector({
       {/* Groups */}
       {PERMISSION_GROUPS.map((group) => {
         const groupPermValues = group.permissions.map((p) => p.value);
-        const allGroupSelected = groupPermValues.every((p) =>
-          selected.includes(p)
-        );
+        const allGroupSelected = groupPermValues.every((p) => selected.includes(p));
         const someGroupSelected =
-          !allGroupSelected &&
-          groupPermValues.some((p) => selected.includes(p));
+          !allGroupSelected && groupPermValues.some((p) => selected.includes(p));
 
         return (
-          <div
-            key={group.id}
-            className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden"
-          >
+          <div key={group.id} className="border border-tl-line rounded-lg overflow-hidden">
             {/* Group header */}
             <button
               type="button"
               onClick={() => toggleGroup(groupPermValues)}
               disabled={disabled}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 bg-tl-subtle hover:bg-tl-bg transition-colors text-left"
             >
               <div
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                   allGroupSelected
-                    ? "bg-blue-600 border-blue-600"
+                    ? "bg-tl-brand-fill border-tl-brand"
                     : someGroupSelected
-                    ? "bg-blue-200 border-blue-400"
-                    : "border-gray-300 dark:border-slate-500"
+                      ? "bg-tl-select border-tl-brand"
+                      : "border-tl-control"
                 }`}
               >
                 {(allGroupSelected || someGroupSelected) && (
@@ -163,12 +151,8 @@ export function PermissionSelector({
                 )}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">
-                  {group.label}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  {group.description}
-                </p>
+                <p className="text-sm font-semibold text-tl-ink">{group.label}</p>
+                <p className="text-xs text-tl-muted">{group.description}</p>
               </div>
             </button>
 
@@ -183,16 +167,12 @@ export function PermissionSelector({
                     onClick={() => toggle(perm.value)}
                     disabled={disabled}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
-                      isChecked
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                        : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      isChecked ? "bg-tl-select text-tl-link" : "text-tl-muted hover:bg-tl-bg"
                     } disabled:opacity-40`}
                   >
                     <div
                       className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isChecked
-                          ? "bg-blue-600 border-blue-600"
-                          : "border-gray-300 dark:border-slate-500"
+                        isChecked ? "bg-tl-brand-fill border-tl-brand" : "border-tl-control"
                       }`}
                     >
                       {isChecked && <Check className="w-2.5 h-2.5 text-white" />}

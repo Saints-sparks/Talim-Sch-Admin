@@ -30,11 +30,7 @@ import { CreateSubAdminModal } from "./CreateSubAdminModal";
 import { PromoteTeacherModal } from "./PromoteTeacherModal";
 import { EditPermissionsModal } from "./EditPermissionsModal";
 import { SubAdminsTable } from "./SubAdminsTable";
-import {
-  useCanManageSubAdmins,
-  useSubAdminActions,
-  useSubAdmins,
-} from "./useSubAdmins";
+import { useCanManageSubAdmins, useSubAdminActions, useSubAdmins } from "./useSubAdmins";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { getErrorMessage } from "@/lib/apiError";
 
@@ -61,7 +57,7 @@ function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  confirmClass = "bg-red-600 hover:bg-red-700 text-white",
+  confirmClass = "bg-tl-danger hover:opacity-90 text-white",
   isLoading = false,
   onConfirm,
   onCancel,
@@ -73,16 +69,16 @@ function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,27,46,0.45)] px-4"
     >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      <div className="bg-tl-surface rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-start gap-3 mb-4">
-          <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-5 h-5 text-red-500" />
+          <div className="w-9 h-9 rounded-full bg-tl-danger-bg flex items-center justify-center shrink-0">
+            <AlertCircle className="w-5 h-5 text-tl-danger" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{description}</p>
+            <h3 className="text-base font-semibold text-tl-ink">{title}</h3>
+            <p className="text-sm text-tl-muted mt-1">{description}</p>
           </div>
         </div>
         <div className="flex gap-3 justify-end">
@@ -90,7 +86,7 @@ function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-tl-line text-sm font-medium text-tl-body hover:bg-tl-bg disabled:opacity-50"
           >
             Cancel
           </button>
@@ -134,13 +130,13 @@ export function SubAdminsSection() {
   if (!canManage) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-          <ShieldCheck className="w-7 h-7 text-gray-400" />
+        <div className="w-14 h-14 rounded-full bg-tl-track flex items-center justify-center mb-4">
+          <ShieldCheck className="w-7 h-7 text-tl-faint" />
         </div>
-        <h3 className="text-base font-semibold text-gray-700 dark:text-slate-300 mb-1">
+        <h3 className="text-base font-semibold text-tl-body mb-1">
           Reserved for the school administrator
         </h3>
-        <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm">
+        <p className="text-sm text-tl-muted max-w-sm">
           Only the school&apos;s primary administrator can create, edit or remove sub-admins.
         </p>
       </div>
@@ -152,8 +148,8 @@ export function SubAdminsSection() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Sub-Admins</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+          <h2 className="text-xl font-bold text-tl-ink">Sub-Admins</h2>
+          <p className="text-sm text-tl-muted mt-0.5">
             Delegate school administration responsibilities to trusted staff
           </p>
         </div>
@@ -162,7 +158,7 @@ export function SubAdminsSection() {
             type="button"
             onClick={refreshList}
             disabled={list.isFetching}
-            className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg border border-tl-line text-tl-muted hover:bg-tl-bg transition-colors disabled:opacity-50"
             title="Refresh"
             aria-label="Refresh sub-admins"
           >
@@ -171,7 +167,7 @@ export function SubAdminsSection() {
           <button
             type="button"
             onClick={() => setShowPromote(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-tl-line text-sm font-medium text-tl-body hover:bg-tl-bg transition-colors"
           >
             <GraduationCap className="w-4 h-4" />
             Promote Teacher
@@ -179,7 +175,7 @@ export function SubAdminsSection() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-tl-brand-fill text-white text-sm font-medium hover:bg-tl-brand-fill-hover transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             New Sub-Admin
@@ -189,33 +185,31 @@ export function SubAdminsSection() {
 
       {/* Content */}
       {list.isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400 dark:text-slate-500">
+        <div className="flex items-center justify-center py-16 text-tl-faint">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
           Loading sub-admins…
         </div>
       ) : list.isError ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+          <AlertCircle className="w-10 h-10 text-tl-danger mb-3" />
+          <p className="text-sm text-tl-muted mb-4">
             {getErrorMessage(list.error, "Failed to load sub-admins")}
           </p>
           <button
             type="button"
             onClick={() => void list.refetch()}
-            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 rounded-lg border border-tl-line text-sm text-tl-body hover:bg-tl-bg transition-colors"
           >
             Try Again
           </button>
         </div>
       ) : subAdmins.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-            <Users className="w-7 h-7 text-gray-400" />
+          <div className="w-14 h-14 rounded-full bg-tl-track flex items-center justify-center mb-4">
+            <Users className="w-7 h-7 text-tl-faint" />
           </div>
-          <h3 className="text-base font-semibold text-gray-700 dark:text-slate-300 mb-1">
-            No Sub-Admins Yet
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm">
+          <h3 className="text-base font-semibold text-tl-body mb-1">No Sub-Admins Yet</h3>
+          <p className="text-sm text-tl-muted max-w-sm">
             Create a new sub-admin account or promote an existing teacher to help manage the school
             portal.
           </p>
@@ -223,14 +217,14 @@ export function SubAdminsSection() {
             <button
               type="button"
               onClick={() => setShowPromote(true)}
-              className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2 rounded-lg border border-tl-line text-sm font-medium text-tl-body hover:bg-tl-bg transition-colors"
             >
               Promote a Teacher
             </button>
             <button
               type="button"
               onClick={() => setShowCreate(true)}
-              className="px-4 py-2 rounded-lg bg-[#003366] text-white text-sm font-medium hover:bg-[#002244] transition-colors"
+              className="px-4 py-2 rounded-lg bg-tl-brand-fill text-white text-sm font-medium hover:bg-tl-brand-fill-hover transition-colors"
             >
               Create Sub-Admin
             </button>
@@ -248,7 +242,7 @@ export function SubAdminsSection() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-500 dark:text-slate-400">
+              <p className="text-sm text-tl-muted">
                 Page {page} of {totalPages}
               </p>
               <div className="flex gap-2">
@@ -257,7 +251,7 @@ export function SubAdminsSection() {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1 || list.isFetching}
                   aria-label="Previous page"
-                  className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg border border-tl-line text-tl-muted disabled:opacity-40 hover:bg-tl-bg transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -266,7 +260,7 @@ export function SubAdminsSection() {
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages || list.isFetching}
                   aria-label="Next page"
-                  className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-500 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg border border-tl-line text-tl-muted disabled:opacity-40 hover:bg-tl-bg transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -308,8 +302,8 @@ export function SubAdminsSection() {
         confirmLabel={toggleTarget?.isActive ? "Suspend" : "Activate"}
         confirmClass={
           toggleTarget?.isActive
-            ? "bg-amber-600 hover:bg-amber-700 text-white"
-            : "bg-green-600 hover:bg-green-700 text-white"
+            ? "bg-tl-warning hover:opacity-90 text-white"
+            : "bg-tl-success hover:opacity-90 text-white"
         }
         isLoading={isActioning}
         onConfirm={() => {
