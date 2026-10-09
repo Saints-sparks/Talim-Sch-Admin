@@ -30,7 +30,7 @@ async function shoot(page: Page, dir: string, name: string, phone: boolean): Pro
   await settle(page);
   await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
   if (!phone) return null;
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  const overflow = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, window.innerWidth) - 390);
   return overflow > 1 ? `${name} scrolls sideways by ${overflow}px` : null;
 }
 
