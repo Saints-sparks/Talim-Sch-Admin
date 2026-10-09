@@ -46,8 +46,9 @@ for (const theme of ["light", "dark"] as const) {
         results.push(await contrastOf(page, spec.path));
       }
 
-      // The sign-in page is public: a fresh, signed-out context.
-      const anon = await browser.newContext({ colorScheme: theme, viewport: { width: 1440, height: 900 } });
+      // The sign-in page is public: a fresh, signed-out context. An empty storageState is needed:
+      // browser.newContext() otherwise takes the describe's `use` options, the admin's session included.
+      const anon = await browser.newContext({ storageState: { cookies: [], origins: [] }, colorScheme: theme, viewport: { width: 1440, height: 900 } });
       const anonPage = await anon.newPage();
       await anonPage.addInitScript(([k, v]) => localStorage.setItem(k, v), [THEME_KEY, theme] as const);
       await anonPage.route((url) => !["localhost", "127.0.0.1"].includes(url.hostname), (route) => route.abort());
