@@ -32,13 +32,11 @@ export interface LoginCredentials {
 
 /**
  * Body of `POST /auth/login` and `/auth/refresh`. In a browser the refresh
- * token is set as this app's httpOnly cookie, never returned.
+ * token is set as this app's httpOnly cookie, never returned. On a sign-in
+ * that cancelled a scheduled account deletion it also carries
+ * `deletionCancelled: true` (present only when true).
  */
-export type LoginResponse = Schema<"AccessTokenResponseDto"> & {
-  // TODO-switch to generated: `POST /auth/login`'s response once `npm run types:api` has it.
-  /** True when this sign-in cancelled a scheduled account deletion. */
-  deletionCancelled?: boolean;
-};
+export type LoginResponse = Schema<"AccessTokenResponseDto">;
 
 /** The signed-in user as `/auth/introspect` returns them. */
 export type User = Schema<"IntrospectUserDto">;
