@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { MoreVertical } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Pill, card, focusRing, iconButton, rowButton } from "@/components/tl";
@@ -41,8 +42,8 @@ interface TeacherRosterCardProps {
   menuOpen: boolean;
   /** Opens or closes this card's action menu. */
   onToggleMenu: (teacherId: string) => void;
-  /** Opens the teacher's profile. */
-  onViewProfile: (teacher: Teacher) => void;
+  /** The teacher's profile page (a link, so it opens before the page has hydrated, and in a new tab). */
+  profileHref: string;
   /** Opens the teacher editor. */
   onEdit: (teacher: Teacher) => void;
   /** Deactivates the teacher. */
@@ -61,7 +62,7 @@ const menuItem = `flex min-h-[44px] w-full items-center rounded-xl px-3 text-lef
  * @param props.teacher - The teacher.
  * @param props.menuOpen - Whether the menu is open.
  * @param props.onToggleMenu - Opens or closes the menu.
- * @param props.onViewProfile - Opens the profile.
+ * @param props.profileHref - The profile page.
  * @param props.onEdit - Opens the editor.
  * @param props.onDeactivate - Deactivates the teacher.
  * @returns The card.
@@ -70,7 +71,7 @@ export function TeacherRosterCard({
   teacher,
   menuOpen,
   onToggleMenu,
-  onViewProfile,
+  profileHref,
   onEdit,
   onDeactivate,
 }: TeacherRosterCardProps) {
@@ -153,13 +154,9 @@ export function TeacherRosterCard({
           <p className="mt-2.5 text-[13px] font-bold text-tl-warning">Profile setup pending</p>
         )}
         <div className="mt-auto w-full pt-4">
-          <button
-            type="button"
-            onClick={() => onViewProfile(teacher)}
-            className={`${rowButton} w-full`}
-          >
+          <Link href={profileHref} className={`${rowButton} w-full`}>
             View Profile
-          </button>
+          </Link>
         </div>
       </div>
     </article>

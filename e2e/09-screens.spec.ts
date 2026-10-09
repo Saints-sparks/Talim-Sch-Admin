@@ -47,11 +47,11 @@ async function extras(page: Page, dir: string, phone: boolean): Promise<string[]
   ] as const) {
     await page.goto(list);
     await settle(page);
-    const card = page.locator("div").filter({ hasText: name }).filter({ has: page.getByRole("button", { name: "View Profile" }) }).last();
-    await card.getByRole("button", { name: "View Profile" }).click();
+    const card = page.locator("div").filter({ hasText: name }).filter({ has: page.getByRole("link", { name: "View Profile" }) }).last();
+    await card.getByRole("link", { name: "View Profile" }).click();
     await expect(page).toHaveURL(new RegExp(`${list}/[a-f0-9]{24}`));
     problems.push(await shoot(page, dir, `${key}-profile`, phone));
-    await page.getByRole("button", { name: /^Edit/ }).first().click();
+    await page.getByRole("link", { name: /^Edit/ }).first().click();
     await expect(page).toHaveURL(/\/edit$/);
     problems.push(await shoot(page, dir, `${key}-edit`, phone));
   }

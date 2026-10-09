@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -111,14 +112,14 @@ function StudentProfile() {
                   content="Update student personal details, guardian info, or class assignment."
                   side="top"
                 >
-                  <button
-                    onClick={() => router.push(`/users/students/${studentId}/edit`)}
+                  <Link
+                    href={`/users/students/${studentId}/edit`}
                     className="flex items-center gap-2 px-3 py-2 text-tl-muted hover:text-tl-link hover:bg-tl-select rounded-lg transition-all duration-200 border border-tl-line hover:border-tl-control text-sm font-medium"
                   >
-                    <FiEdit className="w-4 h-4" />
+                    <FiEdit className="w-4 h-4" aria-hidden />
                     <span className="hidden sm:inline">Edit Profile</span>
                     <span className="sm:hidden">Edit</span>
-                  </button>
+                  </Link>
                 </Tooltip>
               </div>
             </PermissionGate>

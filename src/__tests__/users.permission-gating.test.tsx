@@ -24,7 +24,7 @@ function renderCard(user: typeof mockAdmin) {
       teacher={teacher}
       menuOpen={false}
       onToggleMenu={jest.fn()}
-      onViewProfile={jest.fn()}
+      profileHref="/users/teachers/t1"
       onEdit={jest.fn()}
       onDeactivate={jest.fn()}
     />,
@@ -50,6 +50,6 @@ describe("teacher roster card gating", () => {
 
   it("still lets that sub-admin open the profile", () => {
     renderCard(subAdminWith(Permission.MANAGE_STUDENTS));
-    expect(screen.getByRole("button", { name: /view profile/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /view profile/i }).getAttribute("href")).toBe("/users/teachers/t1");
   });
 });

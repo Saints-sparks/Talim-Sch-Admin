@@ -52,7 +52,7 @@ export default function OnboardingSetup() {
         onDashboard={() => router.push("/dashboard")}
       />
 
-      <div className="flex flex-1 max-w-6xl mx-auto w-full gap-6 p-6">
+      <div className="flex flex-1 flex-col lg:flex-row max-w-6xl mx-auto w-full gap-6 p-4 sm:p-6">
         <SetupChecklistRail
           steps={steps}
           activeStep={activeStep}

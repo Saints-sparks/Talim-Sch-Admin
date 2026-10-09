@@ -33,7 +33,7 @@ export function SetupHeader({
   onDashboard,
 }: SetupHeaderProps) {
   return (
-    <header className="bg-tl-surface border-b border-tl-line-soft px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+    <header className="bg-tl-surface border-b border-tl-line-soft px-4 sm:px-6 py-4 flex items-center justify-between gap-3 sticky top-0 z-10">
       <div className="flex items-center gap-3">
         <Image src={treelogo} alt="Talim" width={32} height={32} />
         <span className="font-bold text-tl-ink">School Setup</span>
@@ -94,8 +94,8 @@ export function SetupChecklistRail({
   onSelect,
 }: SetupChecklistRailProps) {
   return (
-    <aside className="w-64 shrink-0">
-      <div className="bg-tl-surface rounded-2xl border border-tl-line-soft overflow-hidden sticky top-24">
+    <aside className="w-full lg:w-64 shrink-0">
+      <div className="bg-tl-surface rounded-2xl border border-tl-line-soft overflow-hidden lg:sticky lg:top-24">
         <div className="px-4 py-3 border-b border-tl-line-soft">
           <p className="text-xs font-semibold text-tl-faint uppercase tracking-wide">
             Setup checklist

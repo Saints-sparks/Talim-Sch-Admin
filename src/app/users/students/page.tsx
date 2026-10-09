@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { GraduationCap, Plus } from "lucide-react";
 import AddStudentModal from "@/components/AddStudentModal";
 import StudentsSkeleton from "@/components/StudentsSkeleton";
@@ -55,7 +54,6 @@ function matchesSearch(student: Student, search: string): boolean {
  * @returns The roster.
  */
 function StudentsRoster() {
-  const router = useRouter();
   const controls = useRosterControls(12);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -92,8 +90,6 @@ function StudentsRoster() {
   ]);
 
   const toggleModal = () => setIsModalOpen((open) => !open);
-  const viewProfile = (studentId: string) => router.push(`/users/students/${studentId}/view`);
-
   return (
     <Page>
       <PageHeader
@@ -178,7 +174,7 @@ function StudentsRoster() {
                 key={student._id}
                 student={student}
                 index={index}
-                onViewProfile={viewProfile}
+                profileHref={`/users/students/${student._id}/view`}
               />
             ))}
           </div>

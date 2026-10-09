@@ -99,7 +99,6 @@ function TeachersRoster() {
   ]);
 
   const toggleModal = () => setIsModalOpen((open) => !open);
-  const viewProfile = (teacher: Teacher) => router.push(`/users/teachers/${teacherUserId(teacher)}`);
   const editTeacher = (teacher: Teacher) => {
     setMenuOpen(null);
     router.push(`/users/teachers/${teacherUserId(teacher)}/edit`);
@@ -217,7 +216,7 @@ function TeachersRoster() {
                   teacher={teacher}
                   menuOpen={menuOpen === teacher._id}
                   onToggleMenu={(id) => setMenuOpen((open) => (open === id ? null : id))}
-                  onViewProfile={viewProfile}
+                  profileHref={`/users/teachers/${teacherUserId(teacher)}`}
                   onEdit={editTeacher}
                   onDeactivate={deactivateTeacher}
                 />

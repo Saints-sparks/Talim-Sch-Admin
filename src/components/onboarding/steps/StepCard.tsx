@@ -157,7 +157,7 @@ export function StepNotPermittedCard({ stepId }: { stepId: OnboardingStepId }) {
  */
 export function CompletionCard({ onDashboard }: { onDashboard: () => void }) {
   return (
-    <div className="bg-tl-surface rounded-2xl border border-tl-line-soft p-10 flex flex-col items-center text-center gap-6">
+    <div className="bg-tl-surface rounded-2xl border border-tl-line-soft p-6 sm:p-10 flex flex-col items-center text-center gap-6">
       <div className="relative">
         <div className="w-20 h-20 rounded-full bg-tl-select flex items-center justify-center">
           <Trophy className="h-10 w-10 text-tl-brand" />

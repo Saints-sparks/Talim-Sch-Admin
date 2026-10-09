@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import Avatar from "@/components/Avatar";
 import { Pill, card, rowButton } from "@/components/tl";
@@ -12,8 +13,8 @@ interface StudentRosterCardProps {
   student: Student;
   /** Position in the grid, used only to stagger the entry animation. */
   index: number;
-  /** Opens the student's profile. */
-  onViewProfile: (studentId: string) => void;
+  /** The student's profile page (a link, so it opens before the page has hydrated, and in a new tab). */
+  profileHref: string;
 }
 
 /**
@@ -23,10 +24,10 @@ interface StudentRosterCardProps {
  * @param props - See {@link StudentRosterCardProps}.
  * @param props.student - The student.
  * @param props.index - Grid position, for the stagger.
- * @param props.onViewProfile - Opens the profile.
+ * @param props.profileHref - The profile page.
  * @returns The card.
  */
-export function StudentRosterCard({ student, index, onViewProfile }: StudentRosterCardProps) {
+export function StudentRosterCard({ student, index, profileHref }: StudentRosterCardProps) {
   const name = `${student.userId.firstName} ${student.userId.lastName}`;
   return (
     <motion.article
@@ -54,13 +55,9 @@ export function StudentRosterCard({ student, index, onViewProfile }: StudentRost
           </Pill>
         </div>
         <div className="mt-auto w-full pt-4">
-          <button
-            type="button"
-            onClick={() => onViewProfile(student._id)}
-            className={`${rowButton} w-full`}
-          >
+          <Link href={profileHref} className={`${rowButton} w-full`}>
             View Profile
-          </button>
+          </Link>
         </div>
       </div>
     </motion.article>

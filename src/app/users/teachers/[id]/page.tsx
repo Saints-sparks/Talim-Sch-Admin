@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { BookOpen, Briefcase, Clock, GraduationCap, Pencil, User } from "lucide-react";
 import Avatar from "@/components/Avatar";
@@ -117,14 +118,10 @@ function TeacherProfile() {
         actions={
           <PermissionGate permission={Permission.MANAGE_TEACHERS}>
             <Tooltip content="Update this teacher's details, employment and assignments." side="top">
-              <button
-                type="button"
-                onClick={() => router.push(`/users/teachers/${teacherId}/edit`)}
-                className={ghostButton}
-              >
+              <Link href={`/users/teachers/${teacherId}/edit`} className={ghostButton}>
                 <Pencil className="h-4 w-4" aria-hidden />
                 Edit Profile
-              </button>
+              </Link>
             </Tooltip>
           </PermissionGate>
         }
