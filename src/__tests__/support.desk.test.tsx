@@ -278,6 +278,29 @@ describe("the requester's side of a desk ticket", () => {
     expect(where).toHaveTextContent("App version1.5.0");
     expect(where).toHaveTextContent("Browser or deviceParents web");
   });
+
+  it("keeps the header's definition list valid: each group holds only dt and dd (axe definition-list, dlitem)", async () => {
+    answerGets({
+      t1: deskTicket({
+        requester: { id: "parent-1", name: "Paul Parent", role: "parent", email: "paul@family.test" },
+      }),
+    });
+    const { container } = render(<DeskTicketScreen ticketId="t1" />, { user: admin });
+    await screen.findByText("paul@family.test");
+    const lists = Array.from(container.querySelectorAll("dl"));
+    expect(lists.length).toBeGreaterThan(0);
+    for (const dl of lists) {
+      for (const group of Array.from(dl.children)) {
+        expect(["DT", "DD", "DIV"]).toContain(group.tagName);
+        if (group.tagName === "DIV") {
+          for (const child of Array.from(group.children)) expect(["DT", "DD"]).toContain(child.tagName);
+        }
+      }
+    }
+    const raisedBy = screen.getByText("Raised by");
+    expect(raisedBy.tagName).toBe("DT");
+    expect(raisedBy.parentElement?.parentElement?.tagName).toBe("DL");
+  });
 });
 
 describe("internal notes", () => {

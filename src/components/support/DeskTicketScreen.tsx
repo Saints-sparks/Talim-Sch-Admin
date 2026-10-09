@@ -240,18 +240,23 @@ export function DeskTicketScreen({ ticketId }: DeskTicketScreenProps) {
           </button>
         </div>
         <dl className="mt-5 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
-          <div className="flex items-center gap-2.5 rounded-2xl border border-tl-line-soft bg-tl-subtle p-3">
-            <Avatar id={t.requester.id} name={t.requester.name || "?"} size={36} />
-            <div className="min-w-0">
-              <dt className="text-xs font-bold text-tl-muted">Raised by</dt>
-              <dd className="truncate text-sm font-extrabold text-tl-ink">
-                {t.requester.name}{" "}
-                <span className="font-semibold text-tl-muted">· {roleLabel(t.requester.role)}</span>
-              </dd>
-              {t.requester.email ? (
-                <dd className="truncate text-xs text-tl-muted">{t.requester.email}</dd>
-              ) : null}
-            </div>
+          {/* A dl's groups may hold only dt and dd (axe definition-list, dlitem): the avatar sits in a
+              decorative dd placed by the grid, not in a wrapper around the pair. */}
+          <div className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-x-2.5 rounded-2xl border border-tl-line-soft bg-tl-subtle p-3">
+            <dt className="col-start-2 text-xs font-bold text-tl-muted">Raised by</dt>
+            <dd className="col-start-2 truncate text-sm font-extrabold text-tl-ink">
+              {t.requester.name}{" "}
+              <span className="font-semibold text-tl-muted">· {roleLabel(t.requester.role)}</span>
+            </dd>
+            {t.requester.email ? (
+              <dd className="col-start-2 truncate text-xs text-tl-muted">{t.requester.email}</dd>
+            ) : null}
+            <dd
+              aria-hidden
+              className={`col-start-1 row-start-1 ${t.requester.email ? "row-span-3" : "row-span-2"}`}
+            >
+              <Avatar id={t.requester.id} name={t.requester.name || "?"} size={36} />
+            </dd>
           </div>
           <div className="rounded-2xl border border-tl-line-soft bg-tl-subtle p-3">
             <dt className="text-xs font-bold text-tl-muted">Child</dt>
