@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { resolvePostLoginRoute } from "@/lib/postLoginRoute";
 import ModernLoader from "@/components/ModernLoader";
 import { classifyLoginError, type LoginError } from "@/components/auth/signInError";
+import { deletionNoticeFromSearch } from "@/lib/authPolicy";
 import {
   SignInCheckbox,
   SignInErrorBanner,
@@ -35,7 +36,9 @@ const BANNER_ID = "signin-alert";
  * keepSignedIn)` from the auth context, then `resolvePostLoginRoute` on the
  * stored user (a temporary password goes to `/set-password` first); a refused
  * role, wrong credentials and anything else each get their own banner; the
- * "Talim" loader covers the page while signing in.
+ * "Talim" loader covers the page while signing in. After a deletion request
+ * (`/?deletionScheduledFor=<ISO>`) it says when the account will be deleted;
+ * the "deletion cancelled" toast on the next sign-in comes from `login`.
  *
  * @returns The page.
  */
@@ -48,6 +51,12 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<LoginError | null>(null);
   const [keepSignedIn, setKeepSignedIn] = useState(false);
+  const [deletionNotice, setDeletionNotice] = useState<string | null>(null);
+
+  // Read after mount from `window.location` (no `useSearchParams`, so the page needs no Suspense boundary).
+  useEffect(() => {
+    setDeletionNotice(deletionNoticeFromSearch(window.location.search));
+  }, []);
 
   /**
    * Signs in and routes on, or shows why it failed.
@@ -107,6 +116,12 @@ export default function SignIn() {
           }
         />
         <SignInHeading title="Welcome back" subtitle="Sign in to the School Administrator portal" />
+
+        {deletionNotice ? (
+          <SignInErrorBanner tone="neutral" title="Account deletion scheduled" className="mt-6">
+            {deletionNotice}
+          </SignInErrorBanner>
+        ) : null}
 
         {loginError?.kind === "access_denied" ? (
           <SignInErrorBanner

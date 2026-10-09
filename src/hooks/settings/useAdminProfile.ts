@@ -1,6 +1,6 @@
 /**
  * Settings → Admin Profile and Security data: the signed-in administrator's
- * own account.
+ * own account, including the v1.5 delete-account request.
  *
  * The user id comes from the auth context — no page decodes the token or reads
  * the cached user out of localStorage — and a save updates both the cached
@@ -20,6 +20,9 @@ import {
   type UpdateUserProfilePayload,
   type UserProfile,
 } from "@/app/services/auth.service";
+import { useRouter } from "next/navigation";
+import { deletionScheduledRoute } from "@/lib/authPolicy";
+import type { AccountDeletionBody, AccountDeletionScheduled } from "@/types/round4Contract";
 
 /**
  * The signed-in administrator's full profile.
@@ -109,4 +112,27 @@ export function useUpdateAdminAvatar(): UpdateAdminAvatar {
   });
 
   return { save: mutation.mutateAsync, saving: mutation.isPending };
+}
+
+/**
+ * Asks for the signed-in administrator's account to be deleted
+ * (`POST /auth/account/deletion`). On success the server has already ended
+ * every session, so this signs out here through `AuthContext.logout` with
+ * `sessionEnded` (tokens, stored user and query cache cleared, no more server
+ * calls) and goes to sign-in carrying the date (`deletionScheduledRoute`).
+ * The mutation stays pending until that has run.
+ *
+ * @returns The mutation; `mutate` takes `{ password, reason? }` and fails with the `ApiError`.
+ */
+export function useRequestAccountDeletion() {
+  const { logout } = useAuth();
+  const router = useRouter();
+  return useMutation<AccountDeletionScheduled, unknown, AccountDeletionBody>({
+    mutationFn: (body) => authService.requestAccountDeletion(body),
+    onSuccess: async ({ scheduledFor }) => {
+      const route = deletionScheduledRoute(scheduledFor);
+      await logout({ redirectTo: route, sessionEnded: true });
+      router.push(route);
+    },
+  });
 }

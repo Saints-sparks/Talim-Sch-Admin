@@ -6,6 +6,7 @@ import { authService } from "@/app/services/auth.service";
 import { toast } from "@/components/CustomToast";
 import { apiClient } from "@/lib/apiClient";
 import {
+  DELETION_CANCELLED_MESSAGE,
   dispatchAuthChanged,
   isAdminPortalRole,
   loginFailure,
@@ -29,6 +30,18 @@ import {
 const PUSH_CLEANUP_MAX_MS = 1500;
 import { sessionStore, extractSchoolId } from "@/lib/session";
 
+/** Options for {@link AuthContextType.logout}. */
+export interface LogoutOptions {
+  /** Where to land instead of plain sign-in (e.g. sign-in with the deletion notice). */
+  redirectTo?: string;
+  /**
+   * The server has already ended every session (an account deletion): make
+   * no more authenticated calls, which would 401 and race a forced sign-out,
+   * drop the browser's push subscription locally and skip the sign-out toast.
+   */
+  sessionEnded?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   /** The signed-in administrator's school id — the one source of school context for React code. */
@@ -43,7 +56,8 @@ interface AuthContextType {
   /** Returns true if the current user is allowed to perform `permission` */
   hasPermission: (permission: string) => boolean;
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<boolean>;
-  logout: () => Promise<void>;
+  /** Clears the session (tokens, stored user and, through `auth-changed`, the query cache). */
+  logout: (options?: LogoutOptions) => Promise<void>;
   refreshToken: () => Promise<boolean>;
   setAccessToken: (token: string | null) => void;
   updateUser: (partial: Partial<User>) => void;
@@ -82,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     saveSession(token, userData, keepSignedIn);
   };
 
-  const clearSession = useCallback((redirectToLogin = false) => {
+  const clearSession = useCallback((redirectToLogin = false, redirectTo = "/") => {
     // Read before the session is wiped: a forced sign-out needs to know whose
     // browser subscription to drop.
     const departingUserId =
@@ -99,7 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // redirect depends on which page the user is on.
       const bound = new Promise<void>((resolve) => setTimeout(resolve, PUSH_CLEANUP_MAX_MS));
       void Promise.race([dropLocalWebPush(departingUserId), bound]).finally(() => {
-        if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+        if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign(redirectTo);
       });
     }
   }, []);
@@ -163,8 +177,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const login = async (email: string, password: string, keepSignedIn = true): Promise<boolean> => {
     let accessToken: string;
+    let deletionCancelled: boolean | undefined;
     try {
-      ({ access_token: accessToken } = await authService.login({ email, password, rememberMe: keepSignedIn }));
+      ({ access_token: accessToken, deletionCancelled } = await authService.login({ email, password, rememberMe: keepSignedIn }));
     } catch (error) {
       throw loginFailure(error);
     }
@@ -187,6 +202,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     persistSession(accessToken, userData, keepSignedIn);
     dispatchAuthChanged({ type: "login", user: userData });
+    if (deletionCancelled) toast.success(DELETION_CANCELLED_MESSAGE);
     return true;
   };
 
@@ -212,10 +228,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return refreshPromiseRef.current;
   };
 
-  /** Signs out on the server (best effort) and always clears the local session. */
-  const logout = async () => {
+  /**
+   * Signs out on the server (best effort) and always clears the local session.
+   *
+   * @param options - See {@link LogoutOptions}.
+   */
+  const logout = async (options?: LogoutOptions) => {
+    const sessionEnded = options?.sessionEnded === true;
+    const redirectTo = typeof options?.redirectTo === "string" && options.redirectTo ? options.redirectTo : undefined;
     try {
-      if (accessToken) {
+      if (sessionEnded) {
+        await dropLocalWebPush(sessionStore.getUserId());
+      } else if (accessToken) {
         // While the session is still valid: stop this browser getting this admin's push alerts.
         await revokeWebPushOnSignOut();
         await authService.logout();
@@ -228,17 +252,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearSession();
 
       // Trigger auth event for WebSocket
-      dispatchAuthChanged({ type: "logout" });
+      dispatchAuthChanged({ type: "logout", redirectTo });
 
-      toast.success("Logged out successfully");
+      if (!sessionEnded) toast.success("Logged out successfully");
     }
   };
 
   useEffect(() => {
     const handleAuthChanged = (event: Event) => {
-      const authEvent = event as CustomEvent<{ type?: string }>;
+      const authEvent = event as CustomEvent<{ type?: string; redirectTo?: string }>;
       if (authEvent.detail?.type === "logout") {
-        clearSession(true);
+        clearSession(true, authEvent.detail.redirectTo || "/");
       }
     };
 

@@ -11,6 +11,7 @@ import {
 import { useImageUpload } from "@/hooks/settings/useImageUpload";
 import { useAuth } from "@/context/AuthContext";
 import { ChangePasswordModal } from "@/components/settings/ChangePasswordModal";
+import { DeleteAccountCard } from "@/components/settings/DeleteAccountCard";
 import {
   Card,
   CardHeader,
@@ -33,8 +34,9 @@ interface AdminForm {
 
 /**
  * Settings → Admin Profile: the signed-in administrator's own picture, name,
- * phone number and password. Every admin role may edit their own account, so
- * nothing here is gated on `manage:settings`.
+ * phone number and password, and the Danger zone with Delete account (v1.5).
+ * Every admin role may edit their own account, so nothing here is gated on
+ * `manage:settings`.
  */
 export function AdminAccountSection() {
   const { user } = useAuth();
@@ -207,6 +209,8 @@ export function AdminAccountSection() {
           </div>
         </div>
       </Card>
+
+      <DeleteAccountCard level={3} />
 
       <AnimatePresence>
         {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}

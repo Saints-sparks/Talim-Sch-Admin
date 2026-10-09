@@ -26,6 +26,8 @@ export interface ConfirmSheetProps {
   busy?: boolean;
   /** The red confirm of a destructive action. */
   danger?: boolean;
+  /** Holds the confirm button until the content is complete (a password typed, a box ticked). */
+  confirmDisabled?: boolean;
   /** Cancel's words; default "Cancel". */
   cancelLabel?: string;
   /** Extra content under the paragraph (an optional reason field). */
@@ -47,6 +49,7 @@ export interface ConfirmSheetProps {
  * @param props.busyLabel - Confirm button text while busy.
  * @param props.busy - Whether the action is running.
  * @param props.danger - Whether the action is destructive.
+ * @param props.confirmDisabled - Whether the confirm button waits for the content.
  * @param props.cancelLabel - Cancel button text.
  * @param props.children - Extra content.
  * @returns The sheet.
@@ -62,6 +65,7 @@ export function ConfirmSheet({
   busyLabel,
   busy = false,
   danger = false,
+  confirmDisabled = false,
   cancelLabel = "Cancel",
   children,
 }: ConfirmSheetProps) {
@@ -86,7 +90,7 @@ export function ConfirmSheet({
             type="button"
             className={`${danger ? dangerButton : primaryButton} min-h-[48px] flex-1`}
             onClick={onConfirm}
-            disabled={busy}
+            disabled={busy || confirmDisabled}
           >
             {busy ? (busyLabel ?? confirmLabel) : confirmLabel}
           </button>

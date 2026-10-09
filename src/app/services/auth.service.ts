@@ -11,6 +11,8 @@ import type {
 } from "@/types/apiPayloads";
 import type { Schema } from "@/types/apiContract";
 import type {
+  AccountDeletionBody,
+  AccountDeletionScheduled,
   AuthSession,
   PasswordPolicyResponse,
   RevokeOtherSessionsResponse,
@@ -32,7 +34,11 @@ export interface LoginCredentials {
  * Body of `POST /auth/login` and `/auth/refresh`. In a browser the refresh
  * token is set as this app's httpOnly cookie, never returned.
  */
-export type LoginResponse = Schema<"AccessTokenResponseDto">;
+export type LoginResponse = Schema<"AccessTokenResponseDto"> & {
+  // TODO-switch to generated: `POST /auth/login`'s response once `npm run types:api` has it.
+  /** True when this sign-in cancelled a scheduled account deletion. */
+  deletionCancelled?: boolean;
+};
 
 /** The signed-in user as `/auth/introspect` returns them. */
 export type User = Schema<"IntrospectUserDto">;
@@ -249,4 +255,18 @@ export const authService = {
    */
   getPasswordPolicy: (): Promise<PasswordPolicyResponse> =>
     api.get<PasswordPolicyResponse>(API_URLS.AUTH.PASSWORD_POLICY, { skipAuth: true }),
+
+  /**
+   * Schedules the signed-in user's account for deletion in 30 days (v1.5).
+   * The server ends every session at once, so the caller signs out locally
+   * afterwards with `logout({ sessionEnded: true })`.
+   *
+   * @param body - The account's password and an optional reason.
+   * @returns `{ status: 'scheduled', requestedAt, scheduledFor }`.
+   * @throws ApiError: 400 `VALIDATION_FAILED` with a `password` field error for a wrong password;
+   *   `meta.code` `ADMIN_ACCOUNT` (403),
+   *   `LAST_SCHOOL_ADMIN` or `DELETION_SCHEDULED` (409).
+   */
+  requestAccountDeletion: (body: AccountDeletionBody): Promise<AccountDeletionScheduled> =>
+    api.post<AccountDeletionScheduled>(API_URLS.AUTH.ACCOUNT_DELETION, body),
 };

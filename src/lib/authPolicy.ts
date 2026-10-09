@@ -2,7 +2,7 @@
  * Who may use the School Admin portal, and the words used when they may not.
  * Pure helpers for `AuthContext`; nothing here touches React or storage.
  */
-import { ApiError } from "@/lib/apiError";
+import { ApiError, getErrorMessage } from "@/lib/apiError";
 
 /** All roles allowed to access the school admin portal. */
 export const ADMIN_PORTAL_ROLES = ["school_admin", "school_sub_admin"] as const;
@@ -111,11 +111,102 @@ export function userHasPermission(user: AuthUser | null, permission: string): bo
 }
 
 /**
- * Tells the rest of the app (the chat socket, other tabs' listeners) that the
- * session changed.
+ * Tells the rest of the app (the chat socket, other tabs' listeners, the
+ * query cache) that the session changed.
  *
- * @param detail - `{ type: "login", user }` or `{ type: "logout" }`.
+ * @param detail - `{ type: "login", user }` or `{ type: "logout" }`, with
+ *   `redirectTo` when sign-out should land somewhere other than plain sign-in.
  */
-export function dispatchAuthChanged(detail: { type: "login"; user: AuthUser } | { type: "logout" }): void {
+export function dispatchAuthChanged(
+  detail: { type: "login"; user: AuthUser } | { type: "logout"; redirectTo?: string }
+): void {
   window.dispatchEvent(new CustomEvent("auth-changed", { detail }));
+}
+
+// ─── Delete account (v1.5 addendum) ──────────────────────────────────────────
+
+/** The sign-in toast when a sign-in cancelled a scheduled deletion (`deletionCancelled: true`). */
+export const DELETION_CANCELLED_MESSAGE = "Welcome back. Your account deletion has been cancelled.";
+
+/** The sign-in query parameter that carries the scheduled deletion date (ISO). */
+export const DELETION_NOTICE_PARAM = "deletionScheduledFor";
+
+/** The most a deletion reason may hold (the backend's limit). */
+export const DELETION_REASON_MAX = 500;
+
+/** Copy for each refusal of `POST /auth/account/deletion`, used when the server sends no message. */
+export const DELETION_ERROR_COPY: Readonly<Record<string, string>> = {
+  ADMIN_ACCOUNT: "Talim platform admin accounts can't be deleted from here.",
+  LAST_SCHOOL_ADMIN:
+    "You are your school's only admin. Make another admin first, or contact Talim support.",
+  DELETION_SCHEDULED: "Your account is already scheduled for deletion.",
+};
+
+/**
+ * The notice sign-in shows after a deletion request.
+ *
+ * @param scheduledFor - `scheduledFor` from the 200 response (ISO).
+ * @returns "Your account will be deleted on 8 November 2026. Sign in before then to cancel."
+ */
+export function deletionScheduledMessage(scheduledFor: string | null | undefined): string {
+  const date = scheduledFor ? new Date(scheduledFor) : null;
+  const when =
+    date && !Number.isNaN(date.getTime())
+      ? `on ${date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
+      : "in 30 days";
+  return `Your account will be deleted ${when}. Sign in before then to cancel.`;
+}
+
+/**
+ * The sign-in URL to land on after a deletion request, carrying the date.
+ *
+ * @param scheduledFor - `scheduledFor` from the 200 response (ISO).
+ * @returns e.g. `/?deletionScheduledFor=2026-11-08T10%3A00%3A00.000Z`.
+ */
+export function deletionScheduledRoute(scheduledFor: string): string {
+  return `/?${new URLSearchParams({ [DELETION_NOTICE_PARAM]: scheduledFor }).toString()}`;
+}
+
+/**
+ * The deletion notice a sign-in URL asks for.
+ *
+ * @param search - `window.location.search`.
+ * @returns The notice, or null when the URL carries no readable date.
+ */
+export function deletionNoticeFromSearch(search: string): string | null {
+  const value = new URLSearchParams(search).get(DELETION_NOTICE_PARAM);
+  if (!value || Number.isNaN(new Date(value).getTime())) return null;
+  return deletionScheduledMessage(value);
+}
+
+/** Where a failed deletion request's message belongs. */
+export interface DeletionFailure {
+  /** The password field's message (a wrong password: a 400 naming `password`), else null. */
+  field: string | null;
+  /** The banner's message (everything else), else null. */
+  banner: string | null;
+  /** The route's own code (`LAST_SCHOOL_ADMIN`, `ADMIN_ACCOUNT`, ...), when it sent one. */
+  code: string | null;
+}
+
+/**
+ * Sorts a failed deletion request: a wrong password (a 400 whose field errors
+ * name `password`, read with `ApiError.fieldErrors()` as the change-password
+ * form does) goes on the field, every other refusal in the banner. Refusals
+ * are keyed on the route's top-level `code` (`ApiError.meta.code`), never on
+ * message text.
+ *
+ * @param error - Whatever `POST /auth/account/deletion` threw.
+ * @returns The field or banner message and the code.
+ */
+export function deletionFailure(error: unknown): DeletionFailure {
+  const raw = error instanceof ApiError ? error.meta.code : undefined;
+  const code = typeof raw === "string" && raw ? raw : null;
+  const password = error instanceof ApiError ? error.fieldErrors().password : undefined;
+  if (password) return { field: password, banner: null, code };
+  if (code && DELETION_ERROR_COPY[code]) {
+    return { field: null, banner: (error as ApiError).message || DELETION_ERROR_COPY[code], code };
+  }
+  const fallback = "We couldn't delete your account. Please try again.";
+  return { field: null, banner: getErrorMessage(error, fallback) || fallback, code };
 }

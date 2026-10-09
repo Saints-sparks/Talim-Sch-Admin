@@ -71,6 +71,8 @@ export const API_URLS = {
     REVOKE_OTHER_SESSIONS: "/auth/sessions/revoke-others",
     /** Round 4 §34: the password rules (public). */
     PASSWORD_POLICY: "/auth/password-policy",
+    /** v1.5: schedules the caller's account for deletion in 30 days. */
+    ACCOUNT_DELETION: "/auth/account/deletion",
   },
   SCHOOL: {
     GET_CLASS: "/classes",

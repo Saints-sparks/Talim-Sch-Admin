@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ghostButton } from "@/components/tl/styles";
+import { ghostButton, textLink } from "@/components/tl/styles";
+import { PRIVACY_POLICY_URL, SUPPORT_URL, TERMS_OF_SERVICE_URL } from "@/lib/publicLinks";
 import {
   CheckCircle2,
   Download,
@@ -66,6 +67,13 @@ const CARDS: DataCard[] = [
   },
 ];
 
+/** Talim's public policy and support pages, opened in a new tab. */
+const LEGAL_LINKS = [
+  { label: "Privacy policy", desc: "How school, staff and student data is handled", href: PRIVACY_POLICY_URL },
+  { label: "Terms of service", desc: "The rules for using Talim", href: TERMS_OF_SERVICE_URL },
+  { label: "Support", desc: "Guides, FAQs and how to reach Talim", href: SUPPORT_URL },
+];
+
 const SYSTEM_INFO = [
   { label: "Platform", value: "Talim School Administration" },
   { label: "Version", value: APP_VERSION },
@@ -74,7 +82,8 @@ const SYSTEM_INFO = [
 
 /**
  * Settings → Data & System: CSV exports, where the school's backups stand,
- * what this build is, and "Contact Talim support", which opens Help & support
+ * what this build is, links to the privacy policy, terms and support pages on
+ * www.mytalim.com, and "Contact Talim support", which opens Help & support
  * (`/help`), where the admin raises and follows tickets to Talim through
  * `/tickets` (v1.5 §1).
  *
@@ -181,6 +190,25 @@ export function DataSystemSection() {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card>
+        <CardHeader title="Policies & Support" />
+        <ul className="px-5 py-2">
+          {LEGAL_LINKS.map((link) => (
+            <li
+              key={link.href}
+              className="flex flex-wrap items-center justify-between gap-x-3 border-b border-tl-line-soft py-1 last:border-0"
+            >
+              <a href={link.href} target="_blank" rel="noopener noreferrer" className={textLink}>
+                {link.label}
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              <span className="text-xs text-tl-muted">{link.desc}</span>
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <Card>

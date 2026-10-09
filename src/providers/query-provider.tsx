@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/apiError";
 
 /**
@@ -38,8 +38,37 @@ export function createQueryClient(): QueryClient {
   });
 }
 
-/** Provides the QueryClient to the app; one instance per browser session. */
+/**
+ * Empties a QueryClient whenever the session ends: `AuthContext.logout` and
+ * a forced sign-out both raise `auth-changed` with `type: "logout"`, so one
+ * admin's cached data never shows to the next one on this browser.
+ *
+ * @param client - The app's QueryClient.
+ * @returns A function that stops listening.
+ */
+export function clearQueriesOnLogout(client: QueryClient): () => void {
+  /**
+   * Clears the cache for a logout event.
+   *
+   * @param event - The `auth-changed` event.
+   */
+  const onAuthChanged = (event: Event) => {
+    if ((event as CustomEvent<{ type?: string }>).detail?.type === "logout") client.clear();
+  };
+  window.addEventListener("auth-changed", onAuthChanged);
+  return () => window.removeEventListener("auth-changed", onAuthChanged);
+}
+
+/**
+ * Provides the QueryClient to the app; one instance per browser session,
+ * emptied on every sign-out ({@link clearQueriesOnLogout}).
+ *
+ * @param props - Standard children.
+ * @param props.children - The app tree.
+ * @returns The provider element.
+ */
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [client] = useState(createQueryClient);
+  useEffect(() => clearQueriesOnLogout(client), [client]);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
