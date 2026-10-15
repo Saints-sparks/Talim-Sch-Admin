@@ -292,6 +292,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/students/me/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The student's transcript across every school (published terms)
+         * @description The student's transcript (§5): every published term of every Talim
+         *     school they attended. Open to alumni.
+         */
+        get: operations["StudentsMeController_transcript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/students/me/transcript/issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue the transcript with a verification code (idempotent)
+         * @description Issues the student's transcript: a verification code (the same code
+         *     again for the same transcript).
+         */
+        post: operations["StudentsMeController_issueTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/students/me/attendance": {
         parameters: {
             query?: never;
@@ -470,6 +512,46 @@ export interface paths {
         get: operations["ParentChildrenController_reportTerms"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parents/me/children/{childId}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A child's transcript across every school
+         * @description The child's transcript (§5), read-only.
+         */
+        get: operations["ParentChildrenController_transcript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parents/me/children/{childId}/transcript/issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a child's transcript (idempotent)
+         * @description Issues the child's transcript with a verification code.
+         */
+        post: operations["ParentChildrenController_issueTranscript"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1061,6 +1143,66 @@ export interface paths {
          * @description Saves the principal's remarks for a submission's class.
          */
         put: operations["GradingController_savePrincipalRemarks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/students/{id}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A student's transcript (staff: their school's part)
+         * @description School admin and sub-admin: their school's part, also for a former student or one who transferred away. Platform admin: every school. 404 for anyone else.
+         */
+        get: operations["StudentTranscriptsController_transcript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/students/{id}/transcript/issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a student's transcript (staff; idempotent)
+         * @description Issues that transcript with a verification code.
+         */
+        post: operations["StudentTranscriptsController_issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transcripts/verify/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify a transcript code (public, no scores)
+         * @description Answers the student name, schools, session range and issue date. An unknown code answers `valid:false`; a revoked one `valid:false, revoked:true`. Rate-limited with the auth limiter.
+         */
+        get: operations["TranscriptVerifyController_verify"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -7883,6 +8025,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/transit/students/{id}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A student graduates, withdraws or leaves Talim
+         * @description Ends the active enrollment (graduated, withdrawn, or transferred_out for left_talim), takes the student off the roster (`isActive:false`) and sets `status`, `leftAt`, `leftAcademicYearId`. The student keeps their sign-in in alumni mode. Graduation only from the top level when the level order can be told. 409 `STUDENT_NOT_ACTIVE` when the student has already left; 404 for another school's student.
+         */
+        post: operations["TransitController_leaveStudent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/transit/students/{id}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reinstate a withdrawn student
+         * @description A new active enrollment in the given class (the current session unless one is named), `status:'active'`, back on the roster. 409 `STUDENT_NOT_WITHDRAWN` for an active student or a graduate.
+         */
+        post: operations["TransitController_reinstateStudent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/transit/transfers": {
         parameters: {
             query?: never;
@@ -9021,6 +9203,96 @@ export interface components {
             startDate: string;
             /** @description `YYYY-MM-DD`. */
             endDate: string;
+            /** @description The school the term belongs to (a transferred student has terms of more than one). */
+            schoolId: string;
+            /** @description That school's name. */
+            schoolName: string;
+        };
+        TranscriptStudentDto: {
+            gender: string | null;
+            /** @description `YYYY-MM-DD`; null when not recorded. */
+            dateOfBirth: string | null;
+            /** @enum {string} */
+            status: "active" | "graduated" | "withdrawn" | "left_talim";
+            /** @description `YYYY-MM-DD`; null while active. */
+            leftAt: string | null;
+            photoUrl: string | null;
+            id: string;
+            name: string;
+        };
+        TranscriptSchoolDto: {
+            logo: string | null;
+            /** @description The admission number the student had there. */
+            admissionNumber: string | null;
+            /** @description `YYYY-MM-DD`. */
+            from: string | null;
+            /** @description `YYYY-MM-DD`; null while the student is still there. */
+            to: string | null;
+            /**
+             * @description How the student's time there ended (or `continuing`).
+             * @enum {string|null}
+             */
+            outcome: "continuing" | "promoted" | "repeated" | "graduated" | "withdrawn" | "transferred" | "completed" | null;
+            id: string;
+            name: string;
+        };
+        TranscriptSubjectDto: {
+            percent: number | null;
+            grade: string | null;
+            remark: string | null;
+            code: string;
+            name: string;
+            /** @description Σ published scores. */
+            score: number;
+            /** @description Σ their maximum scores. */
+            max: number;
+        };
+        TranscriptAttendanceDto: {
+            daysOpen: number;
+            present: number;
+            absent: number;
+        };
+        TranscriptTermDto: {
+            subjects: components["schemas"]["TranscriptSubjectDto"][];
+            average: number | null;
+            grade: string | null;
+            /** @description The stored, published position. */
+            position: number | null;
+            /** @description How many were ranked. */
+            of: number | null;
+            attendance: components["schemas"]["TranscriptAttendanceDto"] | null;
+            termId: string;
+            term: string;
+        };
+        TranscriptSessionDto: {
+            session: string | null;
+            outcome: string | null;
+            terms: components["schemas"]["TranscriptTermDto"][];
+            average: number | null;
+            schoolId: string;
+            className: string;
+        };
+        TranscriptGradeBandDto: {
+            remark: string | null;
+            letter: string;
+            min: number;
+        };
+        TranscriptDto: {
+            student: components["schemas"]["TranscriptStudentDto"];
+            schools: components["schemas"]["TranscriptSchoolDto"][];
+            sessions: components["schemas"]["TranscriptSessionDto"][];
+            cumulativeAverage: number | null;
+            gradeScale: components["schemas"]["TranscriptGradeBandDto"][];
+            /** @description ISO instant. */
+            generatedAt: string;
+        };
+        TranscriptIssueDto: {
+            /** @description 10 characters, uppercase base32 without 0/O/1/I. */
+            code: string;
+            /** @description ISO instant. */
+            issuedAt: string;
+            /** @description Where a third party checks the code (printed as a QR). */
+            verifyUrl: string;
         };
         AttendanceDayDto: {
             /** @enum {string} */
@@ -9774,6 +10046,17 @@ export interface components {
         };
         SavePrincipalRemarksDto: {
             remarks: components["schemas"]["PrincipalRemarkInputDto"][];
+        };
+        TranscriptVerificationDto: {
+            studentName: string | null;
+            schools: string[];
+            /** @description First and last session, e.g. "2020/2021 – 2025/2026". */
+            sessions: string | null;
+            /** Format: date-time */
+            issuedAt: string | null;
+            /** @description True for a known code that has not been revoked. */
+            valid: boolean;
+            revoked: boolean;
         };
         CreateResourceDto: {
             /**
@@ -10638,6 +10921,17 @@ export interface components {
         IntrospectUserDto: {
             /** @enum {string} */
             role: "admin" | "school_admin" | "school_sub_admin" | "teacher" | "student" | "parent";
+            /**
+             * @description Students only: `active`, or why they left. Anything but `active` is
+             *     alumni mode (read-only: results, transcript, profile, settings, help).
+             * @enum {string}
+             */
+            studentStatus?: "active" | "graduated" | "withdrawn" | "left_talim";
+            /**
+             * Format: date-time
+             * @description Students only: when they graduated or left (ISO), null while active.
+             */
+            leftAt?: string | null;
             userId: string;
             email: string;
             firstName: string;
@@ -14781,8 +15075,13 @@ export interface components {
             studentId: string;
             /** @description Current/source class ID */
             fromClassId: string;
-            /** @description Target class ID */
-            toClassId: string;
+            /** @description Target class ID. Required to promote; repeat defaults to the source class; not used to graduate or withdraw. */
+            toClassId?: string;
+            /**
+             * @description What happens to the student. Without it: `repeatClass: true` means repeat, otherwise promote. `graduate` is allowed only from the school's top level when the level order can be told.
+             * @enum {string}
+             */
+            action?: "promote" | "repeat" | "graduate" | "withdraw";
             /** @description Target grade level label */
             targetGradeLevel?: string;
             /** @description Whether this is a repeat decision */
@@ -14796,6 +15095,47 @@ export interface components {
             /** @description Target/current term ID */
             targetTermId?: string;
             decisions: components["schemas"]["PromotionDecisionDto"][];
+        };
+        LeaveStudentDto: {
+            /**
+             * @description `graduated` (alumni), `withdrawn` (left the school), `left_talim` (moved to a school outside Talim).
+             * @enum {string}
+             */
+            reason: "graduated" | "withdrawn" | "left_talim";
+            /** @description The session the student leaves in; defaults to the active enrollment's, else the school's current session. */
+            academicYearId?: string;
+            /** @description A note kept on the ended enrollment. */
+            note?: string;
+        };
+        StudentStatusEnrollmentDto: {
+            id: string;
+            classId: string;
+            academicYearId: string;
+            /** @description Enrollment status: graduated, withdrawn or transferred_out after a leave; active after a reinstate. */
+            status: string;
+            /** Format: date-time */
+            endDate?: string | null;
+        };
+        StudentStatusChangeDto: {
+            studentId: string;
+            /** @enum {string} */
+            status: "active" | "graduated" | "withdrawn" | "left_talim";
+            /** @description The roster switch: false once the student has left. */
+            isActive: boolean;
+            /** Format: date-time */
+            leftAt: string | null;
+            leftAcademicYearId: string | null;
+            enrollment: components["schemas"]["StudentStatusEnrollmentDto"] | null;
+            /** @description Things the school should check (e.g. the top level could not be told). */
+            warnings: string[];
+        };
+        ReinstateStudentDto: {
+            /** @description The class the student rejoins. */
+            classId: string;
+            /** @description The session of the new enrollment; defaults to the school's current session. */
+            academicYearId?: string;
+            /** @description The term of the new enrollment. */
+            termId?: string;
         };
         CreateStudentTransferRequestDto: {
             /** @description Student ID */
@@ -15176,6 +15516,44 @@ export interface operations {
             };
         };
     };
+    StudentsMeController_transcript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptDto"];
+                };
+            };
+        };
+    };
+    StudentsMeController_issueTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptIssueDto"];
+                };
+            };
+        };
+    };
     StudentsMeController_attendance: {
         parameters: {
             query?: {
@@ -15402,6 +15780,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportTermDto"][];
+                };
+            };
+        };
+    };
+    ParentChildrenController_transcript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The child's Student id */
+                childId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptDto"];
+                };
+            };
+        };
+    };
+    ParentChildrenController_issueTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The child's Student id */
+                childId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptIssueDto"];
                 };
             };
         };
@@ -16340,6 +16762,71 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    StudentTranscriptsController_transcript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Student record id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptDto"];
+                };
+            };
+        };
+    };
+    StudentTranscriptsController_issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Student record id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptIssueDto"];
+                };
+            };
+        };
+    };
+    TranscriptVerifyController_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVerificationDto"];
+                };
             };
         };
     };
@@ -27008,6 +27495,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    TransitController_leaveStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveStudentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentStatusChangeDto"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentStatusChangeDto"];
+                };
+            };
+        };
+    };
+    TransitController_reinstateStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReinstateStudentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentStatusChangeDto"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentStatusChangeDto"];
                 };
             };
         };
