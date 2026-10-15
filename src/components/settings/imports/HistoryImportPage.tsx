@@ -173,7 +173,14 @@ export function HistoryImportPage() {
 
   const status = job ? IMPORT_STATUS[job.status] : null;
   const counts = job?.counts;
-  const showUpload = stage === "idle" || stage === "invalid" || stage === "done";
+  // A new file can be chosen whenever nothing is in flight.
+  const showUpload = stage !== "uploading" && stage !== "validating" && stage !== "committing";
+  const uploadTitle =
+    stage === "idle"
+      ? "Upload your file"
+      : stage === "invalid"
+        ? "Upload a corrected file"
+        : "Upload another file";
 
   return (
     <Page>
@@ -223,7 +230,7 @@ export function HistoryImportPage() {
       {showUpload ? (
         <section className={`${card} flex flex-col gap-4`} aria-label="Upload">
           <CardHeader
-            title={stage === "idle" ? "Upload your file" : "Upload a corrected file"}
+            title={uploadTitle}
             subtitle="Talim checks every row first and lists any problem with its sheet, row and column."
           />
           <ImportDropzone onFile={onFile} disabled={upload.isPending} />
@@ -237,7 +244,7 @@ export function HistoryImportPage() {
             {uploadingName ?? "your file"}…
           </p>
           <div className="mt-3">
-            <ImportProgressBar progress={undefined} label="Upload" />
+            <ImportProgressBar progress={undefined} label="Upload" phaseText="Sending the file" />
           </div>
         </section>
       ) : null}

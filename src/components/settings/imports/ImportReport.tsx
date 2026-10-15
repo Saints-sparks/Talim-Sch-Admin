@@ -171,20 +171,24 @@ export function IssueTable({ title, issues, totalCount, onPageChange, action }: 
  * @param props - The progress.
  * @param props.progress - Phase, done and total.
  * @param props.label - The bar's accessible name.
+ * @param props.phaseText - Words in place of the phase (e.g. while uploading).
  * @returns The progress block.
  */
 export function ImportProgressBar({
   progress,
   label,
+  phaseText,
 }: {
   progress: ImportProgress | undefined;
   label: string;
+  phaseText?: string;
 }) {
   const pct = progressPercent(progress);
+  const phase = phaseText ?? phaseLabel(progress?.phase);
   return (
     <div className="flex flex-col gap-2" aria-live="polite">
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-        <span className="font-bold text-tl-ink">{phaseLabel(progress?.phase)}</span>
+        <span className="font-bold text-tl-ink">{phase}</span>
         {progress && progress.total > 0 ? (
           <span className="tabular-nums text-tl-muted">
             {progress.done.toLocaleString("en")} of {progress.total.toLocaleString("en")}
@@ -197,7 +201,7 @@ export function ImportProgressBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct ?? undefined}
-        aria-valuetext={pct === null ? phaseLabel(progress?.phase) : `${pct}%`}
+        aria-valuetext={pct === null ? phase : `${pct}%`}
         className="h-2 overflow-hidden rounded bg-tl-line-soft"
       >
         <div
