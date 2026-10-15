@@ -15,8 +15,15 @@ import RosterPagination from "@/components/users/RosterPagination";
 import RosterErrorState from "@/components/users/RosterErrorState";
 import StudentRosterCard from "@/components/users/StudentRosterCard";
 import { rosterGrid } from "@/components/users/parts";
-import { EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
+import { Banner, EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
 import type { Student } from "@/app/services/student.service";
+import {
+  STUDENT_STATUS_FILTERS,
+  isFormerFilter,
+  matchesStudentStatus,
+  rosterHasStatus,
+  type StudentStatusFilter,
+} from "@/components/users/students/studentStatus";
 
 /**
  * How many students to pull in one request while a search term or status
@@ -54,7 +61,7 @@ function matchesSearch(student: Student, search: string): boolean {
  * @returns The roster.
  */
 function StudentsRoster() {
-  const controls = useRosterControls(12);
+  const controls = useRosterControls<StudentStatusFilter>(12);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const classesQuery = useClasses();
@@ -72,10 +79,7 @@ function StudentsRoster() {
     }
     const search = controls.debouncedSearch.trim().toLowerCase();
     const filtered = rows.filter(
-      (student) =>
-        matchesSearch(student, search) &&
-        (controls.status === "" ||
-          (controls.status === "active" ? student.isActive : !student.isActive)),
+      (student) => matchesSearch(student, search) && matchesStudentStatus(student, controls.status)
     );
     const start = (controls.page - 1) * controls.pageSize;
     return { visible: filtered.slice(start, start + controls.pageSize), total: filtered.length };
@@ -130,9 +134,18 @@ function StudentsRoster() {
         onClassChange={controls.setClassId}
         classTooltip="Show only students in this class."
         status={controls.status}
-        onStatusChange={(value) => controls.setStatus(value as typeof controls.status)}
-        statusTooltip="Active students are currently enrolled. Inactive students have been deactivated."
+        statusOptions={[...STUDENT_STATUS_FILTERS]}
+        onStatusChange={(value) => controls.setStatus(value as StudentStatusFilter)}
+        statusTooltip="Active students are on the roster. Graduated, withdrawn and left-Talim students are former students; deactivated ones are switched off but not former."
       />
+
+      {/* The roster endpoint does not send `status` yet: say so rather than show an empty list as fact. */}
+      {isFormerFilter(controls.status) && rosterQuery.isSuccess && !rosterHasStatus(rows) ? (
+        <Banner tone="info" title="Former students can't be told apart here yet">
+          This list doesn&apos;t say yet whether an inactive student graduated, withdrew or left
+          Talim, so they appear under Deactivated. Open a student to see their status and records.
+        </Banner>
+      ) : null}
 
       {isModalOpen && (
         <AddStudentModal onClose={toggleModal} onSuccess={() => rosterQuery.refetch()} />

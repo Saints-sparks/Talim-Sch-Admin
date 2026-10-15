@@ -10,6 +10,19 @@ export interface RosterFilterClass {
   name: string;
 }
 
+/** One choice of the status select. */
+export interface RosterStatusOption {
+  value: string;
+  label: string;
+}
+
+/** The people rosters' default statuses: the account switch. */
+const DEFAULT_STATUS_OPTIONS: RosterStatusOption[] = [
+  { value: "", label: "Status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
+
 /** Props for {@link RosterFilters}. */
 interface RosterFiltersProps {
   /** Current search text (the raw input value; debounce it in the page). */
@@ -26,8 +39,10 @@ interface RosterFiltersProps {
   onClassChange: (classId: string | null) => void;
   /** Explains what the class filter does. */
   classTooltip: string;
-  /** Selected status: `""` (all), `"active"` or `"inactive"`. */
+  /** Selected status: `""` (all) or one of the options' values. */
   status: string;
+  /** The status choices; default all / active / inactive. The first should be `""`. */
+  statusOptions?: RosterStatusOption[];
   /** Called with the new status. */
   onStatusChange: (status: string) => void;
   /** Explains what the status filter means. */
@@ -50,6 +65,7 @@ interface RosterFiltersProps {
  * @param props.onClassChange - Class handler.
  * @param props.classTooltip - The class filter's hint.
  * @param props.status - The chosen status.
+ * @param props.statusOptions - The status choices.
  * @param props.onStatusChange - Status handler.
  * @param props.statusTooltip - The status filter's hint.
  * @param props.dataGuide - Tour target.
@@ -64,6 +80,7 @@ export function RosterFilters({
   onClassChange,
   classTooltip,
   status,
+  statusOptions = DEFAULT_STATUS_OPTIONS,
   onStatusChange,
   statusTooltip,
   dataGuide,
@@ -100,9 +117,11 @@ export function RosterFilters({
           value={status}
           onChange={(event) => onStatusChange(event.target.value)}
         >
-          <option value="">Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </Tooltip>
     </div>

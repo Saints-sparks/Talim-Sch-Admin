@@ -14,8 +14,12 @@ import { useDebouncedValue } from "@/hooks/users/useDebouncedValue";
 /** Status values the roster filters use; `""` means "any status". */
 export type RosterStatusFilter = "" | "active" | "inactive";
 
-/** Everything a roster page needs to drive its filters and pagination. */
-export interface RosterControls {
+/**
+ * Everything a roster page needs to drive its filters and pagination.
+ *
+ * @typeParam S - The status values the page's filter offers (`""` is "any").
+ */
+export interface RosterControls<S extends string = RosterStatusFilter> {
   /** Raw search text, bound to the input. */
   search: string;
   /** Search text after the debounce — use this for filtering and query keys. */
@@ -23,9 +27,9 @@ export interface RosterControls {
   /** Sets the search text and returns to page one. */
   setSearch: (value: string) => void;
   /** Selected status. */
-  status: RosterStatusFilter;
+  status: S;
   /** Sets the status and returns to page one. */
-  setStatus: (value: RosterStatusFilter) => void;
+  setStatus: (value: S) => void;
   /** Selected class id, or `null` for all classes. */
   classId: string | null;
   /** Sets the class and returns to page one. */
@@ -49,12 +53,17 @@ export interface RosterControls {
 /**
  * Filter and pagination state for a roster page.
  *
+ * @typeParam S - The status values the page's filter offers; the people
+ *   rosters use `RosterStatusFilter`, the students roster its own (graduated,
+ *   withdrawn ...). `""` always means "any status".
  * @param initialPageSize - Rows per page before the user changes it. Default 9.
  * @returns The controls, ready to bind to `RosterFilters` and `RosterPagination`.
  */
-export function useRosterControls(initialPageSize = 9): RosterControls {
+export function useRosterControls<S extends string = RosterStatusFilter>(
+  initialPageSize = 9
+): RosterControls<S> {
   const [search, setSearchState] = useState("");
-  const [status, setStatusState] = useState<RosterStatusFilter>("");
+  const [status, setStatusState] = useState<S>("" as S);
   const [classId, setClassIdState] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
@@ -66,7 +75,7 @@ export function useRosterControls(initialPageSize = 9): RosterControls {
     setPage(1);
   }, []);
 
-  const setStatus = useCallback((value: RosterStatusFilter) => {
+  const setStatus = useCallback((value: S) => {
     setStatusState(value);
     setPage(1);
   }, []);
@@ -83,7 +92,7 @@ export function useRosterControls(initialPageSize = 9): RosterControls {
 
   const reset = useCallback(() => {
     setSearchState("");
-    setStatusState("");
+    setStatusState("" as S);
     setClassIdState(null);
     setPage(1);
   }, []);
@@ -120,6 +129,6 @@ export function useRosterControls(initialPageSize = 9): RosterControls {
       setPageSize,
       isFiltering,
       reset,
-    ],
+    ]
   );
 }

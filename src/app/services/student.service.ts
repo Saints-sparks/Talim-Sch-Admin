@@ -135,6 +135,13 @@ interface ParentContact {
   [key: string]: string;
 }
 
+/**
+ * Why a student is on or off the roster (`Student.status`, contract
+ * history-records-and-transcripts §1). `isActive` stays the roster switch: an
+ * `active` student may still be deactivated.
+ */
+export type StudentStatus = Schema<"StudentStatusChangeDto">["status"];
+
 /** A student row as the paginated roster endpoints return it. */
 export interface Student {
   _id: string;
@@ -146,6 +153,11 @@ export interface Student {
   parentId: string;
   parentContact: ParentContact;
   isActive: boolean;
+  /**
+   * Graduated, withdrawn or left Talim. `GET /users/students` does not send it
+   * yet (its projection predates the field); missing reads as `active`.
+   */
+  status?: StudentStatus;
   enrollmentDate?: string;
   assignedSubjects?: string[];
   attendance?: string;
@@ -239,8 +251,9 @@ export type RegisterStudentPayload = Omit<RegisterUserPayload, "role" | "passwor
  * @throws `ApiError` — `CONFLICT` when the email already has an account.
  */
 export const registerStudent = async (
-  payload: RegisterStudentPayload,
-): Promise<RegisterStudentResponse> => api.post<RegisterStudentResponse>(API_ENDPOINTS.REGISTER, payload);
+  payload: RegisterStudentPayload
+): Promise<RegisterStudentResponse> =>
+  api.post<RegisterStudentResponse>(API_ENDPOINTS.REGISTER, payload);
 
 /**
  * Creates the student record for an account made by `registerStudent`, links
@@ -250,8 +263,9 @@ export const registerStudent = async (
  * @returns The created student.
  * @throws `ApiError` — `VALIDATION_FAILED` when a field fails the DTO.
  */
-export const createStudentProfile = async (payload: CreateStudentProfilePayload): Promise<CreatedStudent> =>
-  api.post<CreatedStudent>(API_ENDPOINTS.CREATE_STUDENT, payload);
+export const createStudentProfile = async (
+  payload: CreateStudentProfilePayload
+): Promise<CreatedStudent> => api.post<CreatedStudent>(API_ENDPOINTS.CREATE_STUDENT, payload);
 
 /**
  * What `POST /students` answers (`CreatedStudentDto`): the student record and
@@ -322,7 +336,10 @@ export const getClass = async (classId: string): Promise<Class> => {
  * @returns The updated student.
  * @throws `ApiError` — `VALIDATION_FAILED`, `NOT_FOUND` or `FORBIDDEN`.
  */
-export const updateStudent = async (studentId: string, data: UpdateStudentPayload): Promise<StudentById> =>
+export const updateStudent = async (
+  studentId: string,
+  data: UpdateStudentPayload
+): Promise<StudentById> =>
   api.put<StudentById>(`${API_ENDPOINTS.STUDENTS}/${encodeURIComponent(studentId)}`, data);
 
 export const studentService = {
@@ -347,7 +364,7 @@ export const studentService = {
    */
   async getStudentById(studentId: string): Promise<StudentById> {
     const body = await api.get<{ data?: StudentById[] } | StudentById>(
-      `${API_ENDPOINTS.GET_STUDENT}/${encodeURIComponent(studentId)}`,
+      `${API_ENDPOINTS.GET_STUDENT}/${encodeURIComponent(studentId)}`
     );
     const wrapped = (body as { data?: StudentById[] })?.data;
     return Array.isArray(wrapped) ? wrapped[0] : (body as StudentById);
@@ -363,7 +380,9 @@ export const studentService = {
    */
   async getStudentsByClass(classId: string, page = 1, limit = 10): Promise<GetStudentsResponse> {
     const query = new URLSearchParams({ page: String(page), limit: String(Math.min(limit, 500)) });
-    return api.get<GetStudentsResponse>(`${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?${query}`);
+    return api.get<GetStudentsResponse>(
+      `${API_ENDPOINTS.GET_STUDENTS_BY_CLASS_ID(classId)}?${query}`
+    );
   },
 };
 
@@ -374,7 +393,10 @@ export const studentService = {
  * @param updateData - The fields to change.
  * @returns The updated class.
  */
-export const updateClass = async (classId: string, updateData: UpdateClassPayload): Promise<Class> =>
+export const updateClass = async (
+  classId: string,
+  updateData: UpdateClassPayload
+): Promise<Class> =>
   api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}`, {
     name: updateData.name,
     // `PUT /classes/:id` validates the whole `CreateClassDto`: leaving
@@ -392,9 +414,12 @@ export const updateClass = async (classId: string, updateData: UpdateClassPayloa
  * @returns The updated class.
  */
 export const assignTeacherToClass = async (classId: string, teacherId: string): Promise<Class> =>
-  api.put<Class>(`${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}/assign-teacher`, {
-    teacherId,
-  } satisfies AssignTeacherPayload);
+  api.put<Class>(
+    `${API_ENDPOINTS.BASE_URL}/classes/${encodeURIComponent(classId)}/assign-teacher`,
+    {
+      teacherId,
+    } satisfies AssignTeacherPayload
+  );
 
 /**
  * Deletes a class.
@@ -427,7 +452,9 @@ export interface StudentAttendanceKpis {
  * @throws `ApiError` — `NOT_FOUND` when the student has no attendance records.
  */
 export const getStudentAttendanceKpis = async (studentId: string): Promise<StudentAttendanceKpis> =>
-  api.get<StudentAttendanceKpis>(`${API_ENDPOINTS.BASE_URL}/attendance/student/${encodeURIComponent(studentId)}/kpis`);
+  api.get<StudentAttendanceKpis>(
+    `${API_ENDPOINTS.BASE_URL}/attendance/student/${encodeURIComponent(studentId)}/kpis`
+  );
 
 /**
  * Activates or deactivates a student.
@@ -439,11 +466,11 @@ export const getStudentAttendanceKpis = async (studentId: string): Promise<Stude
  */
 export const updateStudentStatus = async (
   studentId: string,
-  isActive: boolean,
+  isActive: boolean
 ): Promise<{ message: string }> => {
   const body = await api.put<{ message?: string } | null>(
     `${API_ENDPOINTS.BASE_URL}/students/${encodeURIComponent(studentId)}/status`,
-    { isActive } satisfies UpdateStudentStatusPayload,
+    { isActive } satisfies UpdateStudentStatusPayload
   );
   return {
     message: body?.message ?? `Student ${isActive ? "activated" : "deactivated"} successfully`,

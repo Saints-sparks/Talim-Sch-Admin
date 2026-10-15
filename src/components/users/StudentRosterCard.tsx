@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Avatar from "@/components/Avatar";
 import { Pill, card, rowButton } from "@/components/tl";
 import type { Student } from "@/app/services/student.service";
+import { STUDENT_STANDING, standingOf } from "@/components/users/students/studentStatus";
 
 /** Props for {@link StudentRosterCard}. */
 interface StudentRosterCardProps {
@@ -19,7 +20,8 @@ interface StudentRosterCardProps {
 
 /**
  * One card in the students grid: avatar, name, admission number, the grade
- * and status pills, and View Profile.
+ * and status pills (active, inactive, or graduated, withdrawn, left Talim),
+ * and View Profile.
  *
  * @param props - See {@link StudentRosterCardProps}.
  * @param props.student - The student.
@@ -29,6 +31,7 @@ interface StudentRosterCardProps {
  */
 export function StudentRosterCard({ student, index, profileHref }: StudentRosterCardProps) {
   const name = `${student.userId.firstName} ${student.userId.lastName}`;
+  const standing = STUDENT_STANDING[standingOf(student)];
   return (
     <motion.article
       aria-label={name}
@@ -50,8 +53,8 @@ export function StudentRosterCard({ student, index, profileHref }: StudentRoster
         </p>
         <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
           {student.gradeLevel ? <Pill tone="info">{student.gradeLevel}</Pill> : null}
-          <Pill tone={student.isActive ? "success" : "muted"} dot>
-            {student.isActive ? "Active" : "Inactive"}
+          <Pill tone={standing.tone} dot>
+            {standing.label}
           </Pill>
         </div>
         <div className="mt-auto w-full pt-4">
