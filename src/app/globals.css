@@ -793,7 +793,9 @@ html.dark .shadow-xl {
  * the siblings that do not contain it are hidden, and the app shell's fixed
  * heights and scroll boxes are released so a long table runs onto more pages
  * instead of being cut at the viewport. `data-print-hide` hides controls
- * inside the box; `data-print-overflow` stops a scroll box clipping it.
+ * inside the box; `data-print-overflow` stops a scroll box clipping it;
+ * `data-print-page="portrait"` prints the box on portrait pages (a student's
+ * transcript on the profile's Records tab).
  */
 @media print {
   @page {
@@ -855,5 +857,15 @@ html.dark .shadow-xl {
 
   [data-print-root] tr {
     break-inside: avoid;
+  }
+
+  /* A transcript prints portrait (a named page; the broadsheet keeps landscape). */
+  @page tl-portrait {
+    size: portrait;
+    margin: 14mm;
+  }
+
+  [data-print-root][data-print-page="portrait"] {
+    page: tl-portrait;
   }
 }

@@ -19,7 +19,9 @@ import { useSchoolId } from "@/hooks/useSchoolId";
 import {
   createStudentProfile,
   getStudentAttendanceKpis,
+  getStudentTranscript,
   issueParentLinkCode,
+  issueStudentTranscript,
   registerStudent,
   studentService,
   updateStudent,
@@ -31,6 +33,8 @@ import {
   type RegisterStudentPayload,
   type StudentAttendanceKpis,
   type StudentById,
+  type StudentTranscript,
+  type TranscriptIssue,
   type UpdateStudentPayload,
 } from "@/app/services/student.service";
 
@@ -95,7 +99,7 @@ export function useStudent(studentId: string | undefined): UseQueryResult<Studen
  */
 export function useStudentAttendance(
   studentId: string | undefined,
-  enabled: boolean,
+  enabled: boolean
 ): UseQueryResult<StudentAttendanceKpis> {
   const schoolId = useSchoolId();
 
@@ -145,11 +149,19 @@ export function useCreateStudent(): UseMutationResult<CreatedStudent, Error, Cre
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ account, profile, existingAccount, onAccountCreated }: CreateStudentInput) => {
+    mutationFn: async ({
+      account,
+      profile,
+      existingAccount,
+      onAccountCreated,
+    }: CreateStudentInput) => {
       let created = existingAccount;
       if (!created) {
         const registration = await registerStudent(account);
-        created = { userId: registration.userId, temporaryPassword: registration.temporaryPassword };
+        created = {
+          userId: registration.userId,
+          temporaryPassword: registration.temporaryPassword,
+        };
         onAccountCreated?.(created);
       }
       return createStudentProfile({
@@ -186,7 +198,9 @@ export function useUpdateStudent(): UseMutationResult<StudentById, Error, Update
   return useMutation({
     mutationFn: ({ studentId, payload }: UpdateStudentInput) => updateStudent(studentId, payload),
     onSuccess: (_data, { studentId }) => {
-      client.invalidateQueries({ queryKey: queryKeys.students.detail(schoolId ?? "none", studentId) });
+      client.invalidateQueries({
+        queryKey: queryKeys.students.detail(schoolId ?? "none", studentId),
+      });
       client.invalidateQueries({ queryKey: queryKeys.students.all });
     },
   });
@@ -217,7 +231,9 @@ export function useUpdateStudentStatus(): UseMutationResult<
     mutationFn: ({ studentId, isActive }: UpdateStudentStatusInput) =>
       updateStudentStatus(studentId, isActive),
     onSuccess: (_data, { studentId }) => {
-      client.invalidateQueries({ queryKey: queryKeys.students.detail(schoolId ?? "none", studentId) });
+      client.invalidateQueries({
+        queryKey: queryKeys.students.detail(schoolId ?? "none", studentId),
+      });
       client.invalidateQueries({ queryKey: queryKeys.students.all });
     },
   });
@@ -233,5 +249,50 @@ export function useUpdateStudentStatus(): UseMutationResult<
 export function useIssueParentLinkCode(): UseMutationResult<ParentLinkCode, Error, string> {
   return useMutation({
     mutationFn: (studentId: string) => issueParentLinkCode(studentId),
+  });
+}
+
+/**
+ * The query key of a student's transcript (this school's part).
+ *
+ * @param schoolId - The signed-in school.
+ * @param studentId - The student record id.
+ * @returns The key.
+ */
+export function studentTranscriptKey(schoolId: string, studentId: string) {
+  return [...queryKeys.students.detail(schoolId, studentId), "transcript"] as const;
+}
+
+/**
+ * This school's part of a student's transcript. The profile reads it for the
+ * Records tab and for the student's status (the profile endpoint does not
+ * carry `status`), and on its own for a student who has moved to another
+ * Talim school, whose profile this school can no longer open.
+ *
+ * @param studentId - The student record id, or `undefined` before the route param resolves.
+ * @returns Query result holding the transcript.
+ */
+export function useStudentTranscript(
+  studentId: string | undefined
+): UseQueryResult<StudentTranscript> {
+  const schoolId = useSchoolId();
+  return useQuery({
+    queryKey: studentTranscriptKey(schoolId ?? "none", studentId ?? "none"),
+    queryFn: () => getStudentTranscript(studentId as string),
+    enabled: Boolean(schoolId && studentId),
+    staleTime: staleTimes.list,
+    retry: false,
+  });
+}
+
+/**
+ * Issues a student's transcript with a verification code (idempotent on the
+ * server, so issuing twice shows the same code). Nothing cached changes.
+ *
+ * @returns Mutation taking the student record id.
+ */
+export function useIssueTranscript(): UseMutationResult<TranscriptIssue, Error, string> {
+  return useMutation({
+    mutationFn: (studentId: string) => issueStudentTranscript(studentId),
   });
 }

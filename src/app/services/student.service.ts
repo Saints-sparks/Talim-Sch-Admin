@@ -476,3 +476,42 @@ export const updateStudentStatus = async (
     message: body?.message ?? `Student ${isActive ? "activated" : "deactivated"} successfully`,
   };
 };
+
+// ─── Transcript (history §5) ──────────────────────────────────────────────────
+
+/**
+ * A student's transcript: sessions in order, each term's subjects, averages,
+ * positions and attendance, and the grade key (`TranscriptDto`). Staff get
+ * their own school's part, also for a former student or one who moved to
+ * another Talim school.
+ */
+export type StudentTranscript = Schema<"TranscriptDto">;
+
+/** One session of a transcript. */
+export type TranscriptSession = Schema<"TranscriptSessionDto">;
+
+/** One term of a transcript session. */
+export type TranscriptTerm = Schema<"TranscriptTermDto">;
+
+/** An issued transcript: its verification code, date and link (`TranscriptIssueDto`). */
+export type TranscriptIssue = Schema<"TranscriptIssueDto">;
+
+/**
+ * This school's part of a student's transcript (published terms only).
+ *
+ * @param studentId - The student record id.
+ * @returns The transcript.
+ * @throws `ApiError` — `NOT_FOUND` when the student never attended this school.
+ */
+export const getStudentTranscript = async (studentId: string): Promise<StudentTranscript> =>
+  api.get<StudentTranscript>(`/students/${encodeURIComponent(studentId)}/transcript`);
+
+/**
+ * Issues the transcript with a verification code. Idempotent: the same
+ * transcript answers the same code.
+ *
+ * @param studentId - The student record id.
+ * @returns The code, when it was issued and the link a third party checks it at.
+ */
+export const issueStudentTranscript = async (studentId: string): Promise<TranscriptIssue> =>
+  api.post<TranscriptIssue>(`/students/${encodeURIComponent(studentId)}/transcript/issue`);

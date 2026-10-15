@@ -12,17 +12,25 @@
  * record before the source school has released it.
  */
 import { api } from "@/lib/apiClient";
+import type { Schema } from "@/types/apiContract";
 import type {
   CancelTransferPayload,
   CreateEnrollmentPayload as CreateEnrollmentDto,
   CreatePromotionRunPayload,
   CreateTransferPayload,
+  LeaveStudentPayload,
+  ReinstateStudentPayload,
   RejectTransferPayload,
 } from "@/types/apiPayloads";
 
 // Request payloads are the backend DTOs (`src/types/apiPayloads.ts`); re-exported
 // for the callers that already import them from here.
-export type { CreatePromotionRunPayload, CreateTransferPayload } from "@/types/apiPayloads";
+export type {
+  CreatePromotionRunPayload,
+  CreateTransferPayload,
+  LeaveStudentPayload,
+  ReinstateStudentPayload,
+} from "@/types/apiPayloads";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -277,7 +285,10 @@ export function refId(value?: Ref<{ _id: string }> | null): string {
  * @param fallback - Shown when the API sent only an id.
  * @returns The label to render.
  */
-export function refLabel(value?: Ref<PeriodRef | ClassRef | SchoolRef> | null, fallback = "—"): string {
+export function refLabel(
+  value?: Ref<PeriodRef | ClassRef | SchoolRef> | null,
+  fallback = "—"
+): string {
   if (!value || typeof value === "string") return fallback;
   const period = value as PeriodRef;
   return value.name ?? period.year ?? fallback;
@@ -511,7 +522,9 @@ export function acceptTransfer(id: string): Promise<TransferRequest> {
  * @throws `ApiError` when this school is not the target.
  */
 export function rejectTransfer(id: string, reason?: string): Promise<TransferRequest> {
-  return api.post<TransferRequest>(`/transit/transfers/${id}/reject`, { reason } satisfies RejectTransferPayload);
+  return api.post<TransferRequest>(`/transit/transfers/${id}/reject`, {
+    reason,
+  } satisfies RejectTransferPayload);
 }
 
 /**
@@ -523,7 +536,9 @@ export function rejectTransfer(id: string, reason?: string): Promise<TransferReq
  * @throws `ApiError` when this school is not the source, or it is too late to cancel.
  */
 export function cancelTransfer(id: string, reason?: string): Promise<TransferRequest> {
-  return api.post<TransferRequest>(`/transit/transfers/${id}/cancel`, { reason } satisfies CancelTransferPayload);
+  return api.post<TransferRequest>(`/transit/transfers/${id}/cancel`, {
+    reason,
+  } satisfies CancelTransferPayload);
 }
 
 /**
@@ -802,4 +817,52 @@ export async function searchSchools(query: string): Promise<SearchSchoolResult[]
   );
   if (Array.isArray(body)) return body;
   return body?.data ?? [];
+}
+
+// ─── Leaving and reinstating (history §4) ─────────────────────────────────────
+
+/** A student's standing after a leave or a reinstate (`StudentStatusChangeDto`). */
+export type StudentStatusChange = Schema<"StudentStatusChangeDto">;
+
+/** Why a student leaves: `graduated`, `withdrawn` or `left_talim` (moved to a school outside Talim). */
+export type LeaveReason = LeaveStudentPayload["reason"];
+
+/**
+ * One student graduates, withdraws or leaves Talim outside a promotion run:
+ * the active enrollment ends, the student goes off the roster and keeps a
+ * read-only (alumni) sign-in.
+ *
+ * @param studentId - The student record id (or user id).
+ * @param payload - The reason, and optionally the session and a note.
+ * @returns The student's new standing (with any `warnings`).
+ * @throws `ApiError` — 409 with `meta.code` `STUDENT_NOT_ACTIVE` when the
+ *   student has already left; 400 (field `reason`) to graduate below the top level.
+ */
+export function leaveStudent(
+  studentId: string,
+  payload: LeaveStudentPayload
+): Promise<StudentStatusChange> {
+  return api.post<StudentStatusChange>(
+    `/transit/students/${encodeURIComponent(studentId)}/leave`,
+    payload satisfies LeaveStudentPayload
+  );
+}
+
+/**
+ * A withdrawn student (or one who left Talim) rejoins in a class.
+ *
+ * @param studentId - The student record id (or user id).
+ * @param payload - The class, and optionally the session and term.
+ * @returns The student's new standing.
+ * @throws `ApiError` — 409 with `meta.code` `STUDENT_NOT_WITHDRAWN` for an
+ *   active student or a graduate.
+ */
+export function reinstateStudent(
+  studentId: string,
+  payload: ReinstateStudentPayload
+): Promise<StudentStatusChange> {
+  return api.post<StudentStatusChange>(
+    `/transit/students/${encodeURIComponent(studentId)}/reinstate`,
+    payload satisfies ReinstateStudentPayload
+  );
 }

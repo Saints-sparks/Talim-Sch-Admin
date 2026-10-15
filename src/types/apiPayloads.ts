@@ -217,6 +217,10 @@ export type CancelTransferPayload = RequestBody<"/transit/transfers/{id}/cancel"
 export type CreatePromotionRunPayload = RequestBody<"/transit/promotions", "post">;
 /** Body of `POST /transit/enrollments`. */
 export type CreateEnrollmentPayload = RequestBody<"/transit/enrollments", "post">;
+/** Body of `POST /transit/students/{id}/leave`: graduated, withdrawn or left Talim (history §4). */
+export type LeaveStudentPayload = RequestBody<"/transit/students/{id}/leave", "post">;
+/** Body of `POST /transit/students/{id}/reinstate`: the class a withdrawn student rejoins (history §4). */
+export type ReinstateStudentPayload = RequestBody<"/transit/students/{id}/reinstate", "post">;
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 
