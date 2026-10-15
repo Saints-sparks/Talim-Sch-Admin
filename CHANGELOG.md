@@ -14,7 +14,7 @@ Past records, former students and transcripts (contract: `talimBE-V2/docs/histor
 
 ### Students and former students (§4, §6)
 
-- **Status filter** on the students roster: All, Active, Graduated, Withdrawn, Left Talim and Deactivated, and a status badge on every card. `GET /users/students` does not send a student's status yet, so until it does former students show under Deactivated and the page says so.
+- **Status filter** on the students roster: All, Active, Graduated, Withdrawn, Left Talim and Deactivated, and a status badge on every card. Active, Graduated, Withdrawn and Left Talim are filtered, paged and counted by the server (`GET /users/students?status=`); Deactivated, and a status within one class, are filtered on a wide page in the browser.
 - **Records tab** on the student profile: the school's part of the transcript, laid out as a report (sessions in order with the class and outcome, each term's subject scores, percentages, grades and remarks, average, position and attendance, the cumulative average and the grade key). **Issue transcript** gives a verification code and link; **Print / Save as PDF** prints the transcript alone, portrait, with the code and a QR of the link. A student who moved to another Talim school opens on a records-only page.
 - **Mark as left** (graduated, withdrawn or left Talim, with the session and a note) and **Reinstate** (withdrawn or left Talim, into a class) on the profile, for admins with Transit access; the "already left" and "can't be reinstated" refusals are explained in plain words. The profile shows the student's status.
 
@@ -25,7 +25,7 @@ Past records, former students and transcripts (contract: `talimBE-V2/docs/histor
 ### Under the hood
 
 - `qrcode-generator` 2.0.4 draws the transcript QR (the library the Students portal uses).
-- The importer's routes are typed by hand in `imports.service.ts` until the generated contract carries them; the rest comes from `npm run types:api`.
+- The importer's types, like the rest, come from the generated contract (`npm run types:api`).
 
 ## 1.5.0 (2026-10-07)
 
