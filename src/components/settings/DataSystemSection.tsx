@@ -10,6 +10,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  History,
   MessageSquare,
   Loader2,
   Receipt,
@@ -34,6 +35,8 @@ interface DataCard {
   href?: string;
   /** Permission required to see the card. */
   permission: string;
+  /** Shown to the primary school admin only (the API refuses sub-admins). */
+  fullAdminOnly?: boolean;
 }
 
 const CARDS: DataCard[] = [
@@ -50,6 +53,14 @@ const CARDS: DataCard[] = [
     icon: UserCog,
     exportType: "staff",
     permission: Permission.MANAGE_SETTINGS,
+  },
+  {
+    title: "Import Past Records",
+    desc: "Bring past sessions, students and results into Talim from the import template",
+    icon: History,
+    href: "/settings/import",
+    permission: Permission.MANAGE_SETTINGS,
+    fullAdminOnly: true,
   },
   {
     title: "Academic Reports",
@@ -81,7 +92,8 @@ const SYSTEM_INFO = [
 ];
 
 /**
- * Settings → Data & System: CSV exports, where the school's backups stand,
+ * Settings → Data & System: CSV exports, the past-records import (school
+ * admin only, `/settings/import`), where the school's backups stand,
  * what this build is, links to the privacy policy, terms and support pages on
  * www.mytalim.com, and "Contact Talim support", which opens Help & support
  * (`/help`), where the admin raises and follows tickets to Talim through
@@ -96,9 +108,9 @@ const SYSTEM_INFO = [
  */
 export function DataSystemSection() {
   const router = useRouter();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isFullAdmin } = usePermissions();
   const { exporting, run } = useDataExport();
-  const cards = CARDS.filter((c) => hasPermission(c.permission));
+  const cards = CARDS.filter((c) => hasPermission(c.permission) && (!c.fullAdminOnly || isFullAdmin));
 
   const activate = (card: DataCard) => {
     if (card.exportType) void run(card.exportType, card.title.replace("Export ", ""));

@@ -72,6 +72,34 @@ export const settingsKeys = {
    */
   passwordPolicy: () => [...queryKeys.settings.all, "password-policy"] as const,
   /**
+   * Every past-records import of the school (the list and each import), so
+   * one upload or commit can refresh them all.
+   *
+   * @param schoolId - The signed-in administrator's school.
+   * @returns The query key.
+   */
+  imports: (schoolId: string) => [...queryKeys.settings.all, schoolId, "imports"] as const,
+  /**
+   * One page of the school's past-records imports.
+   *
+   * @param schoolId - The signed-in administrator's school.
+   * @param page - 1-based page.
+   * @returns The query key.
+   */
+  importList: (schoolId: string, page: number) =>
+    [...queryKeys.settings.all, schoolId, "imports", "list", page] as const,
+  /**
+   * One import with a page of its errors and warnings.
+   *
+   * @param schoolId - The signed-in administrator's school.
+   * @param id - The import.
+   * @param errorsPage - Page of errors.
+   * @param warningsPage - Page of warnings.
+   * @returns The query key.
+   */
+  importJob: (schoolId: string, id: string, errorsPage: number, warningsPage: number) =>
+    [...queryKeys.settings.all, schoolId, "imports", id, errorsPage, warningsPage] as const,
+  /**
    * The bank list for one country — the same for every school, so it is not
    * school-scoped.
    *

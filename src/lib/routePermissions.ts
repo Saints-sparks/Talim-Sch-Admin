@@ -51,7 +51,11 @@ export function requiredPermissionFor(pathname: string): PermissionValue | null 
 }
 
 /** Routes only the primary school admin may open, whatever a sub-admin's permissions. */
-const FULL_ADMIN_ONLY = ["/users/sub-admins"];
+const FULL_ADMIN_ONLY = [
+  "/users/sub-admins",
+  // Past-records import: `/imports/history` answers 403 to every role but the school admin.
+  "/settings/import",
+];
 
 /**
  * True when `pathname` is reserved for the primary school admin.
