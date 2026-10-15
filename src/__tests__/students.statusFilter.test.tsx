@@ -1,9 +1,9 @@
 /** @jest-environment jsdom */
 /**
- * The students roster's status filter (Active, Graduated, Withdrawn, Left
- * Talim, Deactivated, All) and status badges. The roster endpoint does not
- * send `status` yet, so the filter runs on the rows it returns, reads a
- * missing status as active, and says so when former students are asked for.
+ * The students roster's status filter (All, Active, Graduated, Withdrawn,
+ * Left Talim, Deactivated) and status badges. Active, Graduated, Withdrawn
+ * and Left Talim go to the server as `?status=` (it pages and counts);
+ * Deactivated, a class plus a status, and the search scan a wide page here.
  */
 import React from "react";
 import userEvent from "@testing-library/user-event";
@@ -11,10 +11,9 @@ import { mockAdmin, render, screen, within } from "@/test-utils/render";
 import StudentsPage from "@/app/users/students/page";
 import type { Student } from "@/app/services/student.service";
 import {
-  isFormerFilter,
   isFormerStudent,
   matchesStudentStatus,
-  rosterHasStatus,
+  serverStatusOf,
   standingOf,
 } from "@/components/users/students/studentStatus";
 
@@ -28,7 +27,7 @@ jest.mock("@/lib/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() },
 }));
 jest.mock("@/hooks/queries/reference", () => ({
-  useClasses: () => ({ data: [], isLoading: false }),
+  useClasses: () => ({ data: [{ _id: "c1", name: "SS 3A" }], isLoading: false }),
 }));
 
 const mockRoster = jest.fn();
@@ -64,21 +63,30 @@ const ROWS = [
 ];
 
 /**
- * Serves the roster.
- *
- * @param rows - The rows the endpoint returns.
+ * Answers the roster like the server: `?status=` filters the school's rows,
+ * the class endpoint ignores it, and `meta.total` counts what matched.
  */
-function serve(rows: Student[]) {
-  mockRoster.mockReturnValue({
-    isPending: false,
-    isError: false,
-    isSuccess: true,
-    data: { data: rows, meta: { total: rows.length, page: 1, lastPage: 1, limit: 500 } },
-    refetch: jest.fn(),
-  });
+function serveLikeServer() {
+  mockRoster.mockImplementation(
+    (params: { status?: string | null; page: number; limit: number }) => {
+      const rows = params.status
+        ? ROWS.filter((r) => (r.status ?? "active") === params.status)
+        : ROWS;
+      return {
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        data: {
+          data: rows,
+          meta: { total: rows.length, page: params.page, lastPage: 1, limit: params.limit },
+        },
+        refetch: jest.fn(),
+      };
+    }
+  );
 }
 
-/** The first names on the cards shown. */
+/** The names on the cards shown. */
 function shownNames(): string[] {
   return screen.queryAllByRole("article").map((card) => card.getAttribute("aria-label") ?? "");
 }
@@ -92,22 +100,29 @@ describe("student standing", () => {
     expect(matchesStudentStatus({ status: "withdrawn" }, "withdrawn")).toBe(true);
     expect(matchesStudentStatus({ status: "withdrawn" }, "active")).toBe(false);
     expect(matchesStudentStatus({ isActive: false }, "")).toBe(true);
-    expect(isFormerFilter("left_talim")).toBe(true);
-    expect(isFormerFilter("deactivated")).toBe(false);
     expect(isFormerStudent("graduated")).toBe(true);
     expect(isFormerStudent("active")).toBe(false);
     expect(isFormerStudent(undefined)).toBe(false);
-    expect(rosterHasStatus([{}, { status: "active" }])).toBe(true);
-    expect(rosterHasStatus([{}])).toBe(false);
+  });
+
+  it("sends the four server statuses, not All or Deactivated", () => {
+    expect(serverStatusOf("")).toBeNull();
+    expect(serverStatusOf("deactivated")).toBeNull();
+    expect(serverStatusOf("active")).toBe("active");
+    expect(serverStatusOf("graduated")).toBe("graduated");
+    expect(serverStatusOf("withdrawn")).toBe("withdrawn");
+    expect(serverStatusOf("left_talim")).toBe("left_talim");
   });
 });
 
 describe("students roster status filter", () => {
-  beforeEach(() => mockRoster.mockReset());
+  beforeEach(() => {
+    mockRoster.mockReset();
+    serveLikeServer();
+  });
 
-  it("offers every status and filters the rows by it, with a badge per standing", async () => {
+  it("filters by status on the server, a page at a time, with a badge per standing", async () => {
     const user = userEvent.setup();
-    serve(ROWS);
     render(<StudentsPage />, { user: mockAdmin });
 
     const select = screen.getByRole("combobox", { name: "Filter by status" });
@@ -116,9 +131,16 @@ describe("students roster status filter", () => {
         .getAllByRole("option")
         .map((o) => o.textContent)
     ).toEqual(["All statuses", "Active", "Graduated", "Withdrawn", "Left Talim", "Deactivated"]);
+    expect(mockRoster).toHaveBeenLastCalledWith({
+      page: 1,
+      limit: 12,
+      classId: null,
+      status: null,
+    });
     expect(shownNames()).toHaveLength(5);
-    const bayo = screen.getByRole("article", { name: "Bayo Student" });
-    expect(within(bayo).getByText("Graduated")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("article", { name: "Bayo Student" })).getByText("Graduated")
+    ).toBeInTheDocument();
     expect(
       within(screen.getByRole("article", { name: "Dayo Student" })).getByText("Left Talim")
     ).toBeInTheDocument();
@@ -127,43 +149,60 @@ describe("students roster status filter", () => {
     ).toBeInTheDocument();
 
     await user.selectOptions(select, "graduated");
+    expect(mockRoster).toHaveBeenLastCalledWith({
+      page: 1,
+      limit: 12,
+      classId: null,
+      status: "graduated",
+    });
     expect(shownNames()).toEqual(["Bayo Student"]);
-    // A filter scans a wide page, since it runs on the rows the endpoint returns.
-    expect(mockRoster).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, limit: 500 }));
-
     await user.selectOptions(select, "withdrawn");
     expect(shownNames()).toEqual(["Chidi Student"]);
     await user.selectOptions(select, "left_talim");
     expect(shownNames()).toEqual(["Dayo Student"]);
+    // The server's Active is every current student; a deactivated one says Inactive.
     await user.selectOptions(select, "active");
-    expect(shownNames()).toEqual(["Ada Student"]);
-    await user.selectOptions(select, "deactivated");
-    expect(shownNames()).toEqual(["Efe Student"]);
+    expect(mockRoster).toHaveBeenLastCalledWith({
+      page: 1,
+      limit: 12,
+      classId: null,
+      status: "active",
+    });
+    expect(shownNames()).toEqual(["Ada Student", "Efe Student"]);
     await user.selectOptions(select, "");
     expect(shownNames()).toHaveLength(5);
-    expect(screen.queryByText(/can't be told apart/)).toBeNull();
   });
 
-  it("says so when the endpoint sends no status and former students are asked for", async () => {
+  it("scans a wide page for Deactivated, which the server does not filter by", async () => {
     const user = userEvent.setup();
-    serve([row("Ada", { isActive: true }), row("Bayo", { isActive: false })]);
     render(<StudentsPage />, { user: mockAdmin });
-
-    expect(
-      within(screen.getByRole("article", { name: "Ada Student" })).getByText("Active")
-    ).toBeInTheDocument();
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Filter by status" }),
-      "graduated"
-    );
-    expect(screen.getByText("Former students can't be told apart here yet")).toBeInTheDocument();
-    expect(shownNames()).toEqual([]);
-
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Filter by status" }),
       "deactivated"
     );
+    expect(mockRoster).toHaveBeenLastCalledWith({
+      page: 1,
+      limit: 500,
+      classId: null,
+      status: null,
+    });
+    expect(shownNames()).toEqual(["Efe Student"]);
+  });
+
+  it("filters a class's students here, as the class endpoint has no status filter", async () => {
+    const user = userEvent.setup();
+    render(<StudentsPage />, { user: mockAdmin });
+    await user.selectOptions(screen.getByRole("combobox", { name: "Filter by class" }), "c1");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+      "graduated"
+    );
+    expect(mockRoster).toHaveBeenLastCalledWith({
+      page: 1,
+      limit: 500,
+      classId: "c1",
+      status: null,
+    });
     expect(shownNames()).toEqual(["Bayo Student"]);
-    expect(screen.queryByText("Former students can't be told apart here yet")).toBeNull();
   });
 });

@@ -15,13 +15,12 @@ import RosterPagination from "@/components/users/RosterPagination";
 import RosterErrorState from "@/components/users/RosterErrorState";
 import StudentRosterCard from "@/components/users/StudentRosterCard";
 import { rosterGrid } from "@/components/users/parts";
-import { Banner, EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
+import { EmptyNote, Page, PageHeader, Pill, card, primaryButton } from "@/components/tl";
 import type { Student } from "@/app/services/student.service";
 import {
   STUDENT_STATUS_FILTERS,
-  isFormerFilter,
   matchesStudentStatus,
-  rosterHasStatus,
+  serverStatusOf,
   type StudentStatusFilter,
 } from "@/components/users/students/studentStatus";
 
@@ -65,16 +64,24 @@ function StudentsRoster() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const classesQuery = useClasses();
+  // Active, Graduated, Withdrawn and Left Talim are filtered (and paged and
+  // counted) by the server; the class endpoint has no status filter, and
+  // Deactivated is a roster switch the server does not filter by, so those
+  // and the search scan a wide page here instead.
+  const serverStatus = controls.classId ? null : serverStatusOf(controls.status);
+  const clientScan =
+    controls.debouncedSearch.trim() !== "" || (controls.status !== "" && !serverStatus);
   const rosterQuery = useStudentRoster({
-    page: controls.isFiltering ? 1 : controls.page,
-    limit: controls.isFiltering ? FILTER_SCAN_LIMIT : controls.pageSize,
+    page: clientScan ? 1 : controls.page,
+    limit: clientScan ? FILTER_SCAN_LIMIT : controls.pageSize,
     classId: controls.classId,
+    status: serverStatus,
   });
 
   const rows = useMemo(() => rosterQuery.data?.data ?? [], [rosterQuery.data]);
 
   const { visible, total } = useMemo(() => {
-    if (!controls.isFiltering) {
+    if (!clientScan) {
       return { visible: rows, total: rosterQuery.data?.meta?.total ?? rows.length };
     }
     const search = controls.debouncedSearch.trim().toLowerCase();
@@ -86,7 +93,7 @@ function StudentsRoster() {
   }, [
     rows,
     rosterQuery.data,
-    controls.isFiltering,
+    clientScan,
     controls.debouncedSearch,
     controls.status,
     controls.page,
@@ -136,16 +143,8 @@ function StudentsRoster() {
         status={controls.status}
         statusOptions={[...STUDENT_STATUS_FILTERS]}
         onStatusChange={(value) => controls.setStatus(value as StudentStatusFilter)}
-        statusTooltip="Active students are on the roster. Graduated, withdrawn and left-Talim students are former students; deactivated ones are switched off but not former."
+        statusTooltip="Active students are current students (a deactivated one shows as Inactive). Graduated, withdrawn and left-Talim students are former students."
       />
-
-      {/* The roster endpoint does not send `status` yet: say so rather than show an empty list as fact. */}
-      {isFormerFilter(controls.status) && rosterQuery.isSuccess && !rosterHasStatus(rows) ? (
-        <Banner tone="info" title="Former students can't be told apart here yet">
-          This list doesn&apos;t say yet whether an inactive student graduated, withdrew or left
-          Talim, so they appear under Deactivated. Open a student to see their status and records.
-        </Banner>
-      ) : null}
 
       {isModalOpen && (
         <AddStudentModal onClose={toggleModal} onSuccess={() => rosterQuery.refetch()} />

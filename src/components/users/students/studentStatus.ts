@@ -5,7 +5,8 @@
  *
  * `Student.status` (contract history-records-and-transcripts §1) says why a
  * student is off the roster; `isActive` is the roster switch. A missing
- * status reads as `active`, as on the backend.
+ * status reads as `active`, as on the backend. `GET /users/students` sends
+ * `status` on every row and filters by it.
  */
 import type { StudentStatus } from "@/app/services/student.service";
 import type { Tone } from "@/components/tl";
@@ -69,25 +70,16 @@ export function matchesStudentStatus(
 }
 
 /**
- * Whether a filter asks for former students (graduated, withdrawn, left Talim).
+ * The `?status=` a filter sends to `GET /users/students`, which filters,
+ * pages and counts by `Student.status`. "Active" there means not a former
+ * student, deactivated ones included (their badge says Inactive).
+ * Deactivated (`isActive:false` while active) has no server equivalent.
  *
  * @param filter - The chosen status.
- * @returns True for the three former-student statuses.
+ * @returns The status to send, or `null` for All and Deactivated.
  */
-export function isFormerFilter(filter: StudentStatusFilter): boolean {
-  return filter === "graduated" || filter === "withdrawn" || filter === "left_talim";
-}
-
-/**
- * Whether the roster rows carry `status` at all. `GET /users/students` does
- * not send it yet, so former students can only be told from deactivated ones
- * once it does.
- *
- * @param rows - The loaded rows.
- * @returns True when any row has a status.
- */
-export function rosterHasStatus(rows: ReadonlyArray<{ status?: unknown }>): boolean {
-  return rows.some((row) => typeof row.status === "string");
+export function serverStatusOf(filter: StudentStatusFilter): StudentStatus | null {
+  return filter === "" || filter === "deactivated" ? null : filter;
 }
 
 /**

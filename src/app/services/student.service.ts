@@ -9,7 +9,7 @@
  */
 import { API_ENDPOINTS } from "../lib/api/config";
 import { api } from "@/lib/apiClient";
-import type { Schema } from "@/types/apiContract";
+import type { RequestQuery, Schema } from "@/types/apiContract";
 import { getClasses as getSchoolClasses } from "@/app/services/school.service";
 import type {
   AssignTeacherPayload,
@@ -153,10 +153,7 @@ export interface Student {
   parentId: string;
   parentContact: ParentContact;
   isActive: boolean;
-  /**
-   * Graduated, withdrawn or left Talim. `GET /users/students` does not send it
-   * yet (its projection predates the field); missing reads as `active`.
-   */
+  /** Active, graduated, withdrawn or left Talim; a missing status reads as `active`. */
   status?: StudentStatus;
   enrollmentDate?: string;
   assignedSubjects?: string[];
@@ -344,14 +341,22 @@ export const updateStudent = async (
 
 export const studentService = {
   /**
-   * A page of the school's students.
+   * A page of the school's students, optionally only those with one status
+   * (`?status=`; the server pages and counts them).
    *
    * @param page - 1-based page number.
    * @param limit - Rows per page (the API caps this at 500).
+   * @param status - Only students with this status; omit for everyone.
    * @returns The page and its `meta`.
    */
-  async getStudents(page = 1, limit = 10): Promise<GetStudentsResponse> {
+  async getStudents(
+    page = 1,
+    limit = 10,
+    status?: StudentStatus | null
+  ): Promise<GetStudentsResponse> {
     const query = new URLSearchParams({ page: String(page), limit: String(Math.min(limit, 500)) });
+    if (status)
+      query.set("status", status satisfies NonNullable<RequestQuery<"/users/students">["status"]>);
     return api.get<GetStudentsResponse>(`${API_ENDPOINTS.GET_STUDENTS}?${query}`);
   },
 

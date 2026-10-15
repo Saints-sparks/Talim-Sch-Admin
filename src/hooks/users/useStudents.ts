@@ -33,6 +33,7 @@ import {
   type RegisterStudentPayload,
   type StudentAttendanceKpis,
   type StudentById,
+  type StudentStatus,
   type StudentTranscript,
   type TranscriptIssue,
   type UpdateStudentPayload,
@@ -46,6 +47,8 @@ export interface StudentRosterParams {
   limit: number;
   /** Restrict to one class, or `null` for the whole school. */
   classId?: string | null;
+  /** Only students with this status (server-side, whole school only); `null` for everyone. */
+  status?: StudentStatus | null;
 }
 
 /**
@@ -56,14 +59,14 @@ export interface StudentRosterParams {
  */
 export function useStudentRoster(params: StudentRosterParams): UseQueryResult<GetStudentsResponse> {
   const schoolId = useSchoolId();
-  const { page, limit, classId = null } = params;
+  const { page, limit, classId = null, status = null } = params;
 
   return useQuery({
-    queryKey: queryKeys.students.list(schoolId ?? "none", { page, limit, classId }),
+    queryKey: queryKeys.students.list(schoolId ?? "none", { page, limit, classId, status }),
     queryFn: () =>
       classId
         ? studentService.getStudentsByClass(classId, page, limit)
-        : studentService.getStudents(page, limit),
+        : studentService.getStudents(page, limit, status),
     enabled: Boolean(schoolId),
     staleTime: staleTimes.list,
     // Keeps the previous page on screen while the next one loads, so the grid
