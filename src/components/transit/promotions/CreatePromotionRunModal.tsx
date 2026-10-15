@@ -17,8 +17,9 @@ import { usePromotionWizard } from "./wizard/usePromotionWizard";
  * The four-step wizard that builds a promotion run.
  *
  * The API validates the run as it creates it, so this only has to produce
- * decisions the DTO accepts: a student, the class they are in, and the class
- * they are moving to.
+ * decisions the DTO accepts: a student, the class they are in, the action
+ * (promote, repeat, graduate, withdraw) and, to promote, the class they are
+ * moving to.
  */
 export function CreatePromotionRunModal({
   academicYears,
@@ -112,10 +113,12 @@ export function CreatePromotionRunModal({
           classes={classes}
           sourceClassId={wizard.sourceClassId}
           targetClassId={wizard.targetClassId}
+          bulkAction={wizard.bulkAction}
           decisions={decisions}
           isLoading={roster.isLoading}
           onSourceChange={wizard.chooseSourceClass}
           onTargetChange={wizard.setTargetClassId}
+          onBulkActionChange={wizard.chooseBulkAction}
           onChange={wizard.updateDecision}
         />
       )}
@@ -127,6 +130,7 @@ export function CreatePromotionRunModal({
       {step === 4 && (
         <SubmitStep
           decisionCount={decisions.length}
+          decisions={decisions}
           academicYears={academicYears}
           fromAcademicYearId={wizard.fromAcademicYearId}
           toAcademicYearId={wizard.toAcademicYearId}

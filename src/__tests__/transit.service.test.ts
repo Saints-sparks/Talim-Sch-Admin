@@ -186,8 +186,14 @@ describe("transferAbilities", () => {
   });
 
   it("names the side the signed-in school is on", () => {
-    expect(transferAbilities(transfer(), SOURCE)).toMatchObject({ isSource: true, isTarget: false });
-    expect(transferAbilities(transfer(), TARGET)).toMatchObject({ isSource: false, isTarget: true });
+    expect(transferAbilities(transfer(), SOURCE)).toMatchObject({
+      isSource: true,
+      isTarget: false,
+    });
+    expect(transferAbilities(transfer(), TARGET)).toMatchObject({
+      isSource: false,
+      isTarget: true,
+    });
   });
 
   it("grants a bystander school nothing at all", () => {
@@ -250,7 +256,9 @@ describe("transferAbilities", () => {
   it("lets only the source school cancel, and not after the target approved", () => {
     expect(transferAbilities(transfer({ status: "requested" }), SOURCE).canCancel).toBe(true);
     expect(transferAbilities(transfer({ status: "source_approved" }), SOURCE).canCancel).toBe(true);
-    expect(transferAbilities(transfer({ status: "target_approved" }), SOURCE).canCancel).toBe(false);
+    expect(transferAbilities(transfer({ status: "target_approved" }), SOURCE).canCancel).toBe(
+      false
+    );
     expect(transferAbilities(transfer({ status: "requested" }), TARGET).canCancel).toBe(false);
   });
 
@@ -374,10 +382,26 @@ describe("promotion helpers", () => {
     expect(
       buildBulkDecisions([{ studentId: { _id: "s1" } }, { studentId: "s2" }], "c1", "c2")
     ).toEqual([
-      { studentId: "s1", fromClassId: "c1", toClassId: "c2", repeatClass: false },
-      { studentId: "s2", fromClassId: "c1", toClassId: "c2", repeatClass: false },
+      {
+        studentId: "s1",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
+      {
+        studentId: "s2",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
     ]);
     expect(buildBulkDecisions([{ _id: "s3" }], "c1", "c2")[0].studentId).toBe("s3");
+    // A whole top-level class graduates: no target class.
+    expect(buildBulkDecisions([{ _id: "s4" }], "c9", "", "graduate")).toEqual([
+      { studentId: "s4", fromClassId: "c9", action: "graduate", repeatClass: false },
+    ]);
   });
 
   it("reads validation problems from the sentences the API stores", () => {

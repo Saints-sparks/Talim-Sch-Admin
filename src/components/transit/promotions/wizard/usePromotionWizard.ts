@@ -16,6 +16,7 @@ import {
   stepLabels,
   toggleDecision,
   toRequestDecisions,
+  type BulkAction,
   type Mode,
   type Step,
 } from "./promotionWizard";
@@ -38,6 +39,7 @@ export function usePromotionWizard(onCreated: () => void) {
   const [mode, setModeState] = useState<Mode>("individual");
   const [sourceClassId, setSourceClassId] = useState("");
   const [targetClassId, setTargetClassId] = useState("");
+  const [bulkAction, setBulkAction] = useState<BulkAction>("promote");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [decisions, setDecisions] = useState<DecisionDraft[]>([]);
 
@@ -54,9 +56,10 @@ export function usePromotionWizard(onCreated: () => void) {
   const enrollments = useMemo(() => roster.data ?? [], [roster.data]);
 
   useEffect(() => {
-    if (mode !== "bulk" || !sourceClassId || !targetClassId) return;
-    setDecisions(bulkDecisionDrafts(enrollments, sourceClassId, targetClassId));
-  }, [enrollments, mode, sourceClassId, targetClassId]);
+    if (mode !== "bulk" || !sourceClassId) return;
+    if (bulkAction === "promote" && !targetClassId) return;
+    setDecisions(bulkDecisionDrafts(enrollments, sourceClassId, targetClassId, bulkAction));
+  }, [enrollments, mode, sourceClassId, targetClassId, bulkAction]);
 
   /** Switches mode, clearing what the other mode had built. */
   function setMode(next: Mode) {
@@ -68,6 +71,13 @@ export function usePromotionWizard(onCreated: () => void) {
   /** Picks the bulk source class, clearing the preview until its roster loads. */
   function chooseSourceClass(classId: string) {
     setSourceClassId(classId);
+    setBulkAction("promote");
+    setDecisions([]);
+  }
+
+  /** Switches the whole class between moving up and graduating. */
+  function chooseBulkAction(action: BulkAction) {
+    setBulkAction(action);
     setDecisions([]);
   }
 
@@ -90,7 +100,7 @@ export function usePromotionWizard(onCreated: () => void) {
   function goToReview() {
     const ready = readyDecisions(decisions);
     if (!ready.length) {
-      toast.error("Give at least one student a target class");
+      toast.error("Give at least one student a target class or another action");
       return;
     }
     setDecisions(ready);
@@ -128,6 +138,8 @@ export function usePromotionWizard(onCreated: () => void) {
     chooseSourceClass,
     targetClassId,
     setTargetClassId,
+    bulkAction,
+    chooseBulkAction,
     selectedIds,
     decisions,
     roster,

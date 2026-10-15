@@ -16,6 +16,7 @@ import {
   toRequestDecisions,
 } from "@/components/transit/promotions/wizard/promotionWizard";
 import { CreatePromotionRunModal } from "@/components/transit/promotions/CreatePromotionRunModal";
+import type { DecisionDraft } from "@/components/transit/promotions/DecisionEditor";
 
 const mutateAsync = jest.fn();
 let rosterData: StudentEnrollment[] = [];
@@ -68,7 +69,14 @@ describe("promotion wizard logic", () => {
   it("adds a blank decision on tick, ignores a repeat tick and removes it on untick", () => {
     const added = toggleDecision([], ada, true);
     expect(added).toEqual([
-      { studentId: "s1", studentName: "Ada Okafor", fromClassId: "c1", toClassId: "", repeatClass: false },
+      {
+        studentId: "s1",
+        studentName: "Ada Okafor",
+        fromClassId: "c1",
+        toClassId: "",
+        action: "promote",
+        repeatClass: false,
+      },
     ]);
     expect(toggleDecision(added, ada, true)).toBe(added);
     expect(toggleDecision(added, ada, false)).toEqual([]);
@@ -82,20 +90,54 @@ describe("promotion wizard logic", () => {
 
   it("builds one named decision per enrolled student for a whole class", () => {
     expect(bulkDecisionDrafts([ada, bayo], "c1", "c2")).toEqual([
-      { studentId: "s1", studentName: "Ada Okafor", fromClassId: "c1", toClassId: "c2", repeatClass: false },
-      { studentId: "s2", studentName: "Bayo Ade", fromClassId: "c1", toClassId: "c2", repeatClass: false },
+      {
+        studentId: "s1",
+        studentName: "Ada Okafor",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
+      {
+        studentId: "s2",
+        studentName: "Bayo Ade",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
     ]);
   });
 
   it("keeps only complete decisions and strips the display name for the request", () => {
-    const drafts = [
-      { studentId: "s1", studentName: "Ada", fromClassId: "c1", toClassId: "c2", repeatClass: false },
-      { studentId: "s2", studentName: "Bayo", fromClassId: "c1", toClassId: "", repeatClass: false },
+    const drafts: DecisionDraft[] = [
+      {
+        studentId: "s1",
+        studentName: "Ada",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
+      {
+        studentId: "s2",
+        studentName: "Bayo",
+        fromClassId: "c1",
+        toClassId: "",
+        action: "promote",
+        repeatClass: false,
+      },
     ];
     const ready = readyDecisions(drafts);
     expect(ready).toHaveLength(1);
     expect(toRequestDecisions(ready)).toEqual([
-      { studentId: "s1", fromClassId: "c1", toClassId: "c2", repeatClass: false },
+      {
+        studentId: "s1",
+        fromClassId: "c1",
+        toClassId: "c2",
+        action: "promote",
+        repeatClass: false,
+      },
     ]);
   });
 });
@@ -117,7 +159,7 @@ describe("CreatePromotionRunModal", () => {
         classes={CLASSES}
         onClose={jest.fn()}
         onCreated={onCreated}
-      />,
+      />
     );
 
     const next = () => screen.getByRole("button", { name: /^(Next|Continue to Submit)$/ });
@@ -139,7 +181,15 @@ describe("CreatePromotionRunModal", () => {
       fromAcademicYearId: "y1",
       toAcademicYearId: "y2",
       targetTermId: undefined,
-      decisions: [{ studentId: "s1", fromClassId: "c1", toClassId: "c2", repeatClass: false }],
+      decisions: [
+        {
+          studentId: "s1",
+          fromClassId: "c1",
+          toClassId: "c2",
+          action: "promote",
+          repeatClass: false,
+        },
+      ],
     });
     expect(toast.success).toHaveBeenCalledWith("Promotion run created and validated");
   });
@@ -153,7 +203,7 @@ describe("CreatePromotionRunModal", () => {
         classes={CLASSES}
         onClose={jest.fn()}
         onCreated={jest.fn()}
-      />,
+      />
     );
     const [fromSelect, toSelect] = screen.getAllByRole("combobox");
     await user.selectOptions(fromSelect, "y1");
@@ -161,7 +211,9 @@ describe("CreatePromotionRunModal", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByLabelText(/Bayo Ade/));
     await user.click(screen.getByRole("button", { name: "Next" }));
-    expect(toast.error).toHaveBeenCalledWith("Give at least one student a target class");
+    expect(toast.error).toHaveBeenCalledWith(
+      "Give at least one student a target class or another action"
+    );
     expect(screen.getByText("Active enrollments")).toBeInTheDocument();
   });
 
@@ -174,7 +226,7 @@ describe("CreatePromotionRunModal", () => {
         classes={CLASSES}
         onClose={jest.fn()}
         onCreated={jest.fn()}
-      />,
+      />
     );
     const [fromSelect, toSelect] = screen.getAllByRole("combobox");
     await user.selectOptions(fromSelect, "y1");

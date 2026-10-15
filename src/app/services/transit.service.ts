@@ -128,11 +128,21 @@ export interface TransferRequest {
   updatedAt: string;
 }
 
+/**
+ * What a decision does to the student (history §4): promote to `toClassId`,
+ * repeat (the source class unless `toClassId` says otherwise), graduate (top
+ * level only) or withdraw. Graduate and withdraw take no class.
+ */
+export type PromotionAction = NonNullable<CreatePromotionRunPayload["decisions"][number]["action"]>;
+
 /** One student's promotion decision inside a run. */
 export interface PromotionDecision {
   studentId: string;
   fromClassId: string;
-  toClassId: string;
+  /** Required to promote; optional to repeat; absent to graduate or withdraw. */
+  toClassId?: string;
+  /** Absent on runs created before actions: `repeatClass` then says repeat, else promote. */
+  action?: PromotionAction;
   targetGradeLevel?: string;
   repeatClass?: boolean;
 }
@@ -630,18 +640,21 @@ export function cancelPromotionRun(id: string): Promise<PromotionRun> {
  *
  * @param sourceClassStudents - Enrollments or student records for the source class.
  * @param sourceClassId - The class they are leaving.
- * @param targetClassId - The class they are moving into.
+ * @param targetClassId - The class they are moving into (ignored to graduate).
+ * @param action - `promote` (default) or `graduate` for the whole class.
  * @returns One decision per student, none marked as repeating.
  */
 export function buildBulkDecisions(
   sourceClassStudents: Array<{ _id: string } | { studentId: Ref<{ _id: string }> }>,
   sourceClassId: string,
-  targetClassId: string
+  targetClassId: string,
+  action: Extract<PromotionAction, "promote" | "graduate"> = "promote"
 ): PromotionDecision[] {
   return sourceClassStudents.map((student) => ({
     studentId: "studentId" in student ? refId(student.studentId) : student._id,
     fromClassId: sourceClassId,
-    toClassId: targetClassId,
+    ...(action === "graduate" ? {} : { toClassId: targetClassId }),
+    action,
     repeatClass: false,
   }));
 }

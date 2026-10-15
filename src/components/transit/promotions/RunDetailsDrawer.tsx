@@ -15,6 +15,11 @@ import { SkeletonRows, surface, text } from "@/components/transit/ui";
 import { TransitErrorState } from "@/components/transit/TransitStates";
 import { formatTransitDate } from "@/components/transit/transferStatus";
 import { classNameById, IssueList, Meta } from "@/components/transit/promotions/promotionUi";
+import {
+  actionCounts,
+  actionLabel,
+  decisionAction,
+} from "@/components/transit/promotions/promotionActions";
 
 /** One run in full: its dates, its validation result and every decision in it. */
 export function RunDetailsDrawer({
@@ -79,6 +84,14 @@ export function RunDetailsDrawer({
             <div className="grid gap-3 sm:grid-cols-2">
               <Meta label="Status" value={run.status} badge />
               <Meta label="Students" value={String(run.decisions.length)} />
+              <Meta
+                label="Actions"
+                value={
+                  actionCounts(run.decisions)
+                    .map((entry) => `${entry.count} ${entry.label.toLowerCase()}`)
+                    .join(", ") || "—"
+                }
+              />
               <Meta label="From Year" value={refLabel(run.fromAcademicYearId)} />
               <Meta label="To Year" value={refLabel(run.toAcademicYearId)} />
               <Meta label="Target Term" value={refLabel(run.targetTermId, "No target term")} />
@@ -116,31 +129,36 @@ export function RunDetailsDrawer({
                     <tr>
                       <th className="px-4 py-3">Student</th>
                       <th className="px-4 py-3">From Class</th>
+                      <th className="px-4 py-3">Action</th>
                       <th className="px-4 py-3">To Class</th>
                       <th className="px-4 py-3">Grade</th>
-                      <th className="px-4 py-3">Repeat</th>
                     </tr>
                   </thead>
                   <tbody className={cn("divide-y", surface.divide)}>
-                    {run.decisions.map((decision) => (
-                      <tr key={`${decision.studentId}-${decision.toClassId}`}>
-                        <td className={cn("px-4 py-3 font-mono text-xs", text.strong)}>
-                          {decision.studentId}
-                        </td>
-                        <td className={cn("px-4 py-3", text.body)}>
-                          {classNameById(classes, decision.fromClassId)}
-                        </td>
-                        <td className={cn("px-4 py-3", text.body)}>
-                          {classNameById(classes, decision.toClassId)}
-                        </td>
-                        <td className={cn("px-4 py-3", text.body)}>
-                          {decision.targetGradeLevel ?? "—"}
-                        </td>
-                        <td className={cn("px-4 py-3", text.body)}>
-                          {decision.repeatClass ? "Yes" : "No"}
-                        </td>
-                      </tr>
-                    ))}
+                    {run.decisions.map((decision) => {
+                      const action = decisionAction(decision);
+                      return (
+                        <tr key={`${decision.studentId}-${decision.toClassId ?? action}`}>
+                          <td className={cn("px-4 py-3 font-mono text-xs", text.strong)}>
+                            {decision.studentId}
+                          </td>
+                          <td className={cn("px-4 py-3", text.body)}>
+                            {classNameById(classes, decision.fromClassId)}
+                          </td>
+                          <td className={cn("px-4 py-3", text.body)}>{actionLabel(action)}</td>
+                          <td className={cn("px-4 py-3", text.body)}>
+                            {decision.toClassId
+                              ? classNameById(classes, decision.toClassId)
+                              : action === "repeat"
+                                ? classNameById(classes, decision.fromClassId)
+                                : "—"}
+                          </td>
+                          <td className={cn("px-4 py-3", text.body)}>
+                            {decision.targetGradeLevel ?? "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
