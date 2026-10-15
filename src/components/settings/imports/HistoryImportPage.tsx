@@ -343,7 +343,7 @@ export function HistoryImportPage() {
 
           {job && stage !== "validating" ? <SheetCounts counts={counts} /> : null}
 
-          {stage === "done" && job ? <ImportResultTable result={job.result} /> : null}
+          {stage === "done" && job ? <ImportResultTable result={job.result ?? null} /> : null}
 
           {job && job.errorCount > 0 ? (
             <IssueTable

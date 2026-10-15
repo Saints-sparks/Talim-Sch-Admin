@@ -8375,6 +8375,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/imports/history/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The past-records import template (XLSX)
+         * @description Instructions sheet, one empty sheet per pack sheet with its header row, and an Examples sheet (ignored on upload). Generated from the parser's own sheet definitions.
+         */
+        get: operations["ImportsController_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The school's past-records imports, newest first
+         * @description The school's imports, newest first.
+         */
+        get: operations["ImportsController_list"];
+        put?: never;
+        /**
+         * Upload a past-records pack
+         * @description Multipart `file`: an .xlsx workbook or a ZIP of CSV files (50 MB at most). Stores it, creates the import and queues the check of every row. Poll `GET /imports/history/:id`. 400 `IMPORT_FILE_TYPE` for another kind of file.
+         */
+        post: operations["ImportsController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/history/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One past-records import with its validation report
+         * @description Errors and warnings come 100 per page (`?errorsPage=`, `?warningsPage=`); the first 1,000 are kept, `errors.csv` has every error. Another school's import answers 404.
+         */
+        get: operations["ImportsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/history/{id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit a validated past-records import
+         * @description Only from `valid` (or `failed`, to resume: every phase is idempotent). 409 `IMPORT_NOT_VALID` otherwise, 409 `IMPORT_IN_PROGRESS` while another import of the school is being written. No notification or email is sent.
+         */
+        post: operations["ImportsController_commit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/history/{id}/errors.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every error of a past-records import, as CSV
+         * @description Every error of an import as CSV.
+         */
+        get: operations["ImportsController_errorsCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -15223,6 +15327,127 @@ export interface components {
              */
             permissions: ("manage:classes" | "manage:curriculum" | "manage:assessments" | "manage:timetable" | "manage:fees" | "manage:payments" | "manage:finance" | "manage:students" | "manage:teachers" | "manage:parents" | "manage:announcements" | "manage:leave_requests" | "manage:transit" | "manage:messages" | "manage:settings" | "manage:support" | "manage:sub_admins")[];
         };
+        ImportJobAcceptedDto: {
+            id: string;
+            /** @enum {string} */
+            status: "validating" | "committing";
+        };
+        ImportProgressDto: {
+            /**
+             * @description `queued`, `reading`, `validating`, `validated`, then `sessions`, `classes`, `teachers`, `courses`, `students`, `enrollments`, `results`, `done`.
+             * @example results
+             */
+            phase: string;
+            /** @example 52000 */
+            done: number;
+            /** @example 142848 */
+            total: number;
+        };
+        ImportJobSummaryDto: {
+            id: string;
+            /** @enum {string} */
+            status: "validating" | "invalid" | "valid" | "committing" | "done" | "failed";
+            /** @example crestview-ikeja.xlsx */
+            fileName: string;
+            /** @example 4961892 */
+            fileSize: number;
+            /**
+             * @description Data rows per sheet.
+             * @example {
+             *       "sessions": 5,
+             *       "scores": 142848
+             *     }
+             */
+            counts: Record<string, never>;
+            errorCount: number;
+            warningCount: number;
+            progress: components["schemas"]["ImportProgressDto"];
+            /** @description Why the commit failed (`failed`). */
+            failure?: string | null;
+            /** @description Who uploaded it (user id). */
+            createdBy: string;
+            createdAt: string;
+            startedAt?: string | null;
+            finishedAt?: string | null;
+        };
+        ImportJobListDto: {
+            items: components["schemas"]["ImportJobSummaryDto"][];
+            page: number;
+            limit: number;
+            total: number;
+        };
+        ImportIssueDto: {
+            /**
+             * @description Sheet name ('' for the file).
+             * @example Scores
+             */
+            sheet: string;
+            /**
+             * @description Row number (1 is the header; 0 for the whole sheet or file).
+             * @example 14
+             */
+            row: number;
+            /**
+             * @description Column header ('' when not about one column).
+             * @example score
+             */
+            column: string;
+            /** @example 21 is more than CA 1's maximum of 20. */
+            message: string;
+        };
+        ImportIssuePageDto: {
+            items: components["schemas"]["ImportIssueDto"][];
+            /** @example 1 */
+            page: number;
+            /** @example 100 */
+            pageSize: number;
+            /**
+             * @description Issues kept on the job (at most 1,000; the CSV has all errors).
+             * @example 230
+             */
+            total: number;
+        };
+        ImportJobDto: {
+            id: string;
+            /** @enum {string} */
+            status: "validating" | "invalid" | "valid" | "committing" | "done" | "failed";
+            /** @example crestview-ikeja.xlsx */
+            fileName: string;
+            /** @example 4961892 */
+            fileSize: number;
+            /**
+             * @description Data rows per sheet.
+             * @example {
+             *       "sessions": 5,
+             *       "scores": 142848
+             *     }
+             */
+            counts: Record<string, never>;
+            errorCount: number;
+            warningCount: number;
+            progress: components["schemas"]["ImportProgressDto"];
+            /** @description Why the commit failed (`failed`). */
+            failure?: string | null;
+            /** @description Who uploaded it (user id). */
+            createdBy: string;
+            createdAt: string;
+            startedAt?: string | null;
+            finishedAt?: string | null;
+            /** @description Errors, paged with `?errorsPage=`. */
+            errors: components["schemas"]["ImportIssuePageDto"];
+            /** @description Warnings, paged with `?warningsPage=`. */
+            warnings: components["schemas"]["ImportIssuePageDto"];
+            /**
+             * @description Per collection `{ created, updated, deleted? }`, once done.
+             * @example {
+             *       "assessmentGradeRecords": {
+             *         "created": 142848,
+             *         "updated": 0
+             *       }
+             *     }
+             */
+            result?: Record<string, never> | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -20245,6 +20470,8 @@ export interface operations {
                 page?: number;
                 /** @description Number of items per page */
                 limit?: number;
+                /** @description Only students with this status. A student without one is active. */
+                status?: "active" | "graduated" | "withdrawn" | "left_talim";
             };
             header?: never;
             path?: never;
@@ -28048,6 +28275,144 @@ export interface operations {
             };
             /** @description Sub-admin not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ImportsController_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workbook. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ImportsController_list: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based). */
+                page?: number;
+                /** @description Items per page; values above 100 are capped. */
+                limit?: number;
+                /** @description Platform admin only. */
+                schoolId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobListDto"];
+                };
+            };
+        };
+    };
+    ImportsController_upload: {
+        parameters: {
+            query?: {
+                /** @description Platform admin only. */
+                schoolId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobAcceptedDto"];
+                };
+            };
+        };
+    };
+    ImportsController_get: {
+        parameters: {
+            query?: {
+                errorsPage?: number;
+                warningsPage?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobDto"];
+                };
+            };
+        };
+    };
+    ImportsController_commit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJobAcceptedDto"];
+                };
+            };
+        };
+    };
+    ImportsController_errorsCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description sheet,row,column,message */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

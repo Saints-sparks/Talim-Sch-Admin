@@ -6,47 +6,26 @@
  * School admins only: the API answers 403 to every other role. The school is
  * taken from the bearer token; nothing here passes a school id.
  *
- * TODO(api-types): the importer's routes are not in the generated contract
- * (`src/types/api.d.ts`) yet. The types below mirror the backend DTOs in
- * `talimBE-V2/src/modules/imports/data/import-job.dto.ts` by hand; switch them
- * to `Schema<"ImportJobDto">` and friends once `npm run types:api` carries them.
+ * Types come from the generated contract (`npm run types:api`). Two fields
+ * are typed `Record<string, never>` there because the DTOs declare them as
+ * free-form maps (`counts`, `result`); they are narrowed here to what the
+ * importer writes.
  */
 import { api } from "@/lib/apiClient";
 import { fetchFile, type DownloadedFile } from "@/lib/download";
+import type { Schema } from "@/types/apiContract";
 
 /** Where an import stands (`ImportJobStatus`). */
-export type ImportJobStatus = "validating" | "invalid" | "valid" | "committing" | "done" | "failed";
+export type ImportJobStatus = Schema<"ImportJobSummaryDto">["status"];
 
-/** One problem in a pack (`ImportIssueDto`). */
-export interface ImportIssue {
-  /** Sheet name (`""` for the file as a whole). */
-  sheet: string;
-  /** Row number: 1 is the header row, 0 the whole sheet or file. */
-  row: number;
-  /** Column header (`""` when not about one column). */
-  column: string;
-  message: string;
-}
+/** One problem in a pack: sheet (`""` for the file), row (0 for a whole sheet), column, message. */
+export type ImportIssue = Schema<"ImportIssueDto">;
 
-/** A page of issues (`ImportIssuePageDto`), 100 per page, the first 1,000 kept. */
-export interface ImportIssuePage {
-  items: ImportIssue[];
-  page: number;
-  pageSize: number;
-  total: number;
-}
+/** A page of issues, 100 per page, the first 1,000 kept. */
+export type ImportIssuePage = Schema<"ImportIssuePageDto">;
 
-/** How far the queue has got (`ImportProgressDto`). */
-export interface ImportProgress {
-  /**
-   * `queued`, `reading`, `validating`, `validated`, then `sessions`,
-   * `classes`, `teachers`, `courses`, `students`, `enrollments`, `results`,
-   * `done`.
-   */
-  phase: string;
-  done: number;
-  total: number;
-}
+/** How far the queue has got: `phase`, `done`, `total`. */
+export type ImportProgress = Schema<"ImportProgressDto">;
 
 /** What was written to one collection. */
 export interface ImportCollectionResult {
@@ -55,46 +34,24 @@ export interface ImportCollectionResult {
   deleted?: number;
 }
 
-/** An import in the list (`ImportJobSummaryDto`). */
-export interface ImportJobSummary {
-  id: string;
-  status: ImportJobStatus;
-  fileName: string;
-  fileSize: number;
-  /** Data rows per sheet, keyed by sheet (`sessions`, `classSubjects`, `termResults` ...). */
+/** An import in the list, with `counts` as data rows per sheet. */
+export type ImportJobSummary = Omit<Schema<"ImportJobSummaryDto">, "counts"> & {
   counts: Record<string, number>;
-  errorCount: number;
-  warningCount: number;
-  progress: ImportProgress;
-  /** Why the commit failed (`failed`). */
-  failure: string | null;
-  createdBy: string;
-  createdAt: string;
-  startedAt: string | null;
-  finishedAt: string | null;
-}
+};
 
-/** One import with its report (`ImportJobDto`). */
-export interface ImportJob extends ImportJobSummary {
-  errors: ImportIssuePage;
-  warnings: ImportIssuePage;
-  /** Per collection, once done. */
-  result: Record<string, ImportCollectionResult> | null;
-}
+/** One import with its report and, once done, what was written per collection. */
+export type ImportJob = Omit<Schema<"ImportJobDto">, "counts" | "result"> & {
+  counts: Record<string, number>;
+  result?: Record<string, ImportCollectionResult> | null;
+};
 
-/** A page of imports (`ImportJobListDto`). */
-export interface ImportJobList {
+/** A page of imports. */
+export type ImportJobList = Omit<Schema<"ImportJobListDto">, "items"> & {
   items: ImportJobSummary[];
-  page: number;
-  limit: number;
-  total: number;
-}
+};
 
-/** The answer to an upload or a commit (`ImportJobAcceptedDto`). */
-export interface ImportJobAccepted {
-  id: string;
-  status: ImportJobStatus;
-}
+/** The answer to an upload or a commit: the id and `validating` or `committing`. */
+export type ImportJobAccepted = Schema<"ImportJobAcceptedDto">;
 
 /** The largest file the API accepts (`MAX_IMPORT_FILE_BYTES`). */
 export const MAX_IMPORT_FILE_BYTES = 50 * 1024 * 1024;
