@@ -7,7 +7,8 @@ import { Permission } from "@/lib/permissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useAcademicYears, useTerms } from "@/hooks/queries/reference";
 import { useEnrollmentHistory } from "@/hooks/transit/useEnrollments";
-import { useClassOptions, useSchoolStudents } from "@/hooks/transit/useTransitReference";
+import { useClassOptions } from "@/hooks/transit/useTransitReference";
+import { useStudent } from "@/hooks/users/useStudents";
 import { cn } from "@/lib/utils";
 import { SkeletonRows, text } from "@/components/transit/ui";
 import { TransitEmptyState, TransitErrorState } from "@/components/transit/TransitStates";
@@ -18,9 +19,11 @@ import { pagePad, pageStack, pageTitle } from "@/components/tl/styles";
 /**
  * One student's enrollment history, and the way to open the next one.
  *
- * The student's name comes from the school directory the enrollment pages
- * already have cached — the history endpoint populates classes and years, not
- * the student — so this page adds no request of its own for it.
+ * The history endpoint populates classes and years, not the student, so the
+ * name comes from the student's own record (`GET /students/:id`, the id the
+ * enrollments table links with). The school directory the pickers use is keyed
+ * by user id and holds one page of students, so a graduate or a record id
+ * missed it and the heading read "Student".
  */
 export default function StudentEnrollmentHistoryPage() {
   const router = useRouter();
@@ -28,16 +31,17 @@ export default function StudentEnrollmentHistoryPage() {
   const [enrollOpen, setEnrollOpen] = useState(false);
 
   const history = useEnrollmentHistory(studentId);
-  const students = useSchoolStudents();
+  const student = useStudent(studentId);
   const { classes, isLoading: classesLoading } = useClassOptions();
   const years = useAcademicYears();
   const terms = useTerms();
 
   const studentName = useMemo(() => {
-    const match = (students.data ?? []).find((student) => student._id === studentId);
-    if (!match) return "";
-    return `${match.firstName} ${match.lastName}`.trim() || match.admissionNumber || "";
-  }, [students.data, studentId]);
+    const record = student.data;
+    if (!record) return "";
+    const name = `${record.userId?.firstName ?? ""} ${record.userId?.lastName ?? ""}`.trim();
+    return name || record.admissionNumber || "";
+  }, [student.data]);
 
   const rows = history.data ?? [];
   const hasActive = rows.some((enrollment) => enrollment.status === "active");
@@ -56,7 +60,9 @@ export default function StudentEnrollmentHistoryPage() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className={pageTitle}>{studentName || "Student"}</h1>
+              <h1 className={pageTitle}>
+                {studentName || (student.isLoading ? "Loading…" : "Student")}
+              </h1>
               {hasActive && (
                 <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-tl-success-bg text-tl-success">
                   Active
