@@ -8,6 +8,7 @@
  */
 import type { Tone } from "@/components/tl/styles";
 import type { LeaveRequest, LeaveStatus, LeaveType } from "@/app/services/leave.service";
+import { formatCalendarDate } from "@/lib/dates";
 
 /**
  * Label per leave type (B9). Legacy values read as the B9 type the backend
@@ -120,7 +121,9 @@ export function studentAvatar(request: LeaveRequest): string {
 }
 
 /**
- * Formats a date for display, e.g. `04 Sep 2026`.
+ * Formats a moment (submitted, last updated) for display in the viewer's time
+ * zone, e.g. `04 Sep 2026`. Leave start and end are calendar days; they go
+ * through {@link formatLeaveDay}.
  *
  * @param value - ISO date string.
  * @returns The formatted date, or `-` when it is missing or unparseable.
@@ -134,6 +137,17 @@ export function formatDate(value?: string): string {
     month: "short",
     year: "numeric",
   }).format(date);
+}
+
+/**
+ * Formats a leave start or end date, a calendar day stored as UTC midnight, as
+ * the same day for every viewer, e.g. `04 Sep 2026`.
+ *
+ * @param value - ISO date string.
+ * @returns The formatted day, or `-` when it is missing or unparseable.
+ */
+export function formatLeaveDay(value?: string): string {
+  return formatCalendarDate(value, { fallback: "-" });
 }
 
 /**

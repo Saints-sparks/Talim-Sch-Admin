@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import type { StudentById } from "@/app/services/student.service";
-import { DetailField, localDate, StudentIdentityCard, TabHeading } from "./profileAtoms";
+import { DetailField, profileDate, StudentIdentityCard, TabHeading } from "./profileAtoms";
 
 const gridClass = "lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 order-2 lg:order-none";
 const sectionClass = "grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8";
@@ -40,7 +40,7 @@ export function StudentPersonalTab({ student }: { student: StudentById }) {
             label="Phone Number"
             value={student.userId.phoneNumber || "Not specified"}
           />
-          <DetailField icon={Calendar} label="Date of Birth" value={localDate(student.userId.dateOfBirth)} />
+          <DetailField icon={Calendar} label="Date of Birth" value={profileDate(student.userId.dateOfBirth)} />
           <DetailField icon={UserCheck} label="Gender" value={student.userId.gender || "Not specified"} />
         </div>
       </div>
@@ -110,7 +110,7 @@ export function StudentAcademicTab({ student }: { student: StudentById }) {
             label="Grade Level"
             value={student.gradeLevel || "Not specified"}
           />
-          <DetailField icon={Calendar} label="Enrollment Date" value={localDate(student.enrollmentDate)} />
+          <DetailField icon={Calendar} label="Enrollment Date" value={profileDate(student.enrollmentDate)} />
           <DetailField
             icon={BookOpen}
             label="Assigned Subjects"

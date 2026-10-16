@@ -14,6 +14,7 @@ import type {
   StudentById,
   UpdateStudentPayload,
 } from "@/app/services/student.service";
+import { toDateInputValue } from "@/lib/dates";
 
 /** The relationships the backend accepts, with the labels the form shows. */
 export const PARENT_RELATIONSHIPS: ReadonlyArray<{ value: ParentRelationship; label: string }> = [
@@ -50,9 +51,7 @@ export interface StudentDraft {
 
 /** The date part of whatever the API returned, for an `<input type="date">`. */
 function toDateInput(value?: string): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+  return toDateInputValue(value);
 }
 
 /** A stored gender in whatever case, as one of the enum's lowercase values. */

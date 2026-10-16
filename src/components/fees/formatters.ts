@@ -7,6 +7,7 @@
  * typed.
  */
 import type { Ref } from "@/app/services/fees.service";
+import { formatCalendarDate, toDateInputValue as dayInputValue } from "@/lib/dates";
 
 /**
  * Formats an amount in naira the way the fees screens show money.
@@ -30,28 +31,17 @@ export function formatNaira(amount: number): string {
  * @returns e.g. `01 Sep 2026`.
  */
 export function formatDate(value?: string | null, fallback = "—"): string {
-  if (!value) return fallback;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return fallback;
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  return formatCalendarDate(value, { fallback });
 }
 
 /**
- * Converts an ISO timestamp to the `yyyy-mm-dd` a date input expects.
+ * Converts a stored calendar date to the `yyyy-mm-dd` a date input expects.
  *
  * @param value - An ISO date string, or nothing.
- * @returns The date part, or `""` when there is no usable date.
+ * @returns The day, or `""` when there is no usable date.
  */
 export function toDateInputValue(value?: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().split("T")[0];
+  return dayInputValue(value);
 }
 
 /**

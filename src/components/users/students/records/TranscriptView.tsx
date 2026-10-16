@@ -24,6 +24,7 @@ import {
   STATUS_LABEL,
   attendanceText,
   day,
+  issuedDay,
   num,
   outcomeLabel,
   positionText,
@@ -230,12 +231,12 @@ export function TranscriptView({ transcript, issue }: TranscriptViewProps) {
               <p className="mt-1 break-all text-tl-body">
                 Check it at <span className="font-bold">{issue.verifyUrl}</span>
               </p>
-              <p className="text-[13px] text-tl-muted">Issued {day(issue.issuedAt)}</p>
+              <p className="text-[13px] text-tl-muted">Issued {issuedDay(issue.issuedAt)}</p>
             </div>
           </div>
         ) : null}
         <p className="text-xs text-tl-muted">
-          Published results only. Generated {day(transcript.generatedAt)}.
+          Published results only. Generated {issuedDay(transcript.generatedAt)}.
         </p>
       </footer>
     </article>

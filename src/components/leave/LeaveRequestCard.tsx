@@ -15,7 +15,7 @@ import { LeaveDecisionActions } from "./LeaveDecisionActions";
 import {
   FALLBACK_AVATAR,
   STATUS_TONE,
-  formatDate,
+  formatLeaveDay,
   leaveTypeLabel,
   statusKey,
   studentAvatar,
@@ -86,7 +86,7 @@ export function LeaveRequestCard({
           <dd className="font-bold text-tl-ink">{leaveTypeLabel(request.leaveType)}</dd>
           <dt className="font-bold text-tl-muted">Date:</dt>
           <dd className="font-bold text-tl-ink">
-            {formatDate(request.startDate)} - {formatDate(request.endDate)}
+            {formatLeaveDay(request.startDate)} - {formatLeaveDay(request.endDate)}
           </dd>
           <dt className="font-bold text-tl-muted">
             <Tooltip

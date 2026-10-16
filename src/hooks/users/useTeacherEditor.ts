@@ -17,6 +17,7 @@ import type {
   TeacherPersonalDetailsPayload,
   TeacherQualificationsPayload,
 } from "@/app/services/teacher.service";
+import { toDateInputValue } from "@/lib/dates";
 
 /** The qualifications the backend's `AcademicQualification` enum accepts. */
 export const QUALIFICATIONS: readonly AcademicQualification[] = [
@@ -79,9 +80,7 @@ export interface TeacherDraft {
 }
 
 function toDateInput(value?: string): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+  return toDateInputValue(value);
 }
 
 function toGender(value?: string): TeacherDraft["gender"] {

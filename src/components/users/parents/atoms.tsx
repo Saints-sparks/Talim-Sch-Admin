@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { formatCalendarDate } from "@/lib/dates";
 
 /** A green/red pill saying whether an account can sign in. */
 export function StatusBadge({ active }: { active: boolean }) {
@@ -38,6 +39,11 @@ export function formatDate(value?: string): string {
     month: "short",
     year: "numeric",
   }).format(date);
+}
+
+/** A calendar date (a date of birth) as `12 Apr 2024`, the same day in every time zone, or `-`. */
+export function formatDay(value?: string): string {
+  return formatCalendarDate(value, { fallback: "-" });
 }
 
 /** A date and time as `12 Apr 2024, 09:30`, or `-` when there isn't one. */

@@ -14,6 +14,7 @@ import {
 } from "@/app/services/transit.service";
 import { surface, text } from "@/components/transit/ui";
 import { formatTransitDate } from "@/components/transit/transferStatus";
+import { formatCalendarDate } from "@/lib/dates";
 
 /** Badge colours per enrollment source. */
 const SOURCE_COLORS: Record<EnrollmentSource, string> = {
@@ -109,7 +110,9 @@ export function EnrollmentsTable({ enrollments }: { enrollments: StudentEnrollme
                     </span>
                   </td>
                   <td className={cn("px-4 py-3", text.muted)}>
-                    {formatTransitDate(enrollment.startDate ?? enrollment.createdAt)}
+                    {enrollment.startDate
+                      ? formatCalendarDate(enrollment.startDate)
+                      : formatTransitDate(enrollment.createdAt)}
                   </td>
                 </tr>
               );

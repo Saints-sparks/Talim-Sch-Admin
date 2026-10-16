@@ -11,7 +11,7 @@
 import React from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { LeaveRequest } from "@/app/services/leave.service";
-import { formatDate, leaveTypeLabel } from "./leave.presentation";
+import { formatDate, formatLeaveDay, leaveTypeLabel } from "./leave.presentation";
 
 /** One label/value pair. */
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -88,7 +88,7 @@ export function LeaveRequestDetails({ request }: LeaveRequestDetailsProps) {
           <Field label="Leave Type" value={leaveTypeLabel(request.leaveType)} />
           <Field
             label="Leave Period"
-            value={`${formatDate(request.startDate)} - ${formatDate(request.endDate)}`}
+            value={`${formatLeaveDay(request.startDate)} - ${formatLeaveDay(request.endDate)}`}
           />
           <Field label="Request Submitted" value={formatDate(request.createdAt)} />
           <Field label="Last Updated" value={formatDate(request.updatedAt)} />

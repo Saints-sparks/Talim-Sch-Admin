@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Assessment, AssessmentStatus } from "@/components/assessment/AssessmentForm.types";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { formatCalendarDate, parseCalendarDate } from "@/lib/dates";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -71,19 +72,19 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({
 
   const statusConfig = getStatusConfig(assessment.status);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+  // Assessment dates are calendar days, stored as UTC midnight.
+  const formatDate = (dateString: string) =>
+    formatCalendarDate(dateString, {
+      locale: "en-US",
+      format: { month: "short", day: "numeric", year: "numeric" },
     });
-  };
 
   const getDaysRemaining = () => {
-    const startDate = new Date(assessment.startDate);
-    const today = new Date();
-    const diffTime = startDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Whole calendar days from the viewer's today to the start day.
+    const start = parseCalendarDate(assessment.startDate)?.getTime() ?? NaN;
+    const now = new Date();
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((start - today) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
       return { text: "Started", color: "text-tl-success" };

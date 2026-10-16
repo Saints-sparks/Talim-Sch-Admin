@@ -44,7 +44,9 @@ export function transferStepIndex(status: TransferStatus): number {
 }
 
 /**
- * Formats a timestamp for the transit pages.
+ * Formats a moment (created, approved, committed) for the transit pages, in the
+ * viewer's time. Enrollment start and end dates are calendar dates and go
+ * through `formatCalendarDate` from `@/lib/dates` instead.
  *
  * @param value - An ISO date string, or nothing.
  * @param withTime - Whether to include the time of day.

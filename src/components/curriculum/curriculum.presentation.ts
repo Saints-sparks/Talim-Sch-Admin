@@ -7,6 +7,7 @@
  * are pure, and are unit tested.
  */
 import type { CurriculumContent, Teacher } from "@/app/services/subjects.service";
+import { calendarYear } from "@/lib/dates";
 
 /** A person as any of the teacher-shaped payloads carries them. */
 export interface PersonLike {
@@ -60,7 +61,7 @@ export function courseDisplay(course: CurriculumContent["course"]): string {
 export function termDisplay(term: CurriculumContent["term"]): string {
   if (!term) return "No term";
   if (term.year) return `${term.name} (${term.year})`;
-  if (term.startDate) return `${term.name} (${new Date(term.startDate).getFullYear()})`;
+  if (term.startDate) return `${term.name} (${calendarYear(term.startDate)})`;
   return term.name;
 }
 

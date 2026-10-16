@@ -1,4 +1,5 @@
 import type { AcademicYear, Term } from "@/app/services/academic.service";
+import { formatCalendarDate } from "@/lib/dates";
 
 /** The add-academic-year form as typed. */
 export interface YearForm {
@@ -30,13 +31,14 @@ export const EMPTY_TERM: TermForm = {
 };
 
 /**
- * Formats an ISO date for the tables.
+ * Formats a session or term date for the tables, as the calendar day it names
+ * (stored as UTC midnight, so never shifted into the viewer's time zone).
  *
  * @param d - ISO date string.
  * @returns e.g. "01 Sep 2025", or an em dash when absent.
  */
 export function formatSetupDate(d: string): string {
-  return d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  return formatCalendarDate(d);
 }
 
 /**

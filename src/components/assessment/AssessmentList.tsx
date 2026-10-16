@@ -8,6 +8,7 @@
  * administrator holds `manage:assessments`.
  */
 import React, { useMemo, useState } from "react";
+import { formatCalendarDate } from "@/lib/dates";
 import {
   FiAlertCircle,
   FiCalendar,
@@ -173,9 +174,9 @@ const AssessmentList: React.FC<AssessmentListProps> = ({
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-tl-muted mb-2">
                           <FiCalendar className="h-4 w-4 flex-shrink-0" />
-                          <span>{new Date(assessment.startDate).toLocaleDateString()}</span>
+                          <span>{formatCalendarDate(assessment.startDate)}</span>
                           <span>-</span>
-                          <span>{new Date(assessment.endDate).toLocaleDateString()}</span>
+                          <span>{formatCalendarDate(assessment.endDate)}</span>
                         </div>
                         <p className="text-sm text-tl-muted line-clamp-2">
                           {assessment.description || "No description provided"}

@@ -10,7 +10,8 @@ import {
 import { useFeeAssignments, useFeeCategories, useFeeItems } from "@/hooks/fees/queries";
 import { FeesPanelState } from "./FeesPanelState";
 import { TablePagination } from "./TablePagination";
-import { formatDate, refName } from "./formatters";
+import { refName } from "./formatters";
+import { formatDate } from "@/components/finance/formatters";
 import { Segmented, rowButton, table } from "@/components/tl";
 import { cn } from "@/lib/utils";
 import {

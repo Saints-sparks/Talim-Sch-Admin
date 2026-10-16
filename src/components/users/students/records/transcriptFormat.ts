@@ -7,6 +7,7 @@ import type {
   TranscriptTerm,
 } from "@/app/services/student.service";
 import type { Tone } from "@/components/tl";
+import { formatCalendarDate } from "@/lib/dates";
 
 /** How a session or a school stay ended, in plain words. */
 const OUTCOMES: Record<string, { label: string; tone: Tone }> = {
@@ -93,21 +94,28 @@ export function num(value: number | null | undefined, suffix = ""): string {
 }
 
 /**
- * A `YYYY-MM-DD` date as "14 Sep 2020", read as a calendar day (no timezone shift).
+ * A calendar date (school from/to, date of birth, `leftAt`) as "14 Sep 2020",
+ * the same day in every time zone.
  *
  * @param value - The date.
  * @returns The date, or a dash.
  */
 export function day(value: string | null | undefined): string {
+  return formatCalendarDate(value, { format: { day: "numeric", month: "short", year: "numeric" } });
+}
+
+/**
+ * A moment (issued, generated) as the day it was in the viewer's time zone,
+ * e.g. "14 Sep 2020".
+ *
+ * @param value - The ISO timestamp.
+ * @returns The date, or a dash.
+ */
+export function issuedDay(value: string | null | undefined): string {
   if (!value) return "—";
-  const date = new Date(`${value.slice(0, 10)}T00:00:00Z`);
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 /**

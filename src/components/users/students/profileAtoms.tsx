@@ -3,6 +3,7 @@
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { StudentById } from "@/app/services/student.service";
+import { formatCalendarDate } from "@/lib/dates";
 
 /** One read-only field: an icon, a label and the value in a bordered box. */
 export function DetailField({
@@ -129,9 +130,10 @@ export function TabHeading({
   );
 }
 
-/** A date as the browser's locale short date, or "Not specified". */
-export function localDate(value?: string): string {
-  if (!value) return "Not specified";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not specified" : date.toLocaleDateString();
+/**
+ * A calendar date on the profile (date of birth, enrollment date) as
+ * `15 Sept 2025`, the same day in every time zone, or "Not specified".
+ */
+export function profileDate(value?: string): string {
+  return formatCalendarDate(value, { fallback: "Not specified" });
 }

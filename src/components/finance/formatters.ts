@@ -6,6 +6,8 @@
  * balance looks like.
  */
 
+import { formatCalendarDate as formatDay } from "@/lib/dates";
+
 /**
  * Formats an amount as naira with two decimals.
  *
@@ -42,15 +44,7 @@ export function formatDate(iso?: string | null): string {
  * @returns The formatted day, e.g. `30 Sep 2026`.
  */
 export function formatCalendarDate(iso?: string | null): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  return formatDay(iso);
 }
 
 /**

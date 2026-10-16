@@ -13,6 +13,7 @@ import React from "react";
 import Link from "next/link";
 import { Activity, ArrowRight, BarChart3, BookMarked, Clock } from "lucide-react";
 import type { AcademicSummary, SchoolDashboardData } from "@/app/services/dashboard.service";
+import { formatCalendarDate } from "@/lib/dates";
 import { CardHeader, Pill, card, textLink, tile } from "@/components/tl";
 import {
   IconTitle,
@@ -43,10 +44,9 @@ interface AcademicActivityProps {
  * @returns "Sep 8, 2025".
  */
 function shortDate(value: string): string {
-  return new Date(value).toLocaleDateString("en-NG", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+  return formatCalendarDate(value, {
+    locale: "en-NG",
+    format: { month: "short", day: "numeric", year: "numeric" },
   });
 }
 

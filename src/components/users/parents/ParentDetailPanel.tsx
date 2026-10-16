@@ -7,7 +7,7 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Permission } from "@/lib/permissions";
 import type { Parent, ParentChild } from "@/app/services/parent.service";
 import type { ProfileFieldsByUserId } from "@/hooks/users/useParents";
-import { formatDate, formatDateTime, Info, StatusBadge } from "./atoms";
+import { formatDate, formatDateTime, formatDay, Info, StatusBadge } from "./atoms";
 import { parentName } from "./ParentsTable";
 
 interface ParentDetailPanelProps {
@@ -79,7 +79,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
       <div className="grid grid-cols-1 gap-3 rounded-2xl border border-tl-line-soft bg-tl-subtle p-4 text-sm sm:grid-cols-2">
         <Info
           label="Date of Birth"
-          value={formatDate(parentProfile.dateOfBirth ?? parent.userId?.dateOfBirth)}
+          value={formatDay(parentProfile.dateOfBirth ?? parent.userId?.dateOfBirth)}
         />
         <Info label="Gender" value={parentProfile.gender ?? parent.userId?.gender ?? "-"} />
         <Info label="Joined On" value={formatDate(parent.userId?.createdAt ?? parent.createdAt)} />
@@ -136,7 +136,7 @@ export function ParentDetailPanel({ parent, profiles }: ParentDetailPanelProps) 
                 <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                   <Info
                     label="Date of Birth"
-                    value={formatDate(
+                    value={formatDay(
                       profiles[child.userId?._id]?.dateOfBirth ?? child.userId?.dateOfBirth
                     )}
                   />

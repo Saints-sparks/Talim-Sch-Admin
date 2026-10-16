@@ -30,6 +30,7 @@ import {
   type CalendarFormValues,
   type TermWindow,
 } from "./calendar/calendarForm";
+import { todayInputValue } from "@/lib/dates";
 
 const TITLE = "School Calendar";
 const DESC = "Holidays, events and early closes for the term";
@@ -39,12 +40,6 @@ const TYPE_STYLES: Record<CalendarEvent["type"], string> = {
   event: "bg-tl-select text-tl-link border-tl-control",
   early_close: "bg-tl-warning-bg text-tl-warning border-tl-warning/30",
 };
-
-/** Today in the browser's clock, `YYYY-MM-DD`. */
-function todayDay(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 type DialogState = { mode: "create" } | { mode: "edit"; event: CalendarEvent } | null;
 
@@ -79,7 +74,7 @@ export function SchoolCalendarSection({ canManage }: { canManage: boolean }) {
       .sort((a, b) => a.start.localeCompare(b.start));
   }, [termsQuery.data, yearsQuery.data]);
 
-  const today = todayDay();
+  const today = todayInputValue();
   const term =
     terms.find((t) => t.id === pickedTermId) ??
     terms.find((t) => t.isCurrent) ??

@@ -6,7 +6,8 @@ import { toast } from "@/components/CustomToast";
 import { logger } from "@/lib/logger";
 import { ModalShell } from "@/components/finance/ModalShell";
 import { financeActionMessage } from "@/components/finance/financeErrors";
-import { formatDate, formatNaira } from "@/components/finance/formatters";
+import { formatCalendarDate, formatNaira } from "@/components/finance/formatters";
+import { todayInputValue } from "@/lib/dates";
 import { MANUAL_PAYMENT_METHODS } from "@/app/services/payments.service";
 import { useClasses } from "@/hooks/queries/reference";
 import { useCreateManualPayment } from "@/hooks/finance/usePaymentsQueries";
@@ -34,17 +35,6 @@ import {
   totalOwed,
   type FeeBalance,
 } from "@/components/fees/partPayments";
-
-/**
- * Today as `YYYY-MM-DD` in the browser's timezone, for the "Paid on" field.
- *
- * @returns Today's date.
- */
-function todayInputValue(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 /**
  * Records a payment taken outside the platform.
@@ -77,7 +67,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
   const [paymentMethod, setPaymentMethod] = useState<string>(MANUAL_PAYMENT_METHODS[0].value);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
-  const [paidOn, setPaidOn] = useState(todayInputValue);
+  const [paidOn, setPaidOn] = useState(() => todayInputValue());
   const today = todayInputValue();
 
   const students = useStudentsInClass(classId);
@@ -293,7 +283,7 @@ export function ManualPaymentModal({ onClose }: { onClose: () => void }) {
                         id={`fee-balance-${assignment._id}`}
                         className="block text-[13px] text-tl-muted"
                       >
-                        Due {formatDate(assignment.dueDate)}
+                        Due {formatCalendarDate(assignment.dueDate)}
                         {studentId && balance ? ` · ${feeBalanceSummary(balance)}` : ""}
                       </span>
                     </span>

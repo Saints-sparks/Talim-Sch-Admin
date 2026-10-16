@@ -5,6 +5,7 @@ import { Clock, School, UserCheck } from "lucide-react";
 import { getErrorMessage } from "@/lib/apiError";
 import type { StudentAttendanceKpis, StudentById } from "@/app/services/student.service";
 import { TabHeading } from "./profileAtoms";
+import { formatCalendarDate } from "@/lib/dates";
 
 interface StudentAttendanceTabProps {
   /** The student whose attendance this is. */
@@ -22,10 +23,9 @@ interface StudentAttendanceTabProps {
 /** A short date range like `1 Sep 2024 – 20 Dec 2024`. */
 function rangeLabel(range: { startDate: string; endDate: string }): string {
   const format = (value: string) =>
-    new Date(value).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+    formatCalendarDate(value, {
+      locale: "en-US",
+      format: { month: "short", day: "numeric", year: "numeric" },
     });
   return `${format(range.startDate)} – ${format(range.endDate)}`;
 }

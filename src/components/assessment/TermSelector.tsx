@@ -3,6 +3,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { Term } from "@/components/assessment/AssessmentForm.types";
+import { calendarYear } from "@/lib/dates";
 
 interface TermSelectorProps {
   terms: Term[];
@@ -44,7 +45,7 @@ const TermSelector: React.FC<TermSelectorProps> = ({
         {!allowEmpty && !selectedTermId && <option value="">{placeholder}</option>}
         {terms.map((term) => (
           <option key={term._id} value={term._id}>
-            {term.name} ({new Date(term.startDate).getFullYear()}){term.isCurrent && " - Current"}
+            {term.name} ({calendarYear(term.startDate)}){term.isCurrent && " - Current"}
           </option>
         ))}
       </select>

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { classLabel, refLabel, type StudentEnrollment } from "@/app/services/transit.service";
 import { surface, text } from "@/components/transit/ui";
 import { formatTransitDate } from "@/components/transit/transferStatus";
+import { formatCalendarDate } from "@/lib/dates";
 import {
   ENROLLMENT_STATUS_COLORS,
   ENROLLMENT_STATUS_LABELS,
@@ -81,11 +82,13 @@ export function EnrollmentTimeline({ history }: { history: StudentEnrollment[] }
                 </div>
                 <div className="shrink-0 text-right">
                   <p className={cn("text-xs", text.muted)}>
-                    {formatTransitDate(enrollment.startDate ?? enrollment.createdAt)}
+                    {enrollment.startDate
+                      ? formatCalendarDate(enrollment.startDate)
+                      : formatTransitDate(enrollment.createdAt)}
                   </p>
                   {enrollment.endDate ? (
                     <p className={cn("text-xs", text.muted)}>
-                      — {formatTransitDate(enrollment.endDate)}
+                      — {formatCalendarDate(enrollment.endDate)}
                     </p>
                   ) : (
                     enrollment.status === "active" && (

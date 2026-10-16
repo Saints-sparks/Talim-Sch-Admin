@@ -30,6 +30,7 @@ import type {
 import { logger } from "@/lib/logger";
 import { MAX_SCORE_MAX, MAX_SCORE_MIN } from "@/types/gradingContract";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { formatCalendarDate, todayInputValue } from "@/lib/dates";
 
 interface AssessmentCreateModalProps {
   isOpen: boolean;
@@ -85,9 +86,9 @@ function FieldError({ controlId, message }: { controlId: string; message?: strin
   );
 }
 
-/** A date as the assessment period is described to the administrator. */
+/** A picked `YYYY-MM-DD` as the assessment period is described to the administrator. */
 function readableDate(value: string): string {
-  return value ? new Date(value).toLocaleDateString() : "Not set";
+  return formatCalendarDate(value, { fallback: "Not set" });
 }
 
 /**
@@ -328,7 +329,7 @@ const AssessmentCreateModal: React.FC<AssessmentCreateModalProps> = ({
               onChange={handleInputChange}
               // An assessment already under way keeps its start date; only a
               // new one is held to today.
-              min={isEditing ? undefined : new Date().toISOString().split("T")[0]}
+              min={isEditing ? undefined : todayInputValue()}
               className={inputClass(Boolean(errors.startDate))}
               disabled={submitting}
               {...describedBy("assessment-start", errors.startDate)}
