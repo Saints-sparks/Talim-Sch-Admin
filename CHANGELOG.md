@@ -22,6 +22,13 @@ Past records, former students and transcripts (contract: `talimBE-V2/docs/histor
 
 - Each decision in the promotion wizard is **Promote**, **Repeat**, **Graduate** (offered for the school's top level) or **Withdraw**, and a whole top-level class can be graduated in bulk. The review and submit steps count the students per action, and a run's details show each decision's action.
 
+### Dates (§8.4)
+
+- **Date-only values show the day the school set, in every time zone.** Session and term dates, enrollment start and end, fee due dates, leave dates, dates of birth, enrollment dates, assessment dates, the transcript's school dates and "Left on", and calendar days are stored as UTC midnight; they were formatted in the viewer's zone, so anyone west of Greenwich saw the day before (a session from 15 Sept 2025 to 24 Jul 2026 read "14 Sept 2025 — 23 Jul 2026"). One helper, `src/lib/dates.ts`, formats them as the calendar day; the finance, fees, transit, academic setup, assessments, dashboard, leave, parents, students and transcript screens use it. Moments (messages, created and updated, submitted and published, last login, transcript issued and generated) stay in the viewer's local time.
+- Date inputs: a stored date pre-fills as its own day, and "today" (the earliest start for a new assessment, the latest manual payment date, the calendar's current term) is the viewer's wall-clock day, not UTC's.
+- The new assessment summary ("Assessment period: …") no longer shows the day before the dates picked; "days left" on an assessment card counts calendar days; a term's year in pickers is the year it starts, even on 1 January.
+- **Enrollment history** (`/transit/enrollments/[studentId]`) is headed with the student's name, read from their record (`GET /students/:id`), instead of "Student"; graduates and students beyond the first directory page were the ones missing.
+
 ### Under the hood
 
 - `qrcode-generator` 2.0.4 draws the transcript QR (the library the Students portal uses).
